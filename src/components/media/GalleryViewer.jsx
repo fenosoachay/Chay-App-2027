@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, MessageCircle, Send, Loader2, Pencil, Trash2, Check } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, PenLine, Send, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { parseWixMediaUrl, buildTransformUrl } from "@/components/ui/image-helpers";
@@ -325,18 +325,6 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
               </>
             )}
             <button
-              onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
-              className="relative h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
-              aria-label="Voir les commentaires"
-            >
-              <MessageCircle className="h-5 w-5" />
-              {comments.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-white text-[10px] font-bold">
-                  {comments.length > 99 ? "99+" : comments.length}
-                </span>
-              )}
-            </button>
-            <button
               onClick={(e) => { e.stopPropagation(); onClose?.(); }}
               className="h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
               aria-label="Fermer"
@@ -363,11 +351,25 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                 <ChevronRight className="h-6 w-6" />
               </button>
               {!showComments && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white z-10">
+                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white z-10">
                   {i + 1} / {items.length}
                 </div>
               )}
             </>
+          )}
+
+          {/* Commentaires : bandeau sous la photo */}
+          {!showComments && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
+              className="absolute bottom-4 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
+              aria-label="Voir les commentaires"
+            >
+              <PenLine className="h-4 w-4" />
+              {comments.length > 0
+                ? `${comments.length} commentaire${comments.length > 1 ? "s" : ""}`
+                : "Soyez le premier à commenter"}
+            </button>
           )}
 
           {/* Indicateur tant que la photo n'est pas entièrement chargée */}
@@ -481,7 +483,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                   ))
                 ) : (
                   <p className="text-sm text-white/50">
-                    Aucun commentaire pour l'instant. Soyez le premier !
+                    Soyez le premier à commenter
                   </p>
                 )}
               </div>
