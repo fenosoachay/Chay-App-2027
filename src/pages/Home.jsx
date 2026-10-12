@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { useNetwork } from "@/lib/NetworkContext";
 import { Facebook, Youtube, Shield, Globe } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import SplitClock from "@/components/home/SplitClock";
@@ -9,12 +8,10 @@ import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
 import QuickAccess from "@/components/home/QuickAccess";
 import LocalBibleAccess from "@/components/home/LocalBibleAccess";
 // import NewContentsSection from "@/components/home/NewContentsSection"; // Supprimé si vous voulez garder la suppression des nouveautés
-import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 
 export default function Home() {
   const { user, isLocalMode } = useAuth();
-  const { isOnline } = useNetwork();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadHome = () => setRefreshKey((k) => k + 1);
@@ -39,13 +36,6 @@ export default function Home() {
         <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
           Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
         </p>
-
-        {/* ✅ VERSET DU JOUR DÉPLACÉ ICI (Juste après le texte d'accueil) */}
-        {isOnline && (
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.1s" }}>
-            <VersetDuJourSection refreshKey={refreshKey} />
-          </div>
-        )}
 
         {/* Horloge divisée */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
