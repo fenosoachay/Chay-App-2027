@@ -49,18 +49,11 @@ function isSqlite(bytes) {
 
 async function readBundledFile() {
   try {
-    window.__chayStartup?.dictionary('Lecture demandée : ' + new URL(BUNDLED_DB_URL, window.location.href).href);
     const res = await fetch(BUNDLED_DB_URL);
-    if (!res.ok) {
-      window.__chayStartup?.dictionary('Fichier local introuvable : HTTP ' + res.status + ' à ' + BUNDLED_DB_URL);
-      return null;
-    }
+    if (!res.ok) return null;
     const bytes = new Uint8Array(await res.arrayBuffer());
-    const valid = isSqlite(bytes);
-    window.__chayStartup?.dictionary(valid ? 'Fichier local TROUVÉ, SQLite valide, ' + bytes.length + ' octets.' : 'Fichier local trouvé mais contenu NON SQLite à ' + BUNDLED_DB_URL);
-    return valid ? bytes : null;
-  } catch (error) {
-    window.__chayStartup?.dictionary('Échec lecture ' + BUNDLED_DB_URL + ' : ' + String(error));
+    return isSqlite(bytes) ? bytes : null;
+  } catch {
     return null;
   }
 }
@@ -97,15 +90,9 @@ async function downloadFile(onProgress) {
 // une seule ouverture par session.
 export function openDictionary(onProgress) {
   if (dbPromise) return dbPromise;
-  window.__chayStartup?.log('DB SQLITE', 'Initialisation WebAssembly : ' + new URL(wasmUrl, window.location.href).href);
-  const diagnosticTimer = setTimeout(() => {
-    window.__chayStartup?.fail(new Error('DictionaryStartupTimeout: initialisation du dictionnaire toujours en attente après 15 secondes.'));
-  }, 15000);
   dbPromise = (async () => {
     const SQL = await initSqlJs({ locateFile: () => wasmUrl });
-    window.__chayStartup?.log('DB SQLITE', 'Moteur WebAssembly initialisé');
     let bytes = await readLocalFile();
-    if (bytes) window.__chayStartup?.dictionary('Lecture du cache appareil : ' + LOCAL_KEY + ', ' + bytes.length + ' octets (clé de cache, pas un appel réseau).');
     if (!bytes) {
       bytes = await downloadFile(onProgress);
       await saveLocalFile(bytes);
@@ -113,13 +100,11 @@ export function openDictionary(onProgress) {
     const db = new SQL.Database(bytes);
     // Lecture seule : aucune écriture n'est jamais émise sur cette base.
     db.run("PRAGMA query_only = ON");
-    window.__chayStartup?.log('DB SQLITE', 'Base ouverte avec succès en lecture seule');
     return db;
   })().catch((e) => {
-    window.__chayStartup?.fail(e);
     dbPromise = null; // permet « Réessayer »
     throw e;
-  }).finally(() => clearTimeout(diagnosticTimer));
+  });
   return dbPromise;
 }
 

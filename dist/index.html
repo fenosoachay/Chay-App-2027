@@ -2,17 +2,6 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <script>
-      // Secours minimal si le fichier de diagnostic lui-même est absent.
-      setTimeout(function () {
-        if (window.__chayStartup) return;
-        var error = document.createElement('pre');
-        error.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#9b111e;color:white;padding:24px;white-space:pre-wrap;overflow:auto;user-select:text;';
-        error.textContent = 'EmergencyDiagnosticsLoadError: script non chargé après 5 secondes.\nChemin : ' + location.origin + '/startup-diagnostics.js\nPage : ' + location.origin + location.pathname + '\nRéseau déclaré : ' + navigator.onLine;
-        document.documentElement.appendChild(error);
-      }, 5000);
-    </script>
-    <script src="/startup-diagnostics.js"></script>
     <link rel="icon" type="image/png" href="/assets/favicon-light.png" />
     <link rel="icon" type="image/png" href="/assets/favicon-light.png" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/png" href="/assets/favicon-dark.png" media="(prefers-color-scheme: dark)" />
@@ -50,7 +39,7 @@
         document.documentElement.classList.toggle("dark", dark);
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-D6xXJB9a.js"></script>
+    <script type="module" crossorigin src="/assets/index-D9IBkM9n.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-B0Z9INg1.js">
     <link rel="stylesheet" crossorigin href="/assets/index-DMgJbEHP.css">
   </head>

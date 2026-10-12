@@ -48,12 +48,11 @@ export function startBibleOfflineSetup() {
   registerOfflineWorker();
   whenIdle(async () => {
     for (const lang of LANGS) {
-      window.__chayStartup?.log('CONTENU LOCAL', 'Préparation Bible et concordance : ' + lang);
       // Séquentiel pour ne pas saturer le fil principal ni le réseau.
-      await loadLocalBibleRaw(lang).catch(error => window.__chayStartup?.fail(error));
-      await loadConcordance(lang).catch(error => window.__chayStartup?.fail(error));
+      await loadLocalBibleRaw(lang).catch(() => {});
+      await loadConcordance(lang).catch(() => {});
     }
     // Dictionnaire Westphal : téléchargé une fois puis conservé sur l'appareil.
-    await openDictionary().catch(error => window.__chayStartup?.fail(error));
+    await openDictionary().catch(() => {});
   });
 }

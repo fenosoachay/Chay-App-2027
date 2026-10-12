@@ -27,10 +27,6 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(true);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
-  useEffect(() => {
-    window.__chayStartup?.log('AUTH', 'Mode local au démarrage, aucune vérification serveur ; profil local : ' + (user?.id ? 'présent' : 'absent'));
-  }, []);
-
   // Aucun appel serveur au montage, même lorsque navigator.onLine vaut true.
   // La connexion est une action volontaire ; un profil mémorisé reste local.
   const enterLocalMode = () => {
