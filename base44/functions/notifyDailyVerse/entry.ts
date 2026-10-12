@@ -40,6 +40,35 @@ export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Auth : admin OU appel interne (workflow planifié) prouvé par secret.
+    // Auth : admin, OU appel interne prouvé par secret, OU jeton de service
+    // de la plateforme (workflow planifié) — validé réellement par un appel,
+    // pas seulement par la présence de l'en-tête (qu'un client peut forger).
+    const body = await req.json().catch(() => ({}));
+    const expected = secrets.get("INTERNAL_INVOKE_SECRET");
+    let allowed = !!expected && body.internal_secret === expected;
+    if (!allowed) {
+      try { allowed = (await base44.auth.me())?.role === "admin"; } catch {}
+    }
+    if (!allowed && req.headers.get("Base44-Service-Authorization")) {
+      // Sonde d'écriture : UserNotification n'autorise la création qu'aux
+      // admins/service ; un jeton forgé est rejeté par la plateforme.
+      try {
+        const probe = await base44.asServiceRole.entities.UserNotification.create({
+          user_id: "__auth_probe__",
+          notification_id: "__auth_probe__",
+          title: "probe",
+        });
+        if (probe?.id) {
+          await base44.asServiceRole.entities.UserNotification.delete(probe.id).catch(() => {});
+        }
+        allowed = true;
+      } catch {}
+    }
+    if (!allowed) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const now = new Date();
     const appParts = localParts(now, APP_TZ);
     const dateStr = appParts.dateStr;

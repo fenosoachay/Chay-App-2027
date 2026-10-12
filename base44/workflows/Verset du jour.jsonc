@@ -1,11 +1,20 @@
 {
-  "name": "Verset du jour",
+  "description": "Chaque jour \u00e0 07:00 (Europe/Paris) : envoie le verset du jour aux utilisateurs abonn\u00e9s (heure demand\u00e9e \u2264 07:00, jour coch\u00e9) \u2014 notification in-app + push Android + push navigateur.",
   "trigger": {
     "condition": null,
     "config": {
       "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
       "cron_expression": "0 7 * * *",
-      "timezone": "Europe/Paris"
+      "one_time_date": null,
+      "timezone": "Europe/Paris",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
     }
   },
   "definition": {
@@ -32,5 +41,5 @@
       }
     ]
   },
-  "description": "Chaque jour \u00e0 07:00 (Europe/Paris) : envoie le verset du jour aux utilisateurs abonn\u00e9s (heure demand\u00e9e \u2264 07:00, jour coch\u00e9) \u2014 notification in-app + push Android + push navigateur."
+  "name": "Verset du jour"
 }
