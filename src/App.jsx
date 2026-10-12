@@ -16,7 +16,6 @@ import LocationGate from '@/components/LocationGate';
 import LocalLayout from '@/components/LocalLayout';
 import LocalAccessNotice from '@/components/LocalAccessNotice';
 import { NetworkProvider } from '@/lib/NetworkContext';
-import OfflineBanner from '@/components/OfflineBanner';
 import RequiresOnline from '@/components/RequiresOnline';
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -142,7 +141,6 @@ function App() {
           <RadioPlayerProvider>
           <Router>
             <CapacitorBackHandler />
-            <OfflineBanner />
             <ScrollToTop />
             <ErrorBoundary>
               <AuthenticatedApp />
