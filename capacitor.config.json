@@ -1,5 +1,5 @@
 {
-  "appId": "com.chay.eglise",
+  "appId": "io.chay.app",
   "appName": "Église Chay",
   "webDir": "dist",
   "server": {
