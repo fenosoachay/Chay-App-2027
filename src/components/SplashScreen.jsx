@@ -7,6 +7,7 @@ const MONTBOLD = "'Gilroy', 'Helvetica Neue', sans-serif";
 export default function SplashScreen() {
   return (
     <motion.div
+      data-chay-splash="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
       // FOND DÉGRADÉ INSPIRÉ DE L'IMAGE (Bleu -> Violet -> Rose)
       style={{

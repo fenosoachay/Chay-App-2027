@@ -1,27 +1,24 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from '@/App.jsx'
 import '@/index.css'
-import { startBibleOfflineSetup } from '@/lib/bibleOfflineBootstrap'
 import { installStartupGuard, showStartupError } from '@/lib/startupGuard'
 
 // Garde-fou : un échec de chargement affiche un message local, pas un écran blanc.
 installStartupGuard()
 
-// Prépare en tâche de fond le fonctionnement hors ligne de la Bible (textes FR
-// et MG, index de concordance, service worker) : aucune action requise.
-// Ne doit jamais empêcher l'application de démarrer.
-try {
-  startBibleOfflineSetup()
-} catch (e) {
-  console.error('Préparation hors ligne impossible :', e)
+async function initialize() {
+  try {
+    window.__chayStartup?.log('INITIALISATION', 'Chargement du composant racine');
+    const { default: App } = await import('@/App.jsx');
+    const root = document.getElementById('root');
+    if (!root) throw new Error('RootElementNotFound: élément #root absent');
+    ReactDOM.createRoot(root).render(<App />);
+    window.__chayStartup?.log('INITIALISATION', 'Rendu React demandé');
+    const { startBibleOfflineSetup } = await import('@/lib/bibleOfflineBootstrap');
+    startBibleOfflineSetup();
+  } catch (error) {
+    console.error('Démarrage impossible :', error);
+    showStartupError(error);
+  }
 }
-
-try {
-  ReactDOM.createRoot(document.getElementById('root')).render(
-    <App />
-  )
-} catch (e) {
-  console.error('Démarrage impossible :', e)
-  showStartupError("L'application n'a pas pu démarrer. Réessayez.")
-}
+initialize();
