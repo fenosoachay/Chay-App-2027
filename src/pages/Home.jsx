@@ -17,11 +17,6 @@ export default function Home() {
 
   const loadHome = () => setRefreshKey((k) => k + 1);
 
-  const firstName =
-    (user?.first_name ? user.first_name : "") ||
-    (user?.full_name ? user.full_name.split(" ")[0] : "") ||
-    (user?.email ? user.email.split("@")[0] : "");
-
   return (
     <PullToRefresh mode="window" onRefresh={loadHome}>
       <div className="mx-auto max-w-6xl px-6 md:px-8 py-8 md:py-12">
@@ -32,11 +27,9 @@ export default function Home() {
             <h1 className="font-display font-extrabold text-2xl md:text-4xl text-foreground">
               <span className="brand-gradient-text">ÉGLISE CHAY</span>
             </h1>
-            {firstName && (
-              <p className="mt-1 text-lg md:text-2xl font-display font-bold text-foreground/80">
-                Shalom {firstName} 
-              </p>
-            )}
+            <p className="mt-1 text-lg md:text-2xl font-display font-bold text-foreground/80">
+              Shalom
+            </p>
           </div>
         </section>
 

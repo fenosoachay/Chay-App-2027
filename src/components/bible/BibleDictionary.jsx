@@ -20,7 +20,10 @@ export default function BibleDictionary({ onBack }) {
   const [letter, setLetter] = useState(null);
   const [mot, setMot] = useState(null);
   const [query, setQuery] = useState("");
-  const [showFavorites, setShowFavorites] = useState(false);
+  // Lien direct depuis l'accueil : /bible?view=dictionary&favorites=1
+  const [showFavorites, setShowFavorites] = useState(
+    () => new URLSearchParams(window.location.search).get("favorites") === "1"
+  );
 
   const goHome = () => {
     setLetter(null);
