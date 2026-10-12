@@ -7,6 +7,7 @@ import SplitClock from "@/components/home/SplitClock";
 import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
 import QuickAccess from "@/components/home/QuickAccess";
 import LocalBibleAccess from "@/components/home/LocalBibleAccess";
+import AuthButtons from "@/components/home/AuthButtons";
 // import NewContentsSection from "@/components/home/NewContentsSection"; // Supprimé si vous voulez garder la suppression des nouveautés
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 
@@ -56,6 +57,9 @@ export default function Home() {
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.3s" }}>
           {isLocalMode ? <LocalBibleAccess /> : <QuickAccess />}
         </div>
+
+        {/* Connexion / création de compte (invités uniquement) */}
+        {isLocalMode && !user && <AuthButtons />}
 
         {/* Nouveautés - Commenté ou supprimé selon votre préférence précédente */}
         {/* 
