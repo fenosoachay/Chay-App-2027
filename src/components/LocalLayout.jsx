@@ -4,6 +4,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import BrandLogo from '@/components/BrandLogo';
+import { CapacitorBackHandler } from '@/components/CapacitorBackHandler';
 
 export default function LocalLayout() {
   const { authError, checkAppState } = useAuth();
@@ -18,6 +19,7 @@ export default function LocalLayout() {
     setMessage('Si le serveur est indisponible, la lecture locale reste accessible.');
   };
   return <div className="min-h-screen bg-background text-foreground">
+    <CapacitorBackHandler />
     <header
       className="sticky top-0 z-30 border-b border-border bg-background px-3 pb-3 sm:px-4 sm:pb-4"
       style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
