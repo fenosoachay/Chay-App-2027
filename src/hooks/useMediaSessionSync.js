@@ -22,7 +22,7 @@ export function useMediaSessionSync(control) {
   const controlRef = useRef(control);
   const permissionResultRef = useRef(null);
   const permissionCheckRef = useRef(null);
-  const permissionRequestedRef = useRef(false);
+  const permissionRequestedRef = useRef("");
   const notificationStartedRef = useRef(false);
   controlRef.current = control;
 
@@ -45,9 +45,15 @@ export function useMediaSessionSync(control) {
         permissionResultRef.current = await permissionCheckRef.current;
       }
 
-      if (!permissionResultRef.current.granted && current.isPlaying && !permissionRequestedRef.current) {
-        permissionRequestedRef.current = true;
-        permissionResultRef.current = await requestAndroidMediaNotificationPermission();
+      // Redemande l'autorisation à chaque nouveau média lancé tant qu'elle
+      // manque (Android 13+ ne réaffiche la fenêtre qu'après un refus simple ;
+      // sinon le message des Réglages guide l'utilisateur).
+      if (!permissionResultRef.current.granted && current.isPlaying) {
+        const mediaKey = String(current.id?.description || current.title || "");
+        if (permissionRequestedRef.current !== mediaKey) {
+          permissionRequestedRef.current = mediaKey;
+          permissionResultRef.current = await requestAndroidMediaNotificationPermission();
+        }
       }
 
       window.dispatchEvent(new CustomEvent("chay-media-notification-status", {
