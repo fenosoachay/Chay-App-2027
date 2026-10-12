@@ -147,7 +147,11 @@ export default function Messages() {
           </button>
         </div>
       )}
-      {activeId ? (
+      {activeId && !activeConv && !loading ? (
+        <div className="py-20 text-center text-foreground/50">
+          Conversation introuvable.
+        </div>
+      ) : activeId ? (
         <ConversationView
           key={activeId}
           conversation={activeConv}

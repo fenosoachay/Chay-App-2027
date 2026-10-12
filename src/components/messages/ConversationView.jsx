@@ -165,7 +165,7 @@ export default function ConversationView({
     const t = conversation?.typing_at
       ? new Date(conversation.typing_at).getTime()
       : 0;
-    const active = t && Date.now() - t < 4000 && conversation.typing_user_id !== user?.id;
+    const active = t > 0 && Date.now() - t < 4000 && conversation.typing_user_id !== user?.id;
     setTyping(active);
     if (active) {
       const remaining = 4000 - (Date.now() - t);
@@ -305,10 +305,11 @@ image_url: uploadedUrl,
     openMenuAt(m, { x: e.clientX, y: e.clientY });
   };
 
+  // Conversation pas encore chargée : simple indicateur de chargement, sans texte.
   if (!conversation) {
     return (
-      <div className="py-20 text-center text-foreground/50">
-        Conversation introuvable.
+      <div className="flex justify-center py-24" role="status" aria-label="Chargement">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
       </div>
     );
   }
@@ -491,7 +492,7 @@ image_url: uploadedUrl,
             </div>
           );
         })}
-        {typing && (
+        {typing === true && (
           <div className="flex items-center gap-1 px-2 py-1">
             <span
               className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
