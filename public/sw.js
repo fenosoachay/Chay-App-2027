@@ -71,7 +71,7 @@ self.addEventListener("notificationclick", (event) => {
    Les appels d'API (données de l'app, authentification, fonctions) ne sont
    jamais mis en cache ici : seule la Bible/dictionnaire est garantie hors ligne. */
 const DATA_CACHE = "chay-bible-data-v2";
-const SHELL_CACHE = "chay-app-shell-v1";
+const SHELL_CACHE = "chay-app-shell-v2";
 const DATA_FILES = [
   "/data/bibles/lsg1910_fr_CORRIGE.json",
   "/data/bibles/malagasy_complete.json",
