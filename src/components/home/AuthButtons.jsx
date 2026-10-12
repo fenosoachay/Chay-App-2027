@@ -28,13 +28,13 @@ export default function AuthButtons() {
       <button
         onClick={connect}
         disabled={connecting}
-        className="w-full rounded-full bg-[#4A6CFE] px-5 py-3 text-sm font-bold text-white shadow-md transition duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
+        className="w-full rounded-full brand-gradient px-5 py-3 text-sm font-bold text-white shadow-md transition duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
       >
         {connecting ? 'Connexion…' : 'Se connecter'}
       </button>
       <button
         onClick={register}
-        className="w-full rounded-full bg-[#FF57B2] px-5 py-3 text-sm font-bold text-white shadow-md transition duration-300 hover:scale-105 active:scale-95"
+        className="w-full rounded-full brand-gradient px-5 py-3 text-sm font-bold text-white shadow-md transition duration-300 hover:scale-105 active:scale-95"
       >
         Créer un compte
       </button>
