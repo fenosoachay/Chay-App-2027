@@ -397,12 +397,24 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
               const canDelete = canEdit;
               return (
               <div key={c.id} className="flex gap-2.5">
-                <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
-                  {(c.author_name || "M")[0]?.toUpperCase()}
-                </div>
+                {c.created_by_id ? (
+                  <Link to={`/profile/${c.created_by_id}`} className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
+                    {(c.author_name || "M")[0]?.toUpperCase()}
+                  </Link>
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
+                    {(c.author_name || "M")[0]?.toUpperCase()}
+                  </div>
+                )}
                 <div className="rounded-2xl bg-muted px-3 py-2 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-semibold text-xs">{c.author_name || "Membre"}</div>
+                    {c.created_by_id ? (
+                      <Link to={`/profile/${c.created_by_id}`} className="font-semibold text-xs hover:underline">
+                        {c.author_name || "Membre"}
+                      </Link>
+                    ) : (
+                      <div className="font-semibold text-xs">{c.author_name || "Membre"}</div>
+                    )}
                     {canEdit && (
                       <div className="flex items-center gap-1">
                         <button

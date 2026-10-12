@@ -8,6 +8,14 @@
     "avatar_url": {
       "type": "string"
     },
+    "cover_url": {
+      "type": "string",
+      "description": "Photo de couverture publique du membre."
+    },
+    "bio": {
+      "type": "string",
+      "description": "Biographie publique du membre."
+    },
     "last_seen_at": {
       "type": "string"
     },

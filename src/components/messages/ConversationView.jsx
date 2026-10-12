@@ -15,6 +15,7 @@ import {
   Settings,
 } from "lucide-react";
 import Avatar from "@/components/messages/Avatar";
+import MessageAvatar from "@/components/messages/MessageAvatar";
 import { Image } from "@/components/ui/image";
 import { isOnline, lastSeenLabel } from "@/hooks/usePresence";
 import GroupSettingsSheet from "@/components/messages/GroupSettingsSheet";
@@ -403,10 +404,17 @@ image_url: uploadedUrl,
           return (
             <div
               key={m.id}
-              className={`flex ${mine ? "justify-end" : "justify-start"} animate-float-in ${
+              className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} animate-float-in ${
                 grouped ? "mt-0.5" : "mt-2.5"
               }`}
             >
+              {!mine && (
+                <MessageAvatar
+                  profile={profiles.find((p) => p.created_by_id === m.sender_id)}
+                  fallbackName={m.sender_name}
+                  visible={isLastOfGroup}
+                />
+              )}
               <div className="max-w-[82%] md:max-w-md">
                 {!grouped && (
                   <div

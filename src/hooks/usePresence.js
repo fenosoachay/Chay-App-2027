@@ -41,19 +41,32 @@ export function usePresenceHeartbeat(user, enabled = true) {
     let stopped = false;
 
     const ensure = async () => {
+      const name =
+        user.full_name ||
+        [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+        (user.email ? user.email.split("@")[0] : "Membre");
+      // Infos publiques copiées depuis le compte : lisibles par tous les membres
+      // (l'entité User n'est pas lisible par les non-administrateurs).
+      const publicInfo = {
+        display_name: name,
+        avatar_url: user.profile_photo_url || "",
+        cover_url: user.cover_photo_url || "",
+        bio: user.profile_bio || "",
+      };
       const existing = await base44.entities.MemberProfile
         .filter({ created_by_id: user.id }, "-created_date", 1)
         .catch(() => []);
       if (existing && existing[0]) {
         profileId = existing[0].id;
+        const p = existing[0];
+        const changed = Object.keys(publicInfo).some((k) => (p[k] || "") !== publicInfo[k]);
+        if (changed) {
+          await base44.entities.MemberProfile.update(profileId, publicInfo).catch(() => {});
+        }
         return;
       }
-      const name =
-        user.full_name ||
-        [user.first_name, user.last_name].filter(Boolean).join(" ") ||
-        (user.email ? user.email.split("@")[0] : "Membre");
       const created = await base44.entities.MemberProfile
-        .create({ display_name: name, last_seen_at: new Date().toISOString() })
+        .create({ ...publicInfo, last_seen_at: new Date().toISOString() })
         .catch(() => null);
       profileId = created?.id || null;
     };
@@ -84,7 +97,7 @@ export function usePresenceHeartbeat(user, enabled = true) {
         delete window.__chayUnload;
       }
     };
-  }, [user?.id]);
+  }, [user?.id, user?.profile_photo_url, user?.cover_photo_url, user?.profile_bio, user?.full_name, user?.first_name, user?.last_name]);
 }
 
 // Loads all member profiles and live-updates them via realtime subscription.

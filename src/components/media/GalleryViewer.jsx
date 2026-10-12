@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { X, ChevronLeft, ChevronRight, PenLine, Send, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
@@ -122,6 +123,13 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   }, [key]);
 
   useEffect(() => () => window.clearTimeout(swipeTimer.current), []);
+
+  // Nom d'un commentateur → son profil (la visionneuse se ferme d'abord).
+  const navigate = useNavigate();
+  const openProfile = (userId) => {
+    onClose?.();
+    setTimeout(() => navigate(`/profile/${userId}`), 0);
+  };
 
   const go = (delta) =>
     setI((v) => (v + delta + items.length) % items.length);
@@ -438,9 +446,19 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                 ) : comments.length ? (
                   comments.map((c) => (
                     <div key={c.id} className="text-sm leading-relaxed text-white/90">
-                      <span className="mr-2 font-bold text-white">
-                        {c.author_name || "Membre"}
-                      </span>
+                      {c.created_by_id ? (
+                        <button
+                          type="button"
+                          onClick={() => openProfile(c.created_by_id)}
+                          className="mr-2 font-bold text-white hover:underline"
+                        >
+                          {c.author_name || "Membre"}
+                        </button>
+                      ) : (
+                        <span className="mr-2 font-bold text-white">
+                          {c.author_name || "Membre"}
+                        </span>
+                      )}
                       {editingCommentId !== c.id && (
                         <span className="whitespace-pre-wrap break-words">{c.text}</span>
                       )}

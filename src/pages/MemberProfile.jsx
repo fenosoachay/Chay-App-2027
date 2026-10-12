@@ -13,7 +13,21 @@ async function fetchMember(userId) {
   const list = await base44.entities.User
     .filter({ id: userId }, "-created_date", 1)
     .catch(() => []);
-  return Array.isArray(list) && list.length ? list[0] : null;
+  if (Array.isArray(list) && list.length) return list[0];
+  // Les non-administrateurs ne peuvent pas lire l'entité User : on utilise le
+  // profil public du membre (nom, photo, couverture, bio).
+  const profiles = await base44.entities.MemberProfile
+    .filter({ created_by_id: userId }, "-created_date", 1)
+    .catch(() => []);
+  const p = Array.isArray(profiles) ? profiles[0] : null;
+  if (!p) return null;
+  return {
+    id: userId,
+    first_name: p.display_name,
+    profile_photo_url: p.avatar_url,
+    cover_photo_url: p.cover_url,
+    profile_bio: p.bio,
+  };
 }
 
 export default function MemberProfile() {
