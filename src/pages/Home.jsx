@@ -21,7 +21,7 @@ export default function Home() {
       <div className="mx-auto max-w-6xl px-6 md:px-8 py-8 md:py-12">
         
         {/* Welcome Header */}
-        <section className="animate-float-in flex items-center gap-4">
+        <section className="animate-float-in flex items-center justify-center gap-4 text-center">
           <div>
             <h1 className="font-display font-extrabold text-2xl md:text-4xl text-foreground">
               <span className="brand-gradient-text">ÉGLISE CHAY</span>
@@ -33,7 +33,7 @@ export default function Home() {
         </section>
 
         {/* Texte d'accueil malgache */}
-        <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
+        <p className="mt-3 text-center text-sm md:text-xl text-foreground/60 max-w-xl mx-auto font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
           Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
         </p>
 
