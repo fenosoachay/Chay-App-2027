@@ -42,8 +42,8 @@ export function usePresenceHeartbeat(user, enabled = true) {
 
     const ensure = async () => {
       const name =
-        user.full_name ||
         [user.first_name, user.last_name].filter(Boolean).join(" ") ||
+        user.full_name ||
         (user.email ? user.email.split("@")[0] : "Membre");
       // Infos publiques copiées depuis le compte : lisibles par tous les membres
       // (l'entité User n'est pas lisible par les non-administrateurs).

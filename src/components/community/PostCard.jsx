@@ -9,6 +9,7 @@ import { notifyComment, notifyLike } from "@/lib/socialNotifications";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
 import { formatTimestamp } from "@/lib/formatTimestamp";
+import useMemberDirectory from "@/hooks/useMemberDirectory";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,8 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
 
   const isMine = currentUser && post.created_by_id === currentUser.id;
   const canManagePost = Boolean(isMine || currentUser?.role === "admin");
-  const displayName = post.author_name || (isMine ? "Vous" : "Membre");
+  const { nameOf } = useMemberDirectory();
+  const displayName = nameOf(post.created_by_id, post.author_name || (isMine ? "Vous" : "Membre"));
   const liked = reactions.some((r) => r.user_id === currentUser?.id);
   const likeCount = reactions.length;
 
@@ -399,7 +401,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
               <div key={c.id} className="flex gap-2.5">
                 {c.created_by_id ? (
                   <Link to={`/profile/${c.created_by_id}`} className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
-                    {(c.author_name || "M")[0]?.toUpperCase()}
+                    {nameOf(c.created_by_id, c.author_name)[0]?.toUpperCase()}
                   </Link>
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
@@ -410,7 +412,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
                   <div className="flex items-start justify-between gap-2">
                     {c.created_by_id ? (
                       <Link to={`/profile/${c.created_by_id}`} className="font-semibold text-xs hover:underline">
-                        {c.author_name || "Membre"}
+                        {nameOf(c.created_by_id, c.author_name)}
                       </Link>
                     ) : (
                       <div className="font-semibold text-xs">{c.author_name || "Membre"}</div>

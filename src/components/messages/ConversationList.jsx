@@ -45,7 +45,7 @@ export default function ConversationList({
         ? (last.sender_id === user?.id
             ? "Vous : "
             : isGroup
-            ? `${last.sender_name || ""} : `
+            ? `${profileOf(last.sender_id)?.display_name || last.sender_name || ""} : `
             : "") + (last.text || (last.image_url ? "📷 Photo" : ""))
         : "") ||
       (isRenderableMessage({ text: c.last_message_text })

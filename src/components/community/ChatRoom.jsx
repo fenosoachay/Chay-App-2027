@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Send, Loader2 } from "lucide-react";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
+import MemberName from "@/components/messages/MemberName";
+import useMemberDirectory from "@/hooks/useMemberDirectory";
 
 function fmtTime(d) {
   return formatTimestamp(d, { date: false });
@@ -23,6 +25,7 @@ export default function ChatRoom({ user }) {
   const typingTimer = useRef(null);
   const isTypingSent = useRef(false);
 
+  const { nameOf } = useMemberDirectory();
   const myName =
     user?.full_name ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
@@ -170,7 +173,7 @@ export default function ChatRoom({ user }) {
     );
   const typerNames = presence
     .filter((p) => p.typing_at && now - new Date(p.typing_at).getTime() < 4000)
-    .map((p) => p.display_name || "Quelqu'un");
+    .map((p) => nameOf(p.created_by_id, p.display_name || "Quelqu'un"));
 
   return (
     <div>
@@ -187,7 +190,7 @@ export default function ChatRoom({ user }) {
             </p>
           ) : (
             messages.map((m) => {
-              const mine = m.author_name === myName;
+              const mine = m.created_by_id ? m.created_by_id === user?.id : m.author_name === myName;
               return (
                 <div
                   key={m.id}
@@ -197,7 +200,7 @@ export default function ChatRoom({ user }) {
                 >
                   {!mine && (
                     <div className="h-8 w-8 rounded-full brand-gradient grid place-items-center text-white font-bold text-xs shrink-0">
-                      {initial(m.author_name)}
+                      {initial(nameOf(m.created_by_id, m.author_name))}
                     </div>
                   )}
                   <div className="min-w-0">
@@ -210,7 +213,7 @@ export default function ChatRoom({ user }) {
                     >
                       {!mine && (
                         <div className="text-xs font-bold text-primary mb-0.5">
-                          {m.author_name}
+                          <MemberName userId={m.created_by_id} fallback={m.author_name} />
                         </div>
                       )}
                       {m.text}

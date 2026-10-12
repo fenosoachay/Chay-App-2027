@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/messages/Avatar";
 import MessageAvatar from "@/components/messages/MessageAvatar";
+import MemberName from "@/components/messages/MemberName";
+import useMemberDirectory from "@/hooks/useMemberDirectory";
 import { Image } from "@/components/ui/image";
 import { isOnline, lastSeenLabel } from "@/hooks/usePresence";
 import GroupSettingsSheet from "@/components/messages/GroupSettingsSheet";
@@ -57,6 +59,7 @@ export default function ConversationView({
   const pressTimer = useRef(null);
   const pressPoint = useRef({ x: 0, y: 0 });
 
+  const { nameOf } = useMemberDirectory();
   const isGroup = conversation?.type === "group";
   const otherId = !isGroup
     ? conversation?.participant_ids?.find((id) => id !== user?.id)
@@ -349,7 +352,9 @@ image_url: uploadedUrl,
         </button>
         <Avatar name={title} src={avatarUrl} size={40} online={online} />
         <div className="flex-1 min-w-0">
-          <div className="font-bold truncate leading-tight">{title}</div>
+          <div className="font-bold truncate leading-tight">
+            {otherId ? <MemberName userId={otherId} fallback={title} /> : title}
+          </div>
           <div className="text-xs text-foreground/50 truncate leading-tight">
             {typing ? (
               <span className="text-primary font-medium">en train d'écrire…</span>
@@ -433,7 +438,7 @@ image_url: uploadedUrl,
                         : "border-primary bg-primary/10 text-foreground/70"
                     }`}
                   >
-                    <div className="font-bold">{replied.sender_name || "Membre"}</div>
+                    <div className="font-bold">{nameOf(replied.sender_id, replied.sender_name)}</div>
                     {(replied.text || replied.image_url) && (
                       <div className="truncate">
                         {replied.text || "📷 Photo"}
@@ -470,7 +475,7 @@ image_url: uploadedUrl,
                 >
                   {isGroup && !mine && !grouped && (
                     <div className="text-xs font-bold text-primary mb-0.5">
-                      {m.sender_name || "Membre"}
+                      <MemberName userId={m.sender_id} fallback={m.sender_name} />
                     </div>
                   )}
                   {m.image_url && (
@@ -525,7 +530,7 @@ image_url: uploadedUrl,
           <Reply className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-xs font-bold text-primary">
-              {replyTo.sender_name || "Membre"}
+              {nameOf(replyTo.sender_id, replyTo.sender_name)}
             </div>
             {(replyTo.text || replyTo.image_url) && (
               <div className="text-xs text-foreground/60 truncate">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import useMemberDirectory from "@/hooks/useMemberDirectory";
 import { X, ChevronLeft, ChevronRight, PenLine, Send, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
@@ -126,6 +127,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
 
   // Nom d'un commentateur → son profil (la visionneuse se ferme d'abord).
   const navigate = useNavigate();
+  const { nameOf } = useMemberDirectory();
   const openProfile = (userId) => {
     onClose?.();
     setTimeout(() => navigate(`/profile/${userId}`), 0);
@@ -452,7 +454,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                           onClick={() => openProfile(c.created_by_id)}
                           className="mr-2 font-bold text-white hover:underline"
                         >
-                          {c.author_name || "Membre"}
+                          {nameOf(c.created_by_id, c.author_name)}
                         </button>
                       ) : (
                         <span className="mr-2 font-bold text-white">

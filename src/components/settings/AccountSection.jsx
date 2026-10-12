@@ -89,6 +89,18 @@ export default function AccountSection() {
     try {
       const fullName = `${form.first_name} ${form.last_name}`.trim();
       await base44.auth.updateMe({ ...form, full_name: fullName });
+      // Profil public : tous les noms affichés dans l'appli suivent immédiatement.
+      const publicInfo = {
+        display_name: fullName,
+        avatar_url: form.profile_photo_url || "",
+        cover_url: form.cover_photo_url || "",
+        bio: form.profile_bio || "",
+      };
+      const mine = await base44.entities.MemberProfile
+        .filter({ created_by_id: user.id }, "-created_date", 1)
+        .catch(() => []);
+      if (mine[0]) await base44.entities.MemberProfile.update(mine[0].id, publicInfo);
+      else await base44.entities.MemberProfile.create({ ...publicInfo, last_seen_at: new Date().toISOString() });
       toast({ title: "Profil enregistré" });
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });

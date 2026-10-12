@@ -20,14 +20,26 @@ async function fetchMember(userId) {
     .filter({ created_by_id: userId }, "-created_date", 1)
     .catch(() => []);
   const p = Array.isArray(profiles) ? profiles[0] : null;
-  if (!p) return null;
-  return {
-    id: userId,
-    first_name: p.display_name,
-    profile_photo_url: p.avatar_url,
-    cover_photo_url: p.cover_url,
-    profile_bio: p.bio,
-  };
+  if (p) {
+    return {
+      id: userId,
+      first_name: p.display_name,
+      profile_photo_url: p.avatar_url,
+      cover_photo_url: p.cover_url,
+      profile_bio: p.bio,
+    };
+  }
+  // Pas encore de profil public (membre jamais reconnecté depuis la mise à jour) :
+  // on retrouve son nom grâce à ses publications, commentaires ou messages.
+  const [posts, comments, messages] = await Promise.all([
+    base44.entities.CommunityPost.filter({ created_by_id: userId }, "-created_date", 1).catch(() => []),
+    base44.entities.Comment.filter({ created_by_id: userId }, "-created_date", 1).catch(() => []),
+    base44.entities.Message.filter({ sender_id: userId }, "-created_date", 1).catch(() => []),
+  ]);
+  const name =
+    posts?.[0]?.author_name || comments?.[0]?.author_name || messages?.[0]?.sender_name;
+  if (!name) return null;
+  return { id: userId, first_name: name };
 }
 
 export default function MemberProfile() {
