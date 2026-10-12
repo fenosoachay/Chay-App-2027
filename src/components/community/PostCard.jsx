@@ -46,7 +46,8 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
 
   const isMine = currentUser && post.created_by_id === currentUser.id;
   const canManagePost = Boolean(isMine || currentUser?.role === "admin");
-  const { nameOf } = useMemberDirectory();
+  const { nameOf, avatarOf } = useMemberDirectory();
+  const postAvatar = avatarOf(post.created_by_id);
   const displayName = nameOf(post.created_by_id, post.author_name || (isMine ? "Vous" : "Membre"));
   const liked = reactions.some((r) => r.user_id === currentUser?.id);
   const likeCount = reactions.length;
@@ -223,8 +224,12 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
         <div className="flex items-center gap-3 flex-1 min-w-0">
         {post.created_by_id ? (
           <Link to={`/profile/${post.created_by_id}`} className="contents">
-            <div className="h-11 w-11 rounded-full brand-gradient grid place-items-center text-white font-display font-bold shrink-0">
-              {displayName[0]?.toUpperCase()}
+            <div className="h-11 w-11 rounded-full brand-gradient grid place-items-center text-white font-display font-bold shrink-0 overflow-hidden">
+              {postAvatar ? (
+                <img src={postAvatar} alt="" className="h-full w-full object-cover" />
+              ) : (
+                displayName[0]?.toUpperCase()
+              )}
             </div>
             <div>
               <div className="font-semibold text-[0.9375rem] hover:underline">{displayName}</div>
@@ -400,8 +405,12 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
               return (
               <div key={c.id} className="flex gap-2.5">
                 {c.created_by_id ? (
-                  <Link to={`/profile/${c.created_by_id}`} className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">
-                    {nameOf(c.created_by_id, c.author_name)[0]?.toUpperCase()}
+                  <Link to={`/profile/${c.created_by_id}`} className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0 overflow-hidden">
+                    {avatarOf(c.created_by_id) ? (
+                      <img src={avatarOf(c.created_by_id)} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      nameOf(c.created_by_id, c.author_name)[0]?.toUpperCase()
+                    )}
                   </Link>
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0">

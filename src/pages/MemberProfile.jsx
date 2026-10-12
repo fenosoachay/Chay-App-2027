@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { findOrCreateDirect } from "@/lib/conversations";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
-import { Loader2, Pencil, UserX, X } from "lucide-react";
+import { Loader2, Pencil, UserX, X, MessageCircle } from "lucide-react";
 import PostCard from "@/components/community/PostCard";
 
 // Recherche tolérante : un membre éjecté/supprimé n'existe plus, la page doit
@@ -13,13 +14,24 @@ async function fetchMember(userId) {
   const list = await base44.entities.User
     .filter({ id: userId }, "-created_date", 1)
     .catch(() => []);
-  if (Array.isArray(list) && list.length) return list[0];
+  const user = Array.isArray(list) && list.length ? list[0] : null;
   // Les non-administrateurs ne peuvent pas lire l'entité User : on utilise le
   // profil public du membre (nom, photo, couverture, bio).
   const profiles = await base44.entities.MemberProfile
     .filter({ created_by_id: userId }, "-created_date", 1)
     .catch(() => []);
   const p = Array.isArray(profiles) ? profiles[0] : null;
+  // Le profil public (MemberProfile) est la source commune avec la communauté
+  // et les publications : on le fusionne pour que photo/couverture/bio soient
+  // identiques partout, même quand le compte User est lisible.
+  if (user) {
+    return {
+      ...user,
+      profile_photo_url: p?.avatar_url || user.profile_photo_url,
+      cover_photo_url: p?.cover_url || user.cover_photo_url,
+      profile_bio: p?.bio || user.profile_bio,
+    };
+  }
   if (p) {
     return {
       id: userId,
@@ -51,6 +63,16 @@ export default function MemberProfile() {
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null); // "cover" | "avatar" | null
+  const [openingChat, setOpeningChat] = useState(false);
+  const navigate = useNavigate();
+
+  const sendMessage = async () => {
+    if (openingChat) return;
+    setOpeningChat(true);
+    const id = await findOrCreateDirect(currentUser, userId).catch(() => null);
+    setOpeningChat(false);
+    if (id) navigate(`/messages?c=${id}`);
+  };
   useBackHandler(Boolean(lightbox), () => setLightbox(null));
   useKeyboardShortcuts(Boolean(lightbox), { Escape: () => setLightbox(null) });
 
@@ -178,6 +200,18 @@ export default function MemberProfile() {
           <span className="mt-1 inline-block text-xs font-bold text-primary">
             Administrateur
           </span>
+        )}
+
+        {currentUser && !isOwnProfile && (
+          <button
+            type="button"
+            onClick={sendMessage}
+            disabled={openingChat}
+            className="mt-4 inline-flex items-center gap-2 rounded-full brand-gradient px-5 py-2.5 text-sm font-bold text-white transition hover:scale-105 active:scale-95 disabled:opacity-60"
+          >
+            {openingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+            Envoyer un message
+          </button>
         )}
 
         {member.profile_bio && (
