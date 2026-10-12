@@ -76,6 +76,23 @@ test("lookupPhrase tolère les accents dans les deux sens", () => {
   assert.equal(lookupPhrase(INDEX, "cea dieu").total, 0);
 });
 
+test("« a » ne trouve ni « as » ni « avait » (accents ignorés, lettres identiques)", () => {
+  const idx = {
+    lang: "fr",
+    books: [{ id: "GEN", name: "Genèse", chapters: 1 }],
+    verses: [
+      [0, 1, 1, "Il a dit."],
+      [0, 1, 2, "Tu as dit."],
+      [0, 1, 3, "Il avait dit."],
+      [0, 1, 4, "Il alla à Rome."],
+    ],
+    index: { il: [0, 2, 3], a: [0], dit: [0, 1, 2], tu: [1], as: [1], avait: [2], alla: [3], "à": [3], rome: [3] },
+  };
+  assert.deepEqual(lookupWord(idx, "a").entries.map((e) => e.verse).sort(), [1, 4]);
+  assert.equal(lookupWord(idx, "as").total, 1);
+  assert.equal(lookupWord(idx, "avait").total, 1);
+});
+
 test("lookupWord ne correspond pas à l'intérieur d'un autre mot", () => {
   // « fils » existe, mais « il » (intérieur de « fils », absent de l'index)
   // ne doit rien trouver ; « es » n'est pas indexé → 0.
