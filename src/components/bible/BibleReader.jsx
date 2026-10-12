@@ -19,6 +19,8 @@ import VerseActionsSheet from "@/components/bible/VerseActionsSheet";
 import ReaderSearchBox from "@/components/bible/ReaderSearchBox";
 import DrawerSelect from "@/components/DrawerSelect";
 import { enqueue, queueSize } from "@/lib/offlineQueue";
+import useReadingProgress from "@/hooks/useReadingProgress";
+import ResumeReadingButton from "@/components/bible/ResumeReadingButton";
 import { readLocalAnnotations, saveLocalAnnotation, clearLocalAnnotations } from "@/lib/localAnnotations";
 import { getLocalBooks, getLocalChapterVerses } from "@/lib/localBible";
 import { parseReference } from "@/lib/bibleBookRefs";
@@ -76,11 +78,6 @@ export default function BibleReader({ onBack }) {
           if (parsed.verse) setPendingVerse(parsed.verse);
         }
         setPendingRef(null);
-      } else if (!didInitRef.current) {
-        const savedBook = user?.bible_last_book && loaded.find((b) => b.id === user.bible_last_book);
-        const savedChapter = Number(user?.bible_last_chapter);
-        if (savedBook) nextBookId = savedBook.id;
-        if (savedChapter >= 1 && savedChapter <= (savedBook?.numberOfChapters || 0)) nextChapter = savedChapter;
       }
       const maxChapter = loaded.find((b) => b.id === nextBookId)?.numberOfChapters || 1;
       didInitRef.current = true;
@@ -148,10 +145,17 @@ export default function BibleReader({ onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booksStatus, lang, selectedVersion, selectedBookId, selectedChapter, selectedBook]);
 
-  useEffect(() => {
-    if (isLocalMode || chapterStatus !== "ready" || !user?.id) return;
-    base44.auth.updateMe({ bible_last_book: selectedBookId, bible_last_chapter: selectedChapter }).catch(() => {});
-  }, [chapterStatus, selectedBookId, selectedChapter, user?.id, isLocalMode]);
+  const savedProgress = useReadingProgress({
+    versionId: selectedVersion, bookId: selectedBookId, chapter: selectedChapter,
+    ready: chapterStatus === "ready", user, isLocalMode,
+  });
+  const resumeBook = savedProgress && books.find((b) => b.id === savedProgress.book);
+  const isAlreadyThere = savedProgress && savedProgress.book === selectedBookId && savedProgress.chapter === selectedChapter;
+  const resumeReading = () => {
+    setSelectedBookId(savedProgress.book);
+    setSelectedChapter(savedProgress.chapter);
+    setPendingVerse(savedProgress.verse > 1 ? savedProgress.verse : null);
+  };
 
   // Surligne temporairement le verset ciblé après navigation depuis la recherche.
   useEffect(() => {
@@ -322,6 +326,13 @@ export default function BibleReader({ onBack }) {
             </div>
           )}
         </div>
+
+        {booksStatus === "ready" && resumeBook && !isAlreadyThere && (
+          <ResumeReadingButton
+            bookName={resumeBook.name} chapter={savedProgress.chapter} verse={savedProgress.verse}
+            onResume={resumeReading}
+          />
+        )}
 
         {booksStatus === "ready" && (
           <ReaderSearchBox lang={lang} onSelect={openSearchResult} />

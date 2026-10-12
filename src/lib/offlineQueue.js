@@ -23,9 +23,11 @@ export function getQueue() {
   return read();
 }
 
-// type : "annotation" | "message"
+// type : "annotation" | "message" | "progress"
 export function enqueue(type, payload) {
-  const list = read();
+  let list = read();
+  // La progression de lecture ne garde que la dernière valeur par version.
+  if (type === "progress") list = list.filter((a) => !(a.type === "progress" && a.payload.versionId === payload.versionId));
   list.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, payload, at: Date.now() });
   write(list);
 }

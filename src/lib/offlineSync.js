@@ -1,5 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { getQueue, removeFromQueue } from "@/lib/offlineQueue";
+import { pushProgress } from "@/lib/readingProgress";
 
 // Rejoue une action en attente. Lève une erreur en cas d'échec (elle reste alors en file).
 async function replay(action) {
@@ -23,6 +24,10 @@ async function replay(action) {
         ...p.data,
       });
     }
+    return;
+  }
+  if (action.type === "progress") {
+    await pushProgress(p.versionId, p.progress);
     return;
   }
   if (action.type === "message") {
