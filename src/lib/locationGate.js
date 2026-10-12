@@ -1,6 +1,12 @@
-// Sonde l'état réel de la localisation de l'appareil (service + permission),
-// indépendamment du réseau : fonctionne aussi bien hors ligne qu'en ligne.
-// `nav` est injectable pour les tests (sinon `navigator` global du navigateur).
+// Sonde l'état de la localisation de l'appareil, indépendamment du réseau.
+// `nav` est injectable pour les tests (sinon `navigator` global).
+//
+// Principe : ne bloquer l'application QUE sur une preuve certaine que la
+// localisation est coupée. Un délai dépassé, une position momentanément
+// indisponible ou une API Permissions capricieuse (fréquent dans les WebView)
+// ne doivent jamais fermer l'application alors que la localisation est activée.
+const GRANTED_KEY = "chay_location_granted";
+
 function getNavigator() {
   return typeof navigator !== "undefined" ? navigator : undefined;
 }
@@ -9,55 +15,81 @@ export function isGeolocationSupported(nav = getNavigator()) {
   return !!nav?.geolocation;
 }
 
-// Résultat : "active" | "checking" | "denied" | "inactive" | "unsupported"
-//  - active      : permission accordée (vérifiée via API Permissions).
-//  - checking    : impossible de déterminer l'état (fallback sur getCurrentPosition).
-//  - denied      : permission refusée par l'utilisateur/l'OS.
-//  - inactive    : service de localisation désactivé ou indisponible.
-//  - unsupported : l'appareil/navigateur n'expose pas l'API Geolocation.
-//
-// Stratégie : on privilégie l'API Permissions qui reflète l'état réel de la
-// permission dans le système. Si elle n'est pas disponible ou si elle renvoie
-// "prompt", on fallback sur getCurrentPosition pour décider.
-export function probeLocationStatus(nav = getNavigator(), { timeout = 8000, maximumAge = 300000 } = {}) {
-  return new Promise((resolve) => {
-    if (!nav?.geolocation) {
-      resolve("unsupported");
-      return;
-    }
-
-    // Essaie d'abord l'API Permissions (plus fiable, instantané).
-    if (nav?.permissions?.query) {
-      nav.permissions
-        .query({ name: "geolocation" })
-        .then((result) => {
-          if (result.state === "granted") {
-            // Permission accordée : le service est activé.
-            resolve("active");
-          } else if (result.state === "denied") {
-            resolve("denied");
-          } else {
-            // "prompt" ou état inconnu : fallback sur getCurrentPosition.
-            resolve(checkPosition(nav, timeout, maximumAge));
-          }
-        })
-        .catch(() => {
-          // L'API Permissions a échoué : fallback.
-          resolve(checkPosition(nav, timeout, maximumAge));
-        });
-    } else {
-      // Pas d'API Permissions : fallback sur getCurrentPosition.
-      resolve(checkPosition(nav, timeout, maximumAge));
-    }
-  });
+// Mémoire d'une autorisation déjà constatée (survit aux relances de l'app).
+export function wasLocationGranted() {
+  try {
+    return localStorage.getItem(GRANTED_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
-// Fallback : demande une position réelle pour décider.
-function checkPosition(nav, timeout, maximumAge) {
+export function rememberLocationGranted(granted) {
+  try {
+    if (granted) localStorage.setItem(GRANTED_KEY, "1");
+    else localStorage.removeItem(GRANTED_KEY);
+  } catch {
+    /* stockage indisponible : sans effet */
+  }
+}
+
+// Résultat : "active" | "denied" | "inactive" | "unsupported"
+//  - active      : permission accordée, ou état indéterminé / erreur transitoire.
+//  - denied      : l'utilisateur ou l'OS a explicitement refusé la permission.
+//  - inactive    : service de localisation coupé sur l'appareil (alors qu'une
+//                  autorisation avait été donnée), position indisponible.
+//  - unsupported : aucune API Geolocation.
+export async function probeLocationStatus(nav = getNavigator(), { timeout = 10000, maximumAge = 600000 } = {}) {
+  if (!nav?.geolocation) return "unsupported";
+
+  // 1) API Permissions : seul un « denied » explicite bloque.
+  let permission = null;
+  if (nav.permissions?.query) {
+    try {
+      permission = (await nav.permissions.query({ name: "geolocation" })).state;
+    } catch {
+      permission = null;
+    }
+  }
+  if (permission === "denied") {
+    rememberLocationGranted(false);
+    return "denied";
+  }
+  if (permission === "granted") {
+    // Permission accordée : on n'attend pas de position (le GPS peut être
+    // lent), l'application s'ouvre immédiatement.
+    rememberLocationGranted(true);
+    return "active";
+  }
+
+  // 2) « prompt » / inconnu : une vraie position tranche.
+  return checkPosition(nav, { timeout, maximumAge });
+}
+
+function checkPosition(nav, { timeout, maximumAge }) {
   return new Promise((resolve) => {
     nav.geolocation.getCurrentPosition(
-      () => resolve("active"),
-      (error) => resolve(error?.code === 1 ? "denied" : "inactive"),
+      () => {
+        rememberLocationGranted(true);
+        resolve("active");
+      },
+      (error) => {
+        // 1 = refus explicite de l'utilisateur / de l'OS.
+        if (error?.code === 1) {
+          rememberLocationGranted(false);
+          resolve("denied");
+          return;
+        }
+        // 3 = délai dépassé : le GPS est lent (intérieur, démarrage à froid),
+        // ce n'est PAS une localisation désactivée → on laisse passer.
+        // 2 = position indisponible : ambigu. On ne bloque que si aucune
+        // autorisation n'a jamais été constatée.
+        if (error?.code === 2 && !wasLocationGranted()) {
+          resolve("inactive");
+          return;
+        }
+        resolve("active");
+      },
       { enableHighAccuracy: false, timeout, maximumAge }
     );
   });

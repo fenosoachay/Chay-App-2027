@@ -27,11 +27,14 @@ test("probeLocationStatus resolves 'denied' on PERMISSION_DENIED (code 1)", asyn
   assert.equal(await probeLocationStatus(nav), "denied");
 });
 
-test("probeLocationStatus resolves 'inactive' on POSITION_UNAVAILABLE/TIMEOUT (codes 2/3)", async () => {
+test("probeLocationStatus resolves 'inactive' on POSITION_UNAVAILABLE (code 2) when never granted", async () => {
   const unavailable = makeNav({ getCurrentPosition: (_s, error) => error({ code: 2 }) });
-  const timeout = makeNav({ getCurrentPosition: (_s, error) => error({ code: 3 }) });
   assert.equal(await probeLocationStatus(unavailable), "inactive");
-  assert.equal(await probeLocationStatus(timeout), "inactive");
+});
+
+test("probeLocationStatus never blocks on a TIMEOUT (code 3): slow GPS is not a disabled location", async () => {
+  const timeout = makeNav({ getCurrentPosition: (_s, error) => error({ code: 3 }) });
+  assert.equal(await probeLocationStatus(timeout), "active");
 });
 
 test("subscribeToGeolocationPermission no-ops gracefully without the Permissions API", () => {
@@ -102,7 +105,7 @@ test("probeLocationStatus falls back to getCurrentPosition when Permissions API 
   assert.equal(await probeLocationStatus(nav), "active");
 });
 
-test("probeLocationStatus returns inactive when Permissions returns prompt and getCurrentPosition fails", async () => {
+test("probeLocationStatus returns inactive when Permissions returns prompt and position is unavailable", async () => {
   const statusObj = { state: "prompt" };
   const nav = {
     geolocation: { getCurrentPosition: (_s, error) => error({ code: 2 }) },

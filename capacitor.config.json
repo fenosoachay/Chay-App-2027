@@ -9,21 +9,20 @@
   "preferences": {
     "ShowSplash": false,
     "ShowSplashScreenSpinner": false,
-    "BackgroundColor": "#FDFBF7",
+    "BackgroundColor": "#4A6CFE",
     "HideNavigationBar": true,
     "StatusBarStyle": "light",
-    "SplashMaintainAspectRatio": true,
     "SplashShowDelay": 0
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0,
       "launchAutoHide": true,
+      "launchFadeOutDuration": 0,
       "showSpinner": false,
-      "backgroundColor": "#FDFBF7",
-      "androidScaleType": "CENTER_CROP",
-      "splashFullScreen": true,
-      "splashImmersive": true
+      "backgroundColor": "#4A6CFE",
+      "splashFullScreen": false,
+      "splashImmersive": false
     }
   }
 }

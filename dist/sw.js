@@ -1,4 +1,4 @@
-/* Service worker CHAY — notifications push navigateur.
+/* Service worker CHAY — notifications push + fonctionnement hors ligne.
    Reçoit les pushes envoyés par la fonction backend sendWebPush, les affiche
    en notification système et, au clic, ouvre l'application sur la bonne page.
 
@@ -61,12 +61,17 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-/* ── Fonctionnement hors ligne de la Bible ───────────────────────────────────
-   Les fichiers de données (textes FR/MG + index de concordance) sont
-   préchargés à l'installation puis servis depuis le cache, avec le réseau en
-   renfort uniquement s'ils manquent. Incrémenter DATA_CACHE quand un de ces
-   fichiers change : l'ancien cache est alors supprimé et le nouveau rechargé. */
+/* ── Fonctionnement hors ligne ───────────────────────────────────────────────
+   1. DONNÉES de la Bible (textes FR/MG + index de concordance) : préchargées à
+      l'installation puis servies depuis le cache. Incrémenter DATA_CACHE quand
+      un de ces fichiers change.
+   2. INTERFACE de l'application (page, scripts, styles, polices, images) :
+      mise en cache au fil de l'eau (réseau d'abord, cache en secours) pour que
+      l'application s'ouvre sans connexion.
+   Les appels d'API (données de l'app, authentification, fonctions) ne sont
+   jamais mis en cache ici : seule la Bible/dictionnaire est garantie hors ligne. */
 const DATA_CACHE = "chay-bible-data-v2";
+const SHELL_CACHE = "chay-app-shell-v1";
 const DATA_FILES = [
   "/data/bibles/lsg1910_fr_CORRIGE.json",
   "/data/bibles/malagasy_complete.json",
@@ -78,9 +83,12 @@ self.addEventListener("install", (event) => {
   // Préchargement best-effort : un échec réseau n'empêche pas l'installation
   // (les fichiers seront alors mis en cache à leur première lecture).
   event.waitUntil(
-    caches
-      .open(DATA_CACHE)
-      .then((cache) => Promise.allSettled(DATA_FILES.map((u) => cache.add(u))))
+    Promise.all([
+      caches
+        .open(DATA_CACHE)
+        .then((cache) => Promise.allSettled(DATA_FILES.map((u) => cache.add(u)))),
+      caches.open(SHELL_CACHE).then((cache) => Promise.allSettled([cache.add("/")])),
+    ])
       .catch(() => {})
       .then(() => self.skipWaiting())
   );
@@ -93,7 +101,11 @@ self.addEventListener("activate", (event) =>
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k.startsWith("chay-bible-data-") && k !== DATA_CACHE)
+            .filter(
+              (k) =>
+                (k.startsWith("chay-bible-data-") && k !== DATA_CACHE) ||
+                (k.startsWith("chay-app-shell-") && k !== SHELL_CACHE)
+            )
             .map((k) => caches.delete(k))
         )
       )
@@ -101,17 +113,61 @@ self.addEventListener("activate", (event) =>
   )
 );
 
+// Ressources statiques de l'interface (même origine, ou polices Google).
+function isShellAsset(url, request) {
+  if (url.origin === self.location.origin) {
+    return (
+      request.destination === "script" ||
+      request.destination === "style" ||
+      request.destination === "font" ||
+      request.destination === "image" ||
+      url.pathname.startsWith("/assets/")
+    );
+  }
+  return url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
+}
+
+// Réseau d'abord (toujours la dernière version en ligne), cache en secours.
+async function networkFirst(request, cacheName, fallbackKey) {
+  const cache = await caches.open(cacheName);
+  try {
+    const res = await fetch(request);
+    if (res && (res.ok || res.type === "opaque")) cache.put(fallbackKey || request, res.clone());
+    return res;
+  } catch (e) {
+    const hit = (await cache.match(fallbackKey || request)) || (await cache.match(request));
+    if (hit) return hit;
+    throw e;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (!DATA_FILES.includes(url.pathname)) return;
-  event.respondWith(
-    caches.open(DATA_CACHE).then(async (cache) => {
-      const hit = await cache.match(url.pathname);
-      if (hit) return hit;
-      const res = await fetch(event.request);
-      if (res.ok) cache.put(url.pathname, res.clone());
-      return res;
-    })
-  );
+  const { request } = event;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+
+  // Données de la Bible : cache d'abord.
+  if (url.origin === self.location.origin && DATA_FILES.includes(url.pathname)) {
+    event.respondWith(
+      caches.open(DATA_CACHE).then(async (cache) => {
+        const hit = await cache.match(url.pathname);
+        if (hit) return hit;
+        const res = await fetch(request);
+        if (res.ok) cache.put(url.pathname, res.clone());
+        return res;
+      })
+    );
+    return;
+  }
+
+  // Navigation (ouverture de l'app / d'une page) : sans réseau, on sert la
+  // page d'application mémorisée (l'app est une SPA : "/" suffit pour toutes les routes).
+  if (request.mode === "navigate" && url.origin === self.location.origin) {
+    event.respondWith(networkFirst(request, SHELL_CACHE, "/"));
+    return;
+  }
+
+  if (isShellAsset(url, request)) {
+    event.respondWith(networkFirst(request, SHELL_CACHE));
+  }
 });

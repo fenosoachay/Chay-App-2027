@@ -4,32 +4,48 @@ import { probeLocationStatus, subscribeToGeolocationPermission } from "@/lib/loc
 
 const RECHECK_INTERVAL_MS = 6000;
 
-// Bloque l'accès à l'application tant que la localisation de l'appareil
-// n'est pas activée (service + permission), que l'on soit en ligne ou hors
-// ligne : la vérification repose uniquement sur l'API Geolocation du
-// navigateur/WebView, jamais sur le réseau.
+// Bloque l'accès à l'application uniquement quand la localisation est
+// réellement coupée ou refusée. Le statut de départ est « active » : l'app ne
+// se ferme jamais le temps d'une vérification, et il faut deux sondes
+// négatives consécutives pour afficher l'écran de blocage (évite les faux
+// positifs d'un GPS lent ou d'une sonde isolée).
 export default function LocationGate({ children }) {
-  const [status, setStatus] = useState("active"); // active | checking | denied | inactive | unsupported
+  const [status, setStatus] = useState("active"); // active | denied | inactive | unsupported
+  const [checking, setChecking] = useState(false);
   const timerRef = useRef(null);
+  const negativesRef = useRef(0);
 
-  const check = useCallback(async () => {
+  const check = useCallback(async (manual = false) => {
+    if (manual) setChecking(true);
     const result = await probeLocationStatus();
-    setStatus(result);
+    if (result === "active") {
+      negativesRef.current = 0;
+      setStatus("active");
+    } else {
+      negativesRef.current += 1;
+      // Refus explicite ou manque de support : certain, on bloque tout de suite.
+      // Position indisponible : on exige une seconde confirmation (ou un clic manuel).
+      if (result === "denied" || result === "unsupported" || manual || negativesRef.current >= 2) {
+        setStatus(result);
+      }
+    }
+    if (manual) setChecking(false);
     return result;
   }, []);
 
   useEffect(() => {
     check();
     const unsubscribe = subscribeToGeolocationPermission((state) => {
-      // Si la permission est accordée via l'API Permissions, on met à jour
-      // immédiatement sans attendre la prochaine sonde getCurrentPosition.
       if (state === "granted") {
+        negativesRef.current = 0;
         setStatus("active");
       } else if (state === "denied") {
         setStatus("denied");
       }
     });
-    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       unsubscribe();
@@ -37,11 +53,11 @@ export default function LocationGate({ children }) {
     };
   }, [check]);
 
-  // Re-sonde périodiquement tant que l'accès est bloqué, pour reprendre dès
-  // que l'utilisateur réactive la localisation sans avoir à revenir dans l'app.
+  // Re-sonde tant que l'accès est bloqué, pour reprendre dès que la
+  // localisation est réactivée.
   useEffect(() => {
-    if (status === "active" || status === "checking") return undefined;
-    timerRef.current = setInterval(check, RECHECK_INTERVAL_MS);
+    if (status === "active") return undefined;
+    timerRef.current = setInterval(() => check(), RECHECK_INTERVAL_MS);
     return () => clearInterval(timerRef.current);
   }, [status, check]);
 
@@ -59,14 +75,13 @@ export default function LocationGate({ children }) {
         <MapPinOff className="h-10 w-10 text-destructive" />
       </div>
       <h1 className="text-lg font-bold text-foreground">Localisation requise</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        {messages[status] || messages.inactive}
-      </p>
+      <p className="max-w-sm text-sm text-muted-foreground">{messages[status] || messages.inactive}</p>
       <button
-        onClick={check}
-        className="inline-flex items-center gap-2 rounded-2xl brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:scale-[1.02]"
+        onClick={() => check(true)}
+        disabled={checking}
+        className="inline-flex items-center gap-2 rounded-2xl brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:scale-[1.02] disabled:opacity-60"
       >
-        <RefreshCw className="h-4 w-4" /> Réessayer
+        <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} /> Réessayer
       </button>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
         <MapPin className="h-3.5 w-3.5" /> Disponible en ligne comme hors connexion

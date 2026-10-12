@@ -6,6 +6,7 @@ import BibleDictionary from "@/components/bible/BibleDictionary";
 import BibleConcordance from "@/components/bible/BibleConcordance";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { VERSIONS } from "@/lib/bibleConstants";
+import useDictionarySubtitle from "@/hooks/useDictionarySubtitle";
 
 // Les trois blocs sont décrits dans l'URL (?view=reader|dictionary|concordance)
 // et non dans un useState : chaque bloc pousse donc une entrée d'historique et
@@ -16,6 +17,7 @@ const VIEWS = ["reader", "dictionary", "concordance"];
 export default function Bible() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const dictionarySubtitle = useDictionarySubtitle();
 
   const viewParam = searchParams.get("view");
   const view = VIEWS.includes(viewParam)
@@ -98,7 +100,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Dictionnaire</h2>
-            <p className="text-[11px] text-muted-foreground">En cours de construction</p>
+            <p className="text-[11px] text-muted-foreground">{dictionarySubtitle}</p>
           </div>
         </button>
 

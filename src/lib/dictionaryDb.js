@@ -94,6 +94,17 @@ function rows(db, sql, params = []) {
   return out;
 }
 
+// Vrai si le fichier du dictionnaire est déjà sur l'appareil.
+export async function isDictionaryDownloaded() {
+  if (!hasCache()) return false;
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    return !!(await cache.match(LOCAL_KEY));
+  } catch {
+    return false;
+  }
+}
+
 // Casse + accents ignorés (« Éden » = « eden »), pour tri, lettres et recherche.
 export function fold(s) {
   return String(s || "")
@@ -134,9 +145,19 @@ export function getWordsByLetter(db, letter) {
   return unique.sort((a, b) => collator.compare(a.mot, b.mot));
 }
 
+// Les titres de la base sont suivis de la mention de la source collée au mot
+// (« GabaonDictionnaire Biblique WestphalBostCalmet ») : on la retire partout.
+export function cleanTitle(titre, mot) {
+  const t = String(titre || "").replace(/Dictionnaire\s*Biblique.*$/i, "").trim();
+  return t || mot;
+}
+
 // Écran 3 : définitions d'un mot (certains mots en ont plusieurs).
 export function getDefinitions(db, mot) {
-  return rows(db, "SELECT titre, contenu FROM definitions WHERE mot = ? ORDER BY id", [mot]);
+  return rows(db, "SELECT titre, contenu FROM definitions WHERE mot = ? ORDER BY id", [mot]).map((d) => ({
+    ...d,
+    titre: cleanTitle(d.titre, mot),
+  }));
 }
 
 // Suggestions : insensibles à la casse ET aux accents (« eze » trouve « Ézéchiel »).

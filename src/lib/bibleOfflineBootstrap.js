@@ -10,6 +10,7 @@
 
 import { loadLocalBibleRaw } from "./localBible.js";
 import { loadConcordance } from "./bibleConcordance.js";
+import { openDictionary } from "./dictionaryDb.js";
 
 const LANGS = ["fr", "mg"];
 let started = false;
@@ -39,5 +40,7 @@ export function startBibleOfflineSetup() {
       await loadLocalBibleRaw(lang).catch(() => {});
       await loadConcordance(lang).catch(() => {});
     }
+    // Dictionnaire Westphal : téléchargé une fois puis conservé sur l'appareil.
+    await openDictionary().catch(() => {});
   });
 }
