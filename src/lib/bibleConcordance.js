@@ -107,22 +107,15 @@ export async function loadConcordance(lang) {
 // préservés. La recherche doit donc être cohérente des deux côtés : une
 // saisie sans accent atteint la clé accentuée de l'index, et réciproquement.
 //
-// Classe d'équivalence (français uniquement — en malgasy, les accents sont
-// distinctifs et aucune tolérance n'est appliquée) : chaque forme — saisie ou
-// clé d'index — est réduite à un squelette où toute voyelle latine, accentuée
-// ou non (quel que soit le type d'accent : aigu, grave, circonflexe, tréma),
-// est remplacée par un joker commun « * », tandis que les consonnes restent
-// en place. Deux mots se correspondent dès qu'ils partagent une forme
-// commune :
-//   « crea » ↔ « créa »  → tous deux « cr** » ;
-//   « grâce » ↔ « grace » → « gr*c* » ;
-//   « aima » ↔ « aimé »  → « *-* » … attention : seuls les mots de même
-//   longueur et mêmes consonnes se rejoignent — « ami » (« **m* »… soit
-//   « *m* ») ne correspond jamais à « aimé » (* m * vs * * m * : longueurs
-//   différentes). Les consonnes ne changent pas, donc pas de faux positifs
-//   entre mots distincts.
-// Le texte biblique affiché et les références restent intacts : cette
-// normalisation ne sert qu'à la comparaison.
+// Équivalence (français uniquement — en malgache, les accents sont
+// distinctifs et aucune tolérance n'est appliquée) : une saisie et une clé
+// d'index se correspondent si elles sont identiques, ou identiques une fois
+// les accents retirés :
+//   « crea » ↔ « créa », « grace » ↔ « grâce », « aime » ↔ « aimé ».
+// Les lettres, elles, doivent être exactement les mêmes : « a » ne trouve pas
+// « as », « ai » ni « avait » (mots entiers uniquement), et « cea » ne trouve
+// pas « créa ». Le texte biblique affiché et les références restent intacts :
+// cette normalisation ne sert qu'à la comparaison.
 
 // Insensible à la casse + normalisation Unicode (NFC).
 const basicNormalize = (s) => String(s || "").normalize("NFC").toLowerCase();
@@ -137,23 +130,22 @@ const canonicalKey = (word) => basicNormalize(word).trim();
 const stripDiacritics = (s) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").normalize("NFC");
 
-const VOWELS = new Set(["a", "e", "i", "o", "u", "y"]);
-
-// Squelette d'équivalence : voyelles (accentuées ou non) → « * », consonnes
-// conservées. Ex. : « Créa » → « cr** », « grâce » → « gr*c* ».
-const structuralSignature = (word) => {
-  const plain = stripDiacritics(basicNormalize(word));
-  let sig = "";
-  for (const ch of plain) sig += VOWELS.has(ch) ? "*" : ch;
-  return sig;
-};
+// Forme « sans accents » d'un mot : mêmes lettres, accents ignorés
+// (« grâce » → « grace », « créa » → « crea »). Deux mots ne se correspondent
+// que s'ils ont exactement les mêmes lettres : « a » ne correspond donc ni à
+// « as » ni à « ai », et seulement à « à » (même lettre, accent ignoré).
+const accentFolded = (word) => stripDiacritics(basicNormalize(word));
 
 // Formes de comparaison d'une saisie (API publique du module) :
-// [clé canonique, squelette] en français ; [clé canonique] en malgasy.
+// [clé canonique, forme sans accents] en français ; [clé canonique] en
+// malgache (les accents y sont distinctifs).
 export function wordToIndexKeys(word, lang) {
   const w = canonicalKey(word);
   if (!w) return [];
-  if (lang === "fr") return [w, structuralSignature(w)];
+  if (lang === "fr") {
+    const folded = accentFolded(w);
+    return folded === w ? [w] : [w, folded];
+  }
   return [w];
 }
 
@@ -254,10 +246,7 @@ export function lookupPhrase(indexData, phrase, { offset = 0, limit = 50 } = {})
   for (const i of candidates) {
     const toks = indexData.verses[i][3].match(WORD_RE) || [];
     const forms = new Set();
-    for (const t of toks) {
-      forms.add(canonicalKey(t));
-      if (lang === "fr") forms.add(structuralSignature(t));
-    }
+    for (const t of toks) for (const f of wordToIndexKeys(t, lang)) forms.add(f);
     if (accepted.every((set) => [...set].some((f) => forms.has(f)))) matches.push(i);
   }
   const safeOffset = Math.max(Number(offset) || 0, 0);

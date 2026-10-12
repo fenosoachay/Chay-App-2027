@@ -95,7 +95,9 @@ export function normalizeLocalBooks(raw) {
       order: i + 1,
       numberOfChapters: Array.isArray(b.chapters) ? b.chapters.length : 0,
     }))
-    .filter((b) => b.id && b.name && b.numberOfChapters > 0);
+    // Un livre vide dans le fichier source reste listé (numberOfChapters = 0)
+    // pour que l'absence de texte soit signalée, jamais masquée.
+    .filter((b) => b.id && b.name);
 }
 
 // Versets d'un chapitre : [{ number, text }] — texte original préservé.

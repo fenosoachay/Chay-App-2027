@@ -1,0 +1,43 @@
+// Mise en place automatique du fonctionnement hors ligne de la Bible.
+//
+// Aucune action de l'utilisateur n'est nécessaire : au premier lancement avec
+// connexion, l'application charge (en tâche de fond, sans bloquer l'interface)
+// les deux textes bibliques et les deux index de concordance, qui sont alors
+// persistés sur l'appareil par `localBible` / `bibleConcordance`
+// (Cache Storage puis IndexedDB) et par le service worker (public/sw.js).
+// Aux lancements suivants les données sont relues localement : plus aucun
+// téléchargement ni traitement coûteux.
+
+import { loadLocalBibleRaw } from "./localBible.js";
+import { loadConcordance } from "./bibleConcordance.js";
+
+const LANGS = ["fr", "mg"];
+let started = false;
+
+// Enregistre le service worker qui précharge les fichiers de données.
+function registerOfflineWorker() {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+}
+
+function whenIdle(fn) {
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    window.requestIdleCallback(fn, { timeout: 4000 });
+  } else {
+    setTimeout(fn, 1500);
+  }
+}
+
+// Idempotent : peut être appelé plusieurs fois sans effet supplémentaire.
+export function startBibleOfflineSetup() {
+  if (started || typeof window === "undefined") return;
+  started = true;
+  registerOfflineWorker();
+  whenIdle(async () => {
+    for (const lang of LANGS) {
+      // Séquentiel pour ne pas saturer le fil principal ni le réseau.
+      await loadLocalBibleRaw(lang).catch(() => {});
+      await loadConcordance(lang).catch(() => {});
+    }
+  });
+}

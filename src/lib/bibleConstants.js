@@ -13,38 +13,25 @@ export const LANGUAGES = [
   { id: "mg", label: "MG" },
 ];
 
+// Textes bibliques : toujours lus depuis les fichiers locaux
+// (public/data/bibles, voir src/lib/localBible.js). L'`id` est l'identifiant
+// de traduction stocké avec les annotations (surlignages / notes) : il reste
+// inchangé pour conserver celles déjà enregistrées.
 export const VERSIONS = {
   fr: [
     {
       id: "fra_lsg",
+      lang: "fr",
       label: "Louis Segond 1910 (LSG)",
-      available: true,
-      engine: "helloao",
-      audio: { supported: true, source: "wordproject" },
-      source: "helloao (fra_lsg) + audio WordProject",
-      licenseUrl: "https://www.wordproject.org/contact/new/disclaim.htm",
-      attribution: "Texte Louis Segond 1910 (domaine public) · Audio WordProject.org.",
+      attribution: "Texte Louis Segond 1910 (domaine public).",
     },
   ],
-mg: [
-  {
-    id: "mg",
-    label: "Bible Malgache (Baiboly Masina)",
-    available: true,            // ← OBLIGATOIREMENT true, sinon "source non configurée"
-    engine: "antonionavira",    // ← on revient à ta source d'origine
-    audio: { supported: false, configured: false },
-    source: "baiboly.antonionavira.mg",
-    licenseUrl: "https://baiboly.antonionavira.mg/",
-    attribution: "Baiboly Malagasy 1865.",
-  },
-],
+  mg: [
+    {
+      id: "mg",
+      lang: "mg",
+      label: "Bible Malgache (Baiboly Masina)",
+      attribution: "Baiboly Malagasy 1865.",
+    },
+  ],
 };
-
-// Identifiant de traduction utilisé par l'entité BibleVerse / le backend de
-// recherche ("lsg1910" / "malagasy"), différent de l'id du lecteur en ligne
-// ("fra_lsg" / "mg"). Centralise la correspondance pour que le cache
-// hors-ligne (alimenté au fil de l'eau par le lecteur, et en masse par le
-// téléchargement complet) utilise toujours la même clé.
-export function toOfflineTranslationId(readerVersionId) {
-  return readerVersionId === "mg" ? "malagasy" : "lsg1910";
-}

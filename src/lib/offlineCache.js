@@ -1,7 +1,7 @@
-// Couche générique de cache hors-ligne basée sur la Cache Storage API (déjà
-// disponible dans l'app via le service worker de notifications). Utilisée
-// pour persister le contenu biblique (versets, dictionnaire, audio) afin
-// qu'il reste disponible sans réseau.
+// Couche générique de cache hors-ligne basée sur la Cache Storage API.
+// Utilisée par localBible / bibleConcordance pour persister les textes
+// bibliques et les index de concordance afin qu'ils restent disponibles sans
+// réseau.
 //
 // Deux familles d'aides :
 //  - *Json : stocke/relit des objets JSON arbitraires sous une clé logique.
