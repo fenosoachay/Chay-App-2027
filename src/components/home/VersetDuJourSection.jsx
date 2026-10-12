@@ -310,16 +310,16 @@ export default function VersetDuJourSection({ refreshKey = 0 }) {
             </div>
           ) : devotional ? (
             <>
-              <p className="selectable mt-3 text-sm md:text-base font-light leading-snug [font-family:'Montserrat',sans-serif]">
+              <p className="selectable mt-3 text-sm md:text-base font-light leading-snug font-body">
                 « {devotional.verse_text || devotional.title} »
               </p>
-              <p className="mt-1.5 text-xs font-medium text-white/75 [font-family:'Montserrat',sans-serif]">
+              <p className="mt-1.5 text-xs font-medium text-white/75 font-body">
                 — {devotional.scripture_reference}
               </p>
               {/* Rappel admin : la carte montre un verset antérieur faute
                   d'entrée pour aujourd'hui. */}
               {isAdmin && !todayDev && isISODate(devotional.reading_date) && (
-                <p className="mt-1 text-xs text-white/70 [font-family:'Montserrat',sans-serif]">
+                <p className="mt-1 text-xs text-white/70 font-body">
                   Aucun verset programmé pour aujourd'hui — dernier publié le{" "}
                   {formatISODate(devotional.reading_date, { long: true })}.
                 </p>
@@ -332,7 +332,7 @@ export default function VersetDuJourSection({ refreshKey = 0 }) {
               </Link>
             </>
           ) : (
-            <p className="selectable mt-3 text-sm md:text-base font-light leading-snug [font-family:'Montserrat',sans-serif]">
+            <p className="selectable mt-3 text-sm md:text-base font-light leading-snug font-body">
               « Je puis tout par celui qui me fortifie. » — Philippiens 4:13
             </p>
           )}

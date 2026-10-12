@@ -15,6 +15,11 @@
   font-display: swap;
   src: url(/fonts/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2) format('woff2');
 }
+/* Gilroy : police de toute l'application (embarquée, fonctionne hors ligne). */
+@font-face { font-family: 'Gilroy'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/gilroy-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: italic; font-weight: 400; font-display: swap; src: url(/fonts/gilroy-400-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/gilroy-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: italic; font-weight: 500 900; font-display: swap; src: url(/fonts/gilroy-700-italic.woff2) format('woff2'); }
 @font-face {
   font-family: 'Montserrat';
   font-style: normal;

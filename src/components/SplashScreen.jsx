@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 // Écran d'affichage au lancement : nom de l'église, sigle et devise malgache.
 // Pas de logo — le texte seul, en Montserrat Bold.
-const MONTBOLD = "'Montserrat', 'Helvetica Neue', sans-serif";
+const MONTBOLD = "'Gilroy', 'Helvetica Neue', sans-serif";
 
 export default function SplashScreen() {
   return (
@@ -65,7 +65,7 @@ export default function SplashScreen() {
         <motion.p
           className="mt-2 text-sm md:text-base text-white/90 italic leading-relaxed max-w-xs mx-auto"
           style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
+            fontFamily: "'Gilroy', 'Helvetica Neue', sans-serif",
             fontWeight: 400,
             letterSpacing: "0.02em",
             textShadow: "0 2px 8px rgba(0,0,0,0.3)", // Ombre douce pour lisibilité

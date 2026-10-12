@@ -41,7 +41,7 @@ export default function Home() {
         </section>
 
         {/* Texte d'accueil malgache */}
-        <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl [font-family:'Gilroy',_sans-serif] animate-float-in" style={{ animationDelay: "0.05s" }}>
+        <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
           Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
         </p>
 
