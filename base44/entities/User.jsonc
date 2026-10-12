@@ -112,6 +112,11 @@
       "additionalProperties": true,
       "description": "Pr\u00e9f\u00e9rences de l'utilisateur (affichage, notifications, confidentialit\u00e9) \u2014 persist\u00e9es sur le compte."
     },
+    "youtube_prefs": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Pr\u00e9f\u00e9rences YouTube : ordre des playlists, cadenas et mode al\u00e9atoire par cat\u00e9gorie."
+    },
     "in_app_messages": {
       "type": "boolean",
       "default": true,

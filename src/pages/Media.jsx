@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { filterVisible } from "@/lib/mediaConstants";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { Loader2 } from "lucide-react";
+import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
 
 export default function Media() {
   const { toast } = useToast();
@@ -49,7 +50,7 @@ export default function Media() {
       base44.entities.Sermon.list("-date", 30).catch(() => []),
       base44.entities.Video.list("-created_date", 30).catch(() => []),
       base44.entities.Article.list("-created_date", 20).catch(() => []),
-      base44.entities.YouTubeVideo.list("-created_date").catch(() => []),
+      loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
       base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
       base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
       base44.entities.Playlist.list("-created_date", 50).catch(() => []),

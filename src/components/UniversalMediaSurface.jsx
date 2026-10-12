@@ -3,6 +3,10 @@ import { motion } from "framer-motion";
 import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { useKeepAwake } from "@/hooks/useKeepAwake";
+import { useNetwork } from "@/lib/NetworkContext";
+import PlayerQueueList from "@/components/player/PlayerQueueList";
+import OfflinePlayerNotice from "@/components/player/OfflinePlayerNotice";
 import {
   buildYouTubeEmbedUrl,
   YOUTUBE_ORIGIN,
@@ -198,8 +202,18 @@ export default function UniversalMediaSurface() {
   const isVideo = control?.type === "video";
   const isYouTube = control?.type === "youtube";
   const isRadio = control?.type === "radio";
-  const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube));
+  const { isOnline } = useNetwork();
+  const [retryTick, setRetryTick] = useState(0);
+  const blockedOffline = Boolean(isYouTube && !isOnline);
+  const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
+  // Écran gardé allumé tant qu'une vidéo YouTube joue en ligne ; coupé à la pause/fermeture.
+  useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
+
+  // Retour du réseau : on relance la vidéo bloquée.
+  useEffect(() => {
+    if (isOnline && isYouTube && control?.source) playYouTube(control.source);
+  }, [isOnline, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <motion.div
@@ -230,6 +244,10 @@ export default function UniversalMediaSurface() {
             <X className="h-5 w-5" />
           </button>
         </div>
+      )}
+
+      {blockedOffline && (
+        <OfflinePlayerNotice onRetry={() => setRetryTick((t) => t + 1)} />
       )}
 
       {control && !isVideo && !isYouTube && (
@@ -319,6 +337,7 @@ export default function UniversalMediaSurface() {
 
       {control && (
         <>
+          {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
           <div className="flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             {control.previous && (
               <button type="button" onClick={control.previous} aria-label="Précédent" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><SkipBack /></button>
