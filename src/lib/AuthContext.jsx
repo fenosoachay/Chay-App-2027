@@ -39,6 +39,16 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
   };
 
+  // Retour d'une connexion volontaire : on valide la session sans second clic.
+  useEffect(() => {
+    let justLoggedIn = false;
+    try {
+      justLoggedIn = sessionStorage.getItem('chay_just_logged_in') === '1';
+      sessionStorage.removeItem('chay_just_logged_in');
+    } catch { /* stockage indisponible */ }
+    if (justLoggedIn && appParams.token && navigator.onLine) checkAppState();
+  }, []);
+
   useEffect(() => {
     window.addEventListener('offline', enterLocalMode);
     return () => window.removeEventListener('offline', enterLocalMode);

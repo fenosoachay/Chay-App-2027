@@ -18,7 +18,10 @@ export default function LocalLayout() {
     setMessage('Si le serveur est indisponible, la lecture locale reste accessible.');
   };
   return <div className="min-h-screen bg-background text-foreground">
-    <header className="sticky top-0 z-30 border-b border-border bg-background p-3 sm:p-4">
+    <header
+      className="sticky top-0 z-30 border-b border-border bg-background px-3 pb-3 sm:px-4 sm:pb-4"
+      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+    >
       <div className="mx-auto max-w-6xl flex flex-nowrap items-center gap-2 sm:gap-4">
         <Link to="/" className="flex items-center gap-2 font-heading font-bold">
           <BrandLogo className="h-10 w-10" />

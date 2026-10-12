@@ -43,6 +43,8 @@ export default function Login() {
     try {
       await base44.auth.loginViaEmailPassword(email.trim(), password);
       saveLocalSession(await base44.auth.me());
+      // Au retour sur l'accueil, la session est validée automatiquement (un seul clic).
+      try { sessionStorage.setItem("chay_just_logged_in", "1"); } catch { /* ignoré */ }
       setBtnState("success");
       setTimeout(() => {
         window.location.href = returnTo;

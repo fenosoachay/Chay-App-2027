@@ -18,7 +18,7 @@ export default function Home() {
 
   return (
     <PullToRefresh mode="window" onRefresh={loadHome}>
-      <div className="mx-auto max-w-6xl px-6 md:px-8 py-8 md:py-12">
+      <div className="mx-auto max-w-6xl px-6 md:px-8 py-4 md:py-12">
         
         {/* Welcome Header */}
         <section className="animate-float-in flex items-center justify-center gap-4 text-center">
@@ -27,7 +27,7 @@ export default function Home() {
               <span className="brand-gradient-text">ÉGLISE CHAY</span>
             </h1>
             <p className="mt-1 text-lg md:text-2xl font-display font-bold text-foreground/80">
-              Shalom
+              {isLocalMode || !user?.first_name ? "Shalom" : `Shalom ${user.first_name}`}
             </p>
           </div>
         </section>
