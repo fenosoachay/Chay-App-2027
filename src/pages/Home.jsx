@@ -6,12 +6,13 @@ import PullToRefresh from "@/components/PullToRefresh";
 import SplitClock from "@/components/home/SplitClock";
 import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
 import QuickAccess from "@/components/home/QuickAccess";
+import LocalBibleAccess from "@/components/home/LocalBibleAccess";
 // import NewContentsSection from "@/components/home/NewContentsSection"; // Supprimé si vous voulez garder la suppression des nouveautés
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, isLocalMode } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadHome = () => setRefreshKey((k) => k + 1);
@@ -40,7 +41,7 @@ export default function Home() {
         </section>
 
         {/* Texte d'accueil malgache */}
-        <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl [font-family:'Gilroy',_sans-serif] animate-float-in" style={{ animationDelay: "0.05s" }}>
+        <p className="mt-3 text-sm md:text-xl text-foreground/60 max-w-xl font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
           Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
         </p>
 
@@ -51,22 +52,22 @@ export default function Home() {
 
         {/* Horloge divisée */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
-          <SplitClock />
+          {!isLocalMode && <SplitClock />}
         </div>
 
         {/* Question Logique */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.2s" }}>
-          <QuestionLogiqueSection refreshKey={refreshKey} />
+          {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
         </div>
 
         {/* Prochaine réunion */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.25s" }}>
-          <ProchaineReunionSection refreshKey={refreshKey} />
+          {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
         </div>
 
         {/* Accès rapide */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.3s" }}>
-          <QuickAccess />
+          {isLocalMode ? <LocalBibleAccess /> : <QuickAccess />}
         </div>
 
         {/* Nouveautés - Commenté ou supprimé selon votre préférence précédente */}

@@ -70,7 +70,7 @@ function loadLocal() {
 const PreferencesContext = createContext(null);
 
 export function PreferencesProvider({ children }) {
-  const { user } = useAuth();
+  const { user, isLocalMode } = useAuth();
   const { setTheme } = useTheme();
   const [prefs, setPrefs] = useState(() => {
     const ls = loadLocal();
@@ -125,7 +125,7 @@ export function PreferencesProvider({ children }) {
 
   const persistToAccount = useCallback(
     (next, previous) => {
-      if (!user) return;
+      if (!user || isLocalMode) return;
       setSaving(true);
       base44.auth
         .updateMe({ settings: next })
@@ -149,7 +149,7 @@ export function PreferencesProvider({ children }) {
           });
         });
     },
-    [user]
+    [user, isLocalMode]
   );
 
   const setPref = useCallback(

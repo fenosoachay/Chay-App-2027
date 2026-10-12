@@ -35,9 +35,9 @@ const PLANNING_LIMIT = 2000;
 // L'affichage est automatique : le jour J, c'est l'entrée datée de J qui
 // apparaît, sans intervention.
 export default function VersetDuJourSection({ refreshKey = 0 }) {
-  const { user } = useAuth();
+  const { user, isLocalMode } = useAuth();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = !isLocalMode && user?.role === "admin";
   const [devotional, setDevotional] = useState(null); // verset affiché
   const [todayDev, setTodayDev] = useState(null); // verset daté d'aujourd'hui
   const [all, setAll] = useState([]); // entrées récentes, pour le planning
@@ -115,8 +115,9 @@ export default function VersetDuJourSection({ refreshKey = 0 }) {
   };
 
   useEffect(() => {
+    if (isLocalMode) { setLoading(false); return; }
     load();
-  }, [refreshKey]);
+  }, [refreshKey, isLocalMode]);
 
   const openEdit = () => {
     // On repart du verset affiché mais on cible AUJOURD'HUI : enregistrer

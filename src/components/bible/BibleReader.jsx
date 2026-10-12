@@ -28,7 +28,7 @@ const langOfVersion = (versionId) => ALL_VERSIONS.find((v) => v.id === versionId
 
 export default function BibleReader({ onBack }) {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLocalMode } = useAuth();
   const didInitRef = useRef(false);
   // Langue et version initiales : ?translation=… (lien depuis la concordance).
   const initialVersion = (() => {
@@ -147,9 +147,9 @@ export default function BibleReader({ onBack }) {
   }, [booksStatus, lang, selectedVersion, selectedBookId, selectedChapter, selectedBook]);
 
   useEffect(() => {
-    if (chapterStatus !== "ready" || !user?.id) return;
+    if (isLocalMode || chapterStatus !== "ready" || !user?.id) return;
     base44.auth.updateMe({ bible_last_book: selectedBookId, bible_last_chapter: selectedChapter }).catch(() => {});
-  }, [chapterStatus, selectedBookId, selectedChapter, user?.id]);
+  }, [chapterStatus, selectedBookId, selectedChapter, user?.id, isLocalMode]);
 
   // Surligne temporairement le verset ciblé après navigation depuis la recherche.
   useEffect(() => {
@@ -164,6 +164,7 @@ export default function BibleReader({ onBack }) {
   }, [chapterStatus, pendingVerse]);
 
   const loadAnnotations = async () => {
+    if (isLocalMode || !user?.id) { setAnnotations({}); return; }
     if (!selectedVersion || !selectedBookId || !selectedChapter) return;
     const anns = await base44.entities.BibleAnnotation.filter(
       { translation_id: selectedVersion, book_id: selectedBookId, chapter: selectedChapter },
@@ -186,6 +187,7 @@ export default function BibleReader({ onBack }) {
   };
 
   const upsertMany = async (data) => {
+    if (isLocalMode || !user?.id) { toast({ title: 'Connexion requise' }); return; }
     if (selectedVerses.length === 0) return;
     try {
       await Promise.all(selectedVerses.map(async (v) => {
@@ -398,14 +400,14 @@ export default function BibleReader({ onBack }) {
       {selected.length > 0 && (
         <div className="fixed left-0 right-0 z-30 px-4 bottom-[88px] md:bottom-6">
           <div className="mx-auto max-w-sm flex items-center justify-center gap-2 rounded-[1.5rem] border border-border bg-background/95 backdrop-blur-xl shadow-lg px-3 py-2.5">
-            <button onClick={() => setSheetOpen(true)} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl brand-gradient text-white shadow-sm hover:scale-105 transition">
-              <Highlighter className="h-5 w-5" /><span className="text-[11px] font-bold">Surligner</span>
+            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl brand-gradient text-white shadow-sm hover:scale-105 transition">
+              <Highlighter className="h-5 w-5" /><span className="text-[11px] font-bold">{isLocalMode ? 'Connexion requise' : 'Surligner'}</span>
             </button>
             <button onClick={copySelected} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
               <Copy className="h-5 w-5 text-primary" /><span className="text-[11px] font-bold">Copier</span>
             </button>
-            <button onClick={() => setSheetOpen(true)} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
-              <StickyNote className="h-5 w-5 text-primary" /><span className="text-[11px] font-bold">Notes</span>
+            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
+              <StickyNote className="h-5 w-5 text-primary" /><span className="text-[11px] font-bold">{isLocalMode ? 'Connexion requise' : 'Notes'}</span>
             </button>
             <button onClick={() => setSelected([])} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
               <X className="h-5 w-5 text-foreground/60" /><span className="text-[11px] font-bold">Annuler</span>

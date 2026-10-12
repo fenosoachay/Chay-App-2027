@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { saveLocalSession } from '@/lib/localSession';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, AlertCircle } from "lucide-react";
@@ -41,6 +42,7 @@ export default function Login() {
     setBtnState("loading");
     try {
       await base44.auth.loginViaEmailPassword(email.trim(), password);
+      saveLocalSession(await base44.auth.me());
       setBtnState("success");
       setTimeout(() => {
         window.location.href = returnTo;

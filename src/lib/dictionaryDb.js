@@ -62,6 +62,7 @@ async function readBundledFile() {
 async function downloadFile(onProgress) {
   const bundled = await readBundledFile();
   if (bundled) return bundled;
+  if (!navigator.onLine) throw new Error('Le dictionnaire embarqué est indisponible.');
   const res = await fetch(DICTIONARY_DB_URL);
   if (!res.ok) throw new Error("Téléchargement impossible. Vérifiez votre connexion.");
   const total = Number(res.headers.get("content-length")) || 0;

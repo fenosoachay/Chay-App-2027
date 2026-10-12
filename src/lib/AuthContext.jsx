@@ -1,12 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
+import { readLocalSession, saveLocalSession, clearLocalSession } from '@/lib/localSession';
 
 const AuthContext = createContext();
 
-// Délai maximum d'un appel réseau au démarrage : sans lui, un appel qui ne
-// répond jamais (mode avion, réseau instable) laisserait l'écran de chargement
-// indéfiniment.
+// Délai réservé aux connexions volontaires. Aucun appel réseau au démarrage.
 const STARTUP_TIMEOUT_MS = 6000;
 const withTimeout = (promise, ms = STARTUP_TIMEOUT_MS) =>
   Promise.race([
@@ -19,19 +18,34 @@ const isNetworkFailure = (error) =>
   !error?.status || error.status >= 500;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => readLocalSession(appParams.token));
+  const [isLocalMode, setIsLocalMode] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [authChecked, setAuthChecked] = useState(true);
+  const [appPublicSettings, setAppPublicSettings] = useState(null);
+
+  // Aucun appel serveur au montage, même lorsque navigator.onLine vaut true.
+  // La connexion est une action volontaire ; un profil mémorisé reste local.
+  const enterLocalMode = () => {
+    setUser(readLocalSession(appParams.token));
+    setIsLocalMode(true);
+    setIsAuthenticated(false);
+    setAuthError(null);
+    setAuthChecked(true);
+    setIsLoadingPublicSettings(false);
+    setIsLoadingAuth(false);
+  };
 
   useEffect(() => {
-    checkAppState();
+    window.addEventListener('offline', enterLocalMode);
+    return () => window.removeEventListener('offline', enterLocalMode);
   }, []);
 
   const checkAppState = async () => {
+    if (!navigator.onLine) { enterLocalMode(); return; }
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -55,11 +69,8 @@ export const AuthProvider = ({ children }) => {
         // Réseau absent / trop lent : si l'utilisateur s'est déjà connecté sur
         // cet appareil (jeton enregistré), on ouvre l'application en mode hors
         // ligne (Bible, dictionnaire, concordance sont embarqués).
-        if (isNetworkFailure(appError) && appParams.token) {
-          setIsAuthenticated(true);
-          setAuthChecked(true);
-          setIsLoadingPublicSettings(false);
-          setIsLoadingAuth(false);
+        if (isNetworkFailure(appError)) {
+          enterLocalMode();
           return;
         }
         
@@ -103,11 +114,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
+    if (!navigator.onLine) { enterLocalMode(); return; }
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await withTimeout(base44.auth.me());
+      saveLocalSession(currentUser);
       setUser(currentUser);
+      setIsLocalMode(false);
+      setAuthError(null);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
@@ -116,8 +131,8 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
       // Hors ligne avec un jeton enregistré : on reste « connecté » localement.
-      if (isNetworkFailure(error) && appParams.token) {
-        setIsAuthenticated(true);
+      if (isNetworkFailure(error)) {
+        enterLocalMode();
         return;
       }
       setIsAuthenticated(false);
@@ -133,6 +148,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
+    clearLocalSession();
+    setIsLocalMode(true);
     setUser(null);
     setIsAuthenticated(false);
     
@@ -153,6 +170,8 @@ export const AuthProvider = ({ children }) => {
   const deleteAccount = async () => {
     if (!user?.id) throw new Error('Aucun utilisateur connecté');
     await base44.entities.User.delete(user.id);
+    clearLocalSession();
+    setIsLocalMode(true);
     setUser(null);
     setIsAuthenticated(false);
     base44.auth.logout(window.location.origin + '/login');
@@ -161,7 +180,9 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ 
       user, 
-      isAuthenticated, 
+      isAuthenticated,
+      isLocalMode,
+      isGuest: isLocalMode && !user,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,

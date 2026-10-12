@@ -13,6 +13,7 @@ const isNative = Capacitor.isNativePlatform();
 export const base44 = createClient({
   appId,
   token,
+  analytics: { enabled: false },
   functionsVersion,
   serverUrl: isNative ? REMOTE_APP_URL : '',
   appBaseUrl: isNative ? REMOTE_APP_URL : appBaseUrl

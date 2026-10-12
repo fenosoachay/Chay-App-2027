@@ -29,6 +29,7 @@ function registerOfflineWorker() {
       .catch(() => {});
     return;
   }
+  if (!navigator.onLine) return;
   navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
 }
 

@@ -13,6 +13,8 @@ import { PreferencesProvider } from '@/lib/PreferencesContext';
 import { Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import LocationGate from '@/components/LocationGate';
+import LocalLayout from '@/components/LocalLayout';
+import LocalAccessNotice from '@/components/LocalAccessNotice';
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
@@ -38,7 +40,21 @@ import { RadioPlayerProvider } from '@/lib/RadioContext';
 import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+  const { isLocalMode, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+
+  if (isLocalMode) {
+    return <Suspense fallback={<AppLoader />}><Routes>
+      <Route path="/login" element={navigator.onLine ? <Login /> : <Navigate to="/" replace />} />
+      <Route path="/register" element={navigator.onLine ? <Register /> : <Navigate to="/" replace />} />
+      <Route path="/forgot-password" element={navigator.onLine ? <ForgotPassword /> : <Navigate to="/" replace />} />
+      <Route path="/reset-password" element={navigator.onLine ? <ResetPassword /> : <Navigate to="/" replace />} />
+      <Route element={<LocalLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/bible" element={<Bible />} />
+        <Route path="*" element={<LocalAccessNotice />} />
+      </Route>
+    </Routes></Suspense>;
+  }
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     const offline = typeof navigator !== "undefined" && !navigator.onLine;
