@@ -66,7 +66,7 @@ export function AudioPlayerProvider({ children }) {
   useEffect(() => {
     const onOtherPlay = (e) => {
       const el = e.target;
-      if (!el || el === audioRef.current) return;
+      if (!el || el === audioRef.current || el.dataset?.chayAnchor) return;
       if (el.tagName === "AUDIO" || el.tagName === "VIDEO") {
         const a = audioRef.current;
         if (a && !a.paused) a.pause();

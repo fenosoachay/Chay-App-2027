@@ -239,7 +239,7 @@ export function RadioPlayerProvider({ children }) {
     // Interrupteur : toute autre lecture (musique ou vidéo) arrête la radio.
     const onAnyMediaPlay = (e) => {
       const el = e.target;
-      if (!el || el === audioRef.current) return;
+      if (!el || el === audioRef.current || el.dataset?.chayAnchor) return;
       if (el.tagName === "AUDIO" || el.tagName === "VIDEO") stop();
     };
     document.addEventListener("play", onAnyMediaPlay, true);
