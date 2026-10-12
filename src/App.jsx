@@ -41,6 +41,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { RadioPlayerProvider } from '@/lib/RadioContext';
 import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen';
+import { CapacitorBackHandler } from './components/CapacitorBackHandler';
 
 const AuthenticatedApp = () => {
   const { isLocalMode, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
@@ -140,6 +141,7 @@ function App() {
         <AudioPlayerProvider>
           <RadioPlayerProvider>
           <Router>
+            <CapacitorBackHandler />
             <OfflineBanner />
             <ScrollToTop />
             <ErrorBoundary>

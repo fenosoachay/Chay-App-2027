@@ -71,23 +71,6 @@ export default function Layout() {
       navigate(getBackFallback(location.pathname, location.search), { replace: true });
     }
   };
-  const goBackRef = useRef(goBack);
-  goBackRef.current = goBack;
-
-  useEffect(() => {
-    let listener;
-    let cancelled = false;
-    CapacitorApp.addListener("backButton", () => goBackRef.current(true)).then((handle) => {
-      if (cancelled) handle.remove();
-      else listener = handle;
-    }).catch((error) => {
-      console.warn("[Layout] Unable to register native back-button handler.", error);
-    });
-    return () => {
-      cancelled = true;
-      listener?.remove();
-    };
-  }, []);
 
   // Push navigateur : (ré)abonne silencieusement si la permission est déjà
   // accordée ; désabonne cet appareil à la déconnexion (comme le token FCM).
