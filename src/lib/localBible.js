@@ -28,7 +28,7 @@ export const LOCAL_BIBLES = {
   mg: { file: "malagasy_complete.json", label: "Baiboly Malagasy 1865" },
 };
 
-const FETCH_CACHE_KEY = "bible-local-json-v1"; // versionné : invalide tout au rechargement
+const FETCH_CACHE_KEY = "bible-local-json-v2"; // versionné : invalide tout au rechargement
 const IDB_NAME = "chay-bible-local";
 const IDB_STORE = "json";
 

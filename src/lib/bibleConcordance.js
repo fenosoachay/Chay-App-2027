@@ -20,7 +20,7 @@ const INDEX_URLS = {
   mg: "/data/concordance/concordance-mg.json",
 };
 
-const CACHE_PREFIX = "bible-concordance-v1"; // incrémenter si le format change
+const CACHE_PREFIX = "bible-concordance-v2"; // incrémenter si le format change
 const IDB_NAME = "chay-bible-local";
 const IDB_STORE = "json";
 

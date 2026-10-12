@@ -66,7 +66,7 @@ self.addEventListener("notificationclick", (event) => {
    préchargés à l'installation puis servis depuis le cache, avec le réseau en
    renfort uniquement s'ils manquent. Incrémenter DATA_CACHE quand un de ces
    fichiers change : l'ancien cache est alors supprimé et le nouveau rechargé. */
-const DATA_CACHE = "chay-bible-data-v1";
+const DATA_CACHE = "chay-bible-data-v2";
 const DATA_FILES = [
   "/data/bibles/lsg1910_fr_CORRIGE.json",
   "/data/bibles/malagasy_complete.json",
