@@ -11,6 +11,7 @@
 import { loadLocalBibleRaw } from "./localBible.js";
 import { loadConcordance } from "./bibleConcordance.js";
 import { openDictionary } from "./dictionaryDb.js";
+import { Capacitor } from "@capacitor/core";
 
 const LANGS = ["fr", "mg"];
 let started = false;
@@ -18,6 +19,16 @@ let started = false;
 // Enregistre le service worker qui précharge les fichiers de données.
 function registerOfflineWorker() {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  // Dans l'APK, tous les fichiers sont déjà embarqués : pas de service worker
+  // (il tentait d'abord le réseau pour la page, ce qui ralentit/bloque le
+  // démarrage hors ligne).
+  if (Capacitor.isNativePlatform()) {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    return;
+  }
   navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
 }
 

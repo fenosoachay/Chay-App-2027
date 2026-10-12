@@ -4,6 +4,20 @@ import { appParams } from '@/lib/app-params';
 
 const AuthContext = createContext();
 
+// Délai maximum d'un appel réseau au démarrage : sans lui, un appel qui ne
+// répond jamais (mode avion, réseau instable) laisserait l'écran de chargement
+// indéfiniment.
+const STARTUP_TIMEOUT_MS = 6000;
+const withTimeout = (promise, ms = STARTUP_TIMEOUT_MS) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Délai réseau dépassé')), ms)),
+  ]);
+
+const isNetworkFailure = (error) =>
+  (typeof navigator !== 'undefined' && !navigator.onLine) ||
+  !error?.status || error.status >= 500;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       
       try {
-        const publicSettings = await base44.app.getPublicSettings();
+        const publicSettings = await withTimeout(base44.app.getPublicSettings());
         setAppPublicSettings(publicSettings);
         
         // If we got the app public settings successfully, check if user is authenticated
@@ -37,6 +51,17 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
+
+        // Réseau absent / trop lent : si l'utilisateur s'est déjà connecté sur
+        // cet appareil (jeton enregistré), on ouvre l'application en mode hors
+        // ligne (Bible, dictionnaire, concordance sont embarqués).
+        if (isNetworkFailure(appError) && appParams.token) {
+          setIsAuthenticated(true);
+          setAuthChecked(true);
+          setIsLoadingPublicSettings(false);
+          setIsLoadingAuth(false);
+          return;
+        }
         
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
@@ -81,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      const currentUser = await withTimeout(base44.auth.me());
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -89,8 +114,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
-      setIsAuthenticated(false);
       setAuthChecked(true);
+      // Hors ligne avec un jeton enregistré : on reste « connecté » localement.
+      if (isNetworkFailure(error) && appParams.token) {
+        setIsAuthenticated(true);
+        return;
+      }
+      setIsAuthenticated(false);
       
       // If user auth fails, it might be an expired token
       if (error.status === 401 || error.status === 403) {
