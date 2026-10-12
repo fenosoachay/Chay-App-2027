@@ -1,25 +1,8 @@
 {
-  "appId": "io.chay.app",
+  "appId": "com.chay.eglise",
   "appName": "Église Chay",
   "webDir": "dist",
-  "bundledWebRuntime": false,
   "server": {
-    "hostname": "localhost",
-    "androidScheme": "https",
-    "cleartextTraffic": false
-  },
-  "android": {
-    "backgroundColor": "#4A6CFE"
-  },
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 0,
-      "launchAutoHide": true,
-      "launchFadeOutDuration": 0,
-      "showSpinner": false,
-      "backgroundColor": "#4A6CFE",
-      "splashFullScreen": false,
-      "splashImmersive": false
-    }
+    "androidScheme": "https"
   }
 }
