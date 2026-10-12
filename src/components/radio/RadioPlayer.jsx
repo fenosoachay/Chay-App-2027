@@ -34,7 +34,7 @@ export default function RadioPlayer() {
       : "En direct";
 
   const share = async () => {
-    const url = `${window.location.origin}/media?cat=radio`;
+    const url = `${getPublicOrigin()}/media?cat=radio`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Radio Chay", url });

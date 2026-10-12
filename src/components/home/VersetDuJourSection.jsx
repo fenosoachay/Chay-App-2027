@@ -229,7 +229,7 @@ export default function VersetDuJourSection({ refreshKey = 0 }) {
   };
 
   const shareVerse = async () => {
-    const url = window.location.origin;
+    const url = getPublicOrigin();
     let text;
     if (devotional) {
       const ref = devotional.scripture_reference || "";

@@ -1,18 +1,14 @@
 {
   "appId": "io.chay.app",
   "appName": "Église Chay",
+  "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://chay.base44.app",
+    "androidScheme": "https",
     "cleartextTraffic": false
   },
-  "preferences": {
-    "ShowSplash": false,
-    "ShowSplashScreenSpinner": false,
-    "BackgroundColor": "#4A6CFE",
-    "HideNavigationBar": true,
-    "StatusBarStyle": "light",
-    "SplashShowDelay": 0
+  "android": {
+    "backgroundColor": "#4A6CFE"
   },
   "plugins": {
     "SplashScreen": {
