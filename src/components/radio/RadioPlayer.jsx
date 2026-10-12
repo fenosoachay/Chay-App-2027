@@ -3,6 +3,7 @@ import { useRadio, MAX_RADIO_RETRIES } from "@/lib/RadioContext";
 import Visualizer from "@/components/radio/Visualizer";
 import { useToast } from "@/components/ui/use-toast";
 import { RADIO_LOGO } from "@/lib/mediaConstants";
+import { getPublicOrigin } from "@/lib/publicOrigin";
 import {
   Play,
   Square,

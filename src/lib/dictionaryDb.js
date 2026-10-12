@@ -38,8 +38,30 @@ async function saveLocalFile(bytes) {
   }
 }
 
+// Copie embarquée dans l'application (APK) : disponible dès l'installation,
+// sans aucune connexion. L'adresse distante ne sert que de secours.
+const BUNDLED_DB_URL = "/data/dictionaries/dictionnaire_westphal.db";
+
+// Un fichier SQLite valide commence par « SQLite format 3 ».
+function isSqlite(bytes) {
+  return bytes.length > 16 && String.fromCharCode(...bytes.slice(0, 15)) === "SQLite format 3";
+}
+
+async function readBundledFile() {
+  try {
+    const res = await fetch(BUNDLED_DB_URL);
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    return isSqlite(bytes) ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
 // Télécharge le .db avec progression (0..1, ou null si la taille est inconnue).
 async function downloadFile(onProgress) {
+  const bundled = await readBundledFile();
+  if (bundled) return bundled;
   const res = await fetch(DICTIONARY_DB_URL);
   if (!res.ok) throw new Error("Téléchargement impossible. Vérifiez votre connexion.");
   const total = Number(res.headers.get("content-length")) || 0;

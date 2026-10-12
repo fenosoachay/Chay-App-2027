@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { getPublicOrigin } from "@/lib/publicOrigin";
 import { useToast } from "@/components/ui/use-toast";
 import { BookOpen, ArrowRight, Share2, Pencil, Plus, X } from "lucide-react";
 import {
