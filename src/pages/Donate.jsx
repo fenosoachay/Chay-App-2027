@@ -1,125 +1,72 @@
 import React, { useState } from "react";
-import { Heart, Check, ArrowRight, ShieldCheck, Repeat } from "lucide-react";
-
-const PRESETS = [10, 25, 50, 100];
+import { Send, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { useNetwork } from "@/lib/NetworkContext";
+import DonationSuccessModal from "@/components/donate/DonationSuccessModal";
+import DonationGuestPrompt from "@/components/donate/DonationGuestPrompt";
 
 export default function Donate() {
-  const [amount, setAmount] = useState(25);
-  const [custom, setCustom] = useState("");
-  const [frequency, setFrequency] = useState("once");
+  const { isAuthenticated } = useAuth();
+  const { isOnline } = useNetwork();
+  const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
 
-  const finalAmount = custom ? Number(custom) : amount;
-
-  const submit = (e) => {
-    e.preventDefault();
-    setDone(true);
+  const notify = async () => {
+    setSending(true);
+    setError("");
+    setPending(false);
+    try {
+      const res = await base44.functions.invoke("createDonationRequest", {});
+      if (res.data?.already_pending) setPending(true);
+      else setDone(true);
+    } catch {
+      setError("Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setSending(false);
+    }
   };
 
-  if (done) {
-    return (
-      <div className="mx-auto max-w-md px-6 py-16 md:py-24 text-center">
-        <div className="h-20 w-20 rounded-3xl bg-secondary grid place-items-center text-white mx-auto mb-6 glow-soft">
-          <Check className="h-10 w-10" />
-        </div>
-        <h1 className="font-display font-extrabold text-3xl">Merci !</h1>
-        <p className="mt-3 text-foreground/60">
-          Votre don de <span className="font-bold text-foreground">{finalAmount} €</span>
-          {frequency === "monthly" ? " par mois" : ""} touche toute l'équipe de CHAY.
-        </p>
-        <button
-          onClick={() => setDone(false)}
-          className="mt-8 inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 font-bold hover:bg-muted transition"
-        >
-          Faire un autre don
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-2xl px-6 md:px-8 py-8 md:py-12">
-      <header className="mb-8 text-center">
-        <div className="h-16 w-16 rounded-3xl brand-gradient grid place-items-center text-white mx-auto mb-5 glow-primary">
-          <Heart className="h-8 w-8" fill="currentColor" />
-        </div>
-        <h1 className="display-fluid">
-          Donner à <span className="brand-gradient-text">CHAY</span>
-        </h1>
-        <p className="mt-3 text-lg text-foreground/60 max-w-md mx-auto">
-          Votre générosité fait avancer la mission — chaque don compte.
-        </p>
-      </header>
+    <div className="mx-auto max-w-md px-6 py-10 md:py-16">
+      <h1 className="text-center text-2xl font-bold">Soutenir l'Église Chay</h1>
+      <p className="mt-4 text-center text-base text-foreground/60">
+        Votre générosité permet de soutenir l'œuvre de Dieu et la diffusion de l'Évangile. Misaotra betsaka !
+      </p>
+      <p className="mt-3 text-center text-sm italic">
+        Merci de notifier l'église en cliquant ci-dessous.
+      </p>
 
-      <form onSubmit={submit} className="rounded-[2rem] border border-border bg-card p-6 md:p-10 space-y-7">
-        {/* Fréquence */}
-        <div>
-          <div className="text-sm font-bold text-foreground/60 mb-3">Fréquence</div>
-          <div className="inline-flex rounded-full border border-border bg-background p-1">
-            {[
-              { id: "once", label: "Unique", icon: Heart },
-              { id: "monthly", label: "Mensuel", icon: Repeat },
-            ].map((f) => (
-              <button
-                type="button"
-                key={f.id}
-                onClick={() => setFrequency(f.id)}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition ${
-                  frequency === f.id ? "bg-primary text-primary-foreground" : "text-foreground/60"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="mt-8 space-y-4">
+        {!isAuthenticated && isOnline ? (
+          <DonationGuestPrompt />
+        ) : (
+          <button
+            onClick={notify}
+            disabled={sending || !isOnline}
+            className="flex w-full items-center justify-center gap-2 rounded-full brand-gradient px-6 py-4 text-base font-bold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+          >
+            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            Notifier mon intention de donner
+          </button>
+        )}
 
-        {/* Montant */}
-        <div>
-          <div className="text-sm font-bold text-foreground/60 mb-3">Montant</div>
-          <div className="grid grid-cols-4 gap-3">
-            {PRESETS.map((p) => (
-              <button
-                type="button"
-                key={p}
-                onClick={() => {
-                  setAmount(p);
-                  setCustom("");
-                }}
-                className={`rounded-2xl border-2 py-4 font-display font-extrabold text-xl transition ${
-                  !custom && amount === p
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-background hover:border-primary/50"
-                }`}
-              >
-                {p} €
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 relative">
-            <input
-              type="number"
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              placeholder="Montant libre"
-              className="w-full rounded-2xl border-2 border-border bg-background pl-4 pr-10 py-3.5 font-bold outline-none focus:border-primary text-right"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-foreground/40">€</span>
-          </div>
-        </div>
+        {!isOnline && (
+          <p role="status" className="text-center text-sm text-foreground/60">
+            Connexion requise pour notifier l'église. Réessayez quand vous serez en ligne.
+          </p>
+        )}
+        {pending && (
+          <p role="status" className="text-center text-sm text-foreground/80">
+            Votre demande précédente est encore en attente. L'église vous contactera bientôt.
+          </p>
+        )}
+        {error && <p role="alert" className="text-center text-sm text-destructive">{error}</p>}
+      </div>
 
-        <button
-          type="submit"
-          className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-4 text-lg font-bold glow-primary hover:scale-[1.01] transition"
-        >
-          Donner {finalAmount || 0} € {frequency === "monthly" ? "/ mois" : ""}{" "}
-          <ArrowRight className="h-5 w-5" />
-        </button>
-
-        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-foreground/45">
-          <ShieldCheck className="h-4 w-4" /> Paiement sécurisé via Stripe
-        </div>
-      </form>
+      {done && <DonationSuccessModal />}
     </div>
   );
 }

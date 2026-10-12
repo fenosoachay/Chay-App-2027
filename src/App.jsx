@@ -54,6 +54,8 @@ const AuthenticatedApp = () => {
       <Route element={<LocalLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/bible" element={<Bible />} />
+        <Route path="/donate" element={<Donate />} />
+        <Route path="/don" element={<Navigate to="/donate" replace />} />
         <Route path="*" element={<LocalAccessNotice />} />
       </Route>
     </Routes></Suspense>;
@@ -95,6 +97,7 @@ const AuthenticatedApp = () => {
           <Route path="/community" element={<RequiresOnline><Community /></RequiresOnline>} />
           <Route path="/profile/:userId" element={<RequiresOnline><MemberProfile /></RequiresOnline>} />
           <Route path="/donate" element={<Donate />} />
+          <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />

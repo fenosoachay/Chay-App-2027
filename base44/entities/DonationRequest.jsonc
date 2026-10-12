@@ -1,0 +1,59 @@
+{
+  "name": "DonationRequest",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "Identifiant de l'utilisateur qui souhaite donner."
+    },
+    "username": {
+      "type": "string",
+      "description": "Nom d'affichage de l'utilisateur."
+    },
+    "message": {
+      "type": "string",
+      "default": "veut faire un don, contactez-le"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "contacted",
+        "processed"
+      ],
+      "default": "pending"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vu par un administrateur."
+    }
+  },
+  "required": [
+    "userId",
+    "username",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

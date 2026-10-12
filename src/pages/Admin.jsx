@@ -13,6 +13,8 @@ import EntityCrud from "@/components/admin/EntityCrud";
 import DashboardHome from "@/components/admin/DashboardHome";
 import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
+import DonationRequests from "@/components/admin/DonationRequests";
+import { useDonationAlerts } from "@/hooks/useDonationAlerts";
 import {
   LayoutDashboard,
   BookOpen,
@@ -30,6 +32,7 @@ import {
   Loader2,
   Send,
   Newspaper,
+  Heart,
 } from "lucide-react";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
@@ -262,6 +265,7 @@ const SECTIONS = [
 const NAV = [
   { key: "overview", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "publish", label: "Publier", icon: Send },
+  { key: "donations", label: "Demandes de don", icon: Heart },
   { key: "bible_sync", label: "Recherche Bible", icon: BookOpen },
   ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon })),
 ];
@@ -273,6 +277,7 @@ export default function Admin() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
+  const { unread, refresh: refreshDonations } = useDonationAlerts(user?.role === "admin");
 
   if (!user) {
     return (
@@ -346,6 +351,9 @@ export default function Admin() {
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" /> {n.label}
+                  {n.key === "donations" && unread > 0 && (
+                    <span className="ml-auto rounded-full bg-pink-500 px-2 py-0.5 text-xs font-bold text-white">{unread}</span>
+                  )}
                 </button>
               );
             })}
@@ -368,6 +376,9 @@ export default function Admin() {
                   }`}
                 >
                   <Icon className="h-4 w-4" /> {n.label}
+                  {n.key === "donations" && unread > 0 && (
+                    <span className="rounded-full bg-pink-500 px-2 py-0.5 text-xs font-bold text-white">{unread}</span>
+                  )}
                 </button>
               );
             })}
@@ -377,6 +388,8 @@ export default function Admin() {
           <main>
             {active === "overview" ? (
               <DashboardHome onNavigate={setActive} />
+            ) : active === "donations" ? (
+              <DonationRequests onChange={refreshDonations} />
             ) : active === "publish" ? (
               <PublishContent />
             ) : active === "bible_sync" ? (

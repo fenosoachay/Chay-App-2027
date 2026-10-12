@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Search, BookMarked, Star } from 'lucide-react';
+import { BookOpen, Search, BookMarked, Star, Heart } from 'lucide-react';
 
 const MODULES = [
   { to: '/bible?view=reader', label: 'Bible', icon: BookOpen, color: 'bg-[#4A6CFE]' },
@@ -20,5 +20,11 @@ export default function LocalBibleAccess() {
         </Link>
       ))}
     </div>
+    <Link
+      to="/donate"
+      className="mx-auto mt-6 flex max-w-xs items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-3 text-sm font-bold text-foreground transition duration-300 hover:scale-105 active:scale-95"
+    >
+      <Heart className="h-4 w-4 text-pink-500" fill="currentColor" /> Faire un don
+    </Link>
   </section>;
 }
