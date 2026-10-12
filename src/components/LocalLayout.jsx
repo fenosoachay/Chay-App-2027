@@ -6,7 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import BrandLogo from '@/components/BrandLogo';
 
 export default function LocalLayout() {
-  const { user, authError, checkAppState } = useAuth();
+  const { authError, checkAppState } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState('');
   const connect = async () => {
@@ -25,7 +25,6 @@ export default function LocalLayout() {
         </Link>
         <NavLink to="/" end className="text-sm">Accueil</NavLink>
         <NavLink to="/bible" className="text-sm">Bible</NavLink>
-        <span className="text-xs text-muted-foreground">{user ? 'Session locale' : 'Mode invité'} · Utilisation locale</span>
         <div className="ml-auto flex items-center gap-2"><ThemeToggle />
           <button onClick={connect} disabled={connecting} className="rounded-full brand-gradient px-4 py-2 text-sm font-bold text-white transition duration-300 hover:scale-105 active:scale-95 disabled:opacity-50">{connecting ? 'Connexion…' : 'Se connecter ou créer un compte'}</button>
         </div>

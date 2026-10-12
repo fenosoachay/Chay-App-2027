@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import { useNetwork } from "@/lib/NetworkContext";
 import { Facebook, Youtube, Shield, Globe } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import SplitClock from "@/components/home/SplitClock";
@@ -13,6 +14,7 @@ import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 
 export default function Home() {
   const { user, isLocalMode } = useAuth();
+  const { isOnline } = useNetwork();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadHome = () => setRefreshKey((k) => k + 1);
@@ -39,9 +41,11 @@ export default function Home() {
         </p>
 
         {/* ✅ VERSET DU JOUR DÉPLACÉ ICI (Juste après le texte d'accueil) */}
-        <div className="animate-float-in mt-6" style={{ animationDelay: "0.1s" }}>
-          <VersetDuJourSection refreshKey={refreshKey} />
-        </div>
+        {isOnline && (
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.1s" }}>
+            <VersetDuJourSection refreshKey={refreshKey} />
+          </div>
+        )}
 
         {/* Horloge divisée */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>

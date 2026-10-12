@@ -36,9 +36,5 @@ export default function LocalBibleAccess() {
         </Link>
       ))}
     </div>
-
-    <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-      {['Communauté', 'Messages'].map(label => <span key={label} aria-disabled="true" className="opacity-60">{label} · Connexion requise</span>)}
-    </div>
   </section>;
 }
