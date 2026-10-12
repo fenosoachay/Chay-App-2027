@@ -28,6 +28,7 @@ import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
+import { enqueue } from "@/lib/offlineQueue";
 
 function fmtTime(d) {
   return formatTimestamp(d, { date: false });
@@ -213,6 +214,13 @@ export default function ConversationView({
     clearTimeout(typingTimer.current);
     isTypingSent.current = false;
     setTypingState(false);
+    if (!navigator.onLine) {
+      enqueue("message", { body: { conversation_id: conversation.id, text, reply_to_id: replyTo?.id || null } });
+      setReplyTo(null);
+      setSending(false);
+      toast({ title: "Message en attente", description: "Il sera envoyé dès que la connexion sera rétablie." });
+      return;
+    }
     try {
       const result = await base44.functions.invoke("createMessage", {
 conversation_id: conversation.id,

@@ -15,6 +15,9 @@ import Layout from '@/components/Layout';
 import LocationGate from '@/components/LocationGate';
 import LocalLayout from '@/components/LocalLayout';
 import LocalAccessNotice from '@/components/LocalAccessNotice';
+import { NetworkProvider } from '@/lib/NetworkContext';
+import OfflineBanner from '@/components/OfflineBanner';
+import RequiresOnline from '@/components/RequiresOnline';
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
@@ -89,12 +92,12 @@ const AuthenticatedApp = () => {
           <Route path="/media" element={<Media />} />
           <Route path="/games" element={<Games />} />
           <Route path="/kids" element={<Kids />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/profile/:userId" element={<MemberProfile />} />
+          <Route path="/community" element={<RequiresOnline><Community /></RequiresOnline>} />
+          <Route path="/profile/:userId" element={<RequiresOnline><MemberProfile /></RequiresOnline>} />
           <Route path="/donate" element={<Donate />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
         </Route>
@@ -133,9 +136,11 @@ function App() {
     <AuthProvider>
       <PreferencesProvider>
       <QueryClientProvider client={queryClientInstance}>
+        <NetworkProvider>
         <AudioPlayerProvider>
           <RadioPlayerProvider>
           <Router>
+            <OfflineBanner />
             <ScrollToTop />
             <ErrorBoundary>
               <AuthenticatedApp />
@@ -147,6 +152,7 @@ function App() {
             <Toaster />
           </RadioPlayerProvider>
           </AudioPlayerProvider>
+        </NetworkProvider>
       </QueryClientProvider>
       </PreferencesProvider>
     </AuthProvider>

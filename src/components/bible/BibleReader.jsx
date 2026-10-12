@@ -18,6 +18,8 @@ import { HIGHLIGHT_COLORS, LANGUAGES, VERSIONS } from "@/lib/bibleConstants";
 import VerseActionsSheet from "@/components/bible/VerseActionsSheet";
 import ReaderSearchBox from "@/components/bible/ReaderSearchBox";
 import DrawerSelect from "@/components/DrawerSelect";
+import { enqueue, queueSize } from "@/lib/offlineQueue";
+import { readLocalAnnotations, saveLocalAnnotation, clearLocalAnnotations } from "@/lib/localAnnotations";
 import { getLocalBooks, getLocalChapterVerses } from "@/lib/localBible";
 import { parseReference } from "@/lib/bibleBookRefs";
 
@@ -166,12 +168,17 @@ export default function BibleReader({ onBack }) {
   const loadAnnotations = async () => {
     if (isLocalMode || !user?.id) { setAnnotations({}); return; }
     if (!selectedVersion || !selectedBookId || !selectedChapter) return;
+    const local = readLocalAnnotations(selectedVersion, selectedBookId, selectedChapter);
+    if (!navigator.onLine) { setAnnotations(local); return; }
     const anns = await base44.entities.BibleAnnotation.filter(
       { translation_id: selectedVersion, book_id: selectedBookId, chapter: selectedChapter },
       "-verse", 200
     ).catch(() => []);
     const map = {};
     (Array.isArray(anns) ? anns : []).forEach((a) => { map[a.verse] = a; });
+    // Tant que des actions attendent l'envoi, on garde la copie locale par-dessus.
+    if (queueSize() > 0) Object.keys(local).forEach((v) => { map[v] = { ...(map[v] || {}), ...local[v] }; });
+    else clearLocalAnnotations(selectedVersion, selectedBookId, selectedChapter);
     setAnnotations(map);
   };
 
@@ -189,6 +196,17 @@ export default function BibleReader({ onBack }) {
   const upsertMany = async (data) => {
     if (isLocalMode || !user?.id) { toast({ title: 'Connexion requise' }); return; }
     if (selectedVerses.length === 0) return;
+    if (!navigator.onLine) {
+      selectedVerses.forEach((v) => {
+        saveLocalAnnotation(selectedVersion, selectedBookId, selectedChapter, v.number, data);
+        enqueue("annotation", { translation_id: selectedVersion, book_id: selectedBookId, chapter: selectedChapter, verse: v.number, data });
+      });
+      await loadAnnotations();
+      setSelected([]);
+      setSheetOpen(false);
+      toast({ title: "Enregistré sur l'appareil", description: "Envoi automatique au retour de la connexion." });
+      return;
+    }
     try {
       await Promise.all(selectedVerses.map(async (v) => {
         const existing = annotations[v.number];
