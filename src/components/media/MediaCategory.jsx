@@ -95,11 +95,10 @@ export default function MediaCategory({
     }
   };
   // ⚠️ Ne PAS conditionner ce handler à `galleryIdx == null` : faire passer
-  // `open` de true à false au moment exact où la photo s'ouvre déclenche le
-  // nettoyage du hook (dernier closer + entrée MARKER en tête → `history.back()`)
-  // et cette navigation referme la photo immédiatement : le clic ne fait rien.
-  // Les deux superpositions partagent l'entrée d'historique et la pile est
-  // ordonnée par ouverture, donc le retour ferme d'abord la photo, puis la
+  // `open` de true à false au moment où la photo s'ouvre déclencherait le
+  // nettoyage du hook (history.back()) et refermerait la photo aussitôt.
+  // Chaque superposition a sa propre entrée d'historique et la pile est
+  // ordonnée par ouverture : le retour ferme d'abord la photo, puis la
   // section — sans garde.
   useBackHandler(Boolean(gallerySection), backFromSection);
   useBackHandler(orphanIdx !== null, () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, MessageCircle, Send, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { parseWixMediaUrl, buildTransformUrl } from "@/components/ui/image-helpers";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -127,6 +128,14 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
 
   const prev = (e) => { e?.stopPropagation(); go(-1); };
   const next = (e) => { e?.stopPropagation(); go(1); };
+
+  // Clavier de l'ordinateur : ← → changent de photo, Échap ferme les
+  // commentaires puis la visionneuse (sans interférer avec la frappe).
+  useKeyboardShortcuts(isOpen && !editingItem, {
+    ArrowLeft: () => { if (items.length > 1) go(-1); },
+    ArrowRight: () => { if (items.length > 1) go(1); },
+    Escape: () => (showComments ? setShowComments(false) : onClose?.()),
+  });
 
   // ── Glissement horizontal au doigt ──────────────────────────────────────
   const onTouchStart = (e) => {

@@ -1,1 +1,0 @@
-import{z as e}from"./index-CRnbKli1.js";var t=class extends e{async show(e){}async hide(e){}};export{t as SplashScreenWeb};

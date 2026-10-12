@@ -24,6 +24,7 @@ import PhotoViewer from "@/components/messages/PhotoViewer";
 import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
+import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
 
 function fmtTime(d) {
   return formatTimestamp(d, { date: false });
@@ -573,6 +574,8 @@ image_url: uploadedUrl,
           <input
             value={draft}
             onChange={onDraftChange}
+            onKeyDown={onEnterSubmit(send)}
+            enterKeyHint="send"
             placeholder="Message…"
             className="flex-1 min-w-0 rounded-full border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary shadow-inner"
           />

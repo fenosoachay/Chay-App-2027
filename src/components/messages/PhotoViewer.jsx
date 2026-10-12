@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
@@ -13,15 +14,11 @@ export default function PhotoViewer({ images, index, onClose }) {
   const [downloading, setDownloading] = useState(false);
   const total = images.length;
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft") setI((p) => (p - 1 + total) % total);
-      if (e.key === "ArrowRight") setI((p) => (p + 1) % total);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [total, onClose]);
+  useKeyboardShortcuts(true, {
+    Escape: () => onClose(),
+    ArrowLeft: () => { if (total > 1) setI((p) => (p - 1 + total) % total); },
+    ArrowRight: () => { if (total > 1) setI((p) => (p + 1) % total); },
+  });
 
   const download = async () => {
     const url = images[i];

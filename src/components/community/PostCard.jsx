@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Heart, MessageCircle, Send, Loader2, X, Maximize2, Pencil, Trash2, Check } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import useKeyboardShortcuts, { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
 import { notifyComment, notifyLike } from "@/lib/socialNotifications";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,6 +41,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   // Le bouton retour du téléphone ferme la visionneuse au lieu de quitter la page.
   useBackHandler(isViewerOpen, () => setIsViewerOpen(false));
+  useKeyboardShortcuts(isViewerOpen, { Escape: () => setIsViewerOpen(false) });
 
   const isMine = currentUser && post.created_by_id === currentUser.id;
   const canManagePost = Boolean(isMine || currentUser?.role === "admin");
@@ -447,7 +449,8 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitComment()}
+              onKeyDown={onEnterSubmit(submitComment)}
+              enterKeyHint="send"
               placeholder="Écrire un commentaire…"
               className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary"
             />

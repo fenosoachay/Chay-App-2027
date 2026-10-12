@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { Loader2, Pencil, UserX, X } from "lucide-react";
 import PostCard from "@/components/community/PostCard";
 
@@ -25,6 +26,7 @@ export default function MemberProfile() {
   const [postsLoading, setPostsLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null); // "cover" | "avatar" | null
   useBackHandler(Boolean(lightbox), () => setLightbox(null));
+  useKeyboardShortcuts(Boolean(lightbox), { Escape: () => setLightbox(null) });
 
   useEffect(() => {
     let cancelled = false;

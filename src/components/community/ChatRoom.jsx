@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Send, Loader2 } from "lucide-react";
 import { formatTimestamp } from "@/lib/formatTimestamp";
+import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
 
 function fmtTime(d) {
   return formatTimestamp(d, { date: false });
@@ -254,7 +255,8 @@ export default function ChatRoom({ user }) {
           <input
             value={draft}
             onChange={onDraftChange}
-            onKeyDown={(e) => e.key === "Enter" && send()}
+            onKeyDown={onEnterSubmit(send)}
+            enterKeyHint="send"
             placeholder="Écrivez un message…"
             className="flex-1 rounded-full border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary"
           />
