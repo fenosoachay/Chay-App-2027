@@ -12,7 +12,7 @@ import AuthButtons from "@/components/home/AuthButtons";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 
 export default function Home() {
-  const { user, isLocalMode } = useAuth();
+  const { user, isLocalMode, isAuthenticated } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadHome = () => setRefreshKey((k) => k + 1);
@@ -59,7 +59,7 @@ export default function Home() {
         </div>
 
         {/* Connexion / création de compte (invités uniquement) */}
-        {isLocalMode && !user && <AuthButtons />}
+        {!isAuthenticated && <AuthButtons />}
 
         {/* Nouveautés - Commenté ou supprimé selon votre préférence précédente */}
         {/* 

@@ -1,21 +1,15 @@
 import { useState } from 'react';
-import { getAccessToken } from '@base44/sdk';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 
 // Boutons « Se connecter » et « Créer un compte » (mode local / invité).
 export default function AuthButtons() {
-  const { authError, checkAppState } = useAuth();
-  const [connecting, setConnecting] = useState(false);
+  const { authError } = useAuth();
   const [message, setMessage] = useState('');
 
-  const connect = async () => {
+  const connect = () => {
     if (!navigator.onLine) { setMessage('Connexion internet requise pour votre compte.'); return; }
-    if (!getAccessToken()) { window.location.href = '/login'; return; }
-    setConnecting(true);
-    await checkAppState();
-    setConnecting(false);
-    setMessage('Si le serveur est indisponible, la lecture locale reste accessible.');
+    window.location.href = '/login';
   };
 
   const register = () => {
@@ -27,10 +21,9 @@ export default function AuthButtons() {
     <section className="mt-8 flex flex-col items-center gap-3 max-w-xs mx-auto">
       <button
         onClick={connect}
-        disabled={connecting}
         className="w-full rounded-full brand-gradient px-5 py-3 text-sm font-bold text-white shadow-md transition duration-300 hover:scale-105 active:scale-95 disabled:opacity-50"
       >
-        {connecting ? 'Connexion…' : 'Se connecter'}
+        Se connecter
       </button>
       <button
         onClick={register}
