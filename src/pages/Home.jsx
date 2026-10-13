@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Facebook, Youtube, Shield, Globe } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
-import SplitClock from "@/components/home/SplitClock";
+import NouveauteWidget from "@/components/home/NouveauteWidget";
 import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
 import QuickAccess from "@/components/home/QuickAccess";
 import LocalBibleAccess from "@/components/home/LocalBibleAccess";
@@ -39,17 +39,17 @@ export default function Home() {
           Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
         </p>
 
-        {/* Horloge divisée */}
-        <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
-          {!isLocalMode && <SplitClock />}
-        </div>
-
         {/* Verset du jour (utilisateurs connectés uniquement) */}
         {!isLocalMode && isAuthenticated && (
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.18s" }}>
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.12s" }}>
             <VersetDuJourSection refreshKey={refreshKey} />
           </div>
         )}
+
+        {/* Nouveautés (Préc. / Nouv.) */}
+        <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
+          {!isLocalMode && <NouveauteWidget />}
+        </div>
 
         {/* Question Logique */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.2s" }}>
