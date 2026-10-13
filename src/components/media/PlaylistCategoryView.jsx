@@ -16,6 +16,9 @@ import PlaylistCover from "@/components/media/PlaylistCover";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { formatListenCount } from "@/lib/playlist";
+import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import { useHalfwayListen } from "@/hooks/useHalfwayListen";
+import { requestOpenAudioPlayer } from "@/lib/playerUi";
 
 /* ─── Hook drag & drop tactile + souris ─────────────────────────────────── */
 function useDragSort(items, onReorder) {
@@ -290,6 +293,13 @@ export default function PlaylistCategoryView({
     [toast]
   );
 
+  // Une écoute n'est comptée qu'à la moitié du morceau (une fois par lecture).
+  const { currentTime, duration } = useAudioPlayer();
+  useHalfwayListen(currentTrack, currentTime, duration, (trackId) => {
+    const row = playlistTracks.find((pt) => pt.track_id === trackId);
+    if (row) recordListen(row);
+  });
+
   const cats = orderedPlaylists;
   const tracks = open ? orderedTracks : [];
 
@@ -468,10 +478,11 @@ export default function PlaylistCategoryView({
                     onClick={() => {
                       const i = audioTracks.findIndex((a) => a.id === t.id);
                       if (currentTrack?.id === t.track_id) {
-                        if (!isPlaying) recordListen(t);
-                        toggle();
+                        // Titre déjà en cours : on rouvre le lecteur, la pause
+                        // se fait uniquement avec son bouton pause.
+                        if (isPlaying) requestOpenAudioPlayer();
+                        else toggle();
                       } else if (i >= 0) {
-                        recordListen(t);
                         playQueue(
                           audioTracks.map((a) => ({
                             id: a.track_id,

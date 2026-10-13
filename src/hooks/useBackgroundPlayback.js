@@ -3,14 +3,17 @@ import { YOUTUBE_ORIGIN } from "@/lib/youtubeEmbed";
 
 // Lecture écran éteint / app en arrière-plan (comme YouTube Premium).
 // Quand la page passe en arrière-plan, le système met en pause l'élément
-// <video> ou l'iframe YouTube : on relance aussitôt la lecture tant que
-// l'utilisateur n'a pas lui-même mis en pause.
+// <video> ou l'iframe YouTube, ce qui met aussi `isPlaying` à faux. On retient
+// donc si l'utilisateur LISAIT au moment où l'écran s'est caché, et on relance
+// la lecture tant qu'il n'a pas lui-même appuyé sur pause.
 export function useBackgroundPlayback({ active, getVideo, getIframe, isPlaying }) {
   useEffect(() => {
     if (!active) return undefined;
 
+    let wasPlaying = false;
+
     const resume = () => {
-      if (!isPlaying()) return;
+      if (!wasPlaying) return;
       const video = getVideo();
       if (video && video.paused && video.getAttribute("src")) {
         video.play().catch(() => {});
@@ -23,14 +26,17 @@ export function useBackgroundPlayback({ active, getVideo, getIframe, isPlaying }
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
+        wasPlaying = isPlaying();
         // Le système coupe la lecture juste après : on la relance plusieurs fois.
-        [150, 600, 1500].forEach((delay) => setTimeout(resume, delay));
+        [100, 400, 1000, 2000].forEach((delay) => setTimeout(resume, delay));
+      } else {
+        wasPlaying = false;
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     const keepAlive = setInterval(() => {
       if (document.visibilityState === "hidden") resume();
-    }, 4000);
+    }, 3000);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       clearInterval(keepAlive);

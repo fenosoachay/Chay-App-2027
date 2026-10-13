@@ -17,8 +17,6 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   const location = useLocation();
   const { prefs, update } = useYoutubePrefs();
 
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState([]);
   const [shuffled, setShuffled] = useState(null); // ordre aléatoire courant (ids)
   const [finished, setFinished] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -34,6 +32,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   );
   const shuffleOn = Boolean(prefs.shuffle_modes[section]);
   const locked = prefs.playlist_locks[section] !== false; // verrouillée par défaut
+  const editing = !locked; // cadenas ouvert = réorganisation active
 
   // File de lecture : ordre aléatoire courant si actif, sinon ordre personnalisé.
   const queueItems = useMemo(() => {
@@ -140,24 +139,12 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     playQueue(customItems, 0);
   };
 
-  const startEdit = () => {
-    setDraft(customItems);
-    setEditing(true);
-  };
-  const saveEdit = () => {
-    update("playlist_orders", section, draft.map((v) => v.id));
-    setEditing(false);
-  };
-  const resetOrder = () => {
-    update("playlist_orders", section, undefined);
-    setDraft(baseItems);
-  };
-  const toggleLock = () => {
-    update("playlist_locks", section, !locked);
-    if (!locked) setEditing(false); // on verrouille : on quitte l'édition
-  };
+  // Chaque déplacement est enregistré tout de suite (plus de bouton « Enregistrer »).
+  const reorder = (next) => update("playlist_orders", section, next.map((v) => v.id));
+  const resetOrder = () => update("playlist_orders", section, undefined);
+  const toggleLock = () => update("playlist_locks", section, !locked);
 
-  const shown = editing ? draft : queueItems;
+  const shown = editing ? customItems : queueItems;
   const playingIndex = shown.findIndex((v) => v.id === playingId);
 
   return (
@@ -171,13 +158,11 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       <YouTubeToolbar
         locked={locked}
         shuffleOn={shuffleOn}
-        editing={editing}
         pulse={pulse}
         disabled={!customItems.length}
         onPlayAll={playAll}
         onToggleShuffle={toggleShuffle}
         onToggleLock={toggleLock}
-        onEdit={startEdit}
       />
 
       <YouTubeShuffleBanner
@@ -190,8 +175,8 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       {shown.length ? (
         editing ? (
           <>
-            <YouTubeSortableList items={draft} onReorder={setDraft} />
-            <YouTubeEditBar onCancel={() => setEditing(false)} onSave={saveEdit} onReset={resetOrder} />
+            <YouTubeEditBar onReset={resetOrder} />
+            <YouTubeSortableList items={customItems} onReorder={reorder} />
           </>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">

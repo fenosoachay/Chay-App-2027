@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { subscribeMediaControl } from "@/lib/mediaControl";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import PlayerFullscreen from "@/components/player/PlayerFullscreen";
+import { OPEN_PLAYER_EVENT } from "@/lib/playerUi";
 
 const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
 
@@ -15,6 +16,12 @@ export default function AutoOpenAudioPlayer() {
   const lastKeyRef = useRef(null);
 
   useEffect(() => subscribeMediaControl(setControl), []);
+
+  useEffect(() => {
+    const reopen = () => setOpen(true);
+    window.addEventListener(OPEN_PLAYER_EVENT, reopen);
+    return () => window.removeEventListener(OPEN_PLAYER_EVENT, reopen);
+  }, []);
 
   const isAudio = Boolean(control) && (AUDIO_TYPES.has(control.type) || control.engine === "audio");
   const trackKey = isAudio ? String(currentTrack?.id ?? control.title) : null;

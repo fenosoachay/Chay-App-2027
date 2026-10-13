@@ -110,7 +110,7 @@ export function useMediaSessionSync(control) {
     control?.artwork,
     control?.isPlaying,
     control?.isLive,
-    control?.currentTime,
+    Math.floor(control?.currentTime || 0),
     control?.duration,
     Boolean(control?.previous),
     Boolean(control?.next),
