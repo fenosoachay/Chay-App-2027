@@ -19,10 +19,13 @@ const isNetworkFailure = (error) =>
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => readLocalSession(appParams.token));
-  const [isLocalMode, setIsLocalMode] = useState(true);
+  // Jeton présent + en ligne : on démarre en chargement (et non en mode invité)
+  // pour ne jamais montrer l'accueil invité avant la page connectée.
+  const hasSessionAtStart = Boolean(appParams.token) && (typeof navigator === 'undefined' || navigator.onLine);
+  const [isLocalMode, setIsLocalMode] = useState(!hasSessionAtStart);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(false);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(hasSessionAtStart);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(hasSessionAtStart);
   const [authError, setAuthError] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [authChecked, setAuthChecked] = useState(true);
@@ -180,6 +183,9 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsLocalMode(true);
         setAuthError(null);
+      } else {
+        // Autre échec : jamais d'app « connectée » sans utilisateur vérifié.
+        setIsLocalMode(true);
       }
     }
   };
