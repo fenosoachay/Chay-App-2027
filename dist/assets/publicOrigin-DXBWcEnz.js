@@ -1,0 +1,1 @@
+import{t as e}from"./dist-DeJOOMcQ.js";var t=`https://chay.base44.app`;function n(){return e.isNativePlatform()?t:window.location.origin}export{n as t};

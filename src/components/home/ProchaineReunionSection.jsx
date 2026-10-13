@@ -34,7 +34,7 @@ const PLANNING_LIMIT = 500;
 // avec le même système que le verset du jour (date d'affichage + planning).
 // Une réunion passée n'est jamais supprimée avec le temps : elle reste
 // consultable dans le planning via « Précédents ».
-export default function ProchaineReunionSection({ refreshKey = 0 }) {
+export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = false, onChanged }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
@@ -231,6 +231,7 @@ export default function ProchaineReunionSection({ refreshKey = 0 }) {
     setEditing(false);
     await load();
     await loadPlanning();
+    onChanged?.();
   };
 
   // Fermeture : les entrées en attente restent dans la fenêtre (on peut la
@@ -260,6 +261,7 @@ export default function ProchaineReunionSection({ refreshKey = 0 }) {
       toast({ title: "Réunion supprimée", description: when });
       await load();
       await loadPlanning();
+      onChanged?.();
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
@@ -290,8 +292,24 @@ export default function ProchaineReunionSection({ refreshKey = 0 }) {
     : null;
 
   return (
-    <section className="mt-6">
-      <div className="rounded-[1.5rem] border border-border bg-card p-5 md:p-8">
+    <section className={adminOnly ? "mb-4" : "mt-6"}>
+      {/* Panneau admin : même fenêtre « Programmer la prochaine réunion » que
+          sur l'accueil, ouverte par un bouton à la place de la carte. */}
+      {adminOnly && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
+          <p className="text-sm text-muted-foreground min-w-0 truncate">
+            {loading
+              ? "Chargement…"
+              : reunion
+                ? `Prochaine réunion : ${reunion.title}`
+                : "Aucune réunion annoncée."}
+          </p>
+          <Button onClick={openEdit} className="rounded-full shrink-0">
+            <Plus className="h-4 w-4 mr-1.5" /> Ajouter / Modifier
+          </Button>
+        </div>
+      )}
+      <div className={`${adminOnly ? "hidden " : ""}rounded-[1.5rem] border border-border bg-card p-5 md:p-8`}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />

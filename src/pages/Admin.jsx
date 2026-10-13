@@ -15,6 +15,7 @@ import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
+import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import { useDonationAlerts } from "@/hooks/useDonationAlerts";
 import {
   LayoutDashboard,
@@ -275,6 +276,7 @@ export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [active, setActive] = useState("overview");
+  const [announcementsKey, setAnnouncementsKey] = useState(0);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
@@ -407,9 +409,15 @@ export default function Admin() {
                   </h2>
                 </div>
                 {section?.key === "Devotional" && <VersetDuJourSection adminOnly />}
+                {section?.key === "Announcement" && (
+                  <ProchaineReunionSection
+                    adminOnly
+                    onChanged={() => setAnnouncementsKey((k) => k + 1)}
+                  />
+                )}
                 {section && section.key !== "Devotional" && (
                   <EntityCrud
-                    key={section.key}
+                    key={section.key === "Announcement" ? `Announcement-${announcementsKey}` : section.key}
                     entity={section.key}
                     fields={section.fields}
                     listColumns={section.listColumns}
