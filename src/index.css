@@ -185,31 +185,30 @@
   filter: blur(0.5px);
   will-change: transform;
 }
-.home-blob-tl {
-  top: -6.5rem;
-  left: -6.5rem;
+.home-wave {
+  position: absolute;
+  will-change: transform;
+  opacity: 0.9;
+}
+.home-wave-tl {
+  top: -1rem;
+  left: -1rem;
   width: 13rem;
   height: 13rem;
-  background: linear-gradient(135deg, #1E90FF 0%, #7A3FD6 55%, #FF57B2 100%);
-  border-radius: 50%;
-  opacity: 0.85;
-  box-shadow: 0 0 60px rgba(138, 86, 226, 0.55);
+  filter: drop-shadow(0 0 28px rgba(138, 86, 226, 0.55));
   animation: blob-drift-a 18s ease-in-out infinite;
 }
-.home-blob-br {
-  bottom: -7rem;
-  right: -7rem;
-  width: 15rem;
-  height: 15rem;
-  background: linear-gradient(315deg, #1E90FF 0%, #7A3FD6 50%, #FF57B2 100%);
-  border-radius: 50%;
-  opacity: 0.85;
-  box-shadow: 0 0 70px rgba(74, 108, 254, 0.55);
+.home-wave-br {
+  bottom: -1rem;
+  right: -1rem;
+  width: 14rem;
+  height: 17rem;
+  filter: drop-shadow(0 0 28px rgba(74, 108, 254, 0.55));
   animation: blob-drift-b 20s ease-in-out infinite;
 }
 @media (min-width: 768px) {
-  .home-blob-tl { top: -9rem; left: -9rem; width: 20rem; height: 20rem; }
-  .home-blob-br { bottom: -10rem; right: -10rem; width: 24rem; height: 24rem; }
+  .home-wave-tl { width: 22rem; height: 22rem; }
+  .home-wave-br { width: 22rem; height: 27rem; }
 }
 .home-dot {
   position: absolute;

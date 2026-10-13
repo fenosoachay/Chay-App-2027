@@ -135,19 +135,19 @@ export default function Layout() {
       <FloatingChatBubble />
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
-        <div className="mx-auto w-full max-w-6xl flex items-center justify-between rounded-full border border-border bg-background/70 backdrop-blur-xl px-6 py-3 glow-soft">
+        <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
           <Link to="/" className="flex items-center">
             <BrandLogo className="h-9 w-9" />
           </Link>
 
-          <nav aria-label="Navigation principale" className="flex items-center gap-1">
+          <nav aria-label="Navigation principale" className="flex items-center gap-0.5 lg:gap-1">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
                 to={navTarget(item.to, item.end)}
                 end={item.end}
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                  `px-2.5 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
                     isActive
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-foreground/70 hover:text-foreground hover:bg-muted"
@@ -159,7 +159,7 @@ export default function Layout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
             <ThemeToggle />
             <Link to="/notifications" className="relative h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Notifications">
               <Bell className="h-4 w-4" />
