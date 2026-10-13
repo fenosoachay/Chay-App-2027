@@ -4,6 +4,7 @@ import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "luci
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
+import { useBackgroundPlayback } from "@/hooks/useBackgroundPlayback";
 import { useNetwork } from "@/lib/NetworkContext";
 import PlayerQueueList from "@/components/player/PlayerQueueList";
 import OfflinePlayerNotice from "@/components/player/OfflinePlayerNotice";
@@ -209,6 +210,14 @@ export default function UniversalMediaSurface() {
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
   // Écran gardé allumé tant qu'une vidéo YouTube joue en ligne ; coupé à la pause/fermeture.
   useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
+
+  // Lecture poursuivie écran éteint / app en arrière-plan (vidéo et YouTube).
+  useBackgroundPlayback({
+    active: Boolean(control && (isVideo || isYouTube)),
+    getVideo: () => videoRef.current,
+    getIframe: () => iframeRef.current,
+    isPlaying: () => Boolean(controlRef.current?.isPlaying),
+  });
 
   // Retour du réseau : on relance la vidéo bloquée.
   useEffect(() => {

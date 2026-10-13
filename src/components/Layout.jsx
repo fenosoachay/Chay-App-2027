@@ -4,7 +4,7 @@ import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import AnimatedOutlet from "@/components/AnimatedOutlet";
-import MiniPlayer from "@/components/MiniPlayer";
+import AutoOpenAudioPlayer from "@/components/player/AutoOpenAudioPlayer";
 import PullDownMediaBar from "@/components/PullDownMediaBar";
 import UniversalMediaSurface from "@/components/UniversalMediaSurface";
 import BrandLogo from "@/components/BrandLogo";
@@ -16,7 +16,6 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { syncWebPush, disableWebPush, onWebPushNotificationClick } from "@/lib/webPush";
 import NotificationBanner from "@/components/NotificationBanner";
-import FloatingChatBubble from "@/components/messages/FloatingChatBubble";
 import { useMediaSessionSync } from "@/hooks/useMediaSessionSync";
 import {
   getBackAction,
@@ -132,7 +131,6 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <NotificationBanner />
-      <FloatingChatBubble />
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
@@ -267,7 +265,7 @@ export default function Layout() {
       </nav>
 
       <PullDownMediaBar />
-      <MiniPlayer />
+      <AutoOpenAudioPlayer />
       <UniversalMediaSurface />
       </div>
   );
