@@ -53,6 +53,28 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('offline', enterLocalMode);
   }, []);
 
+  // Session maintenue : revalidation toutes les 23 h pendant l'utilisation, et
+  // au retour sur l'application après une longue absence. Un échec réseau ne
+  // déconnecte jamais ; seul un refus explicite du serveur (401/403) le fait.
+  useEffect(() => {
+    const REFRESH_MS = 23 * 60 * 60 * 1000;
+    let last = Date.now();
+    const refresh = () => {
+      if (!appParams.token || !navigator.onLine) return;
+      last = Date.now();
+      checkUserAuth();
+    };
+    const interval = setInterval(refresh, REFRESH_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - last > REFRESH_MS) refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
   const checkAppState = async () => {
     if (!navigator.onLine) { enterLocalMode(); return; }
     try {
@@ -161,17 +183,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Déconnexion explicite : on vide la session locale, puis on revient à
+  // l'accueil invité ("/"), jamais vers /login.
   const logout = (shouldRedirect = true) => {
     clearLocalSession();
+    try { sessionStorage.removeItem('chay_just_logged_in'); } catch { /* ignoré */ }
     setIsLocalMode(true);
     setUser(null);
     setIsAuthenticated(false);
-    
+    setAuthError(null);
+
     if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
+      // Le SDK supprime le jeton puis efface le cookie serveur avant de revenir à "/".
+      base44.auth.logout(window.location.origin + '/');
     } else {
-      // Just remove the token without redirect
       base44.auth.logout();
     }
   };
@@ -188,7 +213,7 @@ export const AuthProvider = ({ children }) => {
     setIsLocalMode(true);
     setUser(null);
     setIsAuthenticated(false);
-    base44.auth.logout(window.location.origin + '/login');
+    base44.auth.logout(window.location.origin + '/');
   };
 
   return (

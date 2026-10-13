@@ -32,7 +32,7 @@ import { Image } from "@/components/ui/image";
 import DailyVerseCard from "@/components/notifications/DailyVerseCard";
 
 export default function SettingsModal({ open, onOpenChange }) {
-  const { user, deleteAccount } = useAuth();
+  const { user, deleteAccount, logout } = useAuth();
   const { toast } = useToast();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -96,9 +96,7 @@ export default function SettingsModal({ open, onOpenChange }) {
     setUploadingPhoto(false);
   };
 
-  const handleLogout = async () => {
-    await base44.auth.logout();
-  };
+  const handleLogout = () => logout();
 
   const sendResetEmail = async () => {
     if (!user?.email) return;

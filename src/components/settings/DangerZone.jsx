@@ -5,14 +5,12 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 export default function DangerZone() {
-  const { deleteAccount } = useAuth();
+  const { deleteAccount, logout: authLogout } = useAuth();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const logout = async () => {
-    await base44.auth.logout();
-  };
+  const logout = () => authLogout();
 
   const doDelete = async () => {
     setError("");
