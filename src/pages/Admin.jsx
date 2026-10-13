@@ -14,6 +14,7 @@ import DashboardHome from "@/components/admin/DashboardHome";
 import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
+import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import { useDonationAlerts } from "@/hooks/useDonationAlerts";
 import {
   LayoutDashboard,
@@ -405,7 +406,8 @@ export default function Admin() {
                     {section?.label}
                   </h2>
                 </div>
-                {section && (
+                {section?.key === "Devotional" && <VersetDuJourSection adminOnly />}
+                {section && section.key !== "Devotional" && (
                   <EntityCrud
                     key={section.key}
                     entity={section.key}

@@ -34,7 +34,7 @@ const PLANNING_LIMIT = 2000;
 // des 30 jours, avec navigation par période pour consulter l'historique).
 // L'affichage est automatique : le jour J, c'est l'entrée datée de J qui
 // apparaît, sans intervention.
-export default function VersetDuJourSection({ refreshKey = 0 }) {
+export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false }) {
   const { user, isLocalMode } = useAuth();
   const { toast } = useToast();
   const isAdmin = !isLocalMode && user?.role === "admin";
@@ -274,11 +274,27 @@ export default function VersetDuJourSection({ refreshKey = 0 }) {
         : `S'affichera automatiquement le ${formatISODate(draft.reading_date, { long: true })}.`;
 
   return (
-    <section className="mt-6">
+    <section className={adminOnly ? "" : "mt-6"}>
+      {/* Panneau admin : même fenêtre « Programmer le verset du jour » que sur
+          l'accueil, ouverte par un bouton à la place de la carte. */}
+      {adminOnly && (
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <p className="text-sm text-muted-foreground">
+            {loading
+              ? "Chargement…"
+              : devotional
+                ? `Verset affiché : ${devotional.scripture_reference || devotional.title}`
+                : "Aucun verset programmé."}
+          </p>
+          <Button onClick={openEdit} className="rounded-full">
+            <Plus className="h-4 w-4 mr-1.5" /> Ajouter / Modifier
+          </Button>
+        </div>
+      )}
       {/* Format ramené à celui du widget Préc./Nouv. juste en dessous : mêmes
           retraits (1,5–1,5), texte réduit, bouton discret — la carte ne doit
           plus écraser le reste de l'accueil. */}
-      <div className="rounded-[1.5rem] brand-gradient p-4 md:p-6 text-white relative overflow-hidden glow-primary">
+      <div className={`${adminOnly ? "hidden " : ""}rounded-[1.5rem] brand-gradient p-4 md:p-6 text-white relative overflow-hidden glow-primary`}>
         <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
