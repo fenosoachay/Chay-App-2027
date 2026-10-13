@@ -130,14 +130,6 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     startShuffle();
   };
 
-  const playAll = () => {
-    if (shuffleOn) {
-      update("shuffle_modes", section, false);
-      setShuffled(null);
-      shuffleRef.current = { shuffleOn: false };
-    }
-    playQueue(customItems, 0);
-  };
 
   // Chaque déplacement est enregistré tout de suite (plus de bouton « Enregistrer »).
   const reorder = (next) => update("playlist_orders", section, next.map((v) => v.id));
@@ -160,7 +152,6 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
         shuffleOn={shuffleOn}
         pulse={pulse}
         disabled={!customItems.length}
-        onPlayAll={playAll}
         onToggleShuffle={toggleShuffle}
         onToggleLock={toggleLock}
       />

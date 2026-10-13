@@ -1,12 +1,9 @@
 import React from "react";
-import { Lock, LockOpen, Play, Shuffle } from "lucide-react";
-
-const base =
-  "inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed";
+import { Lock, LockOpen, Shuffle } from "lucide-react";
 
 export default function YouTubeToolbar({
   locked, shuffleOn, pulse, disabled,
-  onPlayAll, onToggleShuffle, onToggleLock,
+  onToggleShuffle, onToggleLock,
 }) {
   const lockTip = locked
     ? "Playlist verrouillée. Cliquez sur le cadenas pour réorganiser."
@@ -28,20 +25,18 @@ export default function YouTubeToolbar({
         <LockIcon key={String(locked)} className="h-5 w-5 animate-float-in" />
       </button>
 
-      <button type="button" onClick={onPlayAll} disabled={disabled} className={`${base} brand-gradient text-white`}>
-        <Play className="h-4 w-4 fill-current" /> Lire tout
-      </button>
-
       <button
         type="button"
         onClick={onToggleShuffle}
         disabled={disabled}
         aria-pressed={shuffleOn}
-        className={`${base} ${pulse ? "animate-pulse" : ""} ${
+        aria-label="Lecture aléatoire"
+        title="Lecture aléatoire"
+        className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${pulse ? "animate-pulse" : ""} ${
           shuffleOn ? "brand-gradient text-white" : "border border-border bg-card text-foreground/70"
         }`}
       >
-        <Shuffle className="h-4 w-4" /> Lecture aléatoire
+        <Shuffle className="h-5 w-5" />
       </button>
     </div>
   );
