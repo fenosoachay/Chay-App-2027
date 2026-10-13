@@ -10,6 +10,7 @@ import LocalBibleAccess from "@/components/home/LocalBibleAccess";
 import AuthButtons from "@/components/home/AuthButtons";
 // import NewContentsSection from "@/components/home/NewContentsSection"; // Supprimé si vous voulez garder la suppression des nouveautés
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
+import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 
 export default function Home() {
   const { user, isLocalMode, isAuthenticated } = useAuth();
@@ -42,6 +43,13 @@ export default function Home() {
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
           {!isLocalMode && <SplitClock />}
         </div>
+
+        {/* Verset du jour (utilisateurs connectés uniquement) */}
+        {!isLocalMode && isAuthenticated && (
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.18s" }}>
+            <VersetDuJourSection refreshKey={refreshKey} />
+          </div>
+        )}
 
         {/* Question Logique */}
         <div className="animate-float-in mt-6" style={{ animationDelay: "0.2s" }}>
