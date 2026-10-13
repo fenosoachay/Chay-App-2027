@@ -213,8 +213,16 @@
 .home-dot {
   position: absolute;
   border-radius: 9999px;
-  animation: dot-float 6s ease-in-out infinite;
+  animation-duration: 6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
 }
+/* Bulles du haut : descendent. Bulles du bas : montent. Milieu : oscillent. */
+.home-dot-down { animation-name: dot-down; }
+.home-dot-up { animation-name: dot-up; }
+.home-dot-mid { animation-name: dot-mid; }
 @keyframes blob-morph-a {
   0%, 100% { border-radius: 38% 62% 55% 45% / 45% 40% 60% 55%; }
   33% { border-radius: 55% 45% 38% 62% / 55% 60% 40% 45%; }
@@ -233,9 +241,17 @@
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
   50% { transform: translate(-2.5rem, -1.5rem) rotate(-8deg); }
 }
-@keyframes dot-float {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.55; }
-  50% { transform: translateY(-14px) scale(1.4); opacity: 1; }
+@keyframes dot-down {
+  from { transform: translateY(0) scale(1); opacity: 0.55; }
+  to { transform: translateY(var(--dot-range, 90px)) scale(1.4); opacity: 1; }
+}
+@keyframes dot-up {
+  from { transform: translateY(0) scale(1); opacity: 0.55; }
+  to { transform: translateY(calc(var(--dot-range, 90px) * -1)) scale(1.4); opacity: 1; }
+}
+@keyframes dot-mid {
+  from { transform: translateY(calc(var(--dot-range, 90px) * -0.5)) scale(1); opacity: 0.55; }
+  to { transform: translateY(calc(var(--dot-range, 90px) * 0.5)) scale(1.4); opacity: 1; }
 }
 
 @keyframes radio-bar {

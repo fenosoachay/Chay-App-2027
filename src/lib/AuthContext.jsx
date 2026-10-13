@@ -39,14 +39,13 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
   };
 
-  // Retour d'une connexion volontaire : on valide la session sans second clic.
+  // Démarrage : si un jeton est conservé (localStorage, géré par le SDK), on
+  // restaure la session tant que l'utilisateur ne s'est pas déconnecté lui-même.
+  // Sans jeton : accueil en mode invité, aucun écran de connexion bloquant.
+  // Hors ligne : on reste en mode local avec le profil mémorisé.
   useEffect(() => {
-    let justLoggedIn = false;
-    try {
-      justLoggedIn = sessionStorage.getItem('chay_just_logged_in') === '1';
-      sessionStorage.removeItem('chay_just_logged_in');
-    } catch { /* stockage indisponible */ }
-    if (justLoggedIn && appParams.token && navigator.onLine) checkAppState();
+    try { sessionStorage.removeItem('chay_just_logged_in'); } catch { /* stockage indisponible */ }
+    if (appParams.token && navigator.onLine) checkAppState();
   }, []);
 
   useEffect(() => {
@@ -70,6 +69,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);
+          setIsLocalMode(true);
           setAuthChecked(true);
         }
         setIsLoadingPublicSettings(false);
@@ -88,10 +88,9 @@ export const AuthProvider = ({ children }) => {
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
+            // Jeton refusé : retour à l'accueil invité, sans écran bloquant.
+            enterLocalMode();
+            return;
           } else if (reason === 'user_not_registered') {
             setAuthError({
               type: 'user_not_registered',
@@ -146,13 +145,18 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       setIsAuthenticated(false);
-      
-      // If user auth fails, it might be an expired token
+
+      // Jeton expiré ou refusé par le serveur : on le retire et on revient en
+      // mode invité (accueil), sans écran de connexion bloquant.
       if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
+        try {
+          window.localStorage.removeItem('base44_access_token');
+          window.localStorage.removeItem('token');
+        } catch { /* stockage indisponible */ }
+        clearLocalSession();
+        setUser(null);
+        setIsLocalMode(true);
+        setAuthError(null);
       }
     }
   };
