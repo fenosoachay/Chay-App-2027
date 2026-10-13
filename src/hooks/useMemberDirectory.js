@@ -16,7 +16,12 @@ const emit = () => listeners.forEach((fn) => fn(byUser));
 const ingest = (list) => {
   const next = { ...byUser };
   list.forEach((p) => {
-    if (p?.created_by_id) next[p.created_by_id] = p;
+    if (!p?.created_by_id) return;
+    const kept = next[p.created_by_id];
+    // Plusieurs profils pour un même membre : on garde le plus ancien (stable).
+    if (!kept || kept.id === p.id || String(p.created_date) < String(kept.created_date)) {
+      next[p.created_by_id] = p;
+    }
   });
   byUser = next;
 };

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { formatTimestamp, parseTimestamp } from "@/lib/formatTimestamp";
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+const pendingCreate = new Map();
 
 export function isOnline(lastSeenAt) {
   if (!lastSeenAt) return false;
@@ -65,9 +66,17 @@ export function usePresenceHeartbeat(user, enabled = true) {
         }
         return;
       }
-      const created = await base44.entities.MemberProfile
-        .create({ ...publicInfo, last_seen_at: new Date().toISOString() })
-        .catch(() => null);
+      // Une seule création à la fois par utilisateur (évite les profils en double).
+      if (!pendingCreate.has(user.id)) {
+        pendingCreate.set(
+          user.id,
+          base44.entities.MemberProfile
+            .create({ ...publicInfo, last_seen_at: new Date().toISOString() })
+            .catch(() => null)
+            .finally(() => setTimeout(() => pendingCreate.delete(user.id), 5000))
+        );
+      }
+      const created = await pendingCreate.get(user.id);
       profileId = created?.id || null;
     };
 
@@ -100,6 +109,17 @@ export function usePresenceHeartbeat(user, enabled = true) {
   }, [user?.id, user?.profile_photo_url, user?.cover_photo_url, user?.profile_bio, user?.full_name, user?.first_name, user?.last_name]);
 }
 
+// Un seul profil par utilisateur (le plus ancien) : évite d'afficher un membre en double.
+export function dedupeProfiles(list) {
+  const byUser = new Map();
+  list.forEach((p) => {
+    const key = p.created_by_id || p.id;
+    const kept = byUser.get(key);
+    if (!kept || String(p.created_date) < String(kept.created_date)) byUser.set(key, p);
+  });
+  return list.filter((p) => byUser.get(p.created_by_id || p.id) === p);
+}
+
 // Loads all member profiles and live-updates them via realtime subscription.
 export function useProfiles() {
   const [profiles, setProfiles] = useState([]);
@@ -123,7 +143,7 @@ export function useProfiles() {
     return unsub;
   }, []);
 
-  return profiles;
+  return dedupeProfiles(profiles);
 }
 
 export function relTime(d) {
