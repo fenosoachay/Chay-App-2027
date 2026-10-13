@@ -43,7 +43,10 @@ import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen'
 import { CapacitorBackHandler } from './components/CapacitorBackHandler';
 
 const AuthenticatedApp = () => {
-  const { isLocalMode, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+  const { isLocalMode, isLoggingOut, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+
+  // Déconnexion en cours : écran neutre jusqu'au rechargement sur l'accueil.
+  if (isLoggingOut) return <AppLoader />;
 
   if (isLocalMode) {
     return <Suspense fallback={<AppLoader />}><Routes>

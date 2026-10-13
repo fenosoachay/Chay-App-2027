@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(false);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [authChecked, setAuthChecked] = useState(true);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
@@ -188,6 +189,8 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     clearLocalSession();
     try { sessionStorage.removeItem('chay_just_logged_in'); } catch { /* ignoré */ }
+    // Écran de chargement neutre jusqu'au rechargement : aucun écran intermédiaire.
+    if (shouldRedirect) setIsLoggingOut(true);
     setIsLocalMode(true);
     setUser(null);
     setIsAuthenticated(false);
@@ -223,6 +226,7 @@ export const AuthProvider = ({ children }) => {
       isLocalMode,
       isGuest: isLocalMode && !user,
       isLoadingAuth,
+      isLoggingOut,
       isLoadingPublicSettings,
       authError,
       appPublicSettings,

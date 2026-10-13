@@ -1,10 +1,8 @@
 import { Link, Outlet } from 'react-router-dom';
 import ThemeToggle from '@/components/ThemeToggle';
 import BrandLogo from '@/components/BrandLogo';
-import { useAuth } from '@/lib/AuthContext';
 
 export default function LocalLayout() {
-  const { user } = useAuth();
   return <div className="min-h-screen bg-background text-foreground">
     <header
       className="sticky top-0 z-30 border-b border-border bg-background px-3 pb-3 sm:px-4 sm:pb-4"
@@ -15,14 +13,6 @@ export default function LocalLayout() {
           <BrandLogo className="h-10 w-10" />
         </Link>
         <div className="ml-auto flex min-w-0 items-center gap-2">
-          {!user && (
-            <a
-              href="/login"
-              className="brand-gradient rounded-full px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95"
-            >
-              Se connecter
-            </a>
-          )}
           <ThemeToggle />
         </div>
       </div>
