@@ -5,6 +5,10 @@ import { getBackAction, getBackFallback, hasInAppHistory } from '@/lib/backNavig
 import { hasOpenOverlay } from '@/hooks/useBackHandler';
 import { subscribeMediaControl } from '@/lib/mediaControl';
 
+// Délai minimal entre deux appuis traités : un appui physique ne doit jamais
+// provoquer deux retours (certains appareils émettent l'événement en double).
+const BACK_DEBOUNCE_MS = 350;
+
 // Unique écouteur du bouton retour physique d'Android (mode connecté ET hors ligne).
 // Enregistré une seule fois ; la ref donne toujours accès à la page courante.
 export function CapacitorBackHandler() {
@@ -12,6 +16,7 @@ export function CapacitorBackHandler() {
   const navigate = useNavigate();
   const activeMediaRef = useRef(null);
   const stateRef = useRef({});
+  const lastBackAtRef = useRef(0);
   stateRef.current = { location, navigate };
 
   useEffect(() => subscribeMediaControl((control) => { activeMediaRef.current = control; }), []);
@@ -21,6 +26,10 @@ export function CapacitorBackHandler() {
     let cancelled = false;
 
     const handleBackButton = () => {
+      const now = Date.now();
+      if (now - lastBackAtRef.current < BACK_DEBOUNCE_MS) return;
+      lastBackAtRef.current = now;
+
       const { location: loc, navigate: nav } = stateRef.current;
       const action = getBackAction({
         hasOverlay: hasOpenOverlay(),
@@ -41,10 +50,12 @@ export function CapacitorBackHandler() {
         App.minimizeApp().catch(() => {});
         return;
       }
-      // Sur l'accueil : on ne fait rien (l'app ne se ferme pas par accident).
+      // Pas d'historique interne (ex. page rechargée) : on monte d'un niveau
+      // vers l'écran parent, sinon l'accueil. Sur l'accueil, on ne fait rien
+      // (l'app ne se ferme pas par accident).
       const fallback = getBackFallback(loc.pathname, loc.search);
       if (loc.pathname === '/' && fallback === '/') return;
-      nav(fallback, { replace: true });
+      nav(fallback);
     };
 
     App.addListener('backButton', handleBackButton)

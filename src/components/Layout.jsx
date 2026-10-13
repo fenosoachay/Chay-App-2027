@@ -49,11 +49,11 @@ export default function Layout() {
   const navigate = useNavigate();
   usePushNotifications(navigate);
   const webPushSynced = useRef(false);
-  const goBack = (isNative = false) => {
+  const goBack = () => {
     const action = getBackAction({
       hasOverlay: hasOpenOverlay(),
       hasHistory: hasInAppHistory(window.history.state),
-      isNative,
+      isNative: false,
       isPlaying: Boolean(activeMedia?.isPlaying),
     });
     if (action === "close-overlay") {
@@ -67,7 +67,7 @@ export default function Layout() {
         console.warn("[Layout] Unable to minimize while media is playing.", error);
       });
     } else {
-      navigate(getBackFallback(location.pathname, location.search), { replace: true });
+      navigate(getBackFallback(location.pathname, location.search));
     }
   };
 
