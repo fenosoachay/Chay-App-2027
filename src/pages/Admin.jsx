@@ -14,6 +14,7 @@ import DashboardHome from "@/components/admin/DashboardHome";
 import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
+import QuizAdminPanel from "@/components/admin/quiz/QuizAdminPanel";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import { useDonationAlerts } from "@/hooks/useDonationAlerts";
@@ -35,6 +36,7 @@ import {
   Send,
   Newspaper,
   Heart,
+  Gamepad2,
 } from "lucide-react";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
@@ -269,13 +271,14 @@ const NAV = [
   { key: "publish", label: "Publier", icon: Send },
   { key: "donations", label: "Demandes de don", icon: Heart },
   { key: "bible_sync", label: "Recherche Bible", icon: BookOpen },
+  { key: "quiz", label: "Quiz biblique", icon: Gamepad2 },
   ...SECTIONS.map((s) => ({ key: s.key, label: s.label, icon: s.icon })),
 ];
 
-export default function Admin() {
+export default function Admin({ initialSection = "overview" }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [active, setActive] = useState("overview");
+  const [active, setActive] = useState(initialSection);
   const [announcementsKey, setAnnouncementsKey] = useState(0);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -397,6 +400,8 @@ export default function Admin() {
               <PublishContent />
             ) : active === "bible_sync" ? (
               <BibleSyncPanel />
+            ) : active === "quiz" ? (
+              <QuizAdminPanel />
             ) : (
               <section className="rounded-[2rem] border border-border bg-background/40 p-5 md:p-6">
                 <div className="flex items-center gap-2 mb-4">

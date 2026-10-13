@@ -28,6 +28,9 @@ const Home = lazy(() => import("@/pages/Home"));
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
+const Quiz = lazy(() => import("@/pages/Quiz"));
+const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
+const QuizResults = lazy(() => import("@/pages/QuizResults"));
 const Kids = lazy(() => import("@/pages/Kids"));
 const Community = lazy(() => import("@/pages/Community"));
 const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
@@ -96,6 +99,9 @@ const AuthenticatedApp = () => {
           <Route path="/bible" element={<Bible />} />
           <Route path="/media" element={<Media />} />
           <Route path="/games" element={<Games />} />
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/quiz/play/:difficulty" element={<QuizPlay />} />
+          <Route path="/quiz/results" element={<QuizResults />} />
           <Route path="/kids" element={<Kids />} />
           <Route path="/community" element={<RequiresOnline><Community /></RequiresOnline>} />
           <Route path="/profile/:userId" element={<RequiresOnline><MemberProfile /></RequiresOnline>} />
@@ -103,6 +109,7 @@ const AuthenticatedApp = () => {
           <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/quiz" element={<Admin initialSection="quiz" />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />

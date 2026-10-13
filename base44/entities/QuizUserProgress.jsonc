@@ -1,0 +1,93 @@
+{
+  "name": "QuizUserProgress",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "total_questions_played": {
+      "type": "number",
+      "default": 0
+    },
+    "correct_answers": {
+      "type": "number",
+      "default": 0
+    },
+    "best_score_percent": {
+      "type": "number",
+      "default": 0
+    },
+    "unlocked": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Partie en cours"
+    },
+    "session_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Questions servies dans la partie en cours"
+    },
+    "session_answered_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Questions d\u00e9j\u00e0 r\u00e9pondues dans la partie en cours"
+    },
+    "session_correct": {
+      "type": "number",
+      "default": 0,
+      "description": "Bonnes r\u00e9ponses de la partie en cours"
+    }
+  },
+  "required": [
+    "user_id",
+    "difficulty"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

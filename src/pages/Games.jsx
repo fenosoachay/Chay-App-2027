@@ -149,7 +149,7 @@ export default function Games() {
             </div>
             <p className="text-sm text-foreground/55">{g.desc}</p>
             {g.live ? (
-              <button onClick={startTrivia} className="mt-5 w-full rounded-full bg-primary text-primary-foreground px-5 py-3 font-bold hover:scale-[1.02] transition">
+              <button onClick={() => navigate("/quiz")} className="mt-5 w-full rounded-full bg-primary text-primary-foreground px-5 py-3 font-bold hover:scale-[1.02] transition">
                 Jouer
               </button>
             ) : (

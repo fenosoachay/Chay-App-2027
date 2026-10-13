@@ -1,0 +1,59 @@
+{
+  "name": "QuizAnswerHistory",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "selected_answer": {
+      "type": "string"
+    },
+    "is_correct": {
+      "type": "boolean"
+    },
+    "answered_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "question_id",
+    "is_correct"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
