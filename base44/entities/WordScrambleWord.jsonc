@@ -1,0 +1,64 @@
+{
+  "name": "WordScrambleWord",
+  "type": "object",
+  "properties": {
+    "word": {
+      "type": "string",
+      "description": "Mot en MAJUSCULES, sans espaces ni accents. Jamais envoy\u00e9 au joueur avant validation."
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "ultra_hard"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "personnage",
+        "lieu",
+        "objet",
+        "concept",
+        "livre_bible"
+      ]
+    },
+    "hint_phrase": {
+      "type": "string",
+      "description": "Phrase indice contextuelle"
+    },
+    "hint_bible_reference": {
+      "type": "string",
+      "description": "R\u00e9f\u00e9rence biblique optionnelle"
+    }
+  },
+  "required": [
+    "word",
+    "difficulty",
+    "hint_phrase"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

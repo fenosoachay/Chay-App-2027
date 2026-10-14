@@ -1,0 +1,94 @@
+{
+  "name": "WordScrambleProgress",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard",
+        "ultra_hard"
+      ]
+    },
+    "total_words_played": {
+      "type": "number",
+      "default": 0
+    },
+    "total_score": {
+      "type": "number",
+      "default": 0
+    },
+    "best_score": {
+      "type": "number",
+      "default": 0
+    },
+    "best_percent": {
+      "type": "number",
+      "default": 0
+    },
+    "unlocked": {
+      "type": "boolean",
+      "default": false
+    },
+    "master_badge": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Partie en cours"
+    },
+    "session_word_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Mots servis dans la partie en cours"
+    },
+    "session_hints": {
+      "type": "object",
+      "description": "Par mot : { first_letter: bool, phrase: bool }"
+    }
+  },
+  "required": [
+    "user_id",
+    "difficulty"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
