@@ -34,10 +34,8 @@ export default function DashboardHome({ onNavigate }) {
     (async () => {
       const entries = await Promise.all(
         STATS.map(async (s) => {
-          const r = await base44.entities[s.key]
-            .list("-created_date", 200)
-            .catch(() => []);
-          return [s.key, Array.isArray(r) ? r.length : 0];
+          const total = await base44.entities[s.key].count({}).catch(() => 0);
+          return [s.key, total];
         })
       );
       setCounts(Object.fromEntries(entries));
