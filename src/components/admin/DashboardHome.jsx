@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import QuizStatCard from "@/components/admin/QuizStatCard";
 import {
   Headphones,
   BookOpen,
@@ -95,6 +96,7 @@ export default function DashboardHome({ onNavigate }) {
               </button>
             );
           })}
+          <QuizStatCard onClick={() => onNavigate("quiz")} />
         </div>
       )}
     </div>
