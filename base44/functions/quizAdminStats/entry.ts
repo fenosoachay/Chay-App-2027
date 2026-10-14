@@ -10,17 +10,18 @@ export default async function (req: Request): Promise<Response> {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
     const db = base44.asServiceRole;
 
+    const [counts, players] = await Promise.all([
+      Promise.all(LEVELS.map((difficulty) => db.entities.QuizQuestion.count({ difficulty }))),
+      db.entities.QuizUserProgress.aggregate({
+        groupBy: 'user_id',
+        sum: ['total_questions_played', 'correct_answers'],
+        limit: 1000,
+      }),
+    ]);
     const perLevel: Record<string, number> = {};
-    for (const difficulty of LEVELS) {
-      perLevel[difficulty] = await db.entities.QuizQuestion.count({ difficulty });
-    }
-    const totalQuestions = LEVELS.reduce((sum, l) => sum + perLevel[l], 0);
+    LEVELS.forEach((l, i) => { perLevel[l] = counts[i]; });
+    const totalQuestions = counts.reduce((sum: number, c: number) => sum + c, 0);
 
-    const players = await db.entities.QuizUserProgress.aggregate({
-      groupBy: 'user_id',
-      sum: ['total_questions_played', 'correct_answers'],
-      limit: 1000,
-    });
     const rows = players?.rows || [];
     const active = rows.filter((r: any) => (r.sum_total_questions_played || 0) > 0);
     const played = active.reduce((s: number, r: any) => s + (r.sum_total_questions_played || 0), 0);
