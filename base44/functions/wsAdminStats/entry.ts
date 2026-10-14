@@ -1,7 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { LEVELS, pageItems } from '../../shared/wordScrambleRules.ts';
 
-// Statistiques de « Mots Mélangés » pour l'administration.
+// Libellés des mots d'un classement (une seule requête).
+async function withLabels(db: any, rows: any[]) {
+  const ids = rows.map((r: any) => r.word_id);
+  const words = ids.length
+    ? pageItems(await db.entities.WordScrambleWord.filter({ id: { $in: ids } }, { limit: 10 }))
+    : [];
+  return rows.map((r: any) => ({
+    word: words.find((w: any) => w.id === r.word_id)?.word || '—',
+    count: r.count,
+  }));
+}
+
+// Statistiques de « Mots Mélangés » pour l'administration (requêtes en parallèle).
 export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
@@ -10,53 +22,33 @@ export default async function (req: Request): Promise<Response> {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
     const db = base44.asServiceRole;
 
+    const [counts, byUser, byLevel, most, least] = await Promise.all([
+      Promise.all(LEVELS.map((difficulty) => db.entities.WordScrambleWord.count({ difficulty }))),
+      db.entities.WordScrambleProgress.aggregate({
+        query: { total_words_played: { $gt: 0 } }, groupBy: 'user_id', limit: 1000,
+      }),
+      db.entities.WordScrambleProgress.aggregate({
+        query: { total_words_played: { $gt: 0 } }, groupBy: 'difficulty', avg: ['best_percent'], limit: 10,
+      }),
+      db.entities.WordScrambleHistory.aggregate({ groupBy: 'word_id', sort: '-count', limit: 5 }),
+      db.entities.WordScrambleHistory.aggregate({ groupBy: 'word_id', sort: 'count', limit: 5 }),
+    ]);
+
     const perLevel: Record<string, number> = {};
-    for (const difficulty of LEVELS) {
-      perLevel[difficulty] = await db.entities.WordScrambleWord.count({ difficulty });
-    }
-    const totalWords = LEVELS.reduce((sum, l) => sum + perLevel[l], 0);
+    LEVELS.forEach((l, i) => { perLevel[l] = counts[i]; });
 
-    // Joueurs actifs + score moyen (en % du maximum) par niveau.
-    const byUser = await db.entities.WordScrambleProgress.aggregate({
-      groupBy: 'user_id', sum: ['total_words_played'], limit: 1000,
-    });
-    const players = (byUser?.rows || []).filter((r: any) => (r.sum_total_words_played || 0) > 0).length;
-
-    const byLevel = await db.entities.WordScrambleProgress.aggregate({
-      query: { total_words_played: { $gt: 0 } },
-      groupBy: 'difficulty', avg: ['best_percent'], limit: 10,
-    });
     const averageByLevel: Record<string, number> = {};
-    for (const r of byLevel?.rows || []) {
-      averageByLevel[r.difficulty] = Math.round(r.avg_best_percent || 0);
-    }
+    for (const r of byLevel?.rows || []) averageByLevel[r.difficulty] = Math.round(r.avg_best_percent || 0);
 
-    // Mots les plus réussis : mots résolus (historique = résolutions uniquement).
-    const solvedRows = await db.entities.WordScrambleHistory.aggregate({
-      groupBy: 'word_id', sort: '-count', limit: 5,
-    });
-    const topIds = (solvedRows?.rows || []).map((r: any) => r.word_id);
-    const topWords = topIds.length
-      ? pageItems(await db.entities.WordScrambleWord.filter({ id: { $in: topIds } }, { limit: 10 }))
-      : [];
-    const labelOf = (id: string) => topWords.find((w: any) => w.id === id)?.word || '—';
-    const mostSolved = (solvedRows?.rows || []).map((r: any) => ({ word: labelOf(r.word_id), count: r.count }));
-
-    // Mots les plus ratés : les mots avec le moins de résolutions (parmi ceux déjà servis ou non).
-    const leastRows = await db.entities.WordScrambleHistory.aggregate({
-      groupBy: 'word_id', sort: 'count', limit: 5,
-    });
-    const leastIds = (leastRows?.rows || []).map((r: any) => r.word_id);
-    const leastWords = leastIds.length
-      ? pageItems(await db.entities.WordScrambleWord.filter({ id: { $in: leastIds } }, { limit: 10 }))
-      : [];
-    const leastLabel = (id: string) => leastWords.find((w: any) => w.id === id)?.word || '—';
-    const leastSolved = (leastRows?.rows || []).map((r: any) => ({ word: leastLabel(r.word_id), count: r.count }));
+    const [mostSolved, leastSolved] = await Promise.all([
+      withLabels(db, most?.rows || []),
+      withLabels(db, least?.rows || []),
+    ]);
 
     return Response.json({
-      total_words: totalWords,
+      total_words: counts.reduce((a: number, b: number) => a + b, 0),
       per_level: perLevel,
-      players,
+      players: (byUser?.rows || []).length,
       average_by_level: averageByLevel,
       most_solved: mostSolved,
       least_solved: leastSolved,

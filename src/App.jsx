@@ -31,6 +31,9 @@ const Games = lazy(() => import("@/pages/Games"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
 const QuizResults = lazy(() => import("@/pages/QuizResults"));
+const WordScramble = lazy(() => import("@/pages/WordScramble"));
+const WordScramblePlay = lazy(() => import("@/pages/WordScramblePlay"));
+const WordScrambleResults = lazy(() => import("@/pages/WordScrambleResults"));
 const Kids = lazy(() => import("@/pages/Kids"));
 const Community = lazy(() => import("@/pages/Community"));
 const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
@@ -102,6 +105,9 @@ const AuthenticatedApp = () => {
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/play/:difficulty" element={<QuizPlay />} />
           <Route path="/quiz/results" element={<QuizResults />} />
+          <Route path="/word-scramble" element={<WordScramble />} />
+          <Route path="/word-scramble/play/:difficulty" element={<WordScramblePlay />} />
+          <Route path="/word-scramble/results" element={<WordScrambleResults />} />
           <Route path="/kids" element={<Kids />} />
           <Route path="/community" element={<RequiresOnline><Community /></RequiresOnline>} />
           <Route path="/profile/:userId" element={<RequiresOnline><MemberProfile /></RequiresOnline>} />

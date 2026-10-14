@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { HINT_COSTS, isLevel, getProgress, getCredits } from '../../shared/wordScrambleRules.ts';
+import { HINT_COSTS, isLevel, getProgress, getCredits, pageItems } from '../../shared/wordScrambleRules.ts';
 
 // Achète un indice (déduit les crédits côté serveur). Un indice déjà acheté pour
 // ce mot est renvoyé gratuitement. Types : first_letter (1 crédit), phrase (2 crédits).
@@ -19,7 +19,12 @@ export default async function (req: Request): Promise<Response> {
     if (progress.session_id !== session_id || !(progress.session_word_ids || []).includes(wordId)) {
       return Response.json({ error: 'Partie introuvable' }, { status: 409 });
     }
-    if ((progress.session_solved_ids || []).includes(wordId)) {
+    const solvedRows = pageItems(
+      await db.entities.WordScrambleHistory.filter(
+        { user_id: user.id, session_id, word_id: wordId }, { limit: 1 },
+      ),
+    );
+    if (solvedRows.length) {
       return Response.json({ error: 'Mot déjà résolu' }, { status: 409 });
     }
 

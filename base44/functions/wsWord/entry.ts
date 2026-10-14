@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { isLevel, getProgress, scrambleLetters } from '../../shared/wordScrambleRules.ts';
+import { isLevel, getProgress, scrambleLetters, pageItems } from '../../shared/wordScrambleRules.ts';
 
 // Renvoie le mot n°index de la partie en cours, SANS le mot : uniquement les
 // lettres mélangées, sa longueur, et les indices déjà achetés pour ce mot.
@@ -28,6 +28,11 @@ export default async function (req: Request): Promise<Response> {
     if (!entry) return Response.json({ error: 'Mot introuvable' }, { status: 404 });
 
     const bought = (progress.session_hints || {})[wordId] || {};
+    const solvedRows = pageItems(
+      await db.entities.WordScrambleHistory.filter(
+        { user_id: user.id, session_id, word_id: wordId }, { limit: 1 },
+      ),
+    );
     return Response.json({
       wordId,
       shuffledLetters: scrambleLetters(entry.word),
@@ -36,7 +41,7 @@ export default async function (req: Request): Promise<Response> {
       first_letter: bought.first_letter ? entry.word[0] : null,
       hint_phrase: bought.phrase ? entry.hint_phrase : null,
       hint_bible_reference: bought.phrase ? entry.hint_bible_reference || null : null,
-      already_solved: (progress.session_solved_ids || []).includes(wordId),
+      already_solved: solvedRows.length > 0,
     });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });

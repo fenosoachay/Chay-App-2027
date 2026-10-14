@@ -6,7 +6,7 @@ import { hasNavigationOrigin } from "@/lib/backNavigation";
 const GAMES = [
   { id: "trivia", name: "Quiz biblique", desc: "Testez vos connaissances", tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
   { id: "emoji", name: "Émojis bibliques", desc: "Devinez à partir des émojis", tone: "from-[#8A56E2] to-[#FF57B2]", live: false },
-  { id: "scramble", name: "Mots mélangés", desc: "Reconstituez les noms", tone: "from-[#FF57B2] to-[#FF4D2D]", live: false },
+  { id: "scramble", name: "Mots mélangés", desc: "Reconstituez les noms", tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
   { id: "puzzle", name: "Puzzle biblique", desc: "Reconstituez l'image", tone: "from-[#2E6F40] to-[#4A6CFE]", live: false },
   { id: "detective", name: "Enquête biblique", desc: "Résolvez l'énigme", tone: "from-[#FF4D2D] to-[#8A56E2]", live: false },
 ];
@@ -149,7 +149,7 @@ export default function Games() {
             </div>
             <p className="text-sm text-foreground/55">{g.desc}</p>
             {g.live ? (
-              <button onClick={() => navigate("/quiz")} className="mt-5 w-full rounded-full bg-primary text-primary-foreground px-5 py-3 font-bold hover:scale-[1.02] transition">
+              <button onClick={() => navigate(g.path || "/quiz")} className="mt-5 w-full rounded-full bg-primary text-primary-foreground px-5 py-3 font-bold hover:scale-[1.02] transition">
                 Jouer
               </button>
             ) : (

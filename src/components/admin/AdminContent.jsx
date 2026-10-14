@@ -5,6 +5,7 @@ import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
 import QuizAdminPanel from "@/components/admin/quiz/QuizAdminPanel";
+import WordScrambleAdminPanel from "@/components/admin/wordscramble/WordScrambleAdminPanel";
 import AdminListPanel from "@/components/admin/AdminListPanel";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
@@ -20,6 +21,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "publish") return <PublishContent />;
   if (active === "bible_sync") return <BibleSyncPanel />;
   if (active === "quiz") return <QuizAdminPanel />;
+  if (active === "wordscramble") return <WordScrambleAdminPanel />;
   if (active === "admins") return <AdminListPanel />;
 
   const section = SECTIONS.find((s) => s.key === active);
