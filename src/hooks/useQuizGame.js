@@ -48,6 +48,7 @@ export default function useQuizGame(difficulty) {
       question_id: question.id,
       user_answer: letter || "",
       session_id: session.session_id,
+      progress_id: session.progress_id,
       difficulty,
     });
     setResult({ chosen: letter || null, ...res.data });

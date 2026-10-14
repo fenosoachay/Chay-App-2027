@@ -43,6 +43,7 @@ export default async function (req: Request): Promise<Response> {
 
     return Response.json({
       session_id: sessionId,
+      progress_id: progress.id,
       difficulty,
       requested: wanted,
       questions,

@@ -21,7 +21,11 @@ export default async function (req: Request): Promise<Response> {
     }
     const db = base44.asServiceRole;
 
-    const progress = await getProgress(db, user.id, difficulty);
+    const nextLevel = NEXT_LEVEL[difficulty];
+    const [progress, nextProgressInit] = await Promise.all([
+      getProgress(db, user.id, difficulty),
+      nextLevel ? getProgress(db, user.id, nextLevel) : Promise.resolve(null),
+    ]);
     if (progress.session_id !== session_id) {
       return Response.json({ error: 'Partie introuvable ou déjà terminée' }, { status: 409 });
     }
@@ -31,30 +35,29 @@ export default async function (req: Request): Promise<Response> {
     const score = percent(correct, total);
     const best = Math.max(progress.best_score_percent || 0, score);
 
-    await db.entities.QuizUserProgress.update(progress.id, {
-      best_score_percent: best,
-      completed_at: new Date().toISOString(),
-      session_id: '',
-      session_question_ids: [],
-      session_answered_ids: [],
-      session_correct: 0,
-    });
-
     // Déblocage du niveau suivant si le seuil est atteint.
     let newlyUnlocked: string | null = null;
-    const next = NEXT_LEVEL[difficulty];
-    if (next && total > 0) {
+    const next = nextLevel;
+    let nextUnlocked = nextProgressInit ? Boolean(nextProgressInit.unlocked) : false;
+    const writes: Promise<unknown>[] = [
+      db.entities.QuizUserProgress.update(progress.id, {
+        best_score_percent: best,
+        completed_at: new Date().toISOString(),
+        session_id: '',
+        session_question_ids: [],
+        session_answered_ids: [],
+        session_correct: 0,
+      }),
+    ];
+    if (next && nextProgressInit && total > 0) {
       const rule = UNLOCK_RULES[next];
-      if (rule && score >= rule.threshold) {
-        const nextProgress = await getProgress(db, user.id, next);
-        if (!nextProgress.unlocked) {
-          await db.entities.QuizUserProgress.update(nextProgress.id, { unlocked: true });
-          newlyUnlocked = next;
-        }
+      if (rule && score >= rule.threshold && !nextProgressInit.unlocked) {
+        writes.push(db.entities.QuizUserProgress.update(nextProgressInit.id, { unlocked: true }));
+        newlyUnlocked = next;
+        nextUnlocked = true;
       }
     }
-
-    const nextProgress = next ? await getProgress(db, user.id, next) : null;
+    await Promise.all(writes);
 
     return Response.json({
       difficulty,
@@ -64,7 +67,7 @@ export default async function (req: Request): Promise<Response> {
       best_score_percent: best,
       newly_unlocked: newlyUnlocked,
       next_level: next,
-      next_level_unlocked: nextProgress ? Boolean(nextProgress.unlocked) : false,
+      next_level_unlocked: nextUnlocked,
     });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
