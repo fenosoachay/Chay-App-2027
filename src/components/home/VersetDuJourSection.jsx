@@ -25,6 +25,7 @@ import {
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
+import { confirmFr } from "@/lib/confirmFr";
 
 // Nombre d'entrées lues pour alimenter le planning (une par jour au maximum).
 const PLANNING_LIMIT = 2000;
@@ -219,7 +220,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
       return;
     }
     const when = formatISODate(entry.reading_date, { long: true });
-    if (!window.confirm(`Supprimer le verset du ${when} ?`)) return;
+    if (!(await confirmFr({ title: "Supprimer le verset ?", message: `Verset du ${when}.`, confirmLabel: "Supprimer" }))) return;
     try {
       await base44.entities.Devotional.delete(entry.id);
       toast({ title: "Verset supprimé", description: when });

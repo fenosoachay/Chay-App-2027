@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 const RING = "inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-foreground transition-all duration-300 hover:scale-110 active:scale-95";
 
 const LINKS = [
-  { href: "https://www.chay.fr/", label: "Site Web Église Chay", ring: "border border-[#4A6CFE] shadow-[0_0_14px_rgba(74,108,254,0.55)]", icon: <Globe className="h-5 w-5" /> },
+  { href: "http://www.chay.fr/", label: "Site Web Église Chay", ring: "border border-[#4A6CFE] shadow-[0_0_14px_rgba(74,108,254,0.55)]", icon: <Globe className="h-5 w-5" /> },
   { href: "https://www.facebook.com/www.chay.fr", label: "Facebook", ring: "border border-[#8A56E2] shadow-[0_0_14px_rgba(138,86,226,0.55)]", icon: <Facebook className="h-5 w-5" /> },
   { href: "https://www.youtube.com/@EgliseChay.fr-tv", label: "YouTube", ring: "border border-[#FF57B2] shadow-[0_0_14px_rgba(255,87,178,0.55)]", icon: <Youtube className="h-5 w-5" /> },
   {

@@ -120,18 +120,18 @@ export const AuthProvider = ({ children }) => {
           } else if (reason === 'user_not_registered') {
             setAuthError({
               type: 'user_not_registered',
-              message: 'User not registered for this app'
+              message: "Utilisateur non enregistré pour cette application"
             });
           } else {
             setAuthError({
               type: reason,
-              message: appError.message
+              message: "Accès refusé à l'application"
             });
           }
         } else {
           setAuthError({
             type: 'unknown',
-            message: appError.message || 'Failed to load app'
+            message: "Impossible de charger l'application"
           });
         }
         setIsLoadingPublicSettings(false);
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Unexpected error:', error);
       setAuthError({
         type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
+        message: "Une erreur inattendue est survenue"
       });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
@@ -251,7 +251,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth doit être utilisé dans un AuthProvider");
   }
   return context;
 };

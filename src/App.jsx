@@ -47,6 +47,8 @@ import { AudioPlayerProvider } from '@/lib/AudioPlayerContext';
 import { RadioPlayerProvider } from '@/lib/RadioContext';
 import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen';
 import { CapacitorBackHandler } from './components/CapacitorBackHandler';
+import ConfirmHost from '@/components/ConfirmHost';
+import ExternalLinkGuard from '@/components/ExternalLinkGuard';
 
 const AuthenticatedApp = () => {
   const { isLocalMode, isLoggingOut, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
@@ -159,6 +161,8 @@ function App() {
           <RadioPlayerProvider>
           <Router>
             <CapacitorBackHandler />
+            <ConfirmHost />
+            <ExternalLinkGuard />
             <ScrollToTop />
             <ErrorBoundary>
               <AuthenticatedApp />

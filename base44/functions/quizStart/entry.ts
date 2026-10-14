@@ -10,7 +10,7 @@ export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return Response.json({ error: 'Connexion requise' }, { status: 401 });
 
     const { difficulty } = await req.json();
     if (!isLevel(difficulty)) {

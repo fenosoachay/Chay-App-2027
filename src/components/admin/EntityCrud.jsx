@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { notifyAdminUpload } from "@/lib/adminNotify";
+import { confirmFr } from "@/lib/confirmFr";
 import {
   Dialog,
   DialogContent,
@@ -463,7 +464,7 @@ export default function EntityCrud({
   };
 
   const removePlaylist = async (playlist) => {
-    if (!confirm(`Supprimer la playlist « ${playlist.name} » ? Les contenus qu'elle contient seront aussi supprimés.`)) return;
+    if (!(await confirmFr({ title: "Supprimer la playlist ?", message: `« ${playlist.name} » et les contenus qu'elle contient seront supprimés.`, confirmLabel: "Supprimer" }))) return;
     try {
       const pts = await base44.entities.PlaylistTrack.list(`-playlist_id eq "${playlist.id}"`, 500).catch(() => []);
       const arr = Array.isArray(pts) ? pts : [];
@@ -481,7 +482,7 @@ export default function EntityCrud({
   };
 
   const remove = async (item) => {
-    if (!confirm("Supprimer cet élément ? Il sera aussi retiré de toutes les playlists.")) return;
+    if (!(await confirmFr({ title: "Supprimer cet élément ?", message: "Il sera aussi retiré de toutes les playlists.", confirmLabel: "Supprimer" }))) return;
     try {
       await detachFromPlaylists(item.id);
       await base44.entities[entity].delete(item.id);

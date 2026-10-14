@@ -173,7 +173,7 @@ export default function useWordScrambleGame(difficulty) {
       return { ok: true };
     } catch (e) {
       setBusy(false);
-      return { error: e?.response?.data?.error || "Erreur" };
+      return { error: e?.response?.data?.error || "Une erreur est survenue" };
     }
   };
 

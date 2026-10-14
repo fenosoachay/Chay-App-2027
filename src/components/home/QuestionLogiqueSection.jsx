@@ -23,6 +23,7 @@ import {
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
+import { confirmFr } from "@/lib/confirmFr";
 
 // Nombre d'entrées lues pour alimenter le planning (une par jour au maximum).
 const PLANNING_LIMIT = 2000;
@@ -191,7 +192,7 @@ export default function QuestionLogiqueSection({ refreshKey = 0 }) {
       return;
     }
     const when = formatISODate(entry.date, { long: true });
-    if (!window.confirm(`Supprimer la question du ${when} ?`)) return;
+    if (!(await confirmFr({ title: "Supprimer la question ?", message: `Question du ${when}.`, confirmLabel: "Supprimer" }))) return;
     try {
       await base44.entities.QuestionLogique.delete(entry.id);
       toast({ title: "Question supprimée", description: when });

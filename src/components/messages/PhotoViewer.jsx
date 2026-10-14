@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { openExternal } from "@/lib/openExternal";
 
 /**
  * Visionneuse plein écran des photos d'une conversation.
@@ -39,7 +40,7 @@ export default function PhotoViewer({ images, index, onClose }) {
       a.remove();
       URL.revokeObjectURL(obj);
     } catch {
-      window.open(url, "_blank");
+      openExternal(url);
     } finally {
       setDownloading(false);
     }

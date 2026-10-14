@@ -24,6 +24,7 @@ import {
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
+import { confirmFr } from "@/lib/confirmFr";
 
 // Les réunions sont espacées : 500 annonces de type « event » couvrent
 // plusieurs années d'historique.
@@ -255,7 +256,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       return;
     }
     const when = formatISODate(entry.date, { long: true });
-    if (!window.confirm(`Supprimer la réunion du ${when} ?`)) return;
+    if (!(await confirmFr({ title: "Supprimer la réunion ?", message: `Réunion du ${when}.`, confirmLabel: "Supprimer" }))) return;
     try {
       await base44.entities.Announcement.delete(entry.id);
       toast({ title: "Réunion supprimée", description: when });

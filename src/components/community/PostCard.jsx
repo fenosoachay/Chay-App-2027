@@ -10,6 +10,7 @@ import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import useMemberDirectory from "@/hooks/useMemberDirectory";
+import { confirmFr } from "@/lib/confirmFr";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
 
   const deletePost = async () => {
     if (deletingPost) return;
-    if (!window.confirm("Supprimer cette publication ? Cette action est irréversible.")) return;
+    if (!(await confirmFr({ title: "Supprimer la publication ?", message: "Cette action est irréversible.", confirmLabel: "Supprimer" }))) return;
     setDeletingPost(true);
     try {
       await base44.entities.CommunityPost.delete(post.id);
@@ -109,7 +110,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   };
 
   const deleteComment = async (comment) => {
-    if (busyCommentId || !window.confirm("Supprimer ce commentaire ?")) return;
+    if (busyCommentId || !(await confirmFr({ title: "Supprimer le commentaire ?", message: "Cette action est irréversible.", confirmLabel: "Supprimer" }))) return;
     setBusyCommentId(comment.id);
     try {
       await base44.entities.Comment.delete(comment.id);

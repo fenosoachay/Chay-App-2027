@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
+import { confirmFr } from "@/lib/confirmFr";
 
 // Les commentaires de photo réutilisent l'entité Comment (déjà utilisée par
 // la Communauté). Le champ `post_id` reçoit un préfixe « gallery: » pour ne
@@ -257,7 +258,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
 
   const deleteItem = async () => {
     if (!current || deletingItem) return;
-    if (!window.confirm("Supprimer cette photo ? Cette action est irréversible.")) return;
+    if (!(await confirmFr({ title: "Supprimer la photo ?", message: "Cette action est irréversible.", confirmLabel: "Supprimer" }))) return;
     setDeletingItem(true);
     try {
       await base44.entities.GalleryImage.delete(current.id);
@@ -288,7 +289,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   };
 
   const deleteComment = async (comment) => {
-    if (busyCommentId || !window.confirm("Supprimer ce commentaire ?")) return;
+    if (busyCommentId || !(await confirmFr({ title: "Supprimer le commentaire ?", message: "Cette action est irréversible.", confirmLabel: "Supprimer" }))) return;
     setBusyCommentId(comment.id);
     try {
       await base44.entities.Comment.delete(comment.id);
