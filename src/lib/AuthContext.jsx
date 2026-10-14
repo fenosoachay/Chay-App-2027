@@ -86,12 +86,15 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       
       try {
-        const publicSettings = await withTimeout(base44.app.getPublicSettings());
+        // Réglages publics et profil utilisateur demandés en parallèle (avant :
+        // l'un après l'autre, ce qui doublait le temps d'attente au démarrage).
+        const settingsPromise = withTimeout(base44.app.getPublicSettings());
+        const userPromise = appParams.token ? checkUserAuth() : null;
+        const publicSettings = await settingsPromise;
         setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
+
+        if (userPromise) {
+          await userPromise;
         } else {
           setIsLoadingAuth(false);
           setIsAuthenticated(false);

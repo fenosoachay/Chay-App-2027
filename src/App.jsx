@@ -11,12 +11,16 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { PreferencesProvider } from '@/lib/PreferencesContext';
 import { Navigate } from 'react-router-dom';
-import Layout from '@/components/Layout';
-import LocationGate from '@/components/LocationGate';
-import LocalLayout from '@/components/LocalLayout';
-import LocalAccessNotice from '@/components/LocalAccessNotice';
 import { NetworkProvider } from '@/lib/NetworkContext';
 import RequiresOnline from '@/components/RequiresOnline';
+// Chargés en parallèle (une seule fois) au lieu d'alourdir le bundle initial.
+const homeImport = () => import("@/pages/Home");
+const Layout = lazy(() => import('@/components/Layout'));
+const LocationGate = lazy(() => import('@/components/LocationGate'));
+const LocalLayout = lazy(() => import('@/components/LocalLayout'));
+const LocalAccessNotice = lazy(() => import('@/components/LocalAccessNotice'));
+// Lance le téléchargement de l'accueil dès l'évaluation du module, sans attendre le rendu.
+homeImport();
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
@@ -24,7 +28,7 @@ const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
-const Home = lazy(() => import("@/pages/Home"));
+const Home = lazy(homeImport);
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
@@ -144,11 +148,9 @@ function App() {
     if (!showSplash) return undefined;
     // Marqué immédiatement : un actualisation pendant l'animation ne la rejoue pas.
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
-    // Durée = fin exacte de l'animation personnalisée (citation qui apparaît à
-    // delay 2.2s + duration 1s), puis fondu de sortie 0.8s. Avant : l'écran
-    // restait figé ~2 s après la fin de l'animation (le texte final se jouait
-    // "sous" un overlay opaque), ce qui ressemblait à un splash screen système.
-    const t = setTimeout(() => setShowSplash(false), 3200);
+    // Durée = fin de l'animation raccourcie du splash (citation à delay 0.7s
+    // + duration 0.4s), puis fondu de sortie 0.3s.
+    const t = setTimeout(() => setShowSplash(false), 1200);
     return () => clearTimeout(t);
   }, [showSplash]);
 

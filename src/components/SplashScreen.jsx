@@ -16,7 +16,7 @@ export default function SplashScreen() {
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.8, ease: "easeInOut" }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {/* Contenu Central */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-2 px-8 text-center">
@@ -32,7 +32,7 @@ export default function SplashScreen() {
           }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.5, delay: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
         >
           Église Chay
         </motion.h1>
@@ -48,7 +48,7 @@ export default function SplashScreen() {
           }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.5, delay: 1.0, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
         >
           EGC
         </motion.h2>
@@ -59,7 +59,7 @@ export default function SplashScreen() {
           style={{ width: "60px" }}
           initial={{ scaleX: 0, opacity: 0 }}
           animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 1.2, delay: 1.6, ease: "easeInOut" }}
+          transition={{ duration: 0.4, delay: 0.5, ease: "easeInOut" }}
         />
 
         {/* 4. Citation Malgache */}
@@ -73,7 +73,7 @@ export default function SplashScreen() {
           }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 2.2 }}
+          transition={{ duration: 0.4, delay: 0.7 }}
         >
           Ny marina hahafaka anareo tsy ho andevo.
         </motion.p>
