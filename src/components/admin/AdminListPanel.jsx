@@ -7,7 +7,9 @@ export default function AdminListPanel() {
   const [admins, setAdmins] = useState(null);
 
   useEffect(() => {
-    base44.entities.User.filter({ role: "admin" }, { limit: 100 }).then((page) => setAdmins(page.items));
+    base44.entities.User.filter({ role: "admin" }, "-created_date", 100)
+      .then((list) => setAdmins(Array.isArray(list) ? list : []))
+      .catch(() => setAdmins([]));
   }, []);
 
   return (
