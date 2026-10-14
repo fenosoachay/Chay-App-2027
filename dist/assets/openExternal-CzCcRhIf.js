@@ -1,1 +1,0 @@
-import{t as e}from"./confirmFr-WxEKCRLa.js";function t(e){try{return new URL(e).host}catch{return e}}async function n(n){await e({title:`Ouvrir le lien externe ?`,message:`Voulez-vous ouvrir ${t(n)} dans votre navigateur ?`,confirmLabel:`Ouvrir`,cancelLabel:`Annuler`})&&window.open(n,`_blank`,`noopener,noreferrer`)}export{n as t};
