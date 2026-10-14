@@ -108,8 +108,7 @@ const AuthenticatedApp = () => {
           <Route path="/donate" element={<Donate />} />
           <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/quiz" element={<Admin initialSection="quiz" />} />
+          <Route path="/admin/*" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
