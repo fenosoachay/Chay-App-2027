@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import confetti from "canvas-confetti";
 import { Trophy } from "lucide-react";
 import WsResultDetails from "@/components/wordscramble/WsResultDetails";
 import { resultMessage, wsLevelLabel } from "@/lib/wordScrambleConstants";
@@ -30,7 +29,11 @@ export default function WordScrambleResults() {
 
   const perfect = Boolean(summary) && summary.score_percent >= 100 && summary.perfect;
   useEffect(() => {
-    if (perfect) confetti({ particleCount: 160, spread: 80, origin: { y: 0.6 } });
+    if (perfect) {
+      import("canvas-confetti").then(({ default: confetti }) =>
+        confetti({ particleCount: 160, spread: 80, origin: { y: 0.6 } })
+      );
+    }
   }, [perfect]);
 
   if (!summary) return <Navigate to="/word-scramble" replace />;
