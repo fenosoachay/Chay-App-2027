@@ -25,15 +25,24 @@ export default async function (req: Request): Promise<Response> {
 
     // Chemin rapide : lecture par id (progress_id fourni par quizStart). Sans id,
     // on retombe sur la recherche par utilisateur + niveau.
-    const [found, question] = await Promise.all([
+    const loadProgress = () =>
       progress_id
         ? db.entities.QuizUserProgress.get(progress_id).catch(() => null)
         : db.entities.QuizUserProgress.filter(
             { user_id: user.id, difficulty },
             { sort: 'created_date', limit: 1 },
-          ).then((rows: any) => (Array.isArray(rows) ? rows : rows?.items || [])[0]),
+          ).then((rows: any) => (Array.isArray(rows) ? rows : rows?.items || [])[0]);
+    const [first, question] = await Promise.all([
+      loadProgress(),
       db.entities.QuizQuestion.get(question_id),
     ]);
+    // quizStart enregistre la session en arrière-plan : si elle n'est pas encore
+    // visible (réponse très rapide), on patiente un court instant et on relit une fois.
+    let found = first;
+    if (found && found.session_id !== session_id) {
+      await new Promise((r) => setTimeout(r, 1500));
+      found = await loadProgress();
+    }
     // La progression doit appartenir au joueur connecté et au niveau demandé.
     const progress =
       found && found.user_id === user.id && found.difficulty === difficulty ? found : null;
