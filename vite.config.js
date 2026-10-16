@@ -4,6 +4,13 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
+  // Force a single React/ReactDOM instance across the dep graph. Without
+  // this, Vite's dep optimizer can bundle react and react-dom separately,
+  // giving two ReactCurrentDispatcher copies — hooks then throw
+  // "dispatcher is null" (seen on <Link> via useContext).
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
