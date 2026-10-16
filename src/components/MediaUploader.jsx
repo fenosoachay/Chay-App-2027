@@ -19,6 +19,7 @@ export default function MediaUploader({ onClose, onSaved }) {
   const [mediaFile, setMediaFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -27,10 +28,16 @@ export default function MediaUploader({ onClose, onSaved }) {
     if (!mediaFile) { toast({ title: "Sélectionnez un fichier à importer.", variant: "destructive" }); return; }
     if (!form.title.trim()) { toast({ title: "Le titre est requis.", variant: "destructive" }); return; }
     setLoading(true);
+    setProgress(0);
     try {
-      // Core.UploadFile = seule API d'upload officielle du SDK Base44
-      // (UploadPublicFile est un endpoint inexistant → uploads lents/échoués).
-      const mediaUrl = await uploadToBase44(mediaFile);
+      // Gros médias (> 15 Mo, films MP4 multi-Go) : upload morcelé + reprenable
+      // via la fonction backend `upload_chunk` — plus aucun WriteTimeout ni
+      // "[BUF] malloc failure". Petits fichiers : Core.UploadFile officiel.
+      const isVideo = type === "video";
+      const mediaUrl = await uploadToBase44(mediaFile, {
+        forceChunked: isVideo,
+        onProgress: (p) => setProgress(p),
+      });
       let coverUrl = "";
       if (coverFile) {
         coverUrl = await uploadToBase44(coverFile);
@@ -193,8 +200,23 @@ export default function MediaUploader({ onClose, onSaved }) {
             </label>
           </div>
 
+          {loading && (
+            <div className="space-y-1">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                {progress}% — les gros fichiers continuent en arrière-plan ; en cas de
+                coupure réseau, l'envoi reprend automatiquement là où il s'est arrêté.
+              </p>
+            </div>
+          )}
+
           <Button type="submit" className="w-full h-12 font-bold" disabled={loading}>
-            {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Import en cours…</>) : "Importer"}
+            {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Import en cours… {progress}%</>) : "Importer"}
           </Button>
         </form>
       </div>

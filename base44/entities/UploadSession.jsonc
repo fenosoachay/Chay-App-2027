@@ -1,0 +1,19 @@
+{
+  "name": "UploadSession",
+  "type": "object",
+  "properties": {
+    "session_id": { "type": "string" },
+    "name": { "type": "string" },
+    "size": { "type": "number" },
+    "uploaded_indices": { "type": "array", "items": { "type": "number" } },
+    "created_by": { "type": "string" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["session_id"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
