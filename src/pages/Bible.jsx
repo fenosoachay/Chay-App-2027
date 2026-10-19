@@ -113,7 +113,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Concordance</h2>
-            <p className="text-[11px] text-muted-foreground">Tous les mots de la Bible hita ve ity?</p>
+            <p className="text-[11px] text-muted-foreground">Tous les mots de la Bible</p>
           </div>
         </button>
       </div>
