@@ -18,7 +18,9 @@ export default function BibleDictionary({ onBack }) {
   const { favorites, toggle } = useDictionaryFavorites();
 
   const [letter, setLetter] = useState(null);
-  const [mot, setMot] = useState(null);
+  const [mot, setMot] = useState(
+    () => new URLSearchParams(window.location.search).get("mot") || null
+  );
   const [query, setQuery] = useState("");
   // Lien direct depuis l'accueil : /bible?view=dictionary&favorites=1
   const [showFavorites, setShowFavorites] = useState(

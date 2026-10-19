@@ -22,9 +22,14 @@ import BookVerseList from "@/components/bible/concordance/BookVerseList";
 //   livre) → Livre (versets du livre, mot surligné).
 // Tout est calculé sur l'index inversé local : fonctionne hors ligne.
 export default function BibleConcordance({ onBack, onOpenVerse }) {
-  const [lang, setLang] = useState("fr");
+  const [lang, setLang] = useState(() => {
+    const l = new URLSearchParams(window.location.search).get("lang");
+    return l === "fr" || l === "mg" ? l : "fr";
+  });
   const [letter, setLetter] = useState(null);
-  const [word, setWord] = useState(null);
+  const [word, setWord] = useState(
+    () => new URLSearchParams(window.location.search).get("word") || null
+  );
   const [book, setBook] = useState(null); // { bookIdx, name }
   const [query, setQuery] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);

@@ -1,0 +1,31 @@
+{
+  "name": "DictionaryFavorite",
+  "type": "object",
+  "properties": {
+    "mot": {
+      "type": "string",
+      "description": "Mot du dictionnaire ajout\u00e9 aux favoris"
+    },
+    "mot_normalized": {
+      "type": "string",
+      "description": "Version normalis\u00e9e (sans accents, minuscules) pour recherches"
+    }
+  },
+  "required": [
+    "mot"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

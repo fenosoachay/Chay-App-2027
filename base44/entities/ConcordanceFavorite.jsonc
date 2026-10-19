@@ -1,0 +1,35 @@
+{
+  "name": "ConcordanceFavorite",
+  "type": "object",
+  "properties": {
+    "word": {
+      "type": "string",
+      "description": "Mot de la concordance ajout\u00e9 aux favoris"
+    },
+    "lang": {
+      "type": "string",
+      "enum": [
+        "fr",
+        "mg"
+      ]
+    }
+  },
+  "required": [
+    "word",
+    "lang"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
