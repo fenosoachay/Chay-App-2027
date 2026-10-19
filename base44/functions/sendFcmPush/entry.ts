@@ -200,9 +200,17 @@ export default async function(req) {
     for (const uid of userIds) {
       const rows = await base44.asServiceRole.entities.DeviceToken
         .filter({ user_id: uid, is_active: true }, null, 50);
+      // Sécurité : `user_id` est un champ client-writable. On n'envoie qu'aux
+      // tokens dont le créateur (created_by_id, fixé côté serveur) correspond
+      // au user_id revendiqué. Un attaquant peut créer un DeviceToken avec
+      // user_id = victime, mais created_by_id restera son propre id : la ligne
+      // est ignorée et la notification de la victime ne fuit pas vers lui.
+      const validRows = (Array.isArray(rows) ? rows : []).filter(
+        (r) => r.created_by_id === uid
+      );
       const recipient = {
         recipientIndex: recipientResults.length + 1,
-        tokensFound: Array.isArray(rows) ? rows.length : 0,
+        tokensFound: validRows.length,
         attempted: 0,
         succeeded: 0,
         failed: 0,
@@ -210,7 +218,7 @@ export default async function(req) {
         tokenResults: [],
       };
       const recipientIndex = recipientResults.push(recipient) - 1;
-      for (const r of (Array.isArray(rows) ? rows : [])) {
+      for (const r of validRows) {
         tokenRecords.push({ ...r, recipientIndex });
       }
     }

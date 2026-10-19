@@ -80,7 +80,11 @@ export default async function (req) {
         .list("-last_seen", 500, skip);
       const arr = Array.isArray(batch) ? batch : [];
       for (const s of arr) {
-        if (s.is_active !== false && wanted.has(s.user_id)) subs.push(s);
+        // Sécurité : `user_id` est client-writable. On n'envoie qu'aux
+        // abonnements dont created_by_id (fixé côté serveur) correspond au
+        // user_id revendiqué. Empêche un attaquant d'enregistrer son propre
+        // navigateur sous l'id d'un autre membre pour intercepter ses push.
+        if (s.is_active !== false && wanted.has(s.user_id) && s.created_by_id === s.user_id) subs.push(s);
       }
       if (arr.length < 500) break;
       skip += 500;
