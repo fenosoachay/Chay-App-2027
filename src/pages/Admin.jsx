@@ -6,7 +6,7 @@ import { useDonationAlerts } from "@/hooks/useDonationAlerts";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import AdminSidebarNav from "@/components/admin/nav/AdminSidebarNav";
 import AdminBreadcrumb from "@/components/admin/nav/AdminBreadcrumb";
-import { ADMIN_NAV, findNav, findNavByPath } from "@/components/admin/nav/adminNavConfig";
+import { ADMIN_NAV, findNavByPath } from "@/components/admin/nav/adminNavConfig";
 import AdminContent from "@/components/admin/AdminContent";
 import InviteAdminDialog from "@/components/admin/InviteAdminDialog";
 

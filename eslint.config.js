@@ -55,6 +55,20 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+  {
+    // Hooks : on active uniquement le plugin react-hooks (sans importer
+    // pluginJs.recommended ni unused-imports) pour ne pas créer de nouvelles
+    // erreurs no-undef/no-unused-vars sur des fichiers auparavant non lintés.
+    // But : rendre react-hooks/exhaustive-deps disponible là où les
+    // commentaires eslint-disable la référencent.
+    files: ["src/hooks/**/*.{js,jsx}"],
+    plugins: { "react-hooks": pluginReactHooks },
+    rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 ];

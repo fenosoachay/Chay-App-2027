@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { LogOut, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
