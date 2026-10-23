@@ -47,8 +47,8 @@ export default function VerseActionsSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
-        <DrawerHeader>
+      <DrawerContent className="max-h-[85dvh]">
+        <DrawerHeader className="shrink-0">
           <DrawerTitle className="flex items-center gap-2">
             <StickyNote className="h-4 w-4 text-primary" /> {title}
           </DrawerTitle>
@@ -56,7 +56,8 @@ export default function VerseActionsSheet({
             {desc}
           </DrawerDescription>
         </DrawerHeader>
-        <div className="px-4 pb-8 space-y-5">
+
+        <div className="flex-1 overflow-y-auto px-4 space-y-5">
           <div>
             <div className="text-sm font-bold mb-2">Surligner</div>
             <div className="flex gap-3">
@@ -95,14 +96,16 @@ export default function VerseActionsSheet({
               placeholder="Votre note…"
               className="w-full rounded-xl border border-border bg-card p-3 text-sm outline-none focus:border-primary resize-none"
             />
-            <button
-              onClick={() => onNote(note)}
-              className="mt-2 rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-bold"
-            >
-              Enregistrer
-            </button>
           </div>
+        </div>
 
+        <div className="shrink-0 border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] flex flex-col gap-2">
+          <button
+            onClick={() => onNote(note)}
+            className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-bold"
+          >
+            Enregistrer
+          </button>
           <button
             onClick={copy}
             className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-border py-2.5 text-sm font-bold hover:bg-muted transition"
