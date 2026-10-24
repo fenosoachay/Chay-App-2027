@@ -316,16 +316,49 @@ export default function BibleReader({ onBack }) {
                 triggerClassName="flex-[2] min-w-0 px-3 py-2 text-xs gap-1.5"
                 options={books.map((b) => ({ label: b.name, value: b.id }))}
               />
-              <DrawerSelect
-                value={selectedChapter}
-                onChange={(v) => setSelectedChapter(Number(v))}
-                title="Chapitre"
-                triggerClassName="flex-1 min-w-0 px-3 py-2 text-xs gap-1.5"
-                options={chapterNumbers.map((c) => ({ label: String(c), value: c }))}
-              />
             </div>
           )}
         </div>
+
+        {/* Sélecteur de chapitres : grille de boutons carrés, scrollable
+            verticalement pour les livres à nombreux chapitres (Psaumes…). */}
+        {booksStatus === "ready" && (
+          <div className="border-b border-border px-3 py-3 md:px-6">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Chapitre {selectedChapter}
+              <span className="ml-1 font-semibold normal-case text-muted-foreground/70">
+                · {selectedBook?.name} ({chapterNumbers.length})
+              </span>
+            </p>
+            <div className="max-h-52 overflow-y-auto overscroll-contain pr-1">
+              <div
+                role="listbox"
+                aria-label="Choisir un chapitre"
+                className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8"
+              >
+                {chapterNumbers.map((c) => {
+                  const isActive = c === selectedChapter;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      role="option"
+                      aria-selected={isActive}
+                      onClick={() => setSelectedChapter(c)}
+                      className={`flex aspect-square w-full items-center justify-center rounded-lg text-sm font-bold tabular-nums transition ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary"
+                          : "bg-card text-foreground/80 border border-border hover:bg-primary/10 hover:text-primary"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {booksStatus === "ready" && resumeBook && !isAlreadyThere && (
           <ResumeReadingButton
