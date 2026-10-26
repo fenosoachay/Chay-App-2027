@@ -1,7 +1,7 @@
 {
   "name": "UploadSession",
   "singular_name": "upload session",
-  "description": "Session d'upload morcelé (gros fichiers) : uniquement des métadonnées — jamais de données binaires. Les octets des chunks vivent dans le storage privé Base44 (Core.UploadPrivateFile), référencés par l'entité UploadChunk.",
+  "description": "Session d'upload (gros fichiers) : uniquement des métadonnées — jamais de données binaires. Deux modes : « s3-multipart » (DIRECT : les parts vivent dans le bucket S3/R2, upload_id/s3_key/parts_json suivent l'upload côté stockage) et legacy chunked (octets via upload_chunk → UploadChunk).",
   "accepts_file_upload": {
     "enabled": false
   },
@@ -44,10 +44,36 @@
         "open",
         "finalizing",
         "done",
-        "error"
+        "error",
+        "aborted",
+        "expired",
+        "uploading",
+        "paused"
       ],
       "default": "open",
-      "description": "Cycle de vie ; finalizing = verrou anti-double-assemblage"
+      "description": "Cycle de vie ; finalizing = verrou anti-double-assemblage ; aborted/expired = abandon nettoyé par cleanupIncompleteUploads ; uploading/paused = hérité du mode legacy chunked"
+    },
+    "upload_id": {
+      "type": "string",
+      "index": true,
+      "description": "Mode s3-multipart : UploadId renvoyé par CreateMultipartUpload (R2/S3)"
+    },
+    "s3_key": {
+      "type": "string",
+      "description": "Mode s3-multipart : clé (chemin d'objet) du fichier dans le bucket"
+    },
+    "part_size": {
+      "type": "number",
+      "description": "Mode s3-multipart : taille négociée des parts en octets (défaut 8 Mo, multiple de 5 Mo si > 10 000 parts)"
+    },
+    "parts_json": {
+      "type": "string",
+      "description": "Mode s3-multipart : cache JSON [{PartNumber, ETag}] des parts confirmées (métadonnées seules, < 100 Ko)"
+    },
+    "storage": {
+      "type": "string",
+      "default": "",
+      "description": "\"s3-multipart\" pour les sessions direct-S3 ; vide = mode legacy chunked (upload_chunk/finalize)"
     },
     "final_file_url": {
       "type": "string",
