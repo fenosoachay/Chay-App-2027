@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Loader2, Upload, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Loader2, Upload, CheckCircle2, AlertCircle, RefreshCw, Ban } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { uploadToBase44 } from "@/lib/upload";
+import { uploadToBase44, formatBytes } from "@/lib/upload";
 import RichTextEditor from "@/components/media/RichTextEditor";
+
+// Seuil au-delà duquel un fichier est envoyé en mode morcelé (chunked) avec
+// progression détaillée — même logique que src/lib/upload.js (SEUIL_UPLOAD_DIRECT).
+const CHUNKED_UI_THRESHOLD = 15 * 1024 * 1024;
 
 function PlaylistSelect({ field, value, onChange, cls }) {
   const [playlists, setPlaylists] = useState([]);
@@ -47,26 +51,68 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
   const [fileName, setFileName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [fileToRetry, setFileToRetry] = useState(null);
+  // ── PROBLÈME 2 : progression détaillée + Annuler pour les gros fichiers ──
+  const [prog, setProg] = useState(null); // { pct, uploadedBytes, totalBytes, speedBps, etaSec }
+  const abortRef = useRef(null);
+  const speedRef = useRef({ lastBytes: 0, lastTs: 0, smoothBps: 0 });
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const handleDetail = ({ uploadedBytes, totalBytes }) => {
+    const now = performance.now();
+    const s = speedRef.current;
+    if (s.lastTs) {
+      const dt = (now - s.lastTs) / 1000;
+      if (dt > 0.2) {
+        const inst = Math.max(0, (uploadedBytes - s.lastBytes) / dt);
+        s.smoothBps = s.smoothBps ? s.smoothBps * 0.7 + inst * 0.3 : inst;
+        s.lastBytes = uploadedBytes;
+        s.lastTs = now;
+      }
+    } else {
+      s.lastBytes = uploadedBytes;
+      s.lastTs = now;
+    }
+    const etaSec = s.smoothBps > 0 ? Math.round((totalBytes - uploadedBytes) / s.smoothBps) : null;
+    setProg((p) => ({ ...p, uploadedBytes, totalBytes, speedBps: s.smoothBps, etaSec }));
+  };
 
   const doUpload = async (file) => {
     if (!file) return;
     setFileName(file.name);
     setStatus("uploading");
     setErrorMsg("");
+    // Progression détaillée uniquement pour les gros fichiers (chunked).
+    const big = file.size > CHUNKED_UI_THRESHOLD;
+    setProg(big ? { pct: 0, uploadedBytes: 0, totalBytes: file.size, speedBps: 0, etaSec: null } : null);
+    speedRef.current = { lastBytes: 0, lastTs: 0, smoothBps: 0 };
+    const controller = new AbortController();
+    abortRef.current = controller;
     onUploadingChange?.(true);
     try {
-      // Même méthode que AddPlaylistTrackModal qui fonctionne
-      const url = await uploadToBase44(file);
+      // uploadToBase44 bascule automatiquement en mode morcelé/reprenable au-
+      // delà de 15 Mo (fonction backend `upload_chunk`) — fin du HTTP 404 /
+      // "[BUF] malloc failure" sur les films multi-Go. Le signal permet le
+      // bouton "Annuler" ; "Réessayer" reprend la même session (chunks déjà
+      // reçus côté serveur sautés).
+      const url = await uploadToBase44(file, big ? {
+        onProgress: (pct) => setProg((p) => ({ ...p, pct })),
+        onDetail: handleDetail,
+        signal: controller.signal,
+      } : {});
       onChange(url);
       setStatus("done");
       setFileToRetry(null);
+      setProg(null);
     } catch (err) {
       setStatus("error");
-      setErrorMsg(err?.message || "Erreur inconnue");
+      setErrorMsg(err?.cancelled
+        ? "Envoi annulé — « Réessayer » reprend là où il s'est arrêté."
+        : (err?.message || "Erreur inconnue"));
       setFileToRetry(file);
       onChange(""); // reset pour ne pas soumettre une URL vide
     } finally {
       onUploadingChange?.(false);
+      abortRef.current = null;
     }
   };
 
@@ -96,14 +142,39 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
 
       {/* En cours */}
       {status === "uploading" && (
-        <div className="flex items-center gap-3 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
-          <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+        <div className="flex items-start gap-3 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+          <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-primary">Envoi en cours…</div>
             <div className="text-xs text-foreground/60 truncate">{fileName}</div>
+            {/* PROBLÈME 2 : progression détaillée pour les gros fichiers — % +
+                taille envoyée/totale + vitesse + temps restant + Annuler. */}
+            {prog && (
+              <div className="mt-2 space-y-1.5">
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${prog.pct}%` }} />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 text-[11px] font-medium text-foreground/70 tabular-nums">
+                  <span>{prog.pct}% — {formatBytes(prog.uploadedBytes)} / {formatBytes(prog.totalBytes)}</span>
+                  {prog.speedBps > 0 && <span>{formatBytes(prog.speedBps)}/s</span>}
+                  {Number.isFinite(prog.etaSec) && prog.etaSec >= 0 && (
+                    <span>restant ≈ {prog.etaSec >= 60 ? `${Math.ceil(prog.etaSec / 60)} min` : `${prog.etaSec} s`}</span>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="text-xs text-foreground/55 mt-1">
               Vous pouvez remplir les autres champs : l'enregistrement se fera dès que le fichier sera arrivé.
             </div>
+            {prog && (
+              <button
+                type="button"
+                onClick={() => abortRef.current?.abort()}
+                className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-bold text-destructive hover:underline"
+              >
+                <Ban className="h-3 w-3" /> Annuler l'envoi
+              </button>
+            )}
           </div>
         </div>
       )}
