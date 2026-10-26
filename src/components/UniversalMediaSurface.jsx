@@ -411,6 +411,7 @@ const playVideo = (source) => {
           </div>
         </>
       )}
+      </div>
     </motion.div>
   );
 }
