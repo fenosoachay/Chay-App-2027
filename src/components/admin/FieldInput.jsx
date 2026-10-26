@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Loader2, Upload, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
+import RichTextEditor from "@/components/media/RichTextEditor";
 
 function PlaylistSelect({ field, value, onChange, cls }) {
   const [playlists, setPlaylists] = useState([]);
@@ -144,6 +145,24 @@ export default function FieldInput({ field, value, onChange, onUploadingChange }
     "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
   switch (field.type) {
+    // Champ « Contenu » des articles : éditeur riche type Word (gras, italique,
+    // souligné, titres H1-H3, listes, alignement, liens, taille de police).
+    // Le champ produit reste un simple string HTML — aucune modification de
+    // l'entité Article ni du stockage.
+    case "rich-text":
+      return <RichTextEditor value={value} onChange={onChange} />;
+    case "boolean":
+      return (
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={Boolean(value)}
+            onChange={(e) => onChange(e.target.checked)}
+            className="h-4 w-4 accent-[hsl(var(--primary))]"
+          />
+          {field.label}
+        </label>
+      );
     case "textarea":
       return (
         <textarea

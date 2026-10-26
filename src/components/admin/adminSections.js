@@ -109,9 +109,12 @@ export const SECTIONS = [
     listColumns: ["title", "category"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
-      { name: "body", label: "Contenu", type: "textarea", required: true },
+      // « rich-text » : éditeur de texte riche (React Quill) au lieu du simple
+      // textarea — le champ « body » reste un string HTML, même entité qu'avant.
+      { name: "body", label: "Contenu", type: "rich-text", required: true },
       { name: "excerpt", label: "Extrait", type: "textarea" },
       { name: "cover_url", label: "Couverture", type: "file", accept: "image/*" },
+      { name: "cover_cropped", label: "Couverture recadrée", type: "boolean" },
       { name: "category", label: "Catégorie", type: "text" },
       { name: "author", label: "Auteur", type: "text" },
       { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },

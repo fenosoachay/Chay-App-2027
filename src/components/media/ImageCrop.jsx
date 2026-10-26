@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
 export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allowOriginal = false }) {
+  // Deuxième argument de onConfirm : true si l'image a été explicitement
+  // rognée, false si l'original a été conservé (permet aux appelants de
+  // mémoriser le recadrage — ex. cartes d'articles). Les appelants qui
+  // ignorent ce second argument voient leur comportement inchangé.
+  const confirmCropped = (...args) => onConfirm?.(...args, true);
+  const confirmOriginal = (...args) => onConfirm?.(...args, false);
   const [img, setImg] = useState(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
@@ -121,11 +127,11 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
           Annuler
         </button>
         {allowOriginal && (
-          <button onClick={() => onConfirm?.(file)} className="flex-1 rounded-full border border-border py-2.5 text-sm font-bold hover:bg-muted">
+          <button onClick={() => confirmOriginal(file)} className="flex-1 rounded-full border border-border py-2.5 text-sm font-bold hover:bg-muted">
             Conserver l'original
           </button>
         )}
-        <button onClick={confirm} className="flex-1 rounded-full brand-gradient text-white py-2.5 text-sm font-bold">
+        <button onClick={confirmCropped} className="flex-1 rounded-full brand-gradient text-white py-2.5 text-sm font-bold">
           Rogner
         </button>
       </div>
