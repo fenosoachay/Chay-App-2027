@@ -8,7 +8,8 @@ import {
   X,
   Highlighter,
 } from "lucide-react";
-import { HIGHLIGHT_COLORS } from "@/lib/bibleConstants";
+import { HIGHLIGHT_COLORS, highlightHex } from "@/lib/bibleConstants";
+import { useTheme } from "@/hooks/useTheme";
 
 const colorOf = (id) => HIGHLIGHT_COLORS.find((c) => c.id === id) || null;
 
@@ -26,6 +27,8 @@ export default function HighlightsTab({ api }) {
     updateAnnotation,
   } = api;
   const navigate = useNavigate();
+  const { resolved } = useTheme();
+  const isDarkMode = resolved === "dark";
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("date");
 
@@ -127,8 +130,9 @@ export default function HighlightsTab({ api }) {
               <li key={a.id} className="rounded-2xl border border-border bg-card p-3">
                 <div className="flex items-start gap-3">
                   <span
+                    style={{ backgroundColor: color ? highlightHex(color, isDarkMode) : undefined }}
                     className={`mt-1 inline-block h-4 w-4 shrink-0 rounded ${
-                      color?.verse || "bg-primary/30"
+                      !color ? "bg-primary/30" : ""
                     }`}
                   />
                   <div className="min-w-0 flex-1">

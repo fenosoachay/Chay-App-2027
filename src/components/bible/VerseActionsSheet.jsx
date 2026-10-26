@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/drawer";
 import { Copy, Trash2, StickyNote } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { HIGHLIGHT_COLORS } from "@/lib/bibleConstants";
+import { HIGHLIGHT_COLORS, highlightHex } from "@/lib/bibleConstants";
+import { useTheme } from "@/hooks/useTheme";
 
 export default function VerseActionsSheet({
   open,
@@ -20,6 +21,8 @@ export default function VerseActionsSheet({
   onRemove,
 }) {
   const { toast } = useToast();
+  const { resolved } = useTheme();
+  const isDark = resolved === "dark";
   const [note, setNote] = useState("");
   const count = verses.length;
   const colors = verses.map((v) => annotations[v.number]?.highlight_color);
@@ -65,7 +68,8 @@ export default function VerseActionsSheet({
                 <button
                   key={c.id}
                   onClick={() => onHighlight(c.id)}
-                  className={`h-10 w-10 rounded-full ${c.swatch} transition ${
+                  style={{ backgroundColor: highlightHex(c, isDark) }}
+                  className={`h-10 w-10 rounded-full transition ${
                     commonColor === c.id
                       ? "ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110"
                       : "hover:scale-110"
