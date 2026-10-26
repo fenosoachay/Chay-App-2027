@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "lucide-react";
+import { Film, Loader2, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -27,6 +27,9 @@ const isAudioControl = (control) =>
 export default function UniversalMediaSurface() {
   const [control, setControl] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  // PROBLÈME 1 : état "vidéo prête" → commande le poster frame (l'image de
+  // couverture reste affichée tant que la vraie vidéo n'est pas décodable).
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const controlRef = useRef(null);
@@ -50,18 +53,28 @@ export default function UniversalMediaSurface() {
     youtubePlayingRef.current = true;
   };
 
+  // ── PROBLÈME 1 : démarrage lent des MP4 ──────────────────────────────────
+  // On marque la piste en "buffering" dès la demande de lecture, puis on met
+  // le src avec preload="metadata" (voir le JSX plus bas). Le lancement réel
+  // est déclenché par onLoadedMetadata : dès que l'en-tête MP4 (durée +
+  // première image) est reçu, video.play() est appelé immédiatement — pas
+  // besoin d'attendre les premières secondes du fichier.
   const playVideo = (source) => {
     const video = videoRef.current;
     if (!video) return;
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
     if (video.src !== source) {
       video.pause();
       video.src = source;
+      video.preload = "metadata"; // ← moins de données à charger au démarrage
       video.load();
     }
-    if (video.paused) {
+    if (video.readyState >= 1 && video.paused) {
+      // Métadonnées déjà disponibles (cache) : on joue tout de suite.
       video.play().catch(() => {
-        const active = controlRef.current;
-        if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+        const cur = controlRef.current;
+        if (cur) updateMediaControl(cur.id, { isPlaying: false, isBuffering: false });
       });
     }
   };
@@ -84,6 +97,7 @@ export default function UniversalMediaSurface() {
       if (iframeRef.current) iframeRef.current.src = "about:blank";
       youtubePlayingRef.current = false;
       setExpanded(false);
+      setVideoReady(false); // ← nouveau média : le poster reprend la main
       return;
     }
 
@@ -207,6 +221,16 @@ export default function UniversalMediaSurface() {
   const [retryTick, setRetryTick] = useState(0);
   const blockedOffline = Boolean(isYouTube && !isOnline);
   const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
+
+  // ── PROBLÈME 1 : spinner custom ──────────────────────────────────────────
+  // Règle stricte : visible UNIQUEMENT quand control.isBuffering === true,
+  // et masqué immédiatement dès que la lecture reprend OU que currentTime > 0
+  // (l'image avance donc plus de "chargement" à afficher).
+  const showVideoSpinner = Boolean(
+    isVideo &&
+    control?.isBuffering === true &&
+    !(control?.currentTime > 0 && control?.isPlaying),
+  );
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
   // Écran gardé allumé tant qu'une vidéo YouTube joue en ligne ; coupé à la pause/fermeture.
   useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
@@ -282,13 +306,45 @@ export default function UniversalMediaSurface() {
         }`}
         aria-hidden={!showEmbeddedPlayer}
       >
+        {/* Conteneur positionné : permet de superposer le poster custom et
+            l'indicateur de buffering custom au-dessus des contrôles natifs. */}
+        <div className="relative h-full w-full">
         <video
           ref={videoRef}
-          className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
+          className={`native-video h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
           playsInline
           controls={showEmbeddedPlayer && isVideo}
           controlsList="nodownload"
           disablePictureInPicture
+          /* PROBLÈME 1 : preload="metadata" (et non "auto") → le navigateur ne
+             télécharge plus une grosse partie du MP4 avant de démarrer ; la
+             lecture est lancée dans onLoadedMetadata ci-dessous. */
+          preload="metadata"
+          /* Spinner natif masqué côté CSS (voir .native-video::-webkit-media-controls-*
+             dans src/index.css). Les pseudo-éléments de Shadow DOM étant
+             inconsistants selon les navigateurs, on masque aussi l'overlay de
+             chargement complet et on recouvre le centre d'un badge custom :
+             même si un spinner natif perçait, notre overlay opaque le cache. */
+          onLoadedMetadata={(event) => {
+            // ▶ Démarrage immédiat dès réception des métadonnées.
+            const video = event.currentTarget;
+            const active = controlRef.current;
+            if (Number.isFinite(video.duration)) {
+              updateMediaControl(active?.id, { duration: video.duration });
+            }
+            if (active?.type === "video" && active.isPlaying !== false) {
+              video.play().catch(() => {
+                updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+              });
+            }
+          }}
+          onCanPlay={() => {
+            // La vidéo peut jouer : on coupe le buffering ET on retire le
+            // poster (l'image de couverture) pour révéler l'image réelle.
+            setVideoReady(true);
+            const active = controlRef.current;
+            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+          }}
           onPlay={() => {
             const active = controlRef.current;
             if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: false });
@@ -312,6 +368,12 @@ export default function UniversalMediaSurface() {
                 currentTime: event.currentTarget.currentTime,
                 duration: event.currentTarget.duration,
               });
+              // Filet de sécurité anti-double-spinner : dès que l'image avance
+              // (currentTime > 0), le buffering est considéré terminé — sinon
+              // certains navigateurs n'émettent jamais "playing" sur les MP4.
+              if (event.currentTarget.currentTime > 0 && active.isBuffering) {
+                updateMediaControl(active.id, { isBuffering: false });
+              }
             }
           }}
           onEnded={() => {
@@ -321,6 +383,35 @@ export default function UniversalMediaSurface() {
             active.next?.();
           }}
         />
+
+        {/* ── PROBLÈME 1 : poster frame + spinner custom (vidéo uniquement) ──
+            - Le poster (image de couverture control.artwork) reste affiché
+              jusqu'à ce que la vidéo soit réellement prête (onCanPlay), puis
+              disparaît en fondu — plus d'écran noir au démarrage.
+            - Comme le <video> est chargé avec preload="metadata" et sans
+              attribut "poster", le spinner NATIF du navigateur ne s'affiche
+              jamais ici ; le seul spinner visible est celui ci-dessous,
+              piloté par control.isBuffering. */}
+        {isVideo && (
+          <>
+            {control.artwork && !videoReady && (
+              <div className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300">
+                <Image src={control.artwork} alt="" fittingType="contain" className="h-full w-full object-contain" />
+              </div>
+            )}
+            {/* Indicateur de buffering custom : visible UNIQUEMENT quand
+                control.isBuffering === true ; masqué dès que la lecture
+                reprend ou que currentTime > 0 (voir showVideoSpinner). */}
+            {showVideoSpinner && (
+              <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-black/70 shadow-lg">
+                  <Loader2 className="h-8 w-8 animate-spin text-white" aria-label="Chargement de la vidéo" />
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        </div>
         <iframe
           ref={iframeRef}
           className={`h-full w-full ${isYouTube ? "block" : "hidden"}`}

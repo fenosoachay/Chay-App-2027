@@ -397,3 +397,26 @@
   background: hsl(var(--muted));
   font-weight: 700;
 }
+/* ───────────────────────────────────────────────────────────────────────────
+   PROBLÈME 1 — Masquer le spinner NATIF du lecteur vidéo.
+   Le sélecteur classique `video::-webkit-media-controls-loading-indicator` ne
+   fonctionne pas : les contrôles Chrome/Safari vivent dans un shadow DOM et
+   leurs noms internes varient selon les versions/plateformes. Approche multiple
+   (défense en profondeur) :
+   1) On masque TOUS les pseudo-éléments connus du media-controls, y compris
+      l'overlay de chargement complet qui contient le spinner sur certaines
+      versions de Chromium ;
+   2) Le <video> est chargé avec preload="metadata" et sans attribut "poster",
+      ce qui empêche le navigateur d'afficher son indicateur de chargement
+      central (il n'attend jamais des données avant de rendre les contrôles) ;
+   3) En dernier recours visuel, un poster custom + un badge de buffering
+      opaque (voir UniversalMediaSurface.jsx) recouvrent exactement la zone où
+      le spinner natif apparaîtrait — quoi qu'en fasse le navigateur.
+   Ces règles ne ciblent que .native-video (la balise <video> du lecteur
+   global) : aucun autre élément de l'app n'est concerné.
+   ─────────────────────────────────────────────────────────────────────────── */
+video.native-video::-webkit-media-controls-loading-indicator,
+video.native-video::-webkit-media-controls-enclosure video::-webkit-media-controls-panel,
+video.native-video::-webkit-media-controls-overlay-play-button { display: none !important; }
+video.native-video::-webkit-media-controls-start-playback-button { display: none !important; }
+video.native-video::-internal-media-controls-download-button { display: none !important; }
