@@ -40,6 +40,14 @@
     "created_by_admin": {
       "type": "boolean",
       "default": false
+    },
+    "view_count": {
+      "type": "number",
+      "default": 0
+    },
+    "viewed_by": {
+      "type": "array",
+      "default": []
     }
   },
   "required": [
