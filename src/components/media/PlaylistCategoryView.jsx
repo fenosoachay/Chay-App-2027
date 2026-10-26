@@ -20,6 +20,15 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 
+/* ─── Helper pour formatter le nombre de vues ─────────────────────────── */
+function formatViewCount(count) {
+  if (!count || count <= 0) return null;
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  }
+  return count.toString();
+}
+
 /* ─── Hook drag & drop tactile + souris ─────────────────────────────────── */
 function useDragSort(items, onReorder) {
   const dragIdx = useRef(null);
@@ -190,6 +199,10 @@ export default function PlaylistCategoryView({
   /* Comptage d'écoutes local optimiste */
   const [listenCounts, setListenCounts] = useState({});
 
+  /* Comptage de vues local optimiste pour les vidéos */
+  const [viewCounts, setViewCounts] = useState({});
+  const [viewedVideos, setViewedVideos] = useState(new Set());
+
   const isVideo = kind === "video";
 
   useEffect(() => {
@@ -291,6 +304,26 @@ export default function PlaylistCategoryView({
       }
     },
     [toast]
+  );
+
+  const recordVideoView = useCallback(
+    async (videoId) => {
+      if (!videoId || viewedVideos.has(videoId)) return; // Déjà compté cette session
+      try {
+        const response = await base44.functions.invoke("recordVideoView", {
+          video_id: videoId,
+        });
+        const nextCount = Number(response?.data?.view_count ?? response?.view_count);
+        if (!Number.isFinite(nextCount) || nextCount < 0) {
+          throw new Error("Invalid view count response");
+        }
+        setViewCounts((prev) => ({ ...prev, [videoId]: nextCount }));
+        setViewedVideos((prev) => new Set(prev).add(videoId));
+      } catch (error) {
+        console.error("[PlaylistCategoryView] Could not record video view.", error);
+      }
+    },
+    [viewedVideos]
   );
 
   // Une écoute n'est comptée qu'à la moitié du morceau (une fois par lecture).
@@ -432,14 +465,27 @@ export default function PlaylistCategoryView({
                       queue={videoQueue}
                       currentIndex={videoQueue.findIndex((item) => item.id === t.id)}
                       className="w-full max-h-72"
+                      onHalfway={() => recordVideoView(t.track_id)}
                     />
                   ) : (
                     <div className="h-40 brand-gradient grid place-items-center">
                       <Film className="h-10 w-10 text-white/90" />
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3">
-                    <div className="flex-1 min-w-0 font-bold truncate">{t.title}</div>
+                  <div className="flex items-start gap-3 p-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold truncate">{t.title}</div>
+                      {(() => {
+                        const count = viewCounts[t.track_id] ?? 0;
+                        const formatted = formatViewCount(count);
+                        if (!formatted) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
+                            👁️ {formatted} vues
+                          </span>
+                        );
+                      })()}
+                    </div>
                     {favoriteCategory === "music" && (
                       <button
                         onClick={() => onToggleFavorite?.(favItem(t), favoriteCategory)}
@@ -478,8 +524,6 @@ export default function PlaylistCategoryView({
                     onClick={() => {
                       const i = audioTracks.findIndex((a) => a.id === t.id);
                       if (currentTrack?.id === t.track_id) {
-                        // Titre déjà en cours : on rouvre le lecteur, la pause
-                        // se fait uniquement avec son bouton pause.
                         if (isPlaying) requestOpenAudioPlayer();
                         else toggle();
                       } else if (i >= 0) {
