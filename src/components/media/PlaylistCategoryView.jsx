@@ -19,6 +19,16 @@ import { formatListenCount } from "@/lib/playlist";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
+import { subscribeMediaControl } from "@/lib/mediaControl";
+
+/* ─── Helper pour formatter le nombre de vues ─────────────────────────── */
+function formatViewCount(count) {
+  if (!count || count < 0) return "0";
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  }
+  return count.toString();
+}
 
 /* ─── Hook drag & drop tactile + souris ─────────────────────────────────── */
 function useDragSort(items, onReorder) {
@@ -37,7 +47,7 @@ function useDragSort(items, onReorder) {
     return els.length - 1;
   };
 
-  /* ── souris ── */
+  /* ─ souris ── */
   const onMouseDown = useCallback(
     (idx) => (e) => {
       e.preventDefault();
@@ -85,7 +95,7 @@ function useDragSort(items, onReorder) {
     [items, onReorder]
   );
 
-  /* ── tactile ── */
+  /* ─ tactile ── */
   const onTouchStart = useCallback(
     (idx) => () => {
       dragIdx.current = idx;
@@ -190,6 +200,11 @@ export default function PlaylistCategoryView({
   /* Comptage d'écoutes local optimiste */
   const [listenCounts, setListenCounts] = useState({});
 
+  /* Comptage de vues local optimiste pour les vidéos */
+  const [viewCounts, setViewCounts] = useState({});
+  const [viewedVideos, setViewedVideos] = useState(new Set());
+  const halfwayReachedRef = useRef(new Set()); // Pour tracker les vidéos ayant atteint 50%
+
   const isVideo = kind === "video";
 
   useEffect(() => {
@@ -292,6 +307,59 @@ export default function PlaylistCategoryView({
     },
     [toast]
   );
+
+  const recordVideoView = useCallback(
+    async (videoId) => {
+      if (!videoId || viewedVideos.has(videoId)) return;
+      try {
+        const response = await base44.functions.invoke("recordVideoView", {
+          video_id: videoId,
+        });
+        const nextCount = Number(response?.data?.view_count ?? response?.view_count);
+        if (!Number.isFinite(nextCount) || nextCount < 0) {
+          throw new Error("Invalid view count response");
+        }
+        setViewCounts((prev) => ({ ...prev, [videoId]: nextCount }));
+        setViewedVideos((prev) => new Set(prev).add(videoId));
+      } catch (error) {
+        console.error("[PlaylistCategoryView] Could not record video view.", error);
+      }
+    },
+    [viewedVideos]
+  );
+
+  // Écoute du lecteur global pour détecter les 50% sur les vidéos
+  useEffect(() => {
+    if (!isVideo) return;
+
+    const unsubscribe = subscribeMediaControl((control) => {
+      if (!control || control.type !== "video") return;
+      
+      const { currentTime, duration, title, source } = control;
+      
+      // Trouver le track_id correspondant à cette vidéo
+      const matchingTrack = orderedTracks.find(
+        (t) => t.video_url === source || t.title === title
+      );
+      
+      if (!matchingTrack) return;
+      
+      const trackId = matchingTrack.track_id;
+      
+      // Vérifier si on a déjà compté cette vidéo cette session
+      if (halfwayReachedRef.current.has(trackId)) return;
+      
+      // Détecter les 50%
+      if (duration > 0 && currentTime >= duration / 2) {
+        halfwayReachedRef.current.add(trackId);
+        recordVideoView(trackId);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isVideo, orderedTracks, recordVideoView]);
 
   // Une écoute n'est comptée qu'à la moitié du morceau (une fois par lecture).
   const { currentTime, duration } = useAudioPlayer();
@@ -438,8 +506,14 @@ export default function PlaylistCategoryView({
                       <Film className="h-10 w-10 text-white/90" />
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3">
-                    <div className="flex-1 min-w-0 font-bold truncate">{t.title}</div>
+                  <div className="flex items-start gap-3 p-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold truncate">{t.title}</div>
+                      {/* Badge de vues - toujours affiché */}
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
+                        👁️ {formatViewCount(viewCounts[t.track_id] ?? 0)} vue{viewCounts[t.track_id] !== 1 ? "s" : ""}
+                      </span>
+                    </div>
                     {favoriteCategory === "music" && (
                       <button
                         onClick={() => onToggleFavorite?.(favItem(t), favoriteCategory)}
@@ -478,8 +552,6 @@ export default function PlaylistCategoryView({
                     onClick={() => {
                       const i = audioTracks.findIndex((a) => a.id === t.id);
                       if (currentTrack?.id === t.track_id) {
-                        // Titre déjà en cours : on rouvre le lecteur, la pause
-                        // se fait uniquement avec son bouton pause.
                         if (isPlaying) requestOpenAudioPlayer();
                         else toggle();
                       } else if (i >= 0) {

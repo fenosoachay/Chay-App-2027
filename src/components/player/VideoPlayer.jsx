@@ -10,6 +10,7 @@ export default function VideoPlayer({
   queue = [],
   currentIndex = 0,
   className = "",
+  onHalfway, // ← 1. AJOUTÉ : On accepte la fonction de rappel
 }) {
   const startPlayback = () => {
     const startAt = (index) => {
@@ -19,6 +20,7 @@ export default function VideoPlayer({
       const artwork = item?.poster || poster || null;
       let id;
       const stop = () => clearMediaControl(id);
+      
       id = requestMediaPlayback({
         type: "video",
         engine: "video",
@@ -38,6 +40,7 @@ export default function VideoPlayer({
         seek: null,
         toggle: null,
         stop,
+        onHalfway, // ← 2. AJOUTÉ : On la transmet au contrôleur média global
       }, "video");
     };
     startAt(currentIndex);
@@ -51,7 +54,12 @@ export default function VideoPlayer({
       className={`group relative grid min-h-40 w-full place-items-center overflow-hidden rounded-xl bg-black text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
     >
       {poster ? (
-        <Image src={poster} alt="" fittingType="fill" className="absolute inset-0 h-full w-full object-cover opacity-80 transition group-hover:opacity-60" />
+        <Image 
+          src={poster} 
+          alt="" 
+          fittingType="fill" 
+          className="absolute inset-0 h-full w-full object-cover opacity-80 transition group-hover:opacity-60" 
+        />
       ) : (
         <Film className="absolute h-12 w-12 text-white/30" aria-hidden="true" />
       )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Loader2, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "lucide-react";
+import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2 } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -53,31 +53,32 @@ export default function UniversalMediaSurface() {
     youtubePlayingRef.current = true;
   };
 
-  // ── PROBLÈME 1 : démarrage lent des MP4 ──────────────────────────────────
-  // On marque la piste en "buffering" dès la demande de lecture, puis on met
-  // le src avec preload="metadata" (voir le JSX plus bas). Le lancement réel
-  // est déclenché par onLoadedMetadata : dès que l'en-tête MP4 (durée +
-  // première image) est reçu, video.play() est appelé immédiatement — pas
-  // besoin d'attendre les premières secondes du fichier.
-  const playVideo = (source) => {
-    const video = videoRef.current;
-    if (!video) return;
-    const active = controlRef.current;
-    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
-    if (video.src !== source) {
-      video.pause();
+const playVideo = (source) => {
+  const video = videoRef.current;
+  if (!video) return;
+  
+  // Forcer le rechargement complet si la source change
+  if (video.src !== source) {
+    video.pause();
+    video.src = '';
+    video.load();
+    // Petit délai pour éviter les conflits de chargement
+    setTimeout(() => {
       video.src = source;
       video.preload = "metadata"; // ← moins de données à charger au démarrage
       video.load();
-    }
-    if (video.readyState >= 1 && video.paused) {
-      // Métadonnées déjà disponibles (cache) : on joue tout de suite.
       video.play().catch(() => {
         const cur = controlRef.current;
         if (cur) updateMediaControl(cur.id, { isPlaying: false, isBuffering: false });
       });
-    }
-  };
+    }, 100);
+  } else if (video.paused) {
+    video.play().catch(() => {
+      const active = controlRef.current;
+      if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+    });
+  }
+};
 
   useEffect(() => subscribeMediaPlaybackRequests((requested) => {
     if (requested.type === "video") playVideo(requested.source);
@@ -232,10 +233,8 @@ export default function UniversalMediaSurface() {
     !(control?.currentTime > 0 && control?.isPlaying),
   );
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
-  // Écran gardé allumé tant qu'une vidéo YouTube joue en ligne ; coupé à la pause/fermeture.
   useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
 
-  // Lecture poursuivie écran éteint / app en arrière-plan (vidéo et YouTube).
   useBackgroundPlayback({
     active: Boolean(control && (isVideo || isYouTube)),
     getVideo: () => videoRef.current,
@@ -243,10 +242,9 @@ export default function UniversalMediaSurface() {
     isPlaying: () => Boolean(controlRef.current?.isPlaying),
   });
 
-  // Retour du réseau : on relance la vidéo bloquée.
   useEffect(() => {
     if (isOnline && isYouTube && control?.source) playYouTube(control.source);
-  }, [isOnline, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOnline, retryTick]); 
 
   return (
     <motion.div
@@ -299,7 +297,7 @@ export default function UniversalMediaSurface() {
       )}
 
       <div
-        className={`mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-black ${
+        className={`mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-black relative ${
           showEmbeddedPlayer
             ? "my-auto aspect-video"
             : "pointer-events-none fixed bottom-0 right-0 h-[200px] w-[320px] opacity-0"
@@ -310,108 +308,69 @@ export default function UniversalMediaSurface() {
             l'indicateur de buffering custom au-dessus des contrôles natifs. */}
         <div className="relative h-full w-full">
         <video
-          ref={videoRef}
-          className={`native-video h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
-          playsInline
-          controls={showEmbeddedPlayer && isVideo}
-          controlsList="nodownload"
-          disablePictureInPicture
-          /* PROBLÈME 1 : preload="metadata" (et non "auto") → le navigateur ne
-             télécharge plus une grosse partie du MP4 avant de démarrer ; la
-             lecture est lancée dans onLoadedMetadata ci-dessous. */
-          preload="metadata"
-          /* Spinner natif masqué côté CSS (voir .native-video::-webkit-media-controls-*
-             dans src/index.css). Les pseudo-éléments de Shadow DOM étant
-             inconsistants selon les navigateurs, on masque aussi l'overlay de
-             chargement complet et on recouvre le centre d'un badge custom :
-             même si un spinner natif perçait, notre overlay opaque le cache. */
-          onLoadedMetadata={(event) => {
-            // ▶ Démarrage immédiat dès réception des métadonnées.
-            const video = event.currentTarget;
-            const active = controlRef.current;
-            if (Number.isFinite(video.duration)) {
-              updateMediaControl(active?.id, { duration: video.duration });
-            }
-            if (active?.type === "video" && active.isPlaying !== false) {
-              video.play().catch(() => {
-                updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
-              });
-            }
-          }}
-          onCanPlay={() => {
-            // La vidéo peut jouer : on coupe le buffering ET on retire le
-            // poster (l'image de couverture) pour révéler l'image réelle.
-            setVideoReady(true);
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
-          }}
-          onPlay={() => {
-            const active = controlRef.current;
-            if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: false });
-          }}
-          onPause={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isPlaying: false });
-          }}
-          onWaiting={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
-          }}
-          onPlaying={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
-          }}
-          onTimeUpdate={(event) => {
-            const active = controlRef.current;
-            if (active?.type === "video") {
-              updateMediaControl(active.id, {
-                currentTime: event.currentTarget.currentTime,
-                duration: event.currentTarget.duration,
-              });
-              // Filet de sécurité anti-double-spinner : dès que l'image avance
-              // (currentTime > 0), le buffering est considéré terminé — sinon
-              // certains navigateurs n'émettent jamais "playing" sur les MP4.
-              if (event.currentTarget.currentTime > 0 && active.isBuffering) {
-                updateMediaControl(active.id, { isBuffering: false });
-              }
-            }
-          }}
-          onEnded={() => {
-            const active = controlRef.current;
-            if (!active || active.type !== "video") return;
-            updateMediaControl(active.id, { isPlaying: false });
-            active.next?.();
-          }}
-        />
-
-        {/* ── PROBLÈME 1 : poster frame + spinner custom (vidéo uniquement) ──
-            - Le poster (image de couverture control.artwork) reste affiché
-              jusqu'à ce que la vidéo soit réellement prête (onCanPlay), puis
-              disparaît en fondu — plus d'écran noir au démarrage.
-            - Comme le <video> est chargé avec preload="metadata" et sans
-              attribut "poster", le spinner NATIF du navigateur ne s'affiche
-              jamais ici ; le seul spinner visible est celui ci-dessous,
-              piloté par control.isBuffering. */}
-        {isVideo && (
-          <>
-            {control.artwork && !videoReady && (
-              <div className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300">
-                <Image src={control.artwork} alt="" fittingType="contain" className="h-full w-full object-contain" />
-              </div>
-            )}
-            {/* Indicateur de buffering custom : visible UNIQUEMENT quand
-                control.isBuffering === true ; masqué dès que la lecture
-                reprend ou que currentTime > 0 (voir showVideoSpinner). */}
-            {showVideoSpinner && (
-              <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
-                <span className="grid h-16 w-16 place-items-center rounded-full bg-black/70 shadow-lg">
-                  <Loader2 className="h-8 w-8 animate-spin text-white" aria-label="Chargement de la vidéo" />
-                </span>
-              </div>
-            )}
-          </>
+  ref={videoRef}
+  className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
+  playsInline
+  controls={showEmbeddedPlayer && isVideo}
+  controlsList="nodownload"
+  disablePictureInPicture
+  preload="auto" 
+  onPlay={() => {
+    const active = controlRef.current;
+    if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: true });
+  }}
+  onPause={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+  }}
+  onWaiting={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
+  }}
+  onPlaying={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onLoadedData={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onCanPlay={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onStalled={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
+  }}
+  onTimeUpdate={(event) => {
+    const active = controlRef.current;
+    if (active?.type === "video") {
+      updateMediaControl(active.id, {
+        currentTime: event.currentTarget.currentTime,
+        duration: event.currentTarget.duration,
+      });
+    }
+  }}
+  onEnded={() => {
+    const active = controlRef.current;
+    if (!active || active.type !== "video") return;
+    updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+    active.next?.();
+  }}
+  style={{ 
+    WebkitUserSelect: 'none',
+    userSelect: 'none'
+  }}
+/>
+        
+        {/* INDICATEUR DE BUFFERING (SPINNER) */}
+        {control?.isBuffering && isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+            <Loader2 className="h-12 w-12 text-white animate-spin" />
+          </div>
         )}
-        </div>
+
         <iframe
           ref={iframeRef}
           className={`h-full w-full ${isYouTube ? "block" : "hidden"}`}
