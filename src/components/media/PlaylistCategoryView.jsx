@@ -19,10 +19,11 @@ import { formatListenCount } from "@/lib/playlist";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
+import { subscribeMediaControl } from "@/lib/mediaControl";
 
 /* ─── Helper pour formatter le nombre de vues ─────────────────────────── */
 function formatViewCount(count) {
-  if (!count || count <= 0) return null;
+  if (!count || count < 0) return "0";
   if (count >= 1000) {
     return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`;
   }
@@ -46,7 +47,7 @@ function useDragSort(items, onReorder) {
     return els.length - 1;
   };
 
-  /* ── souris ── */
+  /* ─ souris ── */
   const onMouseDown = useCallback(
     (idx) => (e) => {
       e.preventDefault();
@@ -94,7 +95,7 @@ function useDragSort(items, onReorder) {
     [items, onReorder]
   );
 
-  /* ── tactile ── */
+  /* ─ tactile ── */
   const onTouchStart = useCallback(
     (idx) => () => {
       dragIdx.current = idx;
@@ -202,6 +203,7 @@ export default function PlaylistCategoryView({
   /* Comptage de vues local optimiste pour les vidéos */
   const [viewCounts, setViewCounts] = useState({});
   const [viewedVideos, setViewedVideos] = useState(new Set());
+  const halfwayReachedRef = useRef(new Set()); // Pour tracker les vidéos ayant atteint 50%
 
   const isVideo = kind === "video";
 
@@ -308,7 +310,7 @@ export default function PlaylistCategoryView({
 
   const recordVideoView = useCallback(
     async (videoId) => {
-      if (!videoId || viewedVideos.has(videoId)) return; // Déjà compté cette session
+      if (!videoId || viewedVideos.has(videoId)) return;
       try {
         const response = await base44.functions.invoke("recordVideoView", {
           video_id: videoId,
@@ -325,6 +327,39 @@ export default function PlaylistCategoryView({
     },
     [viewedVideos]
   );
+
+  // Écoute du lecteur global pour détecter les 50% sur les vidéos
+  useEffect(() => {
+    if (!isVideo) return;
+
+    const unsubscribe = subscribeMediaControl((control) => {
+      if (!control || control.type !== "video") return;
+      
+      const { currentTime, duration, title, source } = control;
+      
+      // Trouver le track_id correspondant à cette vidéo
+      const matchingTrack = orderedTracks.find(
+        (t) => t.video_url === source || t.title === title
+      );
+      
+      if (!matchingTrack) return;
+      
+      const trackId = matchingTrack.track_id;
+      
+      // Vérifier si on a déjà compté cette vidéo cette session
+      if (halfwayReachedRef.current.has(trackId)) return;
+      
+      // Détecter les 50%
+      if (duration > 0 && currentTime >= duration / 2) {
+        halfwayReachedRef.current.add(trackId);
+        recordVideoView(trackId);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isVideo, orderedTracks, recordVideoView]);
 
   // Une écoute n'est comptée qu'à la moitié du morceau (une fois par lecture).
   const { currentTime, duration } = useAudioPlayer();
@@ -465,7 +500,6 @@ export default function PlaylistCategoryView({
                       queue={videoQueue}
                       currentIndex={videoQueue.findIndex((item) => item.id === t.id)}
                       className="w-full max-h-72"
-                      onHalfway={() => recordVideoView(t.track_id)}
                     />
                   ) : (
                     <div className="h-40 brand-gradient grid place-items-center">
@@ -475,16 +509,10 @@ export default function PlaylistCategoryView({
                   <div className="flex items-start gap-3 p-3">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{t.title}</div>
-                      {(() => {
-                        const count = viewCounts[t.track_id] ?? 0;
-                        const formatted = formatViewCount(count);
-                        if (!formatted) return null;
-                        return (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
-                            👁️ {formatted} vues
-                          </span>
-                        );
-                      })()}
+                      {/* Badge de vues - toujours affiché */}
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
+                        👁️ {formatViewCount(viewCounts[t.track_id] ?? 0)} vue{viewCounts[t.track_id] !== 1 ? "s" : ""}
+                      </span>
                     </div>
                     {favoriteCategory === "music" && (
                       <button
