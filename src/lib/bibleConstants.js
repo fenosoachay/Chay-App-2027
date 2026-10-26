@@ -1,11 +1,23 @@
+// Couleurs de surlignage (highlight). Chaque couleur définit une paire :
+//   - `light` : teinte appliquée en mode bright (clair)
+//   - `dark`  : teinte appliquée en mode dark (sombre)
+// L'ordre est conservé : la ième couleur bright correspond à la ième dark.
+// Les ids historiques sont gardés pour rester compatibles avec les
+// annotations déjà enregistrées (highlight_color stocké = id).
 export const HIGHLIGHT_COLORS = [
-  { id: "green", swatch: "bg-green-500", verse: "bg-green-400/25" },
-  { id: "pink", swatch: "bg-pink-500", verse: "bg-pink-400/25" },
-  { id: "yellow", swatch: "bg-yellow-500", verse: "bg-yellow-400/25" },
-  { id: "blue", swatch: "bg-blue-500", verse: "bg-blue-400/25" },
-  { id: "brown", swatch: "bg-amber-700", verse: "bg-amber-600/25" },
-  { id: "purple", swatch: "bg-purple-500", verse: "bg-purple-400/25" },
+  { id: "yellow", light: "#FFF2A6", dark: "#6B5500" }, // jaune
+  { id: "green", light: "#C6F6D5", dark: "#205C3B" },  // vert
+  { id: "cyan", light: "#B2F0F0", dark: "#155E68" },   // cyan
+  { id: "purple", light: "#F0C6F5", dark: "#713B79" }, // violet
+  { id: "red", light: "#FFD1D1", dark: "#862D35" },    // rouge
+  { id: "gray", light: "#E0E0E0", dark: "#454B54" },   // gris
 ];
+
+// Retourne la couleur hexadécimale adaptée au mode courant ("bright" | "dark").
+export function highlightHex(color, isDark) {
+  if (!color) return undefined;
+  return isDark ? color.dark : color.light;
+}
 
 // Langues proposées dans le lecteur (étiquettes courtes, sans drapeau).
 export const LANGUAGES = [

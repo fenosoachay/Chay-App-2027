@@ -15,7 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { HIGHLIGHT_COLORS, LANGUAGES, VERSIONS } from "@/lib/bibleConstants";
+import { HIGHLIGHT_COLORS, LANGUAGES, VERSIONS, highlightHex } from "@/lib/bibleConstants";
+import { useTheme } from "@/hooks/useTheme";
 import VerseActionsSheet from "@/components/bible/VerseActionsSheet";
 import ReaderSearchBox from "@/components/bible/ReaderSearchBox";
 import DrawerSelect from "@/components/DrawerSelect";
@@ -40,6 +41,8 @@ const langOfVersion = (versionId) => ALL_VERSIONS.find((v) => v.id === versionId
 
 export default function BibleReader({ onBack }) {
   const { toast } = useToast();
+  const { resolved: themeResolved } = useTheme();
+  const isDarkMode = themeResolved === "dark";
   const { user, isLocalMode } = useAuth();
   const didInitRef = useRef(false);
   // Langue et version initiales : ?translation=… (lien depuis la concordance).
@@ -466,7 +469,7 @@ export default function BibleReader({ onBack }) {
                       className={`cursor-pointer rounded px-0.5 transition hover:bg-muted ${isHighlighted ? "bg-primary/25 ring-1 ring-primary/50" : ""} ${isSelected ? "bg-primary/10" : ""}`}
                     >
                       <sup className="mr-1.5 text-xs font-bold text-primary">{verse.number}</sup>
-                      <span className={`rounded px-0.5 ${isSelected ? "bg-primary/20 ring-1 ring-primary/40" : hl ? hl.verse : ""}`}>
+                      <span className={`rounded px-0.5 ${isSelected ? "bg-primary/20 ring-1 ring-primary/40" : ""}`} style={!isSelected && hl ? { backgroundColor: highlightHex(hl, isDarkMode) } : undefined}>
                         {verse.text}
                       </span>
                       {ann?.note && <StickyNote className="inline h-3.5 w-3.5 text-primary ml-1 align-middle" />}
