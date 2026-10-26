@@ -1,19 +1,91 @@
 {
   "name": "UploadSession",
-  "type": "object",
-  "properties": {
-    "session_id": { "type": "string" },
-    "name": { "type": "string" },
-    "size": { "type": "number" },
-    "uploaded_indices": { "type": "array", "items": { "type": "number" } },
-    "created_by": { "type": "string" },
-    "expires_at": { "type": "string", "format": "date-time" }
+  "singular_name": "upload session",
+  "description": "Session d'upload morcelé (gros fichiers) : uniquement des métadonnées — jamais de données binaires. Les octets des chunks vivent dans le storage privé Base44 (Core.UploadPrivateFile), référencés par l'entité UploadChunk.",
+  "accepts_file_upload": {
+    "enabled": false
   },
-  "required": ["session_id"],
+  "enable_realtime_events": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "index": true,
+      "unique": true,
+      "description": "Identifiant déterministe de session calculé côté client (nom+taille+lastModified)"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nom du fichier final"
+    },
+    "mime_type": {
+      "type": "string",
+      "description": "Type MIME déclaré par le client (devine video/mp4 si absent)"
+    },
+    "size": {
+      "type": "number",
+      "description": "Taille totale du fichier en octets"
+    },
+    "total_chunks": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre total de chunks attendu (ceil(size / CHUNK_SIZE))"
+    },
+    "uploaded_indices": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [],
+      "description": "Indices des chunks reçus et stockés — métadonnée légère, PAS les octets"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "finalizing",
+        "done",
+        "error"
+      ],
+      "default": "open",
+      "description": "Cycle de vie ; finalizing = verrou anti-double-assemblage"
+    },
+    "final_file_url": {
+      "type": "string",
+      "description": "URL publique du fichier assemblé (rédigée à la fin de finalize)"
+    },
+    "created_by": {
+      "type": "string",
+      "auto": "created_by"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Expiration TTL (24 h) : au-delà, init repart proprement de zéro"
+    }
+  },
+  "required": [
+    "session_id"
+  ],
   "rls": {
-    "create": { "user_condition": { "role": "admin" } },
-    "read": { "user_condition": { "role": "admin" } },
-    "update": { "user_condition": { "role": "admin" } },
-    "delete": { "user_condition": { "role": "admin" } }
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }

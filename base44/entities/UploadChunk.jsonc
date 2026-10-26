@@ -1,18 +1,67 @@
 {
   "name": "UploadChunk",
-  "type": "object",
-  "properties": {
-    "session_id": { "type": "string" },
-    "index": { "type": "number" },
-    "total": { "type": "number" },
-    "file_uri": { "type": "string" },
-    "created_by": { "type": "string" }
+  "singular_name": "upload chunk",
+  "description": "Référence d'un morceau binaire stocké dans le storage PRIVÉ Base44 (file_uri issu de Core.UploadPrivateFile). L'entité ne contient que des métadonnées légères ; les octets ne passent jamais par la base d'entités.",
+  "accepts_file_upload": {
+    "enabled": false
   },
-  "required": ["session_id", "index"],
+  "enable_realtime_events": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "index": true,
+      "description": "session_id de la UploadSession parente"
+    },
+    "index": {
+      "type": "number",
+      "description": "Position du morceau dans le fichier (0-based)"
+    },
+    "total": {
+      "type": "number",
+      "description": "Nombre total de chunks attendus"
+    },
+    "size": {
+      "type": "number",
+      "description": "Taille réelle du morceau en octets"
+    },
+    "sha256": {
+      "type": "string",
+      "description": "Empreinte SHA-256 hexadécimale du chunk (contrôle d'intégrité)"
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "URI privée retournée par Core.UploadPrivateFile — sert aux signed URLs pendant finalize"
+    },
+    "created_by": {
+      "type": "string",
+      "auto": "created_by"
+    }
+  },
+  "required": [
+    "session_id",
+    "index",
+    "file_uri"
+  ],
   "rls": {
-    "create": { "user_condition": { "role": "admin" } },
-    "read": { "user_condition": { "role": "admin" } },
-    "update": { "user_condition": { "role": "admin" } },
-    "delete": { "user_condition": { "role": "admin" } }
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }
