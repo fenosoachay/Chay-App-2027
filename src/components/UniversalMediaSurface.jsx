@@ -27,6 +27,9 @@ const isAudioControl = (control) =>
 export default function UniversalMediaSurface() {
   const [control, setControl] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  // PROBLÈME 1 : état "vidéo prête" → commande le poster frame (l'image de
+  // couverture reste affichée tant que la vraie vidéo n'est pas décodable).
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const controlRef = useRef(null);
@@ -62,10 +65,11 @@ const playVideo = (source) => {
     // Petit délai pour éviter les conflits de chargement
     setTimeout(() => {
       video.src = source;
+      video.preload = "metadata"; // ← moins de données à charger au démarrage
       video.load();
       video.play().catch(() => {
-        const active = controlRef.current;
-        if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+        const cur = controlRef.current;
+        if (cur) updateMediaControl(cur.id, { isPlaying: false, isBuffering: false });
       });
     }, 100);
   } else if (video.paused) {
@@ -94,6 +98,7 @@ const playVideo = (source) => {
       if (iframeRef.current) iframeRef.current.src = "about:blank";
       youtubePlayingRef.current = false;
       setExpanded(false);
+      setVideoReady(false); // ← nouveau média : le poster reprend la main
       return;
     }
 
@@ -217,6 +222,16 @@ const playVideo = (source) => {
   const [retryTick, setRetryTick] = useState(0);
   const blockedOffline = Boolean(isYouTube && !isOnline);
   const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
+
+  // ── PROBLÈME 1 : spinner custom ──────────────────────────────────────────
+  // Règle stricte : visible UNIQUEMENT quand control.isBuffering === true,
+  // et masqué immédiatement dès que la lecture reprend OU que currentTime > 0
+  // (l'image avance donc plus de "chargement" à afficher).
+  const showVideoSpinner = Boolean(
+    isVideo &&
+    control?.isBuffering === true &&
+    !(control?.currentTime > 0 && control?.isPlaying),
+  );
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
   useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
 
@@ -289,6 +304,9 @@ const playVideo = (source) => {
         }`}
         aria-hidden={!showEmbeddedPlayer}
       >
+        {/* Conteneur positionné : permet de superposer le poster custom et
+            l'indicateur de buffering custom au-dessus des contrôles natifs. */}
+        <div className="relative h-full w-full">
         <video
   ref={videoRef}
   className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}

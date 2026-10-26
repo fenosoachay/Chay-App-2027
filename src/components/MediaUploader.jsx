@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { uploadToBase44 } from "@/lib/upload";
-import { X, Loader2, Upload, Music2, Mic, Film } from "lucide-react";
+import { uploadToBase44, formatBytes } from "@/lib/upload";
+import { X, Loader2, Upload, Music2, Mic, Film, RotateCcw, Ban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -21,23 +21,61 @@ export default function MediaUploader({ onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // ── PROBLÈME 2 : progression détaillée + annulation/reprise ─────────────
+  // stats = { uploadedBytes, totalBytes, speedBps (Mo/s lissé), etaSec }
+  const [stats, setStats] = useState(null);
+  const [uploadError, setUploadError] = useState(null); // message FR si échec
+  const abortRef = useRef(null);   // AbortController du run en cours
+  const resumedRef = useRef(false); // true après un "Reprendre" → force chunked
+  useEffect(() => () => abortRef.current?.abort(), []); // nettoyage à la fermeture
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!mediaFile) { toast({ title: "Sélectionnez un fichier à importer.", variant: "destructive" }); return; }
-    if (!form.title.trim()) { toast({ title: "Le titre est requis.", variant: "destructive" }); return; }
+  // Calcul vitesse lissée + ETA à partir des octets déjà envoyés.
+  const speedRef = useRef({ lastBytes: 0, lastTs: 0, smoothBps: 0 });
+  const handleDetail = ({ uploadedBytes, totalBytes }) => {
+    const now = performance.now();
+    const s = speedRef.current;
+    if (s.lastTs) {
+      const dt = (now - s.lastTs) / 1000;
+      if (dt > 0.2) {
+        const inst = Math.max(0, (uploadedBytes - s.lastBytes) / dt);
+        // Moyenne mobile exponentielle → chiffre stable mais réactif.
+        s.smoothBps = s.smoothBps ? s.smoothBps * 0.7 + inst * 0.3 : inst;
+        s.lastBytes = uploadedBytes;
+        s.lastTs = now;
+      }
+    } else {
+      s.lastBytes = uploadedBytes;
+      s.lastTs = now;
+    }
+    const etaSec = s.smoothBps > 0 ? Math.round((totalBytes - uploadedBytes) / s.smoothBps) : null;
+    setStats({ uploadedBytes, totalBytes, speedBps: s.smoothBps, etaSec });
+  };
+
+  const runUpload = async () => {
     setLoading(true);
     setProgress(0);
+    setStats(null);
+    setUploadError(null);
+    speedRef.current = { lastBytes: 0, lastTs: 0, smoothBps: 0 };
+    // PROBLÈME 2 : un AbortController par tentative → bouton "Annuler" actif.
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       // Gros médias (> 15 Mo, films MP4 multi-Go) : upload morcelé + reprenable
       // via la fonction backend `upload_chunk` — plus aucun WriteTimeout ni
-      // "[BUF] malloc failure". Petits fichiers : Core.UploadFile officiel.
+      // "[BUF] malloc failure" / HTTP 404 sur gros fichiers. Petits fichiers :
+      // Core.UploadFile officiel. Après une reprise ("Reprendre"), on force le
+      // mode chunké : les chunks déjà partis sont sautés côté serveur.
       const isVideo = type === "video";
       const mediaUrl = await uploadToBase44(mediaFile, {
-        forceChunked: isVideo,
+        forceChunked: isVideo || resumedRef.current,
         onProgress: (p) => setProgress(p),
+        onDetail: handleDetail,
+        signal: controller.signal,
       });
+      resumedRef.current = false;
       let coverUrl = "";
       if (coverFile) {
         coverUrl = await uploadToBase44(coverFile);
@@ -106,11 +144,33 @@ export default function MediaUploader({ onClose, onSaved }) {
       onClose?.();
     } catch (err) {
       console.error("[MediaUploader] échec import:", err);
-      toast({ title: "Échec de l'import", description: err?.message || String(err) || "Réessayez.", variant: "destructive" });
+      if (err?.cancelled) {
+        // Annulation volontaire : pas de toast rouge, l'UI montre "Reprendre".
+        setUploadError("Envoi annulé. Vos morceaux déjà envoyés sont conservés 24 h — cliquez « Reprendre » pour continuer sans tout renvoyer.");
+      } else {
+        setUploadError(
+          `L'envoi a été interrompu (${err?.message || "erreur réseau"}). Vérifiez votre connexion puis cliquez « Reprendre » : le upload reprend là où il s'est arrêté.`
+        );
+      }
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
   };
+
+  // Validation du formulaire puis lancement de l'upload.
+  const submit = (e) => {
+    e.preventDefault();
+    if (!mediaFile) { toast({ title: "Sélectionnez un fichier à importer.", variant: "destructive" }); return; }
+    if (!form.title.trim()) { toast({ title: "Le titre est requis.", variant: "destructive" }); return; }
+    runUpload();
+  };
+
+  // Bouton "Annuler" : coupe la requête en cours ; les chunks déjà reçus par
+  // le serveur restent dans la session → "Reprendre" ne renvoie que le reste.
+  const cancelUpload = () => abortRef.current?.abort();
+  // Bouton "Reprendre" : relance runUpload() — session déterministe identique.
+  const resumeUpload = () => { resumedRef.current = true; runUpload(); };
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
@@ -200,18 +260,47 @@ export default function MediaUploader({ onClose, onSaved }) {
             </label>
           </div>
 
-          {loading && (
-            <div className="space-y-1">
+          {/* ── PROBLÈME 2 : barre de progression détaillée ─────────────────
+              % + taille envoyée/totale + vitesse + ETA + bouton Annuler ;
+              message d'erreur FR + bouton Reprendre en cas d'échec. */}
+          {(loading || uploadError) && (
+            <div className="space-y-2 rounded-2xl border border-border bg-muted/30 p-4">
               <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                {progress}% — les gros fichiers continuent en arrière-plan ; en cas de
-                coupure réseau, l'envoi reprend automatiquement là où il s'est arrêté.
-              </p>
+              {stats && (
+                <div className="flex flex-wrap items-center justify-between gap-x-3 text-xs font-medium text-muted-foreground tabular-nums">
+                  <span>{progress}% — {formatBytes(stats.uploadedBytes)} / {formatBytes(stats.totalBytes)}</span>
+                  {stats.speedBps > 0 && <span>{formatBytes(stats.speedBps)}/s</span>}
+                  {Number.isFinite(stats.etaSec) && stats.etaSec >= 0 && (
+                    <span>restant ≈ {stats.etaSec >= 60 ? `${Math.ceil(stats.etaSec / 60)} min` : `${stats.etaSec} s`}</span>
+                  )}
+                </div>
+              )}
+              {!uploadError && (
+                <p className="text-xs text-muted-foreground">
+                  Les gros fichiers sont envoyés par morceaux de 8 Mo : en cas de coupure,
+                  l'envoi reprend automatiquement là où il s'est arrêté (aucun morceau déjà reçu n'est renvoyé).
+                </p>
+              )}
+              {uploadError && (
+                <p className="text-xs font-semibold text-destructive">{uploadError}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                {loading && (
+                  <Button type="button" variant="outline" size="sm" onClick={cancelUpload} className="gap-2">
+                    <Ban className="h-4 w-4" /> Annuler
+                  </Button>
+                )}
+                {uploadError && !loading && (
+                  <Button type="button" variant="secondary" size="sm" onClick={resumeUpload} className="gap-2">
+                    <RotateCcw className="h-4 w-4" /> Reprendre l'envoi
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
