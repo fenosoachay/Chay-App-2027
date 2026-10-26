@@ -20,6 +20,10 @@
     "author": {
       "type": "string"
     },
+    "order": {
+      "type": "number",
+      "description": "Ordre d'affichage des articles (réorganisable par les admins via glisser-déposer)"
+    },
     "visibility": {
       "type": "string",
       "enum": [

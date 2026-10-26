@@ -49,7 +49,7 @@ export default function Media() {
       base44.entities.MusicTrack.list("-created_date", 30).catch(() => []),
       base44.entities.Sermon.list("-date", 30).catch(() => []),
       base44.entities.Video.list("-created_date", 30).catch(() => []),
-      base44.entities.Article.list("-created_date", 20).catch(() => []),
+      base44.entities.Article.list("order", 20).catch(() => []),
       loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
       base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
       base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
@@ -86,7 +86,10 @@ export default function Media() {
     setTracks(Array.isArray(t) ? t : []);
     setSermons(Array.isArray(s) ? s : []);
     setVideos(Array.isArray(v) ? v : []);
-    setArticles(mergeById(a, targetArticles));
+    setArticles(
+      mergeById(a, targetArticles).sort((x, y) => (x.order ?? 99999) - (y.order ?? 99999)
+        || new Date(y.created_date || 0) - new Date(x.created_date || 0))
+    );
     setYoutube(mergeById(y, targetVideos));
     setGallery(filterVisible(mergeById(g, targetImages), user));
     setPlaylist(Array.isArray(p) ? p : []);
@@ -206,6 +209,24 @@ export default function Media() {
     }
   };
 
+  // Sauvegarde du nouvel ordre des articles (admins uniquement — l'UI du
+  // cadenas n'est rendue que pour eux). Écrit le champ `order` sur chaque
+  // article déplacé, comme reorderFavoriteItems pour les favoris musicaux.
+  const reorderArticles = async (nextArticles) => {
+    if (user?.role !== "admin") return;
+    const orderById = new Map(nextArticles.map((a, index) => [a.id, index]));
+    setArticles((current) => current.map((a) =>
+      orderById.has(a.id) ? { ...a, order: orderById.get(a.id) } : a
+    ));
+    const results = await Promise.all(nextArticles.map((a) =>
+      base44.entities.Article.update(a.id, { order: orderById.get(a.id) }).then(() => true, () => false)
+    ));
+    if (results.includes(false)) {
+      toast({ title: "Réorganisation non enregistrée", variant: "destructive" });
+      await loadAll();
+    }
+  };
+
   const openCat = (id) =>
     setSearchParams({ cat: id }, { state: { chayMediaCategory: true } });
   const back = () => {
@@ -251,6 +272,7 @@ export default function Media() {
           isPinned={isPinned}
           onReorderFavoriteItems={reorderFavoriteItems}
           onReorderFavoritePlaylists={reorderFavoritePlaylists}
+          onReorderArticles={reorderArticles}
           playlists={playlists}
           playlistTracks={playlistTracks}
           onGalleryItemUpdated={(updated) =>
