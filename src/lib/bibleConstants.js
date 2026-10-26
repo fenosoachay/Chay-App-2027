@@ -5,12 +5,12 @@
 // Les ids historiques sont gardés pour rester compatibles avec les
 // annotations déjà enregistrées (highlight_color stocké = id).
 export const HIGHLIGHT_COLORS = [
-  { id: "yellow", light: "#FFF2A6", dark: "#6B5500" }, // jaune
-  { id: "green", light: "#C6F6D5", dark: "#205C3B" },  // vert
-  { id: "cyan", light: "#B2F0F0", dark: "#155E68" },   // cyan
-  { id: "purple", light: "#F0C6F5", dark: "#713B79" }, // violet
-  { id: "red", light: "#FFD1D1", dark: "#862D35" },    // rouge
-  { id: "gray", light: "#E0E0E0", dark: "#454B54" },   // gris
+  { id: "yellow", light: "#FFFF00", dark: "#6B5500" }, // jaune
+  { id: "green", light: "#00FF00", dark: "#205C3B" },  // vert
+  { id: "cyan", light: "#00FFFF", dark: "#155E68" },   // cyan
+  { id: "purple", light: "#FF00FF", dark: "#713B79" }, // violet
+  { id: "red", light: "#FF0000", dark: "#862D35" },    // rouge
+  { id: "gray", light: "#C0C0C0", dark: "#454B54" },   // gris
 ];
 
 // Retourne la couleur hexadécimale adaptée au mode courant ("bright" | "dark").
