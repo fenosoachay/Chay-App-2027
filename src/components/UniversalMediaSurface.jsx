@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X } from "lucide-react";
+import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2 } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -208,10 +208,8 @@ export default function UniversalMediaSurface() {
   const blockedOffline = Boolean(isYouTube && !isOnline);
   const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
-  // Écran gardé allumé tant qu'une vidéo YouTube joue en ligne ; coupé à la pause/fermeture.
   useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
 
-  // Lecture poursuivie écran éteint / app en arrière-plan (vidéo et YouTube).
   useBackgroundPlayback({
     active: Boolean(control && (isVideo || isYouTube)),
     getVideo: () => videoRef.current,
@@ -219,10 +217,9 @@ export default function UniversalMediaSurface() {
     isPlaying: () => Boolean(controlRef.current?.isPlaying),
   });
 
-  // Retour du réseau : on relance la vidéo bloquée.
   useEffect(() => {
     if (isOnline && isYouTube && control?.source) playYouTube(control.source);
-  }, [isOnline, retryTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOnline, retryTick]); 
 
   return (
     <motion.div
@@ -275,7 +272,7 @@ export default function UniversalMediaSurface() {
       )}
 
       <div
-        className={`mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-black ${
+        className={`mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-black relative ${
           showEmbeddedPlayer
             ? "my-auto aspect-video"
             : "pointer-events-none fixed bottom-0 right-0 h-[200px] w-[320px] opacity-0"
@@ -289,6 +286,7 @@ export default function UniversalMediaSurface() {
           controls={showEmbeddedPlayer && isVideo}
           controlsList="nodownload"
           disablePictureInPicture
+          preload="metadata" 
           onPlay={() => {
             const active = controlRef.current;
             if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: false });
@@ -321,6 +319,14 @@ export default function UniversalMediaSurface() {
             active.next?.();
           }}
         />
+        
+        {/* INDICATEUR DE BUFFERING (SPINNER) */}
+        {control?.isBuffering && isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+            <Loader2 className="h-12 w-12 text-white animate-spin" />
+          </div>
+        )}
+
         <iframe
           ref={iframeRef}
           className={`h-full w-full ${isYouTube ? "block" : "hidden"}`}
