@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import {
   AlertTriangle,
   BookOpen,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -18,6 +19,13 @@ import { HIGHLIGHT_COLORS, LANGUAGES, VERSIONS } from "@/lib/bibleConstants";
 import VerseActionsSheet from "@/components/bible/VerseActionsSheet";
 import ReaderSearchBox from "@/components/bible/ReaderSearchBox";
 import DrawerSelect from "@/components/DrawerSelect";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 import { enqueue, queueSize } from "@/lib/offlineQueue";
 import useReadingProgress from "@/hooks/useReadingProgress";
 import ResumeReadingButton from "@/components/bible/ResumeReadingButton";
@@ -61,6 +69,8 @@ export default function BibleReader({ onBack }) {
   const [annotations, setAnnotations] = useState({});
   const [selected, setSelected] = useState([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Sheet (modal) du sélecteur de chapitres : même pattern que le sélecteur de livre.
+  const [chapterPickerOpen, setChapterPickerOpen] = useState(false);
 
   // Catalogue des 66 livres de la langue choisie, lu depuis le fichier local.
   // Les ids de livres sont identiques en FR et MG (GEN, EXO… REV) : le livre
@@ -320,43 +330,67 @@ export default function BibleReader({ onBack }) {
           )}
         </div>
 
-        {/* Sélecteur de chapitres : grille de boutons carrés, scrollable
-            verticalement pour les livres à nombreux chapitres (Psaumes…). */}
+        {/* Sélecteur de chapitres : bouton trigger + sheet (modal) identique au
+            sélecteur de livre, contenant une grille de carrés scrollables. */}
         {booksStatus === "ready" && (
           <div className="border-b border-border px-3 py-3 md:px-6">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-              Chapitre {selectedChapter}
-              <span className="ml-1 font-semibold normal-case text-muted-foreground/70">
-                · {selectedBook?.name} ({chapterNumbers.length})
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={chapterPickerOpen}
+              onClick={() => setChapterPickerOpen(true)}
+              className="inline-flex w-full items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-xs font-bold transition hover:bg-muted"
+            >
+              <span className="flex-1 truncate text-left">
+                Chapitre {selectedChapter}
+                <span className="ml-1 font-semibold text-muted-foreground/70">
+                  · {selectedBook?.name} ({chapterNumbers.length})
+                </span>
               </span>
-            </p>
-            <div className="max-h-52 overflow-y-auto overscroll-contain pr-1">
-              <div
-                role="listbox"
-                aria-label="Choisir un chapitre"
-                className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8"
-              >
-                {chapterNumbers.map((c) => {
-                  const isActive = c === selectedChapter;
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      role="option"
-                      aria-selected={isActive}
-                      onClick={() => setSelectedChapter(c)}
-                      className={`flex aspect-square w-full items-center justify-center rounded-lg text-sm font-bold tabular-nums transition ${
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-sm ring-1 ring-primary"
-                          : "bg-card text-foreground/80 border border-border hover:bg-primary/10 hover:text-primary"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+              <ChevronDown className="h-4 w-4 shrink-0 text-foreground/50" />
+            </button>
+
+            <Drawer open={chapterPickerOpen} onOpenChange={setChapterPickerOpen}>
+              <DrawerContent className="max-h-[85vh]">
+                <DrawerHeader className="text-left">
+                  <DrawerTitle>Chapitre</DrawerTitle>
+                  <DrawerDescription>
+                    {selectedBook?.name} — {chapterNumbers.length} chapitre
+                    {chapterNumbers.length > 1 ? "s" : ""}
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="overflow-y-auto overscroll-contain px-4 pb-6 max-h-[60vh]">
+                  <div
+                    role="listbox"
+                    aria-label="Choisir un chapitre"
+                    className="grid grid-cols-5 justify-items-center gap-2 sm:grid-cols-6"
+                  >
+                    {chapterNumbers.map((c) => {
+                      const isActive = c === selectedChapter;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => {
+                            setSelectedChapter(c);
+                            setChapterPickerOpen(false);
+                          }}
+                          className={`flex h-11 w-11 items-center justify-center rounded-sm text-sm font-bold tabular-nums transition ${
+                            isActive
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "border border-border bg-card text-foreground/80 hover:bg-primary/10 hover:text-primary"
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </DrawerContent>
+            </Drawer>
           </div>
         )}
 
