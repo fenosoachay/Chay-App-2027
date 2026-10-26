@@ -397,3 +397,17 @@
   background: hsl(var(--muted));
   font-weight: 700;
 }
+
+/* Cacher le spinner de chargement natif des vidéos */
+video::-webkit-media-controls-loading-indicator {
+  display: none !important;
+}
+
+video::-webkit-media-controls {
+  -webkit-appearance: none;
+}
+
+/* Empêcher le menu contextuel natif sur clic droit */
+video {
+  context-menu: none;
+}

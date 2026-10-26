@@ -50,21 +50,31 @@ export default function UniversalMediaSurface() {
     youtubePlayingRef.current = true;
   };
 
-  const playVideo = (source) => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.src !== source) {
-      video.pause();
+const playVideo = (source) => {
+  const video = videoRef.current;
+  if (!video) return;
+  
+  // Forcer le rechargement complet si la source change
+  if (video.src !== source) {
+    video.pause();
+    video.src = '';
+    video.load();
+    // Petit délai pour éviter les conflits de chargement
+    setTimeout(() => {
       video.src = source;
       video.load();
-    }
-    if (video.paused) {
       video.play().catch(() => {
         const active = controlRef.current;
         if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
       });
-    }
-  };
+    }, 100);
+  } else if (video.paused) {
+    video.play().catch(() => {
+      const active = controlRef.current;
+      if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+    });
+  }
+};
 
   useEffect(() => subscribeMediaPlaybackRequests((requested) => {
     if (requested.type === "video") playVideo(requested.source);
@@ -280,45 +290,61 @@ export default function UniversalMediaSurface() {
         aria-hidden={!showEmbeddedPlayer}
       >
         <video
-          ref={videoRef}
-          className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
-          playsInline
-          controls={showEmbeddedPlayer && isVideo}
-          controlsList="nodownload"
-          disablePictureInPicture
-          preload="metadata" 
-          onPlay={() => {
-            const active = controlRef.current;
-            if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: false });
-          }}
-          onPause={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isPlaying: false });
-          }}
-          onWaiting={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
-          }}
-          onPlaying={() => {
-            const active = controlRef.current;
-            if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
-          }}
-          onTimeUpdate={(event) => {
-            const active = controlRef.current;
-            if (active?.type === "video") {
-              updateMediaControl(active.id, {
-                currentTime: event.currentTarget.currentTime,
-                duration: event.currentTarget.duration,
-              });
-            }
-          }}
-          onEnded={() => {
-            const active = controlRef.current;
-            if (!active || active.type !== "video") return;
-            updateMediaControl(active.id, { isPlaying: false });
-            active.next?.();
-          }}
-        />
+  ref={videoRef}
+  className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
+  playsInline
+  controls={showEmbeddedPlayer && isVideo}
+  controlsList="nodownload"
+  disablePictureInPicture
+  preload="auto" 
+  onPlay={() => {
+    const active = controlRef.current;
+    if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: true });
+  }}
+  onPause={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+  }}
+  onWaiting={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
+  }}
+  onPlaying={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onLoadedData={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onCanPlay={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+  }}
+  onStalled={() => {
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
+  }}
+  onTimeUpdate={(event) => {
+    const active = controlRef.current;
+    if (active?.type === "video") {
+      updateMediaControl(active.id, {
+        currentTime: event.currentTarget.currentTime,
+        duration: event.currentTarget.duration,
+      });
+    }
+  }}
+  onEnded={() => {
+    const active = controlRef.current;
+    if (!active || active.type !== "video") return;
+    updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+    active.next?.();
+  }}
+  style={{ 
+    WebkitUserSelect: 'none',
+    userSelect: 'none'
+  }}
+/>
         
         {/* INDICATEUR DE BUFFERING (SPINNER) */}
         {control?.isBuffering && isVideo && (
