@@ -265,7 +265,6 @@ export default function Media() {
           onOpen={openCat}
           radioPlaying={radio.isPlaying}
           onToggleRadio={() => radio.toggle()}
-          isAdmin={user?.role === "admin"}
         />
       )}
 
