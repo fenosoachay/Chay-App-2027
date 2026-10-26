@@ -6,7 +6,10 @@ const thumbOf = (v) =>
   v.cover_url || v.thumbnail_url || `https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`;
 
 // Liste glisser-déposer affichée en mode édition.
-export default function YouTubeSortableList({ items, onReorder }) {
+// renderRow (optionnel) permet de personnaliser le contenu de la ligne
+// (utilisé par la gestion admin pour afficher l'indicateur "vidéo supprimée"
+// et le bouton Supprimer). Sans lui, le rendu reste celui d'origine.
+export default function YouTubeSortableList({ items, onReorder, renderRow }) {
   const onDragEnd = (result) => {
     if (!result.destination || result.destination.index === result.source.index) return;
     const next = [...items];
@@ -37,8 +40,14 @@ export default function YouTubeSortableList({ items, onReorder }) {
                     >
                       <GripVertical className="h-5 w-5" />
                     </span>
-                    <img src={thumbOf(v)} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" />
-                    <p className="min-w-0 flex-1 line-clamp-2 text-sm font-bold">{v.title}</p>
+                    {renderRow ? (
+                      renderRow(v)
+                    ) : (
+                      <>
+                        <img src={thumbOf(v)} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" />
+                        <p className="min-w-0 flex-1 line-clamp-2 text-sm font-bold">{v.title}</p>
+                      </>
+                    )}
                   </div>
                 )}
               </Draggable>

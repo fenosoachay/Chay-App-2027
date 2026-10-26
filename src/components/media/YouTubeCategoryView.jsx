@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { AlertTriangle, Lock, LockOpen, Trash2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import YouTubeCard from "@/components/media/YouTubeCard";
 import YouTubeToolbar from "@/components/media/YouTubeToolbar";
 import YouTubeSortableList from "@/components/media/YouTubeSortableList";
@@ -11,11 +14,139 @@ import { applySavedOrder, shuffleArray } from "@/lib/youtubePrefs";
 
 const SECTION_LABELS = { culte: "Culte", louange: "Louange", celebration: "Célébration" };
 
+// Miniature YouTube par défaut (utilisée pour détecter les vidéos supprimées).
+function ytThumbUrl(id) {
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
+
+// Détection des vidéos supprimées/introuvables sur YouTube : la miniature
+// renvoie une image placeholder gris clair (120x90), sinon une vignette colorée.
+function isDeletedThumbnail(src) {
+  return new Promise((resolve) => {
+    if (!src || !/^https:\/\/img\.youtube\.com\//.test(src)) {
+      resolve(false);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth <= 120 && img.naturalHeight <= 90);
+    img.onerror = () => resolve(true);
+    img.src = src;
+  });
+}
+
+// Ligne admin : miniature (ou indicateur "vidéo supprimée"), titre et bouton
+// de suppression définitive — visible uniquement pour les admins.
+function YouTubeAdminRow({ video, dead, onDelete }) {
+  const thumb = video.cover_url || video.thumbnail_url || ytThumbUrl(video.youtube_id);
+  return (
+    <>
+      <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-black">
+        {dead === undefined ? (
+          <div className="absolute inset-0 animate-pulse bg-foreground/10" />
+        ) : dead ? (
+          <div className="absolute inset-0 grid place-items-center bg-muted text-amber-500">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+        ) : (
+          <img src={thumb} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-sm font-bold">{video.title}</p>
+        {dead && (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600">
+            <AlertTriangle className="h-3 w-3" /> Vidéo supprimée
+          </span>
+        )}
+      </div>
+      {dead && (
+        <button
+          type="button"
+          onClick={onDelete}
+          title="Supprimer ce lien définitivement"
+          aria-label={`Supprimer le lien ${video.title}`}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 active:scale-90"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function YouTubeCategoryView({ section, youtube = [], targetVideoId }) {
   const [playingId, setPlayingId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const { prefs, update } = useYoutubePrefs();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
+  // Gestion admin : cadenas de réorganisation + liste des liens complets
+  // (sans limite de pagination) + statut de suppression des vidéos.
+  const [adminLinks, setAdminLinks] = useState([]);
+  const [ytLocked, setYtLocked] = useState(true);
+  const [deadStatus, setDeadStatus] = useState({}); // id -> true/false ("vidéo supprimée")
+
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let cancelled = false;
+    // TOUS les liens, sans limite de pagination (les anciens inclus).
+    base44.entities.YouTubeVideo.list("-created_date")
+      .then((list) => { if (!cancelled) setAdminLinks(Array.isArray(list) ? list : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isAdmin]);
+
+  const refreshAdminLinks = async () => {
+    try {
+      const list = await base44.entities.YouTubeVideo.list("-created_date");
+      if (Array.isArray(list)) setAdminLinks(list);
+    } catch {
+      /* erreur réseau : on garde la liste courante */
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const ids = [...new Set(adminLinks.map((y) => y.id).filter((id) => !(id in deadStatus)))];
+    if (!ids.length) return;
+    let cancelled = false;
+    ids.forEach((id) => {
+      const link = adminLinks.find((y) => y.id === id);
+      if (!link) return;
+      isDeletedThumbnail(link.cover_url || link.thumbnail_url || ytThumbUrl(link.youtube_id)).then((dead) => {
+        if (!cancelled) setDeadStatus((prev) => ({ ...prev, [id]: dead }));
+      });
+    });
+    return () => { cancelled = true; };
+  }, [isAdmin, adminLinks]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Les liens ajoutés pendant cette session (formulaire d'ajout inchangé)
+  // rejoignent la liste admin dès qu'ils arrivent dans les données.
+  useEffect(() => {
+    if (!isAdmin || !youtube.length) return;
+    setAdminLinks((prev) => {
+      const known = new Set(prev.map((y) => y.id));
+      const extras = youtube.filter((y) => !known.has(y.id));
+      return extras.length ? [...prev, ...extras] : prev;
+    });
+  }, [isAdmin, youtube]);
+
+  const deleteLink = async (id) => {
+    try {
+      await base44.entities.YouTubeVideo.delete(id);
+      await refreshAdminLinks();
+      setDeadStatus((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    } catch {
+      // erreur réseau : on retire au moins le lien de l'affichage
+      setAdminLinks((items) => items.filter((y) => y.id !== id));
+    }
+  };
 
   const [shuffled, setShuffled] = useState(null); // ordre aléatoire courant (ids)
   const [finished, setFinished] = useState(false);
@@ -139,6 +270,97 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   const shown = editing ? customItems : queueItems;
   const playingIndex = shown.findIndex((v) => v.id === playingId);
 
+  // ── Gestion admin : les 3 catégories YouTube (Culte, Louange, Célébration)
+  // sont affichées dans des sections distinctes, avec TOUS les liens (anciens
+  // inclus, sans limite de pagination), même si la vidéo a été supprimée de
+  // YouTube. Un cadenas active le glisser-déposer pour réorganiser ; quand il
+  // est verrouillé, l'ordre est figé. Les liens "vidéo supprimée" peuvent être
+  // retirés définitivement de la base via le bouton Supprimer.
+  if (isAdmin) {
+    const orderOf = (id) => (prefs.playlist_orders[id] || []);
+    const bySection = Object.keys(SECTION_LABELS).map((sec) => {
+      const items = adminLinks.filter((y) => (y.section || "culte") === sec);
+      return {
+        sec,
+        items: applySavedOrder(items, orderOf(sec)),
+        locked: ytLocked,
+      };
+    });
+
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-bold text-primary">Gestion admin — toutes les sections YouTube</p>
+          <button
+            type="button"
+            onClick={() => setYtLocked((prev) => !prev)}
+            title={ytLocked
+              ? "Liste verrouillée. Cliquez sur le cadenas pour réorganiser."
+              : "Liste déverrouillée. Glissez les liens pour réorganiser."}
+            aria-label={ytLocked ? "Déverrouiller la réorganisation" : "Verrouiller la réorganisation"}
+            aria-pressed={!ytLocked}
+            className={`inline-flex h-11 w-11 place-items-center rounded-full border transition active:scale-90 ${
+              ytLocked ? "border-border bg-card text-foreground/70" : "border-primary bg-primary/10 text-primary"
+            }`}
+          >
+            {ytLocked
+              ? <Lock key="lock" className="h-5 w-5 animate-float-in" />
+              : <LockOpen key="unlock" className="h-5 w-5 animate-float-in" />}
+          </button>
+        </div>
+
+        {bySection.map(({ sec, items, locked: sectionLocked }) => (
+          <section key={sec} aria-labelledby={`yt-admin-${sec}`}>
+            <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-border bg-card px-4 py-3">
+              <h2 id={`yt-admin-${sec}`} className="font-bold text-base">{SECTION_LABELS[sec]}</h2>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                {items.length} lien{items.length > 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {!sectionLocked && items.length > 1 && (
+              <YouTubeEditBar onReset={() => update("playlist_orders", sec, undefined)} />
+            )}
+
+            {items.length ? (
+              sectionLocked ? (
+                <ul className="space-y-2">
+                  {items.map((v) => (
+                    <li
+                      key={v.id}
+                      className="flex items-center gap-3 rounded-2xl border border-border bg-card p-2"
+                    >
+                      <YouTubeAdminRow
+                        video={v}
+                        dead={deadStatus[v.id]}
+                        onDelete={() => deleteLink(v.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <YouTubeSortableList
+                  items={items}
+                  onReorder={(next) => update("playlist_orders", sec, next.map((x) => x.id))}
+                  renderRow={(v) => (
+                    <YouTubeAdminRow
+                      video={v}
+                      dead={deadStatus[v.id]}
+                      onDelete={() => deleteLink(v.id)}
+                    />
+                  )}
+                />
+              )
+            ) : (
+              <p className="text-foreground/50 text-sm">Aucun lien dans cette section.</p>
+            )}
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  // ── Vue utilisateur normal : inchangée (liste de la section courante).
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
