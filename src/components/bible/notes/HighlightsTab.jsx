@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ArrowUpDown,
   BookOpen,
+  ChevronDown,
   Loader2,
   Trash2,
   Search,
@@ -9,12 +11,55 @@ import {
   Highlighter,
 } from "lucide-react";
 import { HIGHLIGHT_COLORS, highlightHex } from "@/lib/bibleConstants";
+import { loadLocalBibleRaw } from "@/lib/localBible";
 import { useTheme } from "@/hooks/useTheme";
 
 const colorOf = (id) => HIGHLIGHT_COLORS.find((c) => c.id === id) || null;
 
-const refKey = (a) =>
-  `${a.book_id}_${String(a.chapter).padStart(4, "0")}_${String(a.verse).padStart(4, "0")}`;
+// Index de la couleur dans HIGHLIGHT_COLORS (pour le tri "Couleur").
+const colorIndex = (id) => {
+  const i = HIGHLIGHT_COLORS.findIndex((c) => c.id === id);
+  return i === -1 ? HIGHLIGHT_COLORS.length : i;
+};
+
+const dateOf = (a) => {
+  const d = new Date(a.created_date || a.created_at || 0).getTime();
+  return Number.isFinite(d) ? d : 0;
+};
+
+// Ordre canonique des livres (Genèse → Apocalypse), déduit du fichier
+// biblique local (OT puis NT, dans l'ordre des livres).
+async function buildCanonicalBookOrder() {
+  const raw = await loadLocalBibleRaw("fr");
+  const flat = [...(raw?.testament?.OT?.books || []), ...(raw?.testament?.NT?.books || [])];
+  const order = {};
+  flat.forEach((b, i) => {
+    if (b.book_id && !(b.book_id in order)) order[b.book_id] = i + 1;
+  });
+  return order;
+}
+
+// Tri par ordre biblique : Livre → Chapitre → Verset.
+// Le rang canonique du livre prime ; en cas d'inconnu, on retombe sur la
+// comparaison alphabétique du nom du livre, puis chapitre et verset.
+const byReference =
+  (bookName, bookOrder) =>
+  (a, b) =>
+    (bookOrder[a.book_id] ?? 999) - (bookOrder[b.book_id] ?? 999) ||
+    (bookName(a.translation_id, a.book_id) || "").localeCompare(
+      bookName(b.translation_id, b.book_id) || "",
+      "fr"
+    ) ||
+    a.chapter - b.chapter ||
+    a.verse - b.verse;
+
+const SORT_OPTIONS = [
+  { id: "reference", label: "Référence" },
+  { id: "recent", label: "Récent" },
+  { id: "color", label: "Couleur" },
+];
+
+const SORT_STORAGE_KEY = "chay_highlights_sort";
 
 export default function HighlightsTab({ api }) {
   const {
@@ -30,7 +75,39 @@ export default function HighlightsTab({ api }) {
   const { resolved } = useTheme();
   const isDarkMode = resolved === "dark";
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState("date");
+  // Tri mémorisé dans localStorage pour persister le choix de l'utilisateur.
+  const [sortBy, setSortBy] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SORT_STORAGE_KEY);
+      return SORT_OPTIONS.some((o) => o.id === saved) ? saved : "recent";
+    } catch {
+      return "recent";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, sortBy);
+    } catch {
+      /* ignore */
+    }
+  }, [sortBy]);
+
+  // Carte book_id → rang canonique (Genèse = 1 … Apocalypse = 66).
+  const [bookOrder, setBookOrder] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    buildCanonicalBookOrder()
+      .then((map) => {
+        if (!cancelled) setBookOrder(map);
+      })
+      .catch(() => {
+        /* tri dégradé : alphabétique si le fichier local est indisponible */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const items = useMemo(
     () => annotations.filter((a) => a.highlight_color),
@@ -48,15 +125,16 @@ export default function HighlightsTab({ api }) {
   }, [items, query, bookName, verseText]);
 
   const sorted = useMemo(() => {
-    if (sortBy === "reference") {
-      return [...filtered].sort((a, b) => {
-        const ra = refKey(a);
-        const rb = refKey(b);
-        return ra < rb ? -1 : ra > rb ? 1 : 0;
-      });
-    }
-    return filtered;
-  }, [filtered, sortBy]);
+    const list = [...filtered];
+    const cmpRef = byReference(bookName, bookOrder);
+    if (sortBy === "reference") return list.sort(cmpRef);
+    if (sortBy === "color")
+      return list.sort(
+        (a, b) => colorIndex(a.highlight_color) - colorIndex(b.highlight_color) || cmpRef(a, b)
+      );
+    // "recent" : du plus récent au plus ancien
+    return list.sort((a, b) => dateOf(b) - dateOf(a));
+  }, [filtered, sortBy, bookName, bookOrder]);
 
   const openInBible = (a) =>
     navigate(
@@ -78,18 +156,35 @@ export default function HighlightsTab({ api }) {
   if (error)
     return <p className="mt-10 text-center text-sm text-destructive">{error}</p>;
 
+  const activeSortLabel =
+    SORT_OPTIONS.find((o) => o.id === sortBy)?.label ?? "Récent";
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-muted-foreground">
           {items.length} surlignage{items.length > 1 ? "s" : ""}
         </p>
-        <button
-          onClick={() => setSortBy((s) => (s === "date" ? "reference" : "date"))}
-          className="text-xs font-bold text-primary hover:underline"
-        >
-          Trier : {sortBy === "date" ? "Récents" : "Référence"}
-        </button>
+        <details className="relative">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-bold text-foreground select-none hover:bg-muted/40">
+            <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
+            {activeSortLabel}
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </summary>
+          <div className="absolute right-0 z-10 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+            {SORT_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => setSortBy(o.id)}
+                className={`block w-full px-3 py-2 text-left text-xs font-bold hover:bg-muted/40 ${
+                  o.id === sortBy ? "text-primary" : "text-foreground"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
 
       <div className="relative mb-4">
