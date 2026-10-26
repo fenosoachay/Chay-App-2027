@@ -77,9 +77,24 @@ export default function ArticleCard({ article }) {
         className="text-left rounded-[1.5rem] border border-border bg-card overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {article.cover_url ? (
-          <div className="h-40 overflow-hidden">
-            <Image src={article.cover_url} fittingType="fill" className="w-full h-full" />
-          </div>
+          article.cover_cropped ? (
+            // Image explicitement rognée par l'utilisateur : on reprend le
+            // cadrage 16:9 enregistré au moment du crop (comportement actuel).
+            <div className="h-40 overflow-hidden">
+              <Image src={article.cover_url} fittingType="fill" className="w-full h-full" />
+            </div>
+          ) : (
+            // Image non recadrée : taille originale, sans déformation, qui
+            // remplit tout le fond de la carte.
+            <div className="relative w-full min-h-40 overflow-hidden">
+              <img
+                src={article.cover_url}
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
+          )
         ) : (
           <div className="h-40 brand-gradient" />
         )}
@@ -111,11 +126,22 @@ export default function ArticleCard({ article }) {
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto sm:rounded-3xl">
           <div className="pr-7">
             {article.cover_url ? (
-              <Image
-                src={article.cover_url}
-                fittingType="fill"
-                className="w-full h-44 md:h-56 rounded-2xl object-cover mb-5"
-              />
+              article.cover_cropped ? (
+                <Image
+                  src={article.cover_url}
+                  fittingType="fill"
+                  className="w-full h-44 md:h-56 rounded-2xl object-cover mb-5"
+                />
+              ) : (
+                // Non recadrée : image originale qui remplit tout le fond, sans déformation.
+                <div className="relative w-full min-h-44 md:min-h-56 rounded-2xl overflow-hidden mb-5">
+                  <img
+                    src={article.cover_url}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </div>
+              )
             ) : (
               <div className="w-full h-32 rounded-2xl brand-gradient mb-5" />
             )}

@@ -35,7 +35,11 @@ export default function CroppableUploader({
     setUploading(true);
     try {
       const url = await uploadToBase44(blob);
-      onChange?.(url);
+      // Second argument : l'image a-t-elle été explicitement rognée ? Les
+      // cartes d'articles affichent les images non rognées en taille
+      // originale (object-cover plein fond) et les images rognées avec le
+      // cadrage enregistré. Sans callback bivalent, comportement inchangé.
+      onChange?.(url, cropOpen);
       setCropOpen(false);
       setFile(null);
     } catch (e) {

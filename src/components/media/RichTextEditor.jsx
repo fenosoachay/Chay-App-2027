@@ -4,15 +4,20 @@ import "react-quill-new/dist/quill.snow.css";
 
 const MODULES = {
   toolbar: [
-    [{ header: [1, 2, 3, 4, false] }],
-    ["bold", "italic", "underline", "strike"],
-    [{ color: [] }, { background: [] }],
-    [{ align: [] }, { list: "ordered" }, { list: "bullet" }],
-    ["blockquote", "link"],
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ align: [] }],
+    ["link"],
+    [{ size: ["small", false, "large", "huge"] }],
+    [{ color: [] }],
     ["clean"],
   ],
 };
 
+// Quill produit du HTML propre (<strong>, <em>, <u>, <h1-3>, <ul>/<ol>,
+// <a>, styles d'alignement et de taille) — consommé tel quel par
+// ArticleCard.jsx (sanitize DOMPurify). Le champ « body » reste un string.
 export default function RichTextEditor({ value, onChange, placeholder }) {
   return (
     <div className="rounded-xl border border-border bg-background overflow-hidden">
