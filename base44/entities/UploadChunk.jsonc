@@ -1,46 +1,26 @@
 {
   "name": "UploadChunk",
-  "singular_name": "upload chunk",
-  "description": "Référence d'un morceau binaire stocké dans le storage PRIVÉ Base44 (file_uri issu de Core.UploadPrivateFile). L'entité ne contient que des métadonnées légères ; les octets ne passent jamais par la base d'entités.",
-  "accepts_file_upload": {
-    "enabled": false
-  },
-  "enable_realtime_events": false,
+  "type": "object",
   "properties": {
     "session_id": {
-      "type": "string",
-      "index": true,
-      "description": "session_id de la UploadSession parente"
+      "type": "string"
     },
     "index": {
-      "type": "number",
-      "description": "Position du morceau dans le fichier (0-based)"
+      "type": "number"
     },
     "total": {
-      "type": "number",
-      "description": "Nombre total de chunks attendus"
-    },
-    "size": {
-      "type": "number",
-      "description": "Taille réelle du morceau en octets"
-    },
-    "sha256": {
-      "type": "string",
-      "description": "Empreinte SHA-256 hexadécimale du chunk (contrôle d'intégrité)"
+      "type": "number"
     },
     "file_uri": {
-      "type": "string",
-      "description": "URI privée retournée par Core.UploadPrivateFile — sert aux signed URLs pendant finalize"
+      "type": "string"
     },
     "created_by": {
-      "type": "string",
-      "auto": "created_by"
+      "type": "string"
     }
   },
   "required": [
     "session_id",
-    "index",
-    "file_uri"
+    "index"
   ],
   "rls": {
     "create": {
