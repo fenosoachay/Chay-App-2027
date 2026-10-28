@@ -56,6 +56,7 @@
         "open",
         "finalizing",
         "done",
+        "completed",
         "error",
         "aborted",
         "expired"
