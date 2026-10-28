@@ -1,2 +1,25 @@
 node_modules/
 dist/
+
+# The publish build runs against the committed node_modules snapshot (no
+# fresh npm install on the build server). That snapshot is missing the
+# @base44/vite-plugin dist files below, so the build fails with
+# ERR_MODULE_NOT_FOUND for ./private-data-sources-plugin.js (imported by
+# dist/index.js). Re-include exactly those paths so they get committed.
+# Git cannot re-include a file under an ignored directory, so we drill down:
+# re-include each parent directory, then exclude its other contents, down to
+# the files we need.
+!node_modules/
+node_modules/**
+!node_modules/@base44/
+node_modules/@base44/**
+!node_modules/@base44/vite-plugin/
+node_modules/@base44/vite-plugin/**
+!node_modules/@base44/vite-plugin/dist/
+node_modules/@base44/vite-plugin/dist/**
+!node_modules/@base44/vite-plugin/dist/private-data-sources/
+!node_modules/@base44/vite-plugin/dist/private-data-sources/**
+!node_modules/@base44/vite-plugin/dist/private-data-sources-plugin.js
+!node_modules/@base44/vite-plugin/dist/private-data-sources-plugin.js.map
+!node_modules/@base44/vite-plugin/dist/private-data-sources-plugin.d.ts
+!node_modules/@base44/vite-plugin/dist/private-data-sources-plugin.d.ts.map

@@ -1,92 +1,28 @@
 {
   "name": "UploadSession",
-  "singular_name": "upload session",
-  "description": "Session d'upload (gros fichiers) : uniquement des métadonnées — jamais de données binaires. Deux modes : « s3-multipart » (DIRECT : les parts vivent dans le bucket S3/R2, upload_id/s3_key/parts_json suivent l'upload côté stockage) et legacy chunked (octets via upload_chunk → UploadChunk).",
-  "accepts_file_upload": {
-    "enabled": false
-  },
-  "enable_realtime_events": false,
+  "type": "object",
   "properties": {
     "session_id": {
-      "type": "string",
-      "index": true,
-      "unique": true,
-      "description": "Identifiant déterministe de session calculé côté client (nom+taille+lastModified)"
+      "type": "string"
     },
-    "file_name": {
-      "type": "string",
-      "description": "Nom du fichier final"
-    },
-    "mime_type": {
-      "type": "string",
-      "description": "Type MIME déclaré par le client (devine video/mp4 si absent)"
+    "name": {
+      "type": "string"
     },
     "size": {
-      "type": "number",
-      "description": "Taille totale du fichier en octets"
-    },
-    "total_chunks": {
-      "type": "number",
-      "default": 0,
-      "description": "Nombre total de chunks attendu (ceil(size / CHUNK_SIZE))"
+      "type": "number"
     },
     "uploaded_indices": {
       "type": "array",
       "items": {
         "type": "number"
-      },
-      "default": [],
-      "description": "Indices des chunks reçus et stockés — métadonnée légère, PAS les octets"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "open",
-        "finalizing",
-        "done",
-        "error",
-        "aborted",
-        "expired",
-        "uploading",
-        "paused"
-      ],
-      "default": "open",
-      "description": "Cycle de vie ; finalizing = verrou anti-double-assemblage ; aborted/expired = abandon nettoyé par cleanupIncompleteUploads ; uploading/paused = hérité du mode legacy chunked"
-    },
-    "upload_id": {
-      "type": "string",
-      "index": true,
-      "description": "Mode s3-multipart : UploadId renvoyé par CreateMultipartUpload (R2/S3)"
-    },
-    "s3_key": {
-      "type": "string",
-      "description": "Mode s3-multipart : clé (chemin d'objet) du fichier dans le bucket"
-    },
-    "part_size": {
-      "type": "number",
-      "description": "Mode s3-multipart : taille négociée des parts en octets (défaut 8 Mo, multiple de 5 Mo si > 10 000 parts)"
-    },
-    "parts_json": {
-      "type": "string",
-      "description": "Mode s3-multipart : cache JSON [{PartNumber, ETag}] des parts confirmées (métadonnées seules, < 100 Ko)"
-    },
-    "storage": {
-      "type": "string",
-      "default": "",
-      "description": "\"s3-multipart\" pour les sessions direct-S3 ; vide = mode legacy chunked (upload_chunk/finalize)"
-    },
-    "final_file_url": {
-      "type": "string",
-      "description": "URL publique du fichier assemblé (rédigée à la fin de finalize)"
+      }
     },
     "created_by": {
-      "type": "string",
-      "auto": "created_by"
+      "type": "string"
     },
     "expires_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Expiration TTL (24 h) : au-delà, init repart proprement de zéro"
+      "format": "date-time"
     }
   },
   "required": [
