@@ -6,16 +6,65 @@
       "type": "string"
     },
     "name": {
+      "type": "string",
+      "description": "Nom lisible de la session (legacy)."
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nom du fichier original."
+    },
+    "mime_type": {
       "type": "string"
     },
     "size": {
-      "type": "number"
+      "type": "number",
+      "description": "Taille totale du fichier en octets."
+    },
+    "total_chunks": {
+      "type": "number",
+      "description": "Nombre total de morceaux/parts attendus."
+    },
+    "part_size": {
+      "type": "number",
+      "description": "Taille d'une part S3 en octets (multipart direct)."
     },
     "uploaded_indices": {
       "type": "array",
       "items": {
         "type": "number"
       }
+    },
+    "upload_id": {
+      "type": "string",
+      "description": "UploadId S3/R2 (multipart direct)."
+    },
+    "s3_key": {
+      "type": "string",
+      "description": "Cl\u00e9 d'objet S3/R2 (multipart direct)."
+    },
+    "storage": {
+      "type": "string",
+      "description": "ex : s3-multipart, legacy."
+    },
+    "parts_json": {
+      "type": "string",
+      "description": "Cache JSON des ETags des parts S3."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "finalizing",
+        "done",
+        "error",
+        "aborted",
+        "expired"
+      ],
+      "default": "open"
+    },
+    "final_file_url": {
+      "type": "string",
+      "description": "URL publique du fichier une fois l'upload termin\u00e9."
     },
     "created_by": {
       "type": "string"

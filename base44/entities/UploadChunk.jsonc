@@ -11,6 +11,14 @@
     "total": {
       "type": "number"
     },
+    "size": {
+      "type": "number",
+      "description": "Taille du morceau en octets (buf.byteLength \u00e0 la r\u00e9ception)."
+    },
+    "sha256": {
+      "type": "string",
+      "description": "Empreinte SHA-256 du morceau (int\u00e9grit\u00e9)."
+    },
     "file_uri": {
       "type": "string"
     },

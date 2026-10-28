@@ -27,12 +27,22 @@ export interface S3Config {
 
 /** Charge la config depuis l'environnement ; null si non configuré. */
 export function s3ConfigFromEnv(env: any): S3Config | null {
-  const endpoint = env?.S3_ENDPOINT;
-  const bucket = env?.S3_BUCKET;
-  const accessKeyId = env?.S3_ACCESS_KEY;
-  const secretAccessKey = env?.S3_SECRET_KEY;
+  // trim systématique : un secret collé avec un espace/newline final fait
+  // diverger la signature SigV4 (« SignatureDoesNotMatch ») sans autre indice.
+  const endpoint = String(env?.S3_ENDPOINT || '').trim().replace(/\/+$/, '');
+  const bucket = String(env?.S3_BUCKET || '').trim();
+  const accessKeyId = String(env?.S3_ACCESS_KEY || '').trim();
+  const secretAccessKey = String(env?.S3_SECRET_KEY || '').trim();
+  const region = String(env?.S3_REGION || '').trim() || 'auto';
   if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return null;
-  return { endpoint, bucket, accessKeyId, secretAccessKey, region: env?.S3_REGION || 'auto' };
+  // Si l'endpoint contient déjà le bucket dans le chemin (ex:
+  // https://<acct>.r2.cloudflarestorage.com/<bucket>), on le retire : sinon le
+  // canonPath doublerait le bucket et la signature serait rejetée.
+  const pe = (() => { try { return new URL(endpoint); } catch { return null; } })();
+  const cleanedEndpoint = pe && pe.pathname && pe.pathname !== '/'
+    ? `${pe.protocol}//${pe.host}`
+    : endpoint;
+  return { endpoint: cleanedEndpoint, bucket, accessKeyId, secretAccessKey, region };
 }
 
 const enc = new TextEncoder();
@@ -103,7 +113,10 @@ export async function s3Request(
   const pe = parseEndpoint(cfg.endpoint);
   const { urlPath, canonPath } = objectPath(cfg, pe, key);
   const { date, datetime } = amzDate();
-  const payloadHash = await digestHex(body || '');
+  // R2/S3 acceptent UNSIGNED-PAYLOAD pour x-amz-content-sha256 (comportement
+  // aws4fetch). Envoyer le hash réel du corps provoque un SignatureDoesNotMatch
+  // sur R2 dans plusieurs cas (cf. threads Cloudflare "Bad digest").
+  const payloadHash = 'UNSIGNED-PAYLOAD';
   const headers: Record<string, string> = {
     host: pe.host,
     'x-amz-content-sha256': payloadHash,
@@ -111,7 +124,7 @@ export async function s3Request(
   };
   const signedHeaders = Object.keys(headers).sort().join(';');
   const headerBlock = Object.keys(headers).sort().map((h) => `${h}:${String(headers[h]).trim()}\n`).join('');
-  const creq = [method, canonPath, canonicalQuery(params), headerBlock + '\n', signedHeaders, payloadHash].join('\n');
+  const creq = [method, canonPath, canonicalQuery(params), headerBlock, signedHeaders, payloadHash].join('\n');
   const scope = `${date}/${cfg.region}/s3/aws4_request`;
   const sis = ['AWS4-HMAC-SHA256', datetime, scope, await digestHex(creq)].join('\n');
   const sig = hex(await hmac(await signingKey(cfg.secretAccessKey, date, cfg.region), sis));
@@ -149,7 +162,7 @@ export async function presignUploadPart(
     partNumber: String(partNumber),
     uploadId,
   };
-  const creq = ['PUT', canonPath, canonicalQuery(params), `host:${pe.host}\n\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
+  const creq = ['PUT', canonPath, canonicalQuery(params), `host:${pe.host}\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
   const sis = ['AWS4-HMAC-SHA256', datetime, scope, await digestHex(creq)].join('\n');
   const sig = hex(await hmac(await signingKey(cfg.secretAccessKey, date, cfg.region), sis));
   return `${pe.protocol}//${pe.host}${urlPath}?${canonicalQuery(params)}&X-Amz-Signature=${sig}`;
