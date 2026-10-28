@@ -89,12 +89,14 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
     abortRef.current = controller;
     onUploadingChange?.(true);
     try {
-      // uploadToBase44 bascule automatiquement en mode morcelé/reprenable au-
-      // delà de 15 Mo (fonction backend `upload_chunk`) — fin du HTTP 404 /
-      // "[BUF] malloc failure" sur les films multi-Go. Le signal permet le
-      // bouton "Annuler" ; "Réessayer" reprend la même session (chunks déjà
-      // reçus côté serveur sautés).
+      // Gros fichiers (> 15 Mo) : upload S3 multipart DIRECT (forceChunked)
+      // — les octets vont du navigateur au bucket R2, zéro assemblage serveur
+      // (fin des 409 « assemblage déjà en cours » et des limites mémoire
+      // serverless sur les films multi-Go). Le signal permet le bouton
+      // "Annuler" ; "Réessayer" reprend la même session (parts déjà reçues
+      // côté R2 sautées via ListParts).
       const url = await uploadToBase44(file, big ? {
+        forceChunked: true,
         onProgress: (pct) => setProg((p) => ({ ...p, pct })),
         onDetail: handleDetail,
         signal: controller.signal,
