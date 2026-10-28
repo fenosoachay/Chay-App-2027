@@ -70,11 +70,11 @@ export default function MediaUploader({ onClose, onSaved }) {
       // mode chunké : les chunks déjà partis sont sautés côté serveur.
       const isVideo = type === "video";
       const mediaUrl = await uploadToBase44(mediaFile, {
-        forceChunked: isVideo || resumedRef.current,
-        onProgress: (p) => setProgress(p),
-        onDetail: handleDetail,
-        signal: controller.signal,
-      });
+  forceChunked: true,
+  onProgress: (p) => setProgress(p),
+  onDetail: handleDetail,
+  signal: controller.signal,
+});
       resumedRef.current = false;
       let coverUrl = "";
       if (coverFile) {
