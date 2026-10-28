@@ -412,20 +412,21 @@ export async function uploadChunked(file, onProgress, opts = {}) {
  *  L'annulation utilisateur (signal) n'est JAMAIS re-tentée en mode legacy. */
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {
   if (!appParams.appId) {
-    throw new Error("VITE_BASE44_APP_ID est vide. Configure-le dans .env ou via base44 link.");
+    throw new Error("VITE_BASE44_APP_ID est vide.");
   }
 
-  // Petits fichiers : upload direct
+  // Petits fichiers (< 15 Mo) : upload direct
   if (!forceChunked && file.size <= SEUIL_UPLOAD_DIRECT) {
     return directUpload(file);
   }
 
-  // Gros fichiers : S3 multipart UNIQUEMENT (pas de repli)
+  // Gros fichiers : S3 multipart UNIQUEMENT, PAS DE REPLI
   const wantsS3 = forceChunked || file.size > SEUIL_MULTIPART_S3;
   if (wantsS3) {
+    console.log("[upload] Tentative S3 multipart pour", file.name, file.size, "bytes");
     return await uploadMultipartS3(file, { onProgress, onDetail, signal });
   }
 
-  // Fichiers moyens (15-100 Mo) : ancien système chunked
+  // Fichiers moyens (15-100 Mo) sans flag : ancien système
   return uploadChunked(file, { onProgress, onDetail, signal });
 }
