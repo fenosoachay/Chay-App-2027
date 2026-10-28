@@ -415,18 +415,15 @@ export async function uploadToBase44(file, { forceChunked = false, onProgress, o
     throw new Error("VITE_BASE44_APP_ID est vide.");
   }
 
-  // Petits fichiers (< 15 Mo) : upload direct
   if (!forceChunked && file.size <= SEUIL_UPLOAD_DIRECT) {
     return directUpload(file);
   }
 
-  // Gros fichiers : S3 multipart UNIQUEMENT, PAS DE REPLI
   const wantsS3 = forceChunked || file.size > SEUIL_MULTIPART_S3;
   if (wantsS3) {
     console.log("[upload] Tentative S3 multipart pour", file.name, file.size, "bytes");
     return await uploadMultipartS3(file, { onProgress, onDetail, signal });
   }
 
-  // Fichiers moyens (15-100 Mo) sans flag : ancien système
   return uploadChunked(file, { onProgress, onDetail, signal });
 }
