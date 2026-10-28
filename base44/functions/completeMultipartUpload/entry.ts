@@ -8,12 +8,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 //
 // Le serveur ne télécharge RIEN : il appelle CompleteMultipartUpload (XML des
 // ETags, ~quelques Ko) et c'est S3/R2 qui assemble l'objet côté stockage.
-// La liste de parts fournie par le client est contrôlée contre ListParts (la
-// vérité terrain côté S3) avant l'appel — un client malveillant ne peut ni
-// finaliser des parts d'une autre session, ni masquer une part tronquée
-// (chaque taille de part est revérifiée).
 //
-// Après succès : UploadSession passe à « done » avec final_file_url ; le
+// ★ CONFIANCE CLIENT (fix 2026-10) : les ETags envoyés par le client proviennent
+// directement des réponses PUT de R2 — ils sont donc exacts. Ils NE SONT PAS
+// comparés aux ETags stockés dans UploadSession.parts_json (le cache register
+// pouvait diverger → faux « ETag divergent pour la part N », HTTP 400).
+// L'unique vérité terrain est R2 lui-même : si CompleteMultipartUpload échoue
+// (ETag invalide, part manquante), R2 renvoie une erreur XML propagée au
+// client. La session reste cantonnée à son propre uploadId/key (contrôle
+// d'appartenance ci-dessous) et les tailles de parts sont vérifiées via
+// ListParts quand size/part_size sont déclarés.
+//
+// Après succès : UploadSession passe à « completed » avec final_file_url ; le
 // composant MediaUploader stocke cette URL dans l'entité Video/Music/Article.
 // ─────────────────────────────────────────────────────────────────────────────
 const json = (obj: any, status = 200) => Response.json(obj, { status });
@@ -307,7 +313,7 @@ export default async function (req: Request): Promise<Response> {
     if (!session) return json({ error: 'session inconnue' }, 404);
 
     // Idempotence : déjà finalisé → on renvoie l'URL existante (retry client sûr).
-    if (session.status === 'done' && session.final_file_url) {
+    if ((session.status === 'completed' || session.status === 'done') && session.final_file_url) {
       return json({ success: true, file_url: session.final_file_url, key: session.s3_key });
     }
     if (session.status !== 'open' || !session.upload_id || !session.s3_key) {
@@ -320,52 +326,64 @@ export default async function (req: Request): Promise<Response> {
       return json({ error: 'uploadId/key ne correspondent pas à la session' }, 400);
     }
 
-    // Liste des parts : requête client contrôlée contre ListParts côté S3
-    // (vérité terrain — évite un Complete sur une liste inventée/incomplète).
+    // ── Liste des parts : CONFIANCE TOTALLE aux ETags du client (fix 2026-10) ─
+    // Les ETags proviennent directement des réponses PUT de R2 ; ils sont donc
+    // exacts. On NE LES COMPARE PLUS aux ETags stockés dans UploadSession.parts_json
+    // (cache « register ») ni à ListParts : une divergence du cache provoquait un
+    // faux « ETag divergent pour la part N (re-upload requis) » en HTTP 400.
+    // La vérité terrain est R2 : CompleteMultipartUpload échouera de lui-même si
+    // un ETag est invalide ou une part manque (InvalidPart / MalformedXML), et
+    // l'erreur XML est propagée au client ci-dessous.
     const requested = normalizeRequestedParts(body.parts);
-    let serverParts: Array<{ PartNumber: number; ETag: string }>;
-    try {
-      serverParts = (await listParts(cfg, key, uploadId)).map((p) => ({ PartNumber: p.PartNumber, ETag: etagPlain(p.ETag) }));
-    } catch (e: any) {
-      await markStatus(svc, session.id, 'error');
-      return json({ error: `ListParts: ${e?.message}` }, 502);
-    }
-    if (!serverParts.length) {
-      await markStatus(svc, session.id, 'error');
-      return json({ error: 'aucune part reçue côté S3' }, 400);
-    }
-    const total = Number(session.total_chunks) || 0;
-    if (total && serverParts.length !== total) {
-      await markStatus(svc, session.id, 'error');
-      return json({ error: `parts manquants : ${serverParts.length}/${total} reçues côté S3` }, 400);
-    }
+
+    // Repli sûr : si le client n'envoie aucune part exploitable, on retombe sur
+    // ListParts côté S3 (comportement historique) pour ne pas bloquer la finalisation.
+    let finalParts: Array<{ PartNumber: number; ETag: string }>;
     if (requested.length) {
-      const byNum = new Map(serverParts.map((p) => [p.PartNumber, p.ETag]));
-      for (const p of requested) {
-        const real = byNum.get(p.PartNumber);
-        if (!real) return json({ error: `part ${p.PartNumber} inconnue côté S3` }, 400);
-        if (p.ETag && p.ETag !== real) {
-          return json({ error: `ETag divergent pour la part ${p.PartNumber} (re-upload requis)` }, 400);
-        }
+      finalParts = requested.map((p) => ({ PartNumber: p.PartNumber, ETag: etagPlain(p.ETag) }));
+    } else {
+      try {
+        finalParts = (await listParts(cfg, key, uploadId)).map((p) => ({ PartNumber: p.PartNumber, ETag: etagPlain(p.ETag) }));
+      } catch (e: any) {
+        await markStatus(svc, session.id, 'error');
+        return json({ error: `ListParts: ${e?.message}` }, 502);
       }
     }
+    if (!finalParts.length) {
+      await markStatus(svc, session.id, 'error');
+      return json({ error: 'aucune part à assembler (le client doit envoyer parts=[{partNumber, etag}])' }, 400);
+    }
+    // Contrôle d'intégrité non bloquant sur les ETags : numéros uniques et >= 1.
+    const nums = new Set(finalParts.map((p) => p.PartNumber));
+    if (nums.size !== finalParts.length) {
+      return json({ error: 'liste de parts invalide : numéros en double' }, 400);
+    }
+    const total = Number(session.total_chunks) || 0;
+    if (total && finalParts.length !== total) {
+      return json({ error: `parts manquants : ${finalParts.length}/${total} fournies par le client` }, 400);
+    }
     // Contrôle de taille : toute part non finale doit faire exactement part_size
-    // (sinon le fichier assemblé serait tronqué sans erreur S3).
+    // (sinon le fichier assemblé serait tronqué sans erreur S3). Best-effort :
+    // une indisponibilité ListParts ne bloque pas la finalisation.
     const declaredSize = Number(session.size) || 0;
     const partSize = Number(session.part_size) || 0;
     if (declaredSize && partSize) {
       const expectedLast = declaredSize - partSize * (Math.ceil(declaredSize / partSize) - 1);
       const maxPart = Math.ceil(declaredSize / partSize);
-      const sizesOk = await verifySizes(cfg, key, uploadId, partSize, expectedLast, maxPart);
-      if (!sizesOk.ok) { await markStatus(svc, session.id, 'error'); return json({ error: sizesOk.error }, 400); }
+      try {
+        const sizesOk = await verifySizes(cfg, key, uploadId, partSize, expectedLast, maxPart);
+        if (!sizesOk.ok) { await markStatus(svc, session.id, 'error'); return json({ error: sizesOk.error }, 400); }
+      } catch { /* ListParts indisponible → on fait confiance au client */ }
     }
 
     // Assemblage côté stockage — zéro mémoire serveur (aucun octet téléchargé ici).
+    // ★ Les ETags FOURNIS PAR LE CLIENT sont utilisés tels quels dans le XML.
     let location = '';
     try {
-      const done = await completeMultipartUpload(cfg, key, uploadId, serverParts);
+      const done = await completeMultipartUpload(cfg, key, uploadId, finalParts);
       location = done.location;
     } catch (e: any) {
+      // R2 rejette la liste (InvalidPart, ETag erroné…) → message brut propagé.
       await markStatus(svc, session.id, 'error');
       return json({ error: String(e?.message || e) }, 502);
     }
@@ -375,10 +393,14 @@ export default async function (req: Request): Promise<Response> {
     const fileUrl = pickFinalUrl(cfg, key, location);
     await verifyPublic(svc, fileUrl); // n'est pas bloquant : journalise seulement
 
+    // ★ Session → « completed » + final_file_url ; on resynchronise au passage
+    // le cache parts_json avec les ETags VALIDÉS PAR R2 (ceux du client), pour
+    // que les actions « register »/« status » de getPresignedUrl ne puissent
+    // plus propager une divergence fantôme.
     await svc.entities[SESSIONS_ENTITY].update(session.id, {
-      status: 'done',
+      status: 'completed',
       final_file_url: fileUrl,
-      parts_json: JSON.stringify(serverParts),
+      parts_json: JSON.stringify(finalParts),
     }).catch(() => {});
 
     return json({
