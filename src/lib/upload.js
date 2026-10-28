@@ -412,44 +412,20 @@ export async function uploadChunked(file, onProgress, opts = {}) {
  *  L'annulation utilisateur (signal) n'est JAMAIS re-tentée en mode legacy. */
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {
   if (!appParams.appId) {
-    throw new Error(
-      "Configuration manquante : VITE_BASE44_APP_ID est vide → le backend reçoit app_id=None et rejette l'upload. Renseignez-le (base44 link / .env.local)."
-    );
+    throw new Error("VITE_BASE44_APP_ID est vide. Configure-le dans .env ou via base44 link.");
   }
 
-  // Petits fichiers : upload monolithique officiel, rien à changer pour les
-  // autres sections de l'app (Musique, Articles, avatars, images…).
+  // Petits fichiers : upload direct
   if (!forceChunked && file.size <= SEUIL_UPLOAD_DIRECT) {
     return directUpload(file);
   }
 
-  // Mode principal demandé (forceChunked) OU gros fichier (> 100 Mo) :
-  // on tente d'abord le S3 multipart DIRECT — assemblage côté stockage,
-  // zéro octet transité par Base44, aucune limite RAM serverless.
+  // Gros fichiers : S3 multipart UNIQUEMENT (pas de repli)
   const wantsS3 = forceChunked || file.size > SEUIL_MULTIPART_S3;
   if (wantsS3) {
-    try {
-      return await uploadMultipartS3(file, { onProgress, onDetail, signal });
-    } catch (err) {
-      if (err?.cancelled) throw err; // annulation utilisateur : on ne relance rien
-      // Repli legacy UNIQUEMENT si le backend S3 est manifestement absent/non
-      // configuré (variables d'env manquantes, fonctions déployées nulle part,
-      // CORS bucket non exposé). Toute autre erreur (403 S3, ETag invalide,
-      // échec CompleteMultipartUpload…) est remontée telle quelle : la
-      // retenter en mode legacy ferait perdre des heures sur un film de 5 Go.
-      const s3NotConfigured =
-        /non configur|not configured|R2_SETUP|missing env|Unauthorized|Failed to fetch|HTTP 404/i.test(err?.message || "");
-      console.warn(
-        "[upload] S3 multipart indisponible",
-        s3NotConfigured ? "→ repli mode chunked legacy (upload_chunk)" : "(erreur bloquante, pas de repli)",
-        ":", err?.message
-      );
-      if (!s3NotConfigured) throw err;
-    }
+    return await uploadMultipartS3(file, { onProgress, onDetail, signal });
   }
 
-  // Repli : ancien upload morcelé via /api/functions/upload_chunk (assemblage
-  // serveur + publication Core.UploadFile). Réservé aux fichiers qui tiennent
-  // dans la RAM serverless (< ~1-2 Go) ou aux environnements sans bucket S3.
+  // Fichiers moyens (15-100 Mo) : ancien système chunked
   return uploadChunked(file, { onProgress, onDetail, signal });
 }
