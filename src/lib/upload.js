@@ -97,7 +97,6 @@ async function callFn(name, payload, { signal, timeoutMs = 60_000 } = {}) {
 
 async function putPartToS3(presignedUrl, blob, { signal, partNumber }) {
   console.log(`[S3-PUT] Tentative d'envoi du morceau ${partNumber} vers R2...`);
-  console.log(`[S3-PUT] URL cible:`, presignedUrl);
   
   let lastErr;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -237,16 +236,12 @@ export async function uploadMultipartS3(file, cb = {}) {
       uploadedBytes += blob.size;
       report();
       
-      await callFn("getPresignedUrl", { 
-        action: "register", 
-        session_id: sessionId, 
-        partNumber: n, 
-        etag 
-      }, { signal }).catch((e) => console.warn("[S3] register échoué (non bloquant):", e?.message));
+      // ✅ LE BLOC "register" A ÉTÉ SUPPRIMÉ ICI. 
+      // On ne stocke plus les ETags dans la base de données Base44.
       
     } catch (err) {
       console.error(`[S3] ÉCHEC CRITIQUE au morceau ${n}. L'upload s'arrête ici.`, err);
-      throw err; // On arrête tout, on ne passe pas à completeMultipartUpload si un chunk échoue
+      throw err;
     }
   }
 
