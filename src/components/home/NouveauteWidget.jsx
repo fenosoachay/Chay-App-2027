@@ -7,7 +7,9 @@ import { getContentMediaPath } from "@/lib/contentLinks";
 import { getHomeContentMessage } from "@/lib/homeContentMessage";
 
 // Panneau (gauche « Préc. » ou droite « Nouv. ») du widget de nouveautés.
-function Pane({ label, icon: Icon, item, isLatest, onOpen }) {
+// blink = true (panneau « Nouv. » uniquement) fait clignoter le libellé et son
+// icône pour attirer l'œil sur la nouveauté (voir .blink-label dans index.css).
+function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
   return (
     <button
       type="button"
@@ -18,8 +20,8 @@ function Pane({ label, icon: Icon, item, isLatest, onOpen }) {
       } disabled:opacity-50 disabled:cursor-default`}
     >
       <div className="flex items-center gap-1.5 mb-2">
-        <Icon className={`h-3 w-3 ${isLatest ? "text-primary" : "text-foreground/40"}`} />
-        <span className={`text-[0.65rem] font-bold uppercase tracking-wider ${isLatest ? "text-primary" : "text-foreground/50"}`}>
+        <Icon className={`h-3 w-3 ${isLatest ? "text-primary" : "text-foreground/40"} ${blink ? "blink-label" : ""}`} />
+        <span className={`text-[0.65rem] font-bold uppercase tracking-wider ${isLatest ? "text-primary" : "text-foreground/50"} ${blink ? "blink-label" : ""}`}>
           {label}
         </span>
       </div>
@@ -66,7 +68,7 @@ export default function NouveauteWidget() {
     <section className="mt-6 animate-float-in">
       <div className="rounded-[1.5rem] border border-border bg-card overflow-hidden grid grid-cols-2 divide-x divide-border shadow-sm">
         <Pane label="Préc." icon={History} item={items[1] || null} isLatest={false} onOpen={open} />
-        <Pane label="Nouv." icon={Sparkles} item={items[0] || null} isLatest onOpen={open} />
+        <Pane label="Nouv." icon={Sparkles} item={items[0] || null} isLatest blink onOpen={open} />
       </div>
 
       <ContentDetailDialog

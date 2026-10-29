@@ -259,6 +259,22 @@
   50% { transform: scaleY(1); }
 }
 
+/* Clignotement du libellé « Nouv. » du widget de nouveautés (accueil).
+   On n'efface jamais complètement le texte (opacité min. 0.35) pour rester
+   lisible même à son point bas. */
+@keyframes label-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.blink-label {
+  animation: label-blink 1.1s ease-in-out infinite;
+}
+/* Accessibilité : pas de clignotement si l'utilisateur demande une
+   réduction des animations. */
+@media (prefers-reduced-motion: reduce) {
+  .blink-label { animation: none; opacity: 1; }
+}
+
 @layer utilities {
   /* Libellés sous les icônes des grilles (Multimédia, sections) :
      assez petits pour que « Prédications » tienne sur UNE ligne dans une
