@@ -5,9 +5,11 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { confirmFr } from "@/lib/confirmFr";
 import {
   Bell,
   CheckCheck,
+  Eraser,
   Loader2,
   Music,
   Film,
@@ -43,6 +45,7 @@ export default function Notifications() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const unread = useUnreadNotifications(user);
 
   const load = useCallback(async () => {
@@ -121,17 +124,63 @@ export default function Notifications() {
     }
   };
 
+  const clearAll = async () => {
+    if (!items.length || clearing) return;
+    const ok = await confirmFr({
+      title: "Tout supprimer",
+      message: `Supprimer les ${items.length} notification${items.length > 1 ? "s" : ""} ?`,
+      confirmLabel: "Supprimer",
+      cancelLabel: "Annuler",
+    });
+    if (!ok) return;
+    setClearing(true);
+    const snapshot = items;
+    setItems([]);
+    try {
+      await Promise.all(
+        snapshot.map((n) =>
+          base44.entities.UserNotification.delete(n.id).catch(() => {})
+        )
+      );
+      toast({ title: "Notifications supprimées" });
+    } catch (e) {
+      setItems(snapshot);
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-2xl px-4 md:px-8 py-6 md:py-10">
       <header className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <h1 className="font-display font-extrabold text-3xl">
           <span className="brand-gradient-text">Notifications</span>
         </h1>
-        {unread > 0 && (
-          <Button variant="outline" size="sm" onClick={markAll}>
-            <CheckCheck className="h-4 w-4 mr-2" /> Tout marquer comme lu
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unread > 0 && (
+            <Button variant="outline" size="sm" onClick={markAll}>
+              <CheckCheck className="h-4 w-4 mr-2" /> Tout marquer comme lu
+            </Button>
+          )}
+          {items.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-foreground/50 hover:text-destructive"
+              onClick={clearAll}
+              disabled={clearing}
+              title="Supprimer toutes les notifications"
+              aria-label="Supprimer toutes les notifications"
+            >
+              {clearing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Eraser className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </header>
 
       {loading ? (
