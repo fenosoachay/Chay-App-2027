@@ -6,6 +6,7 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
 import { useBackgroundPlayback } from "@/hooks/useBackgroundPlayback";
 import { useNetwork } from "@/lib/NetworkContext";
+import { toast } from "@/components/ui/use-toast";
 import PlayerQueueList from "@/components/player/PlayerQueueList";
 import OfflinePlayerNotice from "@/components/player/OfflinePlayerNotice";
 import {
@@ -21,6 +22,18 @@ import {
 } from "@/lib/mediaControl";
 
 const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
+// Part du média déjà téléchargée (0 → 1), pour la barre de progression.
+const computeBufferedRatio = (el) => {
+  try {
+    if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return 0;
+    const buffered = el.buffered;
+    if (!buffered || !buffered.length) return 0;
+    return Math.max(0, Math.min(1, buffered.end(buffered.length - 1) / el.duration));
+  } catch {
+    return 0;
+  }
+};
+
 const isAudioControl = (control) =>
   AUDIO_TYPES.has(control?.type) || control?.engine === "audio";
 
@@ -32,6 +45,9 @@ export default function UniversalMediaSurface() {
   // contrôle lancé avec `isBuffering: true` affiche un spinner avant même que
   // le lecteur ait commencé à charger (double indicateur de chargement).
   const [videoWaiting, setVideoWaiting] = useState(false);
+  // Premières images réellement décodées : sert à retirer le poster de
+  // couverture (évite un flash de poster sur une vidéo déjà prête).
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const controlRef = useRef(null);
@@ -376,7 +392,11 @@ const playVideo = (source) => {
     const active = controlRef.current;
     if (active?.type === "video") {
       updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
-      toastError("Lecture impossible", "Cette vidéo n'a pas pu être chargée. Vérifiez votre connexion et réessayez.");
+      toast({
+        title: "Lecture impossible",
+        description: "Cette vidéo n'a pas pu être chargée. Vérifiez votre connexion et réessayez.",
+        variant: "destructive",
+      });
     }
   }}
   onStalled={() => {
