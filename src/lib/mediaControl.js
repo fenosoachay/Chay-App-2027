@@ -95,9 +95,17 @@ export function publishMediaControl(control, owner = control.type) {
 }
 
 export function requestMediaPlayback(control, owner = control.type) {
+  // IMPORTANT : on ne renvoie JAMAIS l'objet stocké aux appelants. Le contrôle
+  // est muté par updateMediaControl() via `controls.set(id, {...})` ; exposer la
+  // référence interne reviendrait à laisser un composant lire un état périmé.
   const id = publishMediaControl(control, owner);
   const active = controls.get(id);
-  playbackRequestListeners.forEach((listener) => listener(active));
+  if (active) {
+    // Double notification volontairement évitée : `publishMediaControl` a déjà
+    // appelé notify(), les abonnés à l'ÉTAT sont donc à jour. Seuls les
+    // demandeurs de lecture (le lecteur persistant) sont prévenus ici.
+    playbackRequestListeners.forEach((listener) => listener({ ...active }));
+  }
   return id;
 }
 
