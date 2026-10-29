@@ -27,14 +27,19 @@ const isAudioControl = (control) =>
 export default function UniversalMediaSurface() {
   const [control, setControl] = useState(null);
   const [expanded, setExpanded] = useState(false);
-  // PROBLÈME 1 : état "vidéo prête" → commande le poster frame (l'image de
-  // couverture reste affichée tant que la vraie vidéo n'est pas décodable).
-  const [videoReady, setVideoReady] = useState(false);
+  // Buffering natif (<video>) : suivi via les événements waiting / playing.
+  // `videoWaiting` ne concerne QUE la balise <video>, ce qui évite qu'un
+  // contrôle lancé avec `isBuffering: true` affiche un spinner avant même que
+  // le lecteur ait commencé à charger (double indicateur de chargement).
+  const [videoWaiting, setVideoWaiting] = useState(false);
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const controlRef = useRef(null);
   controlRef.current = control;
   const youtubePlayingRef = useRef(false);
+  // Source réellement chargée dans <video> : sert d'idempotence pour éviter
+  // deux rechargements consécutifs de la même vidéo.
+  const loadedSrcRef = useRef(null);
 
   useEffect(() => subscribeMediaControl(setControl), []);
 
@@ -53,29 +58,41 @@ export default function UniversalMediaSurface() {
     youtubePlayingRef.current = true;
   };
 
+// Charge et lit une vidéo dans l'élément <video> persistant.
+// Contraintes corrigées ici :
+//  - pas de `setTimeout` : le chargement démarre immédiatement (le délai
+//    artificiel de 100 ms ajoutait 100 ms à CHAQUE démarrage, et faisait
+//    courir la course avec l'autre appel de playVideo → deux « loading ») ;
+//  - idempotence stricte : rejouer la même source ne provoque AUCUN
+//    rechargement réseau (il suffit de reprendre la lecture) ;
+//  - `preload="auto"` + `play()` appelé tout de suite : le navigateur peut
+//    démarrer le décodage dès les premières bytes, au lieu d'attendre
+//    `metadata` comme avant.
 const playVideo = (source) => {
   const video = videoRef.current;
-  if (!video) return;
-  
-  // Forcer le rechargement complet si la source change
-  if (video.src !== source) {
-    video.pause();
-    video.src = '';
+  if (!video || !source) return;
+
+  const sameSource = loadedSrcRef.current === source && Boolean(video.currentSrc);
+
+  if (!sameSource) {
+    loadedSrcRef.current = source;
+    setVideoWaiting(true);
+    // Changement de média : on remplace la source sans passer par
+    // `removeAttribute("src") + load()`, qui annule le téléchargement en
+    // cours puis repart de zéro.
+    video.src = source;
     video.load();
-    // Petit délai pour éviter les conflits de chargement
-    setTimeout(() => {
-      video.src = source;
-      video.preload = "metadata"; // ← moins de données à charger au démarrage
-      video.load();
-      video.play().catch(() => {
-        const cur = controlRef.current;
-        if (cur) updateMediaControl(cur.id, { isPlaying: false, isBuffering: false });
-      });
-    }, 100);
-  } else if (video.paused) {
+  }
+
+  if (video.paused) {
     video.play().catch(() => {
+      // Échec de lecture auto (politique navigateur / réseau) : on repart sur
+      // un état propre pour que le bouton ▶ du lecteur reste cohérent.
+      setVideoWaiting(false);
       const active = controlRef.current;
-      if (active) updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+      if (active?.type === "video") {
+        updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+      }
     });
   }
 };
@@ -95,10 +112,11 @@ const playVideo = (source) => {
         videoRef.current.removeAttribute("src");
         videoRef.current.load();
       }
+      loadedSrcRef.current = null;
       if (iframeRef.current) iframeRef.current.src = "about:blank";
       youtubePlayingRef.current = false;
       setExpanded(false);
-      setVideoReady(false); // ← nouveau média : le poster reprend la main
+      setVideoWaiting(false);
       return;
     }
 
@@ -223,17 +241,17 @@ const playVideo = (source) => {
   const blockedOffline = Boolean(isYouTube && !isOnline);
   const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
 
-  // ── PROBLÈME 1 : spinner custom ──────────────────────────────────────────
-  // Règle stricte : visible UNIQUEMENT quand control.isBuffering === true,
-  // et masqué immédiatement dès que la lecture reprend OU que currentTime > 0
-  // (l'image avance donc plus de "chargement" à afficher).
-  const showVideoSpinner = Boolean(
-    isVideo &&
-    control?.isBuffering === true &&
-    !(control?.currentTime > 0 && control?.isPlaying),
-  );
+  // ── Indicateur de chargement UNIQUE pour la vidéo ────────────────────────
+  // Source de vérité : les événements natifs de <video> (`waiting` / `playing`
+  // / `canplay`), et non plus le champ `isBuffering` posé par l'appelant.
+  // L'ancien calcul superposait deux spinners (celui-ci, jamais câblé, et celui
+  // branché sur `control.isBuffering`) et pouvait rester bloqué si un média
+  // était publié avec `isBuffering: true` sans événement vidéo correspondant.
+  const showVideoSpinner = Boolean(isVideo && videoWaiting);
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
-  useKeepAwake(Boolean(isYouTube && control?.isPlaying && isOnline));
+  // L'écran doit rester allumé dès qu'un film est en cours (et pas seulement
+  // pour YouTube) : sinon la vidéo se met en pause au bout de 30 s d'écran éteint.
+  useKeepAwake(Boolean((isVideo || isYouTube) && control?.isPlaying && isOnline));
 
   useBackgroundPlayback({
     active: Boolean(control && (isVideo || isYouTube)),
@@ -309,53 +327,81 @@ const playVideo = (source) => {
         <div className="relative h-full w-full">
         <video
   ref={videoRef}
-  className={`h-full w-full object-contain ${isVideo ? "block" : "hidden"}`}
+  className={`h-full w-full bg-black object-contain ${isVideo ? "block" : "hidden"}`}
   playsInline
   controls={showEmbeddedPlayer && isVideo}
   controlsList="nodownload"
   disablePictureInPicture
-  preload="auto" 
+  // Chargement immédiat : "metadata" faisait attendre le navigateur avant
+  // d'amorcer le téléchargement des premières images → démarrage perçu lent.
+  preload="auto"
+  // Image de couverture native : masque le fond noir pendant le chargement.
+  poster={!videoReady && isVideo ? control?.artwork || "" : undefined}
   onPlay={() => {
     const active = controlRef.current;
-    if (active) updateMediaControl(active.id, { isPlaying: true, isBuffering: true });
+    if (active?.type === "video") updateMediaControl(active.id, { isPlaying: true });
   }}
   onPause={() => {
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
   }}
   onWaiting={() => {
+    setVideoWaiting(true);
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
   }}
   onPlaying={() => {
+    // La lecture reprend réellement : plus aucun indicateur de chargement.
+    setVideoReady(true);
+    setVideoWaiting(false);
+    const active = controlRef.current;
+    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false, isPlaying: true });
+  }}
+  onCanPlay={() => {
+    setVideoWaiting(false);
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
   }}
   onLoadedData={() => {
+    setVideoReady(true);
+    setVideoWaiting(false);
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
   }}
-  onCanPlay={() => {
+  onError={() => {
+    // Source injoignable / format non supporté : on stoppe net au lieu de
+    // laisser tourner un spinner éternel.
+    setVideoWaiting(false);
+    setVideoReady(false);
     const active = controlRef.current;
-    if (active?.type === "video") updateMediaControl(active.id, { isBuffering: false });
+    if (active?.type === "video") {
+      updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+      toastError("Lecture impossible", "Cette vidéo n'a pas pu être chargée. Vérifiez votre connexion et réessayez.");
+    }
   }}
   onStalled={() => {
+    setVideoWaiting(true);
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isBuffering: true });
   }}
   onTimeUpdate={(event) => {
     const active = controlRef.current;
-    if (active?.type === "video") {
-      updateMediaControl(active.id, {
-        currentTime: event.currentTarget.currentTime,
-        duration: event.currentTarget.duration,
-      });
-    }
+    if (active?.type !== "video") return;
+    const el = event.currentTarget;
+    if (Number.isFinite(el.currentTime) && el.currentTime > 0) setVideoReady(true);
+    updateMediaControl(active.id, {
+      currentTime: el.currentTime,
+      duration: Number.isFinite(el.duration) ? el.duration : active.duration || 0,
+      bufferedRatio: computeBufferedRatio(el),
+    });
   }}
   onEnded={() => {
     const active = controlRef.current;
     if (!active || active.type !== "video") return;
     updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+    setVideoWaiting(false);
+    setVideoReady(false);
+    loadedSrcRef.current = null;
     active.next?.();
   }}
   style={{ 
@@ -364,10 +410,11 @@ const playVideo = (source) => {
   }}
 />
         
-        {/* INDICATEUR DE BUFFERING (SPINNER) */}
-        {control?.isBuffering && isVideo && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
-            <Loader2 className="h-12 w-12 text-white animate-spin" />
+        {/* INDICATEUR DE BUFFERING : source unique (events natifs <video>). */}
+        {showVideoSpinner && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+            <Loader2 className="h-12 w-12 animate-spin text-white" aria-hidden="true" />
+            <span className="sr-only">Chargement de la vidéo…</span>
           </div>
         )}
 
