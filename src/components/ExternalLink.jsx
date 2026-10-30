@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +12,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-/**
- * Extrait le nom de domaine d'une URL pour l'afficher dans le dialogue.
- */
 function getDomain(url) {
   try {
     const u = new URL(url);
@@ -23,10 +21,22 @@ function getDomain(url) {
   }
 }
 
-/**
- * Lien externe avec confirmation en français.
- * Remplace le dialogue natif Android qui s'affiche en anglais.
- */
+async function openExternalUrl(href) {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({
+        url: href,
+        toolbarColor: "#0a0a0a",
+      });
+    } catch (e) {
+      window.open(href, "_blank", "noopener,noreferrer");
+    }
+  } else {
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+}
+
 export default function ExternalLink({
   href,
   label,
@@ -40,11 +50,7 @@ export default function ExternalLink({
 
   const handleConfirm = () => {
     setOpen(false);
-    // Ouvre dans le navigateur — on utilise window.open au lieu du comportement
-    // natif du <a target="_blank"> pour éviter le dialogue système en anglais.
-    setTimeout(() => {
-      window.open(href, "_blank", "noopener,noreferrer");
-    }, 50);
+    setTimeout(() => openExternalUrl(href), 50);
   };
 
   const handleClick = (e) => {
@@ -54,7 +60,6 @@ export default function ExternalLink({
 
   return (
     <>
-      {/* Le <a> est toujours là pour l'accessibilité (copier le lien, etc.) */}
       <a
         href={href}
         onClick={handleClick}
