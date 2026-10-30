@@ -1,10 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { notifyInApp, pushNotify } from '../shared/requests.ts';
 
-// Prise en charge d'une prière : opération atomique.
-// - Relecture avant écriture pour éviter les conflits (deux clics en même temps).
-// - Impossible de prendre sa propre demande.
-// - Le demandeur est notifié SANS révéler l'identité de l'intercesseur.
+// ─── Helpers locaux ─────────────────────────────────────────────────────────
+
+async function notifyInApp(svc, rows) {
+  const list = Array.isArray(rows) ? rows.filter((r) => r && r.user_id) : [];
+  if (!list.length) return 0;
+  let created = 0;
+  for (let i = 0; i < list.length; i += 200) {
+    try {
+      const res = await svc.entities.UserNotification.bulkCreate(list.slice(i, i + 200));
+      created += Array.isArray(res) ? res.length : list.slice(i, i + 200).length;
+    } catch (error) {
+      console.error('[takePrayer] Notification in-app impossible.', error?.message || String(error));
+    }
+  }
+  return created;
+}
+
+// ─── Fonction principale ────────────────────────────────────────────────────
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -54,7 +68,18 @@ export default async function (req) {
       is_read: false,
     }]);
 
-    await pushNotify(svc, [prayer.requester_id], { title, body: message, targetType: 'prayer', targetId: prayerId });
+    // Push best-effort
+    try {
+      await svc.functions.invoke('sendFcmPush', {
+        user_ids: [prayer.requester_id],
+        title,
+        body: message,
+        target_type: 'prayer',
+        target_id: prayerId,
+      });
+    } catch (e) {
+      console.log('[takePrayer] Push non disponible, ignoré.');
+    }
 
     return Response.json({ ok: true, id: prayerId, status: 'taken' });
   } catch (error) {
