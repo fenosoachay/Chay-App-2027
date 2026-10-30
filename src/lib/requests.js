@@ -1,17 +1,42 @@
 import { base44 } from "@/api/base44Client";
 
+// ─── Helper : extrait le message d'erreur clair du serveur ──────────────────
+function _extractErrorMessage(error, fallback = "Une erreur est survenue.") {
+  if (!error) return fallback;
+  // Cherche le message à différents endroits possibles selon le SDK
+  const serverMsg =
+    error?.data?.error ||
+    error?.response?.data?.error ||
+    error?.body?.error ||
+    error?.error ||
+    error?.message;
+  if (serverMsg && typeof serverMsg === "string" && !serverMsg.includes("status code")) {
+    return serverMsg;
+  }
+  return fallback;
+}
+
+async function _invoke(name, args) {
+  try {
+    const res = await base44.functions.invoke(name, args || {});
+    if (res?.data?.error) {
+      throw new Error(res.data.error);
+    }
+    return res?.data || {};
+  } catch (raw) {
+    const msg = _extractErrorMessage(raw);
+    throw new Error(msg);
+  }
+}
+
 // ─── Demandes de thème ───────────────────────────────────────────────────────
 
 export async function createThemeRequest({ theme, passage }) {
-  const res = await base44.functions.invoke("createThemeRequest", { theme, passage });
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data || {};
+  return _invoke("createThemeRequest", { theme, passage });
 }
 
 export async function handleThemeRequest({ request_id, decision, admin_note }) {
-  const res = await base44.functions.invoke("handleThemeRequest", { request_id, decision, admin_note });
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data || {};
+  return _invoke("handleThemeRequest", { request_id, decision, admin_note });
 }
 
 export async function fetchMyThemeRequests(userId, limit = 50) {
@@ -33,27 +58,19 @@ export async function fetchAdminThemeRequests(status = null, limit = 200) {
 // ─── Prières ─────────────────────────────────────────────────────────────────
 
 export async function createPrayerRequest({ category, content }) {
-  const res = await base44.functions.invoke("createPrayerRequest", { category, content });
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data || {};
+  return _invoke("createPrayerRequest", { category, content });
 }
 
 export async function fetchPrayerWall() {
-  const res = await base44.functions.invoke("getPrayerWall", {});
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data?.items || [];
+  return _invoke("getPrayerWall", {}).then((data) => data?.items || []);
 }
 
 export async function takePrayer(prayerId) {
-  const res = await base44.functions.invoke("takePrayer", { prayer_id: prayerId });
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data || {};
+  return _invoke("takePrayer", { prayer_id: prayerId });
 }
 
 export async function answerPrayer(prayerId) {
-  const res = await base44.functions.invoke("answerPrayer", { prayer_id: prayerId });
-  if (res?.data?.error) throw new Error(res.data.error);
-  return res?.data || {};
+  return _invoke("answerPrayer", { prayer_id: prayerId });
 }
 
 export async function fetchMyPrayerRequests(userId, limit = 100) {
@@ -74,6 +91,20 @@ export async function fetchPrayersITakeCharge(userId, limit = 100) {
     limit
   );
   return Array.isArray(rows) ? rows : [];
+}
+
+// ─── Vérification admin désigné (frontend) ──────────────────────────────────
+export async function isDesignatedAdminFrontend(base44Client, userId) {
+  if (!userId) return false;
+  try {
+    const me = await base44Client.entities.User.get(userId);
+    if (!me || me.role !== "admin") return false;
+    const firstAdmins = await base44Client.entities.User.list("created_date", 1);
+    const firstAdminId = Array.isArray(firstAdmins) && firstAdmins[0] ? String(firstAdmins[0].id) : null;
+    return Boolean(firstAdminId) && firstAdminId !== String(userId);
+  } catch {
+    return false;
+  }
 }
 
 // ─── Labels et styles de statut ──────────────────────────────────────────────
@@ -103,25 +134,6 @@ export const PRAYER_STATUS_STYLE = {
 };
 
 export const PRAYER_CATEGORIES = ["Santé", "Famille", "Travail", "Guidance", "Autre"];
-
-// ─── Vérification admin désigné (frontend) ──────────────────────────────────
-// Cache l'interface au créateur de l'application. La sécurité réelle est côté serveur.
-export async function isDesignatedAdminFrontend(base44Client, userId) {
-  if (!userId) return false;
-  try {
-    // Récupère l'utilisateur courant
-    const me = await base44Client.entities.User.get(userId);
-    if (!me || me.role !== "admin") return false;
-
-    // Récupère le premier admin créé (le créateur de l'application)
-    const firstAdmins = await base44Client.entities.User.list("created_date", 1);
-    const firstAdminId = Array.isArray(firstAdmins) && firstAdmins[0] ? String(firstAdmins[0].id) : null;
-
-    return Boolean(firstAdminId) && firstAdminId !== String(userId);
-  } catch {
-    return false;
-  }
-}
 
 // ─── Utilitaire de date relative en français ─────────────────────────────────
 export function timeAgo(isoDate) {
