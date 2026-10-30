@@ -1,9 +1,52 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { listDesignatedAdmins, notifyInApp, pushNotify, emailNotify } from '../shared/requests.ts';
 
-// Création d'une demande de thème à expliquer.
-// - L'auteur est forcé côté serveur (jamais pris du client).
-// - Seuls les admins désignés (rôle admin, hors créateur) reçoivent la notification.
+// ─── Helpers copiés localement (plus besoin de shared/requests.ts) ──────────
+
+async function listDesignatedAdmins(svc) {
+  const ids = [];
+  let skip = 0;
+  while (skip < 5000) {
+    const batch = await svc.entities.User.list('-created_date', 500, skip).catch(() => []);
+    const arr = Array.isArray(batch) ? batch : [];
+    for (const u of arr) {
+      if (u?.role === 'admin' && u.id) ids.push(u.id);
+    }
+    if (arr.length < 500) break;
+    skip += 500;
+  }
+  const first = await svc.entities.User.list('created_date', 1).catch(() => []);
+  const firstAdminId = Array.isArray(first) && first[0] ? String(first[0].id) : null;
+  return [...new Set(ids)].filter((id) => String(id) !== firstAdminId);
+}
+
+async function notifyInApp(svc, rows) {
+  const list = Array.isArray(rows) ? rows.filter((r) => r && r.user_id) : [];
+  if (!list.length) return 0;
+  let created = 0;
+  for (let i = 0; i < list.length; i += 200) {
+    try {
+      const res = await svc.entities.UserNotification.bulkCreate(list.slice(i, i + 200));
+      created += Array.isArray(res) ? res.length : list.slice(i, i + 200).length;
+    } catch (error) {
+      console.error('[requests] Notification in-app impossible.', error?.message || String(error));
+    }
+  }
+  return created;
+}
+
+async function emailNotify(svc, to, subject, text) {
+  if (!to) return false;
+  try {
+    await svc.integrations.Core.SendEmail({ to, subject, body: text });
+    return true;
+  } catch (error) {
+    console.error('[requests] E-mail impossible.', error?.message || String(error));
+    return false;
+  }
+}
+
+// ─── Fonction principale ────────────────────────────────────────────────────
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -51,7 +94,18 @@ export default async function (req) {
       )
     );
 
-    await pushNotify(svc, adminIds, { title, body: message, targetType: 'theme_request', targetId: request.id });
+    // Push notifications — on ignore si ça échoue (best-effort)
+    try {
+      await svc.functions.invoke('sendFcmPush', {
+        user_ids: adminIds,
+        title,
+        body: message,
+        target_type: 'theme_request',
+        target_id: request.id,
+      });
+    } catch (e) {
+      console.log('[createThemeRequest] Push non disponible, ignoré.');
+    }
 
     return Response.json({ id: request.id, recipients: notified });
   } catch (error) {
