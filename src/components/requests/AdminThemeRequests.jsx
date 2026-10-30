@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Loader2, Check, X, MessageSquareQuote, User } from "lucide-react";
-import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -67,16 +66,12 @@ function RequestCard({ request, onAction, busy }) {
         </span>
       </div>
 
-      {request.user_id && (
-        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-          <User className="h-3 w-3" />
-          <Link to={`/profile/${request.user_id}`} className="text-primary hover:underline">
-            Voir le profil
-          </Link>
-          <span className="mx-1">·</span>
-          📅 {formatDate(request.created_date)}
-        </p>
-      )}
+     <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+  <User className="h-3 w-3" />
+  <span className="text-foreground/70 font-medium">Anonyme</span>
+  <span className="mx-1">·</span>
+  📅 {formatDate(request.created_date)}
+</p>
 
       {request.admin_note && (
         <div className="mt-2 rounded-xl bg-muted/60 p-3">
