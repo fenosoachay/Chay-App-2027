@@ -10,6 +10,7 @@ import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import AnimatedBlobs from "@/components/home/AnimatedBlobs";
 import HomeSocialLinks from "@/components/home/HomeSocialLinks";
+import RequestsSection from "@/components/home/RequestsSection";
 
 export default function Home() {
   const { user, isLocalMode, isAuthenticated } = useAuth();
@@ -58,9 +59,10 @@ export default function Home() {
             {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
           </div>
           
-          import RequestsSection from "@/components/home/RequestsSection";
-…
-{!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
+          {/* Requêtes (demande de thème) */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.22s" }}>
+            {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
+          </div>
           
           {/* Prochaine réunion */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.25s" }}>
