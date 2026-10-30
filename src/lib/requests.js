@@ -122,3 +122,21 @@ export async function isDesignatedAdminFrontend(base44Client, userId) {
     return false;
   }
 }
+
+// ─── Utilitaire de date relative en français ─────────────────────────────────
+export function timeAgo(isoDate) {
+  if (!isoDate) return "";
+  const now = new Date();
+  const date = new Date(isoDate);
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHeure = Math.floor(diffMin / 60);
+  const diffJour = Math.floor(diffHeure / 24);
+
+  if (diffSec < 60) return "à l'instant";
+  if (diffMin < 60) return `il y a ${diffMin} min`;
+  if (diffHeure < 24) return `il y a ${diffHeure} h`;
+  if (diffJour < 7) return `il y a ${diffJour} j`;
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+}
