@@ -1,8 +1,44 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { isDesignatedAdmin, notifyInApp, pushNotify, emailNotify } from '../shared/requests.ts';
 
-// Traitement d'une demande de thème par un admin désigné.
-// Le créateur de l'application (premier admin) ne peut pas traiter de demande.
+// ─── Helpers locaux ─────────────────────────────────────────────────────────
+
+async function isDesignatedAdmin(svc, userId) {
+  if (!userId) return false;
+  const me = await svc.entities.User.get(userId).catch(() => null);
+  if (!me || me.role !== 'admin') return false;
+  const first = await svc.entities.User.list('created_date', 1).catch(() => []);
+  const firstAdminId = Array.isArray(first) && first[0] ? String(first[0].id) : null;
+  return Boolean(firstAdminId) && firstAdminId !== String(userId);
+}
+
+async function notifyInApp(svc, rows) {
+  const list = Array.isArray(rows) ? rows.filter((r) => r && r.user_id) : [];
+  if (!list.length) return 0;
+  let created = 0;
+  for (let i = 0; i < list.length; i += 200) {
+    try {
+      const res = await svc.entities.UserNotification.bulkCreate(list.slice(i, i + 200));
+      created += Array.isArray(res) ? res.length : list.slice(i, i + 200).length;
+    } catch (error) {
+      console.error('[handleThemeRequest] Notification in-app impossible.', error?.message || String(error));
+    }
+  }
+  return created;
+}
+
+async function emailNotify(svc, to, subject, text) {
+  if (!to) return false;
+  try {
+    await svc.integrations.Core.SendEmail({ to, subject, body: text });
+    return true;
+  } catch (error) {
+    console.error('[handleThemeRequest] E-mail impossible.', error?.message || String(error));
+    return false;
+  }
+}
+
+// ─── Fonction principale ────────────────────────────────────────────────────
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -59,7 +95,18 @@ export default async function (req) {
       await emailNotify(svc, requester.email, title, `${message}\n\nVoir tes requêtes : https://chay.base44.app/requests`);
     }
 
-    await pushNotify(svc, [request.user_id], { title, body: message, targetType: 'theme_answer', targetId: requestId });
+    // Push best-effort
+    try {
+      await svc.functions.invoke('sendFcmPush', {
+        user_ids: [request.user_id],
+        title,
+        body: message,
+        target_type: 'theme_answer',
+        target_id: requestId,
+      });
+    } catch (e) {
+      console.log('[handleThemeRequest] Push non disponible, ignoré.');
+    }
 
     return Response.json({ ok: true, request: updated });
   } catch (error) {
