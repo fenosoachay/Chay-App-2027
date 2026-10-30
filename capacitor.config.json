@@ -3,6 +3,7 @@
   "appName": "Église Chay",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": ["*"]
   }
 }
