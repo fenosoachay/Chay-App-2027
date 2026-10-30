@@ -43,6 +43,7 @@ const Community = lazy(() => import("@/pages/Community"));
 const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
 const Donate = lazy(() => import("@/pages/Donate"));
 const Contact = lazy(() => import("@/pages/Contact"));
+const Requests = lazy(() => import("@/pages/Requests"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const Messages = lazy(() => import("@/pages/Messages"));
 import AppLoader from '@/components/AppLoader';
@@ -119,6 +120,7 @@ const AuthenticatedApp = () => {
           <Route path="/donate" element={<Donate />} />
           <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/requests" element={<Requests />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />
