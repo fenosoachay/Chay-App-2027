@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Youtube, Shield, Globe } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import ExternalLink from "@/components/ExternalLink";
 
 const RING = "inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-foreground transition-all duration-300 hover:scale-110 active:scale-95";
 
@@ -29,9 +30,14 @@ export default function HomeSocialLinks() {
       <span className="hidden sm:block h-px w-24 bg-gradient-to-r from-transparent to-white/30" />
       <div className="flex items-center justify-center gap-4">
         {LINKS.map((l) => (
-          <a key={l.label} href={l.href} target="_blank" rel="noreferrer" aria-label={l.label} className={`${RING} ${l.ring}`}>
+          <ExternalLink
+            key={l.label}
+            href={l.href}
+            label={l.label}
+            className={`${RING} ${l.ring}`}
+          >
             {l.icon}
-          </a>
+          </ExternalLink>
         ))}
         {user?.role === "admin" && (
           <Link to="/admin" aria-label="Administration" className={`${RING} border border-white/40 shadow-[0_0_14px_rgba(255,255,255,0.3)]`}>
