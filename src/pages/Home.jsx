@@ -59,11 +59,6 @@ export default function Home() {
             {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
           </div>
           
-          {/* Requêtes (demande de thème) */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.22s" }}>
-            {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
-          </div>
-          
           {/* Prochaine réunion */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.25s" }}>
             {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
