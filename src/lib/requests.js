@@ -103,3 +103,22 @@ export const PRAYER_STATUS_STYLE = {
 };
 
 export const PRAYER_CATEGORIES = ["Santé", "Famille", "Travail", "Guidance", "Autre"];
+
+// ─── Vérification admin désigné (frontend) ──────────────────────────────────
+// Cache l'interface au créateur de l'application. La sécurité réelle est côté serveur.
+export async function isDesignatedAdminFrontend(base44Client, userId) {
+  if (!userId) return false;
+  try {
+    // Récupère l'utilisateur courant
+    const me = await base44Client.entities.User.get(userId);
+    if (!me || me.role !== "admin") return false;
+
+    // Récupère le premier admin créé (le créateur de l'application)
+    const firstAdmins = await base44Client.entities.User.list("created_date", 1);
+    const firstAdminId = Array.isArray(firstAdmins) && firstAdmins[0] ? String(firstAdmins[0].id) : null;
+
+    return Boolean(firstAdminId) && firstAdminId !== String(userId);
+  } catch {
+    return false;
+  }
+}
