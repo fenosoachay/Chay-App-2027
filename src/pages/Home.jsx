@@ -15,7 +15,6 @@ import RequestsSection from "@/components/home/RequestsSection";
 export default function Home() {
   const { user, isLocalMode, isAuthenticated } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
-
   const loadHome = () => setRefreshKey((k) => k + 1);
 
   return (
@@ -24,7 +23,7 @@ export default function Home() {
         <AnimatedBlobs />
         <div className="relative z-10 mx-auto max-w-6xl px-6 md:px-8 py-4 md:py-12">
 
-          {/* Welcome Header */}
+          {/* 1. Welcome Header */}
           <section className="animate-float-in flex items-center justify-center gap-4 text-center">
             <div>
               <h1 className="font-display font-extrabold text-4xl md:text-6xl text-foreground">
@@ -42,43 +41,44 @@ export default function Home() {
             Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
           </p>
 
-          {/* Verset du jour (utilisateurs connectés uniquement) */}
+          {/* 2. Verset du jour (utilisateurs connectés uniquement) */}
           {!isLocalMode && isAuthenticated && (
             <div className="animate-float-in mt-6" style={{ animationDelay: "0.12s" }}>
               <VersetDuJourSection refreshKey={refreshKey} />
             </div>
           )}
 
-          {/* Nouveautés (Préc. / Nouv.) */}
+          {/* 3. Prochaine réunion */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
-            {!isLocalMode && <NouveauteWidget />}
-          </div>
-
-          {/* Question Logique */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.2s" }}>
-            {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
-          </div>
-          
-          {/* Prochaine réunion */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.25s" }}>
             {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
           </div>
 
-          {/* Requêtes */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.27s" }}>
+          {/* 4. Question Logique */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.20s" }}>
+            {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
+          </div>
+
+          {/* 5. Requêtes */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.23s" }}>
             {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
           </div>
 
-          {/* Accès rapide */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.3s" }}>
+          {/* 6. Nouveautés (Préc. / Nouv.) */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.26s" }}>
+            {!isLocalMode && <NouveauteWidget />}
+          </div>
+
+          {/* 7. Accès rapide */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.30s" }}>
             {isLocalMode ? <LocalBibleAccess /> : <QuickAccess />}
           </div>
 
-          {/* Connexion / création de compte (invités uniquement) */}
+          {/* 8. Connexion / création de compte (invités uniquement) */}
           {!isAuthenticated && <AuthButtons />}
 
-          {/* Liens sociaux */}
+          {/* 9. Liens sociaux */}
           <HomeSocialLinks />
+
         </div>
       </div>
     </PullToRefresh>
