@@ -2,7 +2,7 @@ import {
   LayoutDashboard, BookOpen, Film, Users, Gamepad2, Heart, Shield,
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
-  Send, Library, Newspaper, Shuffle,
+  Send, Library, Newspaper, Shuffle, MessageSquareQuote,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -48,6 +48,7 @@ export const ADMIN_NAV = [
     id: "engagement", label: "Engagement", icon: Heart,
     items: [
       { key: "donations", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
+      { key: "theme_requests", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
       { key: "Faq", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
     ],
   },
