@@ -52,15 +52,15 @@ export default function Home() {
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
             {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
           </div>
-
-          {/* 4. Question Logique */}
-          <div className="animate-float-in mt-6" style={{ animationDelay: "0.20s" }}>
-            {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
-          </div>
-
-          {/* 5. Requêtes */}
+          
+          {/* 4. Requêtes */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.23s" }}>
             {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
+          </div>
+          
+          {/* 5. Question Logique */}
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.20s" }}>
+            {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
           </div>
 
           {/* 6. Nouveautés (Préc. / Nouv.) */}
