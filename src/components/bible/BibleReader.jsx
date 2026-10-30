@@ -381,7 +381,7 @@ export default function BibleReader({ onBack }) {
                                   setSelectedChapter(1);
                                   setBookPickerOpen(false);
                                 }}
-                                className={`flex h-12 items-center justify-center rounded-sm px-1 text-center text-[11px] font-bold leading-tight transition ${
+                                className={`flex h-12 items-center justify-center rounded-sm px-1 text-center text-sm font-bold leading-tight transition ${
                                   isActive
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "border border-border bg-card text-foreground/80 hover:bg-primary/10 hover:text-primary"
