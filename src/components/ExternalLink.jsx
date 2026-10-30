@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ExternalLink as ExternalLinkIcon } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
+import { openExternal } from "@/lib/openExternal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,20 +21,8 @@ function getDomain(url) {
   }
 }
 
-async function openExternalUrl(href) {
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const { Browser } = await import("@capacitor/browser");
-      await Browser.open({
-        url: href,
-        toolbarColor: "#0a0a0a",
-      });
-    } catch (e) {
-      window.open(href, "_blank", "noopener,noreferrer");
-    }
-  } else {
-    window.open(href, "_blank", "noopener,noreferrer");
-  }
+function openExternalUrl(href) {
+  openExternal(href);
 }
 
 export default function ExternalLink({
