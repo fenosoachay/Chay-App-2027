@@ -65,9 +65,10 @@ export default function Home() {
           </div>
 
           {/* Requêtes */}
-<div className="animate-float-in mt-6" style={{ animationDelay: "0.27s" }}>
-  {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
-</div
+          <div className="animate-float-in mt-6" style={{ animationDelay: "0.27s" }}>
+            {!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
+          </div>
+
           {/* Accès rapide */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.3s" }}>
             {isLocalMode ? <LocalBibleAccess /> : <QuickAccess />}
