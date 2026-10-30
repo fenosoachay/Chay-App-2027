@@ -220,21 +220,60 @@ async function createMultipartUpload(cfg: S3Config, key: string, contentType: st
   };
 }
 
-/** ListParts (pagination troncature ignorée : < 1 000 parts attendues). */
+/**
+ * ListParts — récupère TOUTES les parts en gérant la pagination S3/R2.
+ *
+ * Pagination (fix 2026-10) : R2 renvoie au plus `max-parts` parts par page
+ * (1 000 par défaut, mais R2 peut tronquer davantage selon la taille de la
+ * réponse). L'appel initial sans marqueur retourne une première page ; si
+ * <IsTruncated>true</IsTruncated>, on rappelle avec `part-number-marker` =
+ * NextPartNumberMarker (défaut : dernier PartNumber vu) jusqu'à épuisement.
+ * Sans cette boucle, un upload de 460 parts pouvait n'en déclarer que 117 →
+ * faux « parts manquants : 117/460 » et CompleteMultipartUpload rejeté.
+ */
 async function listParts(cfg: S3Config, key: string, uploadId: string) {
-  const res = await s3Request(cfg, 'GET', key, { uploadId });
-  if (res.status !== 200) {
-    throw new Error(`ListParts échoué (HTTP ${res.status}) : ${res.text.slice(0, 300)}`);
+  const allParts: Array<{ PartNumber: number; ETag: string; Size: number }> = [];
+  let marker = 0;
+  let isTruncated = true;
+  let guard = 0; // sécurité anti-boucle-infinie : 10 pages max (théo : 10 000 parts)
+
+  while (isTruncated && guard++ < 10) {
+    const params: Record<string, string> = { uploadId };
+    if (marker > 0) params['part-number-marker'] = String(marker);
+    const res = await s3Request(cfg, 'GET', key, params);
+    if (res.status !== 200) {
+      throw new Error(`ListParts échoué (HTTP ${res.status}) : ${res.text.slice(0, 300)}`);
+    }
+
+    const before = allParts.length;
+    const re = /<Part>([\s\S]*?)<\/Part>/g;
+    let m;
+    while ((m = re.exec(res.text))) {
+      const block = m[1];
+      const grab = (tag: string) => block.split(`<${tag}>`)[1]?.split(`</${tag}>`)[0] || '';
+      const partNumber = Number(grab('PartNumber'));
+      allParts.push({ PartNumber: partNumber, ETag: grab('ETag'), Size: Number(grab('Size')) });
+      if (Number.isInteger(partNumber)) marker = Math.max(marker, partNumber);
+    }
+
+    // NextPartNumberMarker : valeur authoritative du serveur pour le prochain
+    // marqueur (S3/R2 le renvoient à chaque page).
+    const next = res.text.includes('<NextPartNumberMarker>')
+      ? Number(res.text.split('<NextPartNumberMarker>')[1].split('</NextPartNumberMarker>')[0])
+      : NaN;
+    if (Number.isFinite(next) && next > 0) marker = next;
+
+    const trunc = res.text.includes('<IsTruncated>')
+      ? res.text.split('<IsTruncated>')[1].split('</IsTruncated>')[0].trim()
+      : 'false';
+    isTruncated = trunc === 'true';
+
+    // Filet de sécurité : page « tronquée » mais aucune part nouvelle → on stoppe
+    // (évite une boucle infinie si le serveur ignore le marqueur).
+    if (isTruncated && allParts.length === before) break;
   }
-  const parts: Array<{ PartNumber: number; ETag: string; Size: number }> = [];
-  const re = /<Part>([\s\S]*?)<\/Part>/g;
-  let m;
-  while ((m = re.exec(res.text))) {
-    const block = m[1];
-    const grab = (tag: string) => block.split(`<${tag}>`)[1]?.split(`</${tag}>`)[0] || '';
-    parts.push({ PartNumber: Number(grab('PartNumber')), ETag: grab('ETag'), Size: Number(grab('Size')) });
-  }
-  return parts.sort((a, b) => a.PartNumber - b.PartNumber);
+
+  return allParts.sort((a, b) => a.PartNumber - b.PartNumber);
 }
 
 /** CompleteMultipartUpload → { location, etag }. */
