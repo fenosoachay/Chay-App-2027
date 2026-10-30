@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ThemeRequestForm from "@/components/requests/ThemeRequestForm";
 import MyThemeRequests from "@/components/requests/MyThemeRequests";
+import PrayerRequestForm from "@/components/requests/PrayerRequestForm";
+import PrayerWall from "@/components/requests/PrayerWall";
 import { fetchMyThemeRequests } from "@/lib/requests";
 
 export default function Requests() {
@@ -69,11 +71,10 @@ export default function Requests() {
             <MessageSquareQuote className="h-4 w-4 mr-1.5 inline" />
             Thème à expliquer
           </TabsTrigger>
-          <TabsTrigger value="prayer" className="text-sm font-semibold" disabled>
-            <HeartHandshake className="h-4 w-4 mr-1.5 inline" />
-            Sujet de prière
-            <span className="ml-1.5 text-[10px] text-muted-foreground">(bientôt)</span>
-          </TabsTrigger>
+         <TabsTrigger value="prayer" className="text-sm font-semibold">
+  <HeartHandshake className="h-4 w-4 mr-1.5 inline" />
+  Sujet de prière
+</TabsTrigger>
         </TabsList>
 
         <TabsContent value="theme" className="space-y-6 mt-0">
@@ -91,9 +92,17 @@ export default function Requests() {
           </div>
         </TabsContent>
 
-        <TabsContent value="prayer">
-          {/* Contenu ajouté à l'étape 5 */}
-        </TabsContent>
+      <TabsContent value="prayer" className="space-y-8 mt-0">
+  <div>
+    <h2 className="text-base font-bold mb-1">Déposer une demande de prière</h2>
+    <p className="text-sm text-muted-foreground mb-4">
+      Confie ce qui est sur ton cœur. Ta demande est anonyme et visible de tous.
+    </p>
+    <PrayerRequestForm onSubmitted={() => setRefreshKey((k) => k + 1)} />
+  </div>
+
+  <PrayerWall key={`wall-${refreshKey}`} />
+</TabsContent>
       </Tabs>
     </div>
   );
