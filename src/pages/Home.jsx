@@ -57,7 +57,11 @@ export default function Home() {
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.2s" }}>
             {!isLocalMode && <QuestionLogiqueSection refreshKey={refreshKey} />}
           </div>
-
+          
+          import RequestsSection from "@/components/home/RequestsSection";
+…
+{!isLocalMode && <RequestsSection refreshKey={refreshKey} />}
+          
           {/* Prochaine réunion */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.25s" }}>
             {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
