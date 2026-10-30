@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ChevronLeft, MessageSquareQuote, HeartHandshake, BookMarked } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ThemeRequestForm from "@/components/requests/ThemeRequestForm";
@@ -12,10 +12,22 @@ import { fetchMyThemeRequests } from "@/lib/requests";
 
 export default function Requests() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Onglet par défaut depuis l'URL, ou "theme"
+  const urlTab = searchParams.get("tab");
+  const defaultTab = ["theme", "prayer", "my-prayers"].includes(urlTab) ? urlTab : "theme";
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  // Met à jour l'URL quand on change d'onglet
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value }, { replace: true });
+  };
 
   const load = async () => {
     if (!user?.id) {
@@ -36,6 +48,13 @@ export default function Requests() {
   useEffect(() => {
     load();
   }, [refreshKey, user?.id]);
+
+  // Si l'URL change (depuis l'accueil par exemple), on change d'onglet
+  useEffect(() => {
+    if (urlTab && ["theme", "prayer", "my-prayers"].includes(urlTab)) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
 
   const handleSubmitted = () => {
     setRefreshKey((k) => k + 1);
@@ -66,7 +85,7 @@ export default function Requests() {
         </div>
       </header>
 
-      <Tabs defaultValue="theme" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full grid grid-cols-3 mb-6">
           <TabsTrigger value="theme" className="text-xs md:text-sm font-semibold">
             <MessageSquareQuote className="h-3.5 w-3.5 mr-1.5 inline" />
