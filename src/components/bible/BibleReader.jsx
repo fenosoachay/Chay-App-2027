@@ -65,6 +65,9 @@ export default function BibleReader({ onBack }) {
   });
   const [highlightVerse, setHighlightVerse] = useState(null);
 
+  // Sheet (modal) du sélecteur de livres : grille de cases, comme les chapitres.
+  const [bookPickerOpen, setBookPickerOpen] = useState(false);
+
   const [booksStatus, setBooksStatus] = useState("loading");
   const [chapterStatus, setChapterStatus] = useState("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -120,6 +123,15 @@ export default function BibleReader({ onBack }) {
   }, [lang]);
 
   const selectedBook = useMemo(() => books.find((b) => b.id === selectedBookId) || null, [books, selectedBookId]);
+
+  // Livres du catalogue, avec leur rang canonique (order 1..39 = Ancienne
+  // Alliance, 40..66 = Nouvelle Alliance).
+  const booksWithTestament = useMemo(
+    () => books.map((b) => ({ ...b, testament: b.order <= 39 ? "OT" : "NT" })),
+    [books]
+  );
+  const otBooks = useMemo(() => booksWithTestament.filter((b) => b.testament === "OT"), [booksWithTestament]);
+  const ntBooks = useMemo(() => booksWithTestament.filter((b) => b.testament === "NT"), [booksWithTestament]);
   const chapterNumbers = useMemo(() => {
     const count = selectedBook?.numberOfChapters || 1;
     return Array.from({ length: count }, (_, i) => i + 1);
@@ -321,14 +333,70 @@ export default function BibleReader({ onBack }) {
                 triggerClassName="flex-1 min-w-0 px-3 py-2 text-xs gap-1.5"
                 options={LANGUAGES.map((l) => ({ label: l.label, value: l.id }))}
               />
-              <DrawerSelect
-                value={selectedBookId}
-                onChange={(v) => { setSelectedBookId(v); setSelectedChapter(1); }}
-                title="Livre"
-                searchable
-                triggerClassName="flex-[2] min-w-0 px-3 py-2 text-xs gap-1.5"
-                options={books.map((b) => ({ label: b.name, value: b.id }))}
-              />
+              {/* Sélecteur de livres : bouton trigger + sheet (modal) contenant
+                  une grille de cases, comme le sélecteur de chapitres. */}
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={bookPickerOpen}
+                onClick={() => setBookPickerOpen(true)}
+                className="inline-flex flex-[2] min-w-0 items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-xs font-bold transition hover:bg-muted"
+              >
+                <span className="flex-1 truncate text-left">{selectedBook?.name || "Livre"}</span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-foreground/50" />
+              </button>
+
+              <Drawer open={bookPickerOpen} onOpenChange={setBookPickerOpen}>
+                <DrawerContent className="max-h-[85vh]">
+                  <DrawerHeader className="text-left">
+                    <DrawerTitle>Livre</DrawerTitle>
+                    <DrawerDescription>
+                      Ancienne Alliance ({otBooks.length}) · Nouvelle Alliance ({ntBooks.length})
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <div className="overflow-y-auto overscroll-contain px-4 pb-6 max-h-[60vh]">
+                    {[
+                      { label: "Ancienne Alliance", list: otBooks },
+                      { label: "Nouvelle Alliance", list: ntBooks },
+                    ].map(({ label, list }) => (
+                      <div key={label} className="mb-4 last:mb-0">
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-primary">
+                          {label}
+                        </h3>
+                        <div
+                          role="listbox"
+                          aria-label={`Choisir un livre — ${label}`}
+                          className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+                        >
+                          {list.map((b) => {
+                            const isActive = b.id === selectedBookId;
+                            return (
+                              <button
+                                key={b.id}
+                                type="button"
+                                role="option"
+                                aria-selected={isActive}
+                                onClick={() => {
+                                  setSelectedBookId(b.id);
+                                  setSelectedChapter(1);
+                                  setBookPickerOpen(false);
+                                }}
+                                className={`flex h-12 items-center justify-center rounded-sm px-1 text-center text-[11px] font-bold leading-tight transition ${
+                                  isActive
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "border border-border bg-card text-foreground/80 hover:bg-primary/10 hover:text-primary"
+                                }`}
+                              >
+                                {b.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </DrawerContent>
+              </Drawer>
             </div>
           )}
         </div>
