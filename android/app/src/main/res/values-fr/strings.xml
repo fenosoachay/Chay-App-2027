@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dialogue de confirmation de lien externe Capacitor -->
+    <string name="capacitor_confirm_navigation_title">Ouvrir un lien externe ?</string>
+    <string name="capacitor_confirm_navigation_message">Voulez-vous ouvrir %1$s dans votre navigateur ?</string>
+    <string name="capacitor_confirm_navigation_allow">Ouvrir</string>
+    <string name="capacitor_confirm_navigation_cancel">Annuler</string>
+</resources>
