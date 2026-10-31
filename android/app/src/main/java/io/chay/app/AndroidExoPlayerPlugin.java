@@ -1,8 +1,10 @@
 package io.chay.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +40,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
     private PlayerView playerView;
     private String source = "";
     private String mediaType = "audio";
+    private String title = "Média";
+    private String artist = "CHAY";
 
     @Override
     public void load() {
@@ -93,8 +97,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
         String nextSource = uri.toString();
         String nextType = call.getString("mediaType", "audio");
-        String title = call.getString("title", "Média");
-        String artist = call.getString("artist", "CHAY");
+        String nextTitle = call.getString("title", "Média");
+        String nextArtist = call.getString("artist", "CHAY");
         double initialPosition = Math.max(0, call.getDouble("initialPositionSeconds", 0.0));
 
         getActivity().runOnUiThread(() -> {
@@ -106,6 +110,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
             boolean sameMedia = nextSource.equals(source) && nextType.equals(mediaType);
             source = nextSource;
             mediaType = nextType;
+            title = nextTitle;
+            artist = nextArtist;
             if (playerView != null) {
                 playerView.setVisibility("video".equals(nextType) ? View.VISIBLE : View.GONE);
             }
@@ -131,6 +137,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 player.prepare();
             }
             player.play();
+            updateMediaNotification();
             emitPlaybackState(null);
             call.resolve();
         });
@@ -259,6 +266,47 @@ public class AndroidExoPlayerPlugin extends Plugin {
         );
         if (error != null) state.put("error", error);
         notifyListeners("playbackState", state);
+    }
+
+    private void updateMediaNotification() {
+        Log.d("ExoPlayerPlugin", "Preparing media notification update.");
+        if (getActivity() == null) {
+            Log.d("ExoPlayerPlugin", "Cannot start media notification service: activity is unavailable.");
+            return;
+        }
+
+        android.content.Context appContext = getActivity().getApplicationContext();
+        Intent intent = new Intent(appContext, MediaNotificationService.class)
+            .setAction(MediaNotificationService.ACTION_UPDATE)
+            .putExtra(MediaNotificationService.EXTRA_TITLE, title)
+            .putExtra(MediaNotificationService.EXTRA_ARTIST, artist)
+            .putExtra(MediaNotificationService.EXTRA_IS_PLAYING, player != null && player.isPlaying())
+            .putExtra(
+                MediaNotificationService.EXTRA_IS_BUFFERING,
+                player != null && player.getPlaybackState() == Player.STATE_BUFFERING
+            )
+            .putExtra(MediaNotificationService.EXTRA_IS_LIVE, "radio".equals(mediaType));
+
+        String action = intent.getAction();
+        Log.d("ExoPlayerPlugin", "Media notification intent action: " + action);
+        if (!MediaNotificationService.ACTION_UPDATE.equals(action)) {
+            Log.d("ExoPlayerPlugin", "Not starting service because the update action is invalid.");
+            return;
+        }
+
+        try {
+            Log.d("ExoPlayerPlugin", "Starting media notification foreground service.");
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                appContext.startForegroundService(intent);
+            } else {
+                appContext.startService(intent);
+            }
+            Log.d("ExoPlayerPlugin", "Media notification service start requested.");
+        } catch (SecurityException error) {
+            Log.e("ExoPlayerPlugin", "Security exception while starting media notification service.", error);
+        } catch (Exception error) {
+            Log.e("ExoPlayerPlugin", "Failed to start media notification service.", error);
+        }
     }
 
     private void scheduleProgressUpdates() {
