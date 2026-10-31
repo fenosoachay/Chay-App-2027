@@ -2,7 +2,6 @@ package io.chay.app;
 
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.session.MediaSession;
-import androidx.media3.session.MediaNotificationManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -40,7 +39,6 @@ public class AndroidExoPlayerPlugin extends Plugin {
     private ExoPlayer player;
     private PlayerView playerView;
     private MediaSession mediaSession;
-    private MediaNotificationManager mediaNotificationManager;
     private String source = "";
     private String mediaType = "audio";
 
@@ -61,7 +59,6 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
             // Création de la session média et du gestionnaire de notification
             mediaSession = new MediaSession.Builder(getContext(), player).build();
-            mediaNotificationManager = new MediaNotificationManager.Builder(getContext()).build(mediaSession);
             player.addListener(new Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
@@ -290,9 +287,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
     protected void handleOnDestroy() {
         mainHandler.removeCallbacks(progressTicker);
 
-            if (mediaNotificationManager != null) {
-            mediaNotificationManager.stop();
-        }
+            if (mediaNotificationManager != null) 
         if (mediaSession != null) {
             mediaSession.release();
         }
