@@ -640,23 +640,23 @@ export default function PlaylistCategoryView({
       {cats.length ? (
         <div
           ref={playlistsLocked ? null : playlistDrag.listRef}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3"
         >
           {cats.map((p, idx) => {
             const count = playlistTracks.filter((pt) => pt.playlist_id === p.id).length;
             return (
               <div
                 key={p.id}
-                className="relative group w-full rounded-[1.5rem] border border-border bg-card p-4 text-left transition-transform duration-150 select-none hover:-translate-y-1 hover:shadow-lg"
+                className="relative group w-full rounded-2xl border border-border bg-card p-2 text-center transition-transform duration-150 select-none hover:-translate-y-1 hover:shadow-lg"
               >
                 {!playlistsLocked && isAdmin && (
                   <div
-                    className="absolute top-2 right-2 z-10 cursor-grab active:cursor-grabbing touch-none p-1.5 rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-muted"
+                    className="absolute top-1 right-1 z-10 cursor-grab active:cursor-grabbing touch-none p-1 rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-muted"
                     onMouseDown={playlistDrag.onMouseDown(idx)}
                     onTouchStart={playlistDrag.onTouchStart(idx)}
                     title="Glisser pour réorganiser"
                   >
-                    <GripVertical className="h-4 w-4" />
+                    <GripVertical className="h-3.5 w-3.5" />
                   </div>
                 )}
                 <button
@@ -664,14 +664,14 @@ export default function PlaylistCategoryView({
                   onClick={() => {
                     if (playlistsLocked) setOpen(p);
                   }}
-                  className="w-full text-left"
+                  className="w-full text-center"
                 >
                   <PlaylistCover
                     playlist={p}
-                    className="aspect-square rounded-2xl mb-3"
+                    className="aspect-square rounded-xl mb-2"
                   />
-                  <div className="font-bold text-sm line-clamp-1">{p.name}</div>
-                  <div className="text-xs text-foreground/55">{count} titre(s)</div>
+                  <div className="font-bold text-xs line-clamp-2">{p.name}</div>
+                  <div className="text-[10px] text-foreground/55">{count} titre(s)</div>
                 </button>
               </div>
             );
