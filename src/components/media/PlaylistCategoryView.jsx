@@ -643,11 +643,10 @@ export default function PlaylistCategoryView({
           className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3"
         >
           {cats.map((p, idx) => {
-            const count = playlistTracks.filter((pt) => pt.playlist_id === p.id).length;
             return (
               <div
                 key={p.id}
-                className="relative group w-full rounded-2xl border border-border bg-card p-2 text-center transition-transform duration-150 select-none hover:-translate-y-1 hover:shadow-lg"
+                className="relative group w-full p-1 text-center transition-transform duration-150 select-none hover:-translate-y-1"
               >
                 {!playlistsLocked && isAdmin && (
                   <div
@@ -668,10 +667,9 @@ export default function PlaylistCategoryView({
                 >
                   <PlaylistCover
                     playlist={p}
-                    className="aspect-square rounded-xl mb-2"
+                    className="mx-auto aspect-square w-4/5 rounded-full mb-1.5"
                   />
                   <div className="font-bold text-xs line-clamp-2">{p.name}</div>
-                  <div className="text-[10px] text-foreground/55">{count} titre(s)</div>
                 </button>
               </div>
             );
