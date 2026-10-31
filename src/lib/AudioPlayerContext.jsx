@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from "react";
 import { useMediaPlayerState } from "@/hooks/useMediaPlayerState";
+import { toast } from "@/components/ui/use-toast";
 import { clearMediaControl, publishMediaControl } from "@/lib/mediaControl";
+import {
+  isAndroidExoPlayerAvailable,
+  pauseAndroidExoPlayer,
+  playWithAndroidExoPlayer,
+  resumeAndroidExoPlayer,
+  seekAndroidExoPlayer,
+  stopAndroidExoPlayer,
+  subscribeAndroidExoPlayer,
+} from "@/lib/androidExoPlayer";
 
 const AudioPlayerContext = createContext();
 
@@ -15,6 +25,7 @@ function shuffledIndices(n, startAt = 0) {
 }
 
 export function AudioPlayerProvider({ children }) {
+  const isNativeAndroidPlayer = isAndroidExoPlayerAvailable();
   const audioRef = useRef(null);
   const [queue, setQueue] = useState([]);
   const [order, setOrder] = useState([]);
@@ -23,20 +34,57 @@ export function AudioPlayerProvider({ children }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [nativePlayerState, setNativePlayerState] = useState("idle");
+  const [nativeBufferedRatio, setNativeBufferedRatio] = useState(0);
   const [shuffle, setShuffle] = useState(false);
   const [loop, setLoop] = useState("off"); // "off" | "all" | "one"
   const mediaControlIdRef = useRef(null);
 
   const stateRef = useRef({});
   stateRef.current = { queue, order, orderIndex, loop, shuffle, currentTrack, currentTime };
+  const handleEndedRef = useRef(null);
 
   // Machine à états partagée (tamponnage) — musique & prédications.
-  const { state: playerState, bufferedRatio, seek: optimisticSeek } =
+  const { state: webPlayerState, bufferedRatio: webBufferedRatio, seek: optimisticSeek } =
     useMediaPlayerState(audioRef, { isLive: false });
 
   useEffect(() => {
+    if (!isNativeAndroidPlayer) return undefined;
+    let subscription;
+    let isSubscribed = true;
+    subscribeAndroidExoPlayer((event) => {
+      if (event.source !== stateRef.current.currentTrack?.audio_url) return;
+      setIsPlaying(Boolean(event.isPlaying));
+      setCurrentTime(Number(event.currentTime) || 0);
+      setDuration(Number(event.duration) || 0);
+      setNativeBufferedRatio(Number(event.bufferedRatio) || 0);
+      setNativePlayerState(
+        event.error ? "error" : event.isBuffering ? "buffering" : event.isPlaying ? "playing" : "paused"
+      );
+      if (event.error) {
+        console.error("[AudioPlayer] ExoPlayer playback error:", event.error);
+        toast({
+          title: "Lecture impossible",
+          description: event.error,
+          variant: "destructive",
+        });
+      }
+      if (event.isEnded) handleEndedRef.current?.();
+    }).then((handle) => {
+      if (isSubscribed) subscription = handle;
+      else handle.remove();
+    }).catch((error) => {
+      console.error("[AudioPlayer] Unable to subscribe to ExoPlayer state.", error);
+    });
+    return () => {
+      isSubscribed = false;
+      subscription?.remove();
+    };
+  }, [isNativeAndroidPlayer]);
+
+  useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!currentTrack || (!isNativeAndroidPlayer && !audio)) return;
     if (!currentTrack.audio_url) {
       console.warn("[AudioPlayer] piste sans audio_url :", currentTrack?.title, currentTrack?.id);
       return;
@@ -44,11 +92,33 @@ export function AudioPlayerProvider({ children }) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    if (isNativeAndroidPlayer) {
+      setNativePlayerState("connecting");
+      setNativeBufferedRatio(0);
+      playWithAndroidExoPlayer({
+        url: currentTrack.audio_url,
+        mediaType: "audio",
+        title: currentTrack.title || "Média",
+        artist: currentTrack.artist || currentTrack.speaker || currentTrack.subtitle || "CHAY",
+        initialPositionSeconds: Number(currentTrack.initialTime) || 0,
+      }).catch((error) => {
+        console.error("[AudioPlayer] Unable to start ExoPlayer playback.", error);
+        if (stateRef.current.currentTrack?.audio_url !== currentTrack.audio_url) return;
+        setNativePlayerState("error");
+        setIsPlaying(false);
+        toast({
+          title: "Lecture impossible",
+          description: error?.message || "Ce média n'a pas pu être ouvert.",
+          variant: "destructive",
+        });
+      });
+      return;
+    }
     audio.src = currentTrack.audio_url;
     audio.play().then(() => setIsPlaying(true)).catch((e) => {
       console.warn("[AudioPlayer] lecture impossible (URL media invalide ou bloquée) :", currentTrack.audio_url, e?.name, e?.message);
     });
-  }, [currentTrack]);
+  }, [currentTrack, isNativeAndroidPlayer]);
 
   // Erreur de chargement du média (404/403/format non supporté) → log explicite.
   useEffect(() => {
@@ -105,6 +175,10 @@ export function AudioPlayerProvider({ children }) {
   const play = useCallback((track) => {
     if (!track?.audio_url) return;
     if (currentTrack?.id === track.id) {
+      if (isNativeAndroidPlayer) {
+        resumeAndroidExoPlayer().catch((error) => console.error("[AudioPlayer] Unable to resume ExoPlayer.", error));
+        return;
+      }
       audioRef.current?.play().then(() => setIsPlaying(true)).catch(() => {});
       return;
     }
@@ -112,11 +186,17 @@ export function AudioPlayerProvider({ children }) {
     setOrder([0]);
     setOrderIndex(0);
     setCurrentTrack(track);
-  }, [currentTrack?.id]);
+  }, [currentTrack?.id, isNativeAndroidPlayer]);
 
   const toggle = () => {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!currentTrack) return;
+    if (isNativeAndroidPlayer) {
+      const command = isPlaying ? pauseAndroidExoPlayer : resumeAndroidExoPlayer;
+      command().catch((error) => console.error("[AudioPlayer] Unable to toggle ExoPlayer.", error));
+      return;
+    }
+    if (!audio) return;
     if (audio.paused) audio.play().then(() => setIsPlaying(true)).catch(() => {});
     else {
       audio.pause();
@@ -137,19 +217,38 @@ export function AudioPlayerProvider({ children }) {
       return;
     }
     if (audio && currentTime > 3) {
-      audio.currentTime = 0;
+      if (isNativeAndroidPlayer) {
+        seekAndroidExoPlayer(0).catch((error) => console.error("[AudioPlayer] Unable to seek ExoPlayer.", error));
+      } else {
+        audio.currentTime = 0;
+      }
       return;
     }
     if (loop === "all" && order.length > 0) playAt(order.length - 1);
-    else if (audio) audio.currentTime = 0;
-  }, [playAt]);
+    else if (isNativeAndroidPlayer) {
+      seekAndroidExoPlayer(0).catch((error) => console.error("[AudioPlayer] Unable to seek ExoPlayer.", error));
+    } else if (audio) audio.currentTime = 0;
+  }, [isNativeAndroidPlayer, playAt]);
 
-  const seek = (t) => optimisticSeek(t);
+  const seek = (t) => {
+    if (isNativeAndroidPlayer) {
+      const requested = Math.max(0, Number(t) || 0);
+      const target = duration > 0 ? Math.min(duration, requested) : requested;
+      setCurrentTime(target);
+      seekAndroidExoPlayer(target).catch((error) => console.error("[AudioPlayer] Unable to seek ExoPlayer.", error));
+      return true;
+    }
+    return optimisticSeek(t);
+  };
 
   const stop = () => {
     const audio = audioRef.current;
     currentTrack?.onStop?.(currentTime);
-    if (audio) {
+    if (isNativeAndroidPlayer) {
+      stopAndroidExoPlayer().catch((error) => console.error("[AudioPlayer] Unable to stop ExoPlayer.", error));
+      setNativePlayerState("idle");
+      setNativeBufferedRatio(0);
+    } else if (audio) {
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
@@ -221,8 +320,12 @@ export function AudioPlayerProvider({ children }) {
       queue: order.map((index) => queue[index]),
       queueIndex: orderIndex,
       toggle,
-      play: () => audioRef.current?.play().catch(() => {}),
-      pause: () => audioRef.current?.pause(),
+      play: () => isNativeAndroidPlayer
+        ? resumeAndroidExoPlayer().catch((error) => console.error("[AudioPlayer] Unable to resume ExoPlayer.", error))
+        : audioRef.current?.play().catch(() => {}),
+      pause: () => isNativeAndroidPlayer
+        ? pauseAndroidExoPlayer().catch((error) => console.error("[AudioPlayer] Unable to pause ExoPlayer.", error))
+        : audioRef.current?.pause(),
       previous: currentTrack.previousAction || (hasPrevious ? prev : null),
       next: currentTrack.nextAction || (hasNext ? next : null),
       seek,
@@ -242,6 +345,7 @@ export function AudioPlayerProvider({ children }) {
     orderIndex,
     queue,
     playerState,
+    isNativeAndroidPlayer,
     toggle,
     prev,
     next,
@@ -260,6 +364,12 @@ export function AudioPlayerProvider({ children }) {
       return;
     }
     if (loop === "one") {
+      if (isNativeAndroidPlayer) {
+        seekAndroidExoPlayer(0)
+          .then(() => resumeAndroidExoPlayer())
+          .catch((error) => console.error("[AudioPlayer] Unable to repeat the ExoPlayer track.", error));
+        return;
+      }
       const audio = audioRef.current;
       if (audio) {
         audio.currentTime = 0;
@@ -279,6 +389,10 @@ export function AudioPlayerProvider({ children }) {
     // no loop, end of list → stop cleanly, no auto-restart
     setIsPlaying(false);
   };
+  handleEndedRef.current = handleEnded;
+
+  const playerState = isNativeAndroidPlayer ? nativePlayerState : webPlayerState;
+  const bufferedRatio = isNativeAndroidPlayer ? nativeBufferedRatio : webBufferedRatio;
 
   return (
     <AudioPlayerContext.Provider

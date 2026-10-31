@@ -20,6 +20,16 @@ import {
   subscribeMediaPlaybackRequests,
   updateMediaControl,
 } from "@/lib/mediaControl";
+import {
+  isAndroidExoPlayerAvailable,
+  pauseAndroidExoPlayer,
+  playWithAndroidExoPlayer,
+  resumeAndroidExoPlayer,
+  seekAndroidExoPlayer,
+  setAndroidExoPlayerVideoBounds,
+  stopAndroidExoPlayer,
+  subscribeAndroidExoPlayer,
+} from "@/lib/androidExoPlayer";
 
 const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
 // Part du média déjà téléchargée (0 → 1), pour la barre de progression.
@@ -37,7 +47,13 @@ const computeBufferedRatio = (el) => {
 const isAudioControl = (control) =>
   AUDIO_TYPES.has(control?.type) || control?.engine === "audio";
 
+const formatTime = (seconds) => {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
+
 export default function UniversalMediaSurface() {
+  const isNativeAndroidPlayer = isAndroidExoPlayerAvailable();
   const [control, setControl] = useState(null);
   const [expanded, setExpanded] = useState(false);
   // Buffering natif (<video>) : suivi via les événements waiting / playing.
@@ -51,6 +67,7 @@ export default function UniversalMediaSurface() {
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const controlRef = useRef(null);
+  const previousControlRef = useRef(null);
   controlRef.current = control;
   const youtubePlayingRef = useRef(false);
   // Source réellement chargée dans <video> : sert d'idempotence pour éviter
@@ -85,6 +102,29 @@ export default function UniversalMediaSurface() {
 //    démarrer le décodage dès les premières bytes, au lieu d'attendre
 //    `metadata` comme avant.
 const playVideo = (source) => {
+  if (isNativeAndroidPlayer) {
+    const active = controlRef.current;
+    if (!active || active.type !== "video" || !source) return;
+    setVideoWaiting(true);
+    playWithAndroidExoPlayer({
+      url: source,
+      mediaType: "video",
+      title: active.title || "Film",
+      artist: active.subtitle || "Film",
+    }).catch((error) => {
+    if (controlRef.current?.source !== source) return;
+    console.error("[MediaPlayer] Unable to start ExoPlayer video.", error);
+      setVideoWaiting(false);
+      updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+      toast({
+        title: "Lecture impossible",
+        description: error?.message || "Cette vidéo n'a pas pu être ouverte.",
+        variant: "destructive",
+      });
+    });
+    return;
+  }
+
   const video = videoRef.current;
   if (!video || !source) return;
 
@@ -122,7 +162,49 @@ const playVideo = (source) => {
   }), []);
 
   useEffect(() => {
+    if (!isNativeAndroidPlayer) return undefined;
+    let subscription;
+    let isSubscribed = true;
+    subscribeAndroidExoPlayer((event) => {
+      const activeControl = controlRef.current;
+      if (activeControl?.type !== "video" || event.mediaType !== "video" || event.source !== activeControl.source) return;
+      setVideoWaiting(Boolean(event.isBuffering));
+      updateMediaControl(activeControl.id, {
+        isPlaying: Boolean(event.isPlaying),
+        isBuffering: Boolean(event.isBuffering),
+        currentTime: Number(event.currentTime) || 0,
+        duration: Number(event.duration) || 0,
+        bufferedRatio: Number(event.bufferedRatio) || 0,
+      });
+      if (event.error) {
+        setVideoWaiting(false);
+        toast({
+          title: "Lecture impossible",
+          description: event.error,
+          variant: "destructive",
+        });
+      }
+      if (event.isEnded) {
+        setVideoWaiting(false);
+        activeControl.next?.();
+      }
+    }).then((handle) => {
+      if (isSubscribed) subscription = handle;
+      else handle.remove();
+    }).catch((error) => {
+      console.error("[MediaPlayer] Unable to subscribe to ExoPlayer state.", error);
+    });
+    return () => {
+      isSubscribed = false;
+      subscription?.remove();
+    };
+  }, [isNativeAndroidPlayer]);
+
+  useEffect(() => {
     if (!control) {
+      if (isNativeAndroidPlayer && previousControlRef.current?.type === "video") {
+        stopAndroidExoPlayer().catch((error) => console.error("[MediaPlayer] Unable to stop ExoPlayer video.", error));
+      }
       videoRef.current?.pause();
       if (videoRef.current) {
         videoRef.current.removeAttribute("src");
@@ -133,6 +215,7 @@ const playVideo = (source) => {
       youtubePlayingRef.current = false;
       setExpanded(false);
       setVideoWaiting(false);
+      previousControlRef.current = control;
       return;
     }
 
@@ -150,7 +233,8 @@ const playVideo = (source) => {
       }
       if (control.type === "radio") setExpanded(true);
     }
-  }, [control?.id, control?.source, control?.type]);
+    previousControlRef.current = control;
+  }, [control?.id, control?.source, control?.type, isNativeAndroidPlayer]);
 
   useEffect(() => {
     if (!control || isAudioControl(control)) return undefined;
@@ -160,6 +244,11 @@ const playVideo = (source) => {
       const active = controlRef.current;
       if (!active || active.id !== id) return;
       if (active.type === "video") {
+        if (isNativeAndroidPlayer) {
+          const command = active.isPlaying ? pauseAndroidExoPlayer : resumeAndroidExoPlayer;
+          command().catch((error) => console.error("[MediaPlayer] Unable to toggle ExoPlayer video.", error));
+          return;
+        }
         const video = videoRef.current;
         if (video?.paused) video.play().catch(() => {});
         else video?.pause();
@@ -196,7 +285,9 @@ const playVideo = (source) => {
       clearMediaControl(id);
     };
     const seek = (time) => {
-      if (currentControl.type === "video" && videoRef.current) {
+      if (currentControl.type === "video" && isNativeAndroidPlayer) {
+        seekAndroidExoPlayer(time).catch((error) => console.error("[MediaPlayer] Unable to seek ExoPlayer video.", error));
+      } else if (currentControl.type === "video" && videoRef.current) {
         videoRef.current.currentTime = time;
       } else if (currentControl.type === "youtube") {
         iframeRef.current?.contentWindow?.postMessage(
@@ -212,7 +303,7 @@ const playVideo = (source) => {
       open: () => setExpanded(true),
       seek: currentControl.type === "video" || currentControl.type === "youtube" ? seek : null,
     });
-  }, [control?.id, control?.type]);
+  }, [control?.id, control?.type, isNativeAndroidPlayer]);
 
   useEffect(() => {
     const onMessage = (event) => {
@@ -257,6 +348,44 @@ const playVideo = (source) => {
   const blockedOffline = Boolean(isYouTube && !isOnline);
   const showEmbeddedPlayer = Boolean(isFullPlayer && (isVideo || isYouTube) && !blockedOffline);
 
+  useEffect(() => {
+    if (!isNativeAndroidPlayer) return undefined;
+    const updateBounds = () => {
+      const rect = videoRef.current?.getBoundingClientRect();
+      const visible = Boolean(showEmbeddedPlayer && isVideo && rect && rect.width > 0 && rect.height > 0);
+      setAndroidExoPlayerVideoBounds({
+        visible,
+        left: visible ? rect.left : 0,
+        top: visible ? rect.top : 0,
+        width: visible ? rect.width : 0,
+        height: visible ? rect.height : 0,
+        viewportWidth: window.innerWidth,
+      }).catch((error) => console.error("[MediaPlayer] Unable to position ExoPlayer video.", error));
+    };
+    let frame = window.requestAnimationFrame(updateBounds);
+    const observer = videoRef.current && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => {
+          window.cancelAnimationFrame(frame);
+          frame = window.requestAnimationFrame(updateBounds);
+        })
+      : null;
+    if (videoRef.current) observer?.observe(videoRef.current);
+    window.addEventListener("resize", updateBounds);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", updateBounds);
+      setAndroidExoPlayerVideoBounds({
+        visible: false,
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+        viewportWidth: window.innerWidth,
+      }).catch((error) => console.error("[MediaPlayer] Unable to hide ExoPlayer video.", error));
+    };
+  }, [control?.id, control?.source, expanded, isNativeAndroidPlayer, isVideo, showEmbeddedPlayer]);
+
   // ── Indicateur de chargement UNIQUE pour la vidéo ────────────────────────
   // Source de vérité : les événements natifs de <video> (`waiting` / `playing`
   // / `canplay`), et non plus le champ `isBuffering` posé par l'appelant.
@@ -267,10 +396,10 @@ const playVideo = (source) => {
   useBackHandler(Boolean(isFullPlayer), () => setExpanded(false));
   // L'écran doit rester allumé dès qu'un film est en cours (et pas seulement
   // pour YouTube) : sinon la vidéo se met en pause au bout de 30 s d'écran éteint.
-  useKeepAwake(Boolean((isVideo || isYouTube) && control?.isPlaying && isOnline));
+  useKeepAwake(Boolean((isVideo || isYouTube) && control?.isPlaying && (isNativeAndroidPlayer || isOnline)));
 
   useBackgroundPlayback({
-    active: Boolean(control && (isVideo || isYouTube)),
+    active: Boolean(control && (isVideo || isYouTube) && !isNativeAndroidPlayer),
     getVideo: () => videoRef.current,
     getIframe: () => iframeRef.current,
     isPlaying: () => Boolean(controlRef.current?.isPlaying),
@@ -343,9 +472,9 @@ const playVideo = (source) => {
         <div className="relative h-full w-full">
         <video
   ref={videoRef}
-  className={`h-full w-full bg-black object-contain ${isVideo ? "block" : "hidden"}`}
+          className={`h-full w-full bg-black object-contain ${isNativeAndroidPlayer ? "opacity-0" : isVideo ? "block" : "hidden"}`}
   playsInline
-  controls={showEmbeddedPlayer && isVideo}
+          controls={showEmbeddedPlayer && isVideo && !isNativeAndroidPlayer}
   controlsList="nodownload"
   disablePictureInPicture
   // Chargement immédiat : "metadata" faisait attendre le navigateur avant
@@ -463,6 +592,28 @@ const playVideo = (source) => {
 
       {control && (
         <>
+          {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
+            <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-1 text-xs text-white/75">
+              <span className="w-10 text-right tabular-nums">{formatTime(control.currentTime)}</span>
+              <input
+                type="range"
+                min="0"
+                max={Math.max(1, Number(control.duration) || 0)}
+                step="1"
+                value={Math.min(Number(control.currentTime) || 0, Math.max(1, Number(control.duration) || 0))}
+                aria-label="Position de la vidéo"
+                className="h-1 min-w-0 flex-1 accent-white"
+                onChange={(event) => {
+                  const position = Number(event.target.value);
+                  updateMediaControl(control.id, { currentTime: position });
+                  seekAndroidExoPlayer(position).catch((error) => {
+                    console.error("[MediaPlayer] Unable to seek ExoPlayer video.", error);
+                  });
+                }}
+              />
+              <span className="w-10 tabular-nums">{formatTime(control.duration)}</span>
+            </div>
+          )}
           {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
           <div className="flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             {control.previous && (

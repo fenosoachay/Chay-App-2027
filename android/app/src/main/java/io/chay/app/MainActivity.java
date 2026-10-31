@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(ExternalLinkPlugin.class);
+        registerPlugin(AndroidExoPlayerPlugin.class);
         registerPlugin(AndroidMediaNotificationPlugin.class);
         super.onCreate(savedInstanceState);
         WebView webView = getBridge().getWebView();
