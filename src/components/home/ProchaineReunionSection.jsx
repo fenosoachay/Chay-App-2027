@@ -313,8 +313,10 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       <div className={`${adminOnly ? "hidden " : ""}rounded-[1.5rem] border border-border bg-card p-5 md:p-8`}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            <h2 className="font-display font-extrabold text-base md:text-xl">
+            <div className="grid place-items-center h-9 w-9 rounded-xl bg-secondary/10 text-secondary">
+              <Bell className="h-5 w-5" />
+            </div>
+            <h2 className="font-display font-extrabold text-base md:text-lg">
               Prochaine réunion
             </h2>
           </div>
@@ -331,7 +333,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
           <div className="h-16 bg-background rounded-2xl animate-pulse" />
         ) : reunion ? (
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center text-primary shrink-0">
+            <div className="h-9 w-9 rounded-xl bg-secondary/10 grid place-items-center text-secondary shrink-0">
               <CalendarDays className="h-5 w-5" />
             </div>
             <div>
