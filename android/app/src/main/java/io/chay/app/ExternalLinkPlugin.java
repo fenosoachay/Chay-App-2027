@@ -25,7 +25,7 @@ public class ExternalLinkPlugin extends Plugin {
         getActivity().runOnUiThread(() ->
             new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.external_link_confirmation_title)
-                .setMessage(getString(R.string.external_link_confirmation_message, uri.getHost()))
+               .setMessage(getContext().getString(R.string.external_link_confirmation_message, uri.getHost()))
                 .setNegativeButton(R.string.external_link_confirmation_cancel, (dialog, which) -> call.resolve())
                 .setPositiveButton(R.string.external_link_confirmation_open, (dialog, which) -> {
                     try {
