@@ -43,8 +43,8 @@ export default function RequestsSection({ refreshKey = 0 }) {
         <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full brand-gradient opacity-10 blur-2xl" />
 
         <div className="relative">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="grid place-items-center h-10 w-10 md:h-11 md:w-11 rounded-2xl brand-gradient text-white shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="grid place-items-center h-9 w-9 rounded-xl bg-secondary/10 text-secondary shrink-0">
               <MessageSquareQuote className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
