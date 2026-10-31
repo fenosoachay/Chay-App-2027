@@ -5,9 +5,8 @@
     <string name="package_name">io.chay.app</string>
     <string name="custom_url_scheme">io.chay.app</string>
 
-    <!-- Dialogue de confirmation de lien externe Capacitor -->
-    <string name="capacitor_confirm_navigation_title">Ouvrir un lien externe ?</string>
-    <string name="capacitor_confirm_navigation_message">Voulez-vous ouvrir %1$s dans votre navigateur ?</string>
-    <string name="capacitor_confirm_navigation_allow">Ouvrir</string>
-    <string name="capacitor_confirm_navigation_cancel">Annuler</string>
+    <string name="external_link_confirmation_title">Ouvrir un lien externe ?</string>
+    <string name="external_link_confirmation_message">Voulez-vous ouvrir %1$s dans votre navigateur ?</string>
+    <string name="external_link_confirmation_open">Ouvrir</string>
+    <string name="external_link_confirmation_cancel">Annuler</string>
 </resources>
