@@ -667,7 +667,7 @@ export default function PlaylistCategoryView({
                 >
                   <PlaylistCover
                     playlist={p}
-                    className="mx-auto aspect-square w-4/5 rounded-full mb-1.5"
+                    className="mx-auto aspect-square w-full rounded-none mb-1.5"
                   />
                   <div className="font-bold text-xs line-clamp-2">{p.name}</div>
                 </button>
