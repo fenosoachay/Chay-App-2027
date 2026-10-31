@@ -1,5 +1,8 @@
 package io.chay.app;
 
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.session.MediaSession;
+import androidx.media3.session.MediaNotificationManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -36,6 +39,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
     };
     private ExoPlayer player;
     private PlayerView playerView;
+    private MediaSession mediaSession;
+    private MediaNotificationManager mediaNotificationManager;
     private String source = "";
     private String mediaType = "audio";
 
@@ -45,6 +50,18 @@ public class AndroidExoPlayerPlugin extends Plugin {
             player = new ExoPlayer.Builder(getContext())
                 .setHandleAudioBecomingNoisy(true)
                 .build();
+                        // Configuration audio pour la notification
+            player.setAudioAttributes(
+                new AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(),
+                true
+            );
+
+            // Création de la session média et du gestionnaire de notification
+            mediaSession = new MediaSession.Builder(getContext(), player).build();
+            mediaNotificationManager = new MediaNotificationManager.Builder(getContext()).build(mediaSession);
             player.addListener(new Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
@@ -272,6 +289,13 @@ public class AndroidExoPlayerPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         mainHandler.removeCallbacks(progressTicker);
+
+            if (mediaNotificationManager != null) {
+            mediaNotificationManager.stop();
+        }
+        if (mediaSession != null) {
+            mediaSession.release();
+        }
         if (playerView != null) {
             ViewGroup parent = (ViewGroup) playerView.getParent();
             if (parent != null) parent.removeView(playerView);
