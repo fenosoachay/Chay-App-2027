@@ -295,6 +295,9 @@ export function AudioPlayerProvider({ children }) {
   );
   const hasNext = currentTrack?.hasNext ?? (orderIndex < order.length - 1 || loop === "all");
 
+  const playerState = isNativeAndroidPlayer ? nativePlayerState : webPlayerState;
+  const bufferedRatio = isNativeAndroidPlayer ? nativeBufferedRatio : webBufferedRatio;
+
   useEffect(() => {
     if (!currentTrack) {
       if (mediaControlIdRef.current) {
@@ -390,9 +393,6 @@ export function AudioPlayerProvider({ children }) {
     setIsPlaying(false);
   };
   handleEndedRef.current = handleEnded;
-
-  const playerState = isNativeAndroidPlayer ? nativePlayerState : webPlayerState;
-  const bufferedRatio = isNativeAndroidPlayer ? nativeBufferedRatio : webBufferedRatio;
 
   return (
     <AudioPlayerContext.Provider
