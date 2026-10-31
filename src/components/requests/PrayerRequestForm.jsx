@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Send, Loader2, Shield, HeartHandshake } from "lucide-react";
+import { Loader2, Shield, HeartHandshake } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
