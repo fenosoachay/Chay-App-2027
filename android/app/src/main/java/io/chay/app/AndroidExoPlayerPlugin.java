@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,6 +47,10 @@ public class AndroidExoPlayerPlugin extends Plugin {
     private MediaSession mediaSession;
     private String source = "";
     private String mediaType = "audio";
+    
+    // Variables de classe pour la notification (nécessaires pour updateMediaNotification)
+    private String title = "Média";
+    private String artist = "CHAY";
 
     @Override
     public void load() {
@@ -54,7 +59,6 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 .setHandleAudioBecomingNoisy(true)
                 .build();
             
-            // Configuration audio pour la notification
             player.setAudioAttributes(
                 new AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -63,7 +67,6 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 true
             );
 
-            // Création de la session média
             mediaSession = new MediaSession.Builder(getContext(), player).build();
             
             player.addListener(new Player.Listener() {
@@ -115,8 +118,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
         String nextSource = uri.toString();
         String nextType = call.getString("mediaType", "audio");
-        String title = call.getString("title", "Média");
-        String artist = call.getString("artist", "CHAY");
+        String nextTitle = call.getString("title", "Média");
+        String nextArtist = call.getString("artist", "CHAY");
         double initialPosition = Math.max(0, call.getDouble("initialPositionSeconds", 0.0));
 
         getActivity().runOnUiThread(() -> {
@@ -128,6 +131,9 @@ public class AndroidExoPlayerPlugin extends Plugin {
             boolean sameMedia = nextSource.equals(source) && nextType.equals(mediaType);
             source = nextSource;
             mediaType = nextType;
+            title = nextTitle;       // Mise à jour des variables de classe
+            artist = nextArtist;     // Mise à jour des variables de classe
+            
             if (playerView != null) {
                 playerView.setVisibility("video".equals(nextType) ? View.VISIBLE : View.GONE);
             }
@@ -153,6 +159,10 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 player.prepare();
             }
             player.play();
+            
+            // Déclencher la notification ici
+            updateMediaNotification();
+            
             emitPlaybackState(null);
             call.resolve();
         });
@@ -260,39 +270,47 @@ public class AndroidExoPlayerPlugin extends Plugin {
     }
 
     private void updateMediaNotification() {
-        if (player == null) return;
-        
-        Intent intent = new Intent(getContext(), MediaNotificationService.class);
-        intent.setAction(MediaNotificationService.ACTION_UPDATE);
-        
-        String title = "Média";
-        String artist = "CHAY";
-        if (player.getCurrentMediaItem() != null && player.getCurrentMediaItem().mediaMetadata != null) {
-            if (player.getCurrentMediaItem().mediaMetadata.title != null) {
-                title = player.getCurrentMediaItem().mediaMetadata.title.toString();
-            }
-            if (player.getCurrentMediaItem().mediaMetadata.artist != null) {
-                artist = player.getCurrentMediaItem().mediaMetadata.artist.toString();
-            }
+        Log.d("ExoPlayerPlugin", "Preparing media notification update.");
+        if (getActivity() == null) {
+            Log.d("ExoPlayerPlugin", "Cannot start media notification service: activity is unavailable.");
+            return;
         }
 
-        intent.putExtra(MediaNotificationService.EXTRA_TITLE, title);
-        intent.putExtra(MediaNotificationService.EXTRA_ARTIST, artist);
-        intent.putExtra(MediaNotificationService.EXTRA_IS_PLAYING, player.isPlaying());
-        intent.putExtra(MediaNotificationService.EXTRA_IS_BUFFERING, player.getPlaybackState() == Player.STATE_BUFFERING);
-        intent.putExtra(MediaNotificationService.EXTRA_IS_LIVE, "radio".equals(mediaType));
-        intent.putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, player.getCurrentPosition() / 1000.0);
-        
-        long duration = player.getDuration();
-        intent.putExtra(MediaNotificationService.EXTRA_DURATION, duration == C.TIME_UNSET ? 0 : duration / 1000.0);
-        
-        intent.putExtra(MediaNotificationService.EXTRA_HAS_PREVIOUS, false);
-        intent.putExtra(MediaNotificationService.EXTRA_HAS_NEXT, false);
+        android.content.Context appContext = getActivity().getApplicationContext();
+        Intent intent = new Intent(appContext, MediaNotificationService.class)
+            .setAction(MediaNotificationService.ACTION_UPDATE)
+            .putExtra(MediaNotificationService.EXTRA_TITLE, title)
+            .putExtra(MediaNotificationService.EXTRA_ARTIST, artist)
+            .putExtra(MediaNotificationService.EXTRA_IS_PLAYING, player != null && player.isPlaying())
+            .putExtra(
+                MediaNotificationService.EXTRA_IS_BUFFERING,
+                player != null && player.getPlaybackState() == Player.STATE_BUFFERING
+            )
+            .putExtra(MediaNotificationService.EXTRA_IS_LIVE, "radio".equals(mediaType))
+            .putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, player != null ? player.getCurrentPosition() / 1000.0 : 0.0)
+            .putExtra(MediaNotificationService.EXTRA_DURATION, player != null && player.getDuration() != C.TIME_UNSET ? player.getDuration() / 1000.0 : 0.0)
+            .putExtra(MediaNotificationService.EXTRA_HAS_PREVIOUS, false)
+            .putExtra(MediaNotificationService.EXTRA_HAS_NEXT, false);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            getContext().startForegroundService(intent);
-        } else {
-            getContext().startService(intent);
+        String action = intent.getAction();
+        Log.d("ExoPlayerPlugin", "Media notification intent action: " + action);
+        if (!MediaNotificationService.ACTION_UPDATE.equals(action)) {
+            Log.d("ExoPlayerPlugin", "Not starting service because the update action is invalid.");
+            return;
+        }
+
+        try {
+            Log.d("ExoPlayerPlugin", "Starting media notification foreground service.");
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                appContext.startForegroundService(intent);
+            } else {
+                appContext.startService(intent);
+            }
+            Log.d("ExoPlayerPlugin", "Media notification service start requested.");
+        } catch (SecurityException error) {
+            Log.e("ExoPlayerPlugin", "Security exception while starting media notification service.", error);
+        } catch (Exception error) {
+            Log.e("ExoPlayerPlugin", "Failed to start media notification service.", error);
         }
     }
 
@@ -317,10 +335,6 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 : 0
         );
         if (error != null) state.put("error", error);
-        
-        // Mettre à jour la notification à chaque changement d'état
-        updateMediaNotification();
-        
         notifyListeners("playbackState", state);
     }
 
