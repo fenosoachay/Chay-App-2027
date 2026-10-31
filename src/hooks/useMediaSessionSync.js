@@ -109,6 +109,7 @@ export function useMediaSessionSync(control) {
     control?.subtitle,
     control?.artwork,
     control?.isPlaying,
+    control?.isBuffering,
     control?.isLive,
     Math.floor(control?.currentTime || 0),
     control?.duration,

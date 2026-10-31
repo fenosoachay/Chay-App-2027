@@ -203,7 +203,8 @@ const playVideo = (source) => {
   useEffect(() => {
     if (!control) {
       if (isNativeAndroidPlayer && previousControlRef.current?.type === "video") {
-        stopAndroidExoPlayer().catch((error) => console.error("[MediaPlayer] Unable to stop ExoPlayer video.", error));
+        stopAndroidExoPlayer(previousControlRef.current.source, "video")
+          .catch((error) => console.error("[MediaPlayer] Unable to stop ExoPlayer video.", error));
       }
       videoRef.current?.pause();
       if (videoRef.current) {
@@ -266,6 +267,10 @@ const playVideo = (source) => {
     };
     const stop = () => {
       if (currentControl.type === "video") {
+        if (isNativeAndroidPlayer) {
+          stopAndroidExoPlayer(currentControl.source, "video")
+            .catch((error) => console.error("[MediaPlayer] Unable to stop ExoPlayer video.", error));
+        }
         const video = videoRef.current;
         video?.pause();
         if (video) {

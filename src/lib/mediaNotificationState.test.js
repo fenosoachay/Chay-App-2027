@@ -19,6 +19,7 @@ test("native notification state exposes artwork, metadata, progress, and queue c
     subtitle: "Artiste",
     artwork: "https://example.com/cover.jpg",
     isPlaying: true,
+    isBuffering: true,
     currentTime: 7,
     duration: 100,
     previous: () => {},
@@ -28,6 +29,7 @@ test("native notification state exposes artwork, metadata, progress, and queue c
     artist: "Artiste",
     artworkUrl: "https://example.com/cover.jpg",
     isPlaying: true,
+    isBuffering: true,
     currentTime: 7,
     duration: 100,
     isLive: false,
@@ -59,6 +61,13 @@ test("native notification previous and next actions navigate the active queue", 
   assert.equal(dispatchMediaNotificationAction(control, "next"), true);
   assert.equal(dispatchMediaNotificationAction({}, "next"), false);
   assert.deepEqual(calls, ["previous", "next"]);
+});
+
+test("native notification stop action stops the active player", () => {
+  let stopped = false;
+  assert.equal(dispatchMediaNotificationAction({ stop: () => { stopped = true; } }, "stop"), true);
+  assert.equal(dispatchMediaNotificationAction({}, "stop"), false);
+  assert.equal(stopped, true);
 });
 
 test("native notification seek actions clamp to media duration", () => {

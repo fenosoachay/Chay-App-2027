@@ -28,9 +28,7 @@ export default function RadioPlayer() {
 
   const buffering = preparing || state === "connecting" || state === "buffering";
   const statusText =
-    preparing || state === "connecting"
-      ? "Connexion…"
-      : state === "buffering"
+    buffering
       ? "Mise en mémoire tampon…"
       : "En direct";
 
@@ -56,7 +54,7 @@ export default function RadioPlayer() {
             }`}
           >
             <span className={`h-2 w-2 rounded-full ${isPlaying ? "bg-white animate-pulse" : "bg-white/50"}`} />
-            En direct
+            {buffering ? statusText : "En direct"}
           </span>
         </div>
 

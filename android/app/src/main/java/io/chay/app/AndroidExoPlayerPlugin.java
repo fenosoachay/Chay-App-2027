@@ -7,6 +7,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
@@ -105,16 +106,21 @@ public class AndroidExoPlayerPlugin extends Plugin {
             boolean sameMedia = nextSource.equals(source) && nextType.equals(mediaType);
             source = nextSource;
             mediaType = nextType;
+            if (playerView != null) {
+                playerView.setVisibility("video".equals(nextType) ? View.VISIBLE : View.GONE);
+            }
             if (!sameMedia) {
                 MediaMetadata metadata = new MediaMetadata.Builder()
                     .setTitle(title)
                     .setArtist(artist)
                     .build();
-                MediaItem item = new MediaItem.Builder()
+                MediaItem.Builder itemBuilder = new MediaItem.Builder()
                     .setUri(uri)
-                    .setMediaMetadata(metadata)
-                    .build();
-                player.setMediaItem(item);
+                    .setMediaMetadata(metadata);
+                if ("radio".equals(nextType)) {
+                    itemBuilder.setLiveConfiguration(new MediaItem.LiveConfiguration.Builder().build());
+                }
+                player.setMediaItem(itemBuilder.build());
                 player.prepare();
                 if (initialPosition > 0) {
                     player.seekTo((long) (initialPosition * 1000));
@@ -152,6 +158,13 @@ public class AndroidExoPlayerPlugin extends Plugin {
     public void seekMedia(PluginCall call) {
         double seconds = Math.max(0, call.getDouble("positionSeconds", 0.0));
         if (player != null) player.seekTo((long) (seconds * 1000));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setVolume(PluginCall call) {
+        double volume = Math.max(0, Math.min(1, call.getDouble("volume", 1.0)));
+        if (player != null) player.setVolume((float) volume);
         call.resolve();
     }
 
@@ -235,11 +248,12 @@ public class AndroidExoPlayerPlugin extends Plugin {
         state.put("isPlaying", player.isPlaying());
         state.put("isBuffering", player.getPlaybackState() == Player.STATE_BUFFERING);
         state.put("isEnded", player.getPlaybackState() == Player.STATE_ENDED);
+        state.put("isLive", "radio".equals(mediaType));
         state.put("currentTime", positionMs / 1000.0);
-        state.put("duration", durationMs == Player.TIME_UNSET ? 0 : durationMs / 1000.0);
+        state.put("duration", durationMs == C.TIME_UNSET ? 0 : durationMs / 1000.0);
         state.put(
             "bufferedRatio",
-            durationMs > 0 && durationMs != Player.TIME_UNSET
+            durationMs > 0 && durationMs != C.TIME_UNSET
                 ? Math.min(1.0, bufferedMs / (double) durationMs)
                 : 0
         );

@@ -72,8 +72,9 @@ notification shade, so that gesture cannot reveal a React component. The native
 media notification appears in the shade while playback is active, provided app
 and media-notification permissions are enabled. Android may show media controls
 in its media player/quick settings rather than as a heads-up popup.
-MP3 and MP4 playback in the Android app uses Media3 ExoPlayer; Web and iPhone
-continue using browser playback.
+MP3, MP4, and live radio playback in the Android app use Media3 ExoPlayer;
+Web and iPhone continue using browser playback. Android playback notifications
+include play/pause, stop, and available queue navigation controls.
 
 ## Android push notifications
 
