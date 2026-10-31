@@ -1,22 +1,26 @@
 package io.chay.app;
 
-import androidx.media3.common.AudioAttributes;
-import androidx.media3.session.MediaSession;
+import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+
+import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.session.MediaSession;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
+
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -36,6 +40,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
             }
         }
     };
+    
     private ExoPlayer player;
     private PlayerView playerView;
     private MediaSession mediaSession;
@@ -48,7 +53,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
             player = new ExoPlayer.Builder(getContext())
                 .setHandleAudioBecomingNoisy(true)
                 .build();
-                        // Configuration audio pour la notification
+            
+            // Configuration audio pour la notification
             player.setAudioAttributes(
                 new AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -57,8 +63,9 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 true
             );
 
-            // Création de la session média et du gestionnaire de notification
+            // Création de la session média
             mediaSession = new MediaSession.Builder(getContext(), player).build();
+            
             player.addListener(new Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
@@ -84,6 +91,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             playerView.setPlayer(player);
             playerView.setVisibility(View.GONE);
+            
             ViewGroup content = getActivity().findViewById(android.R.id.content);
             if (content != null) {
                 content.addView(
@@ -251,6 +259,43 @@ public class AndroidExoPlayerPlugin extends Plugin {
         });
     }
 
+    private void updateMediaNotification() {
+        if (player == null) return;
+        
+        Intent intent = new Intent(getContext(), MediaNotificationService.class);
+        intent.setAction(MediaNotificationService.ACTION_UPDATE);
+        
+        String title = "Média";
+        String artist = "CHAY";
+        if (player.getCurrentMediaItem() != null && player.getCurrentMediaItem().mediaMetadata != null) {
+            if (player.getCurrentMediaItem().mediaMetadata.title != null) {
+                title = player.getCurrentMediaItem().mediaMetadata.title.toString();
+            }
+            if (player.getCurrentMediaItem().mediaMetadata.artist != null) {
+                artist = player.getCurrentMediaItem().mediaMetadata.artist.toString();
+            }
+        }
+
+        intent.putExtra(MediaNotificationService.EXTRA_TITLE, title);
+        intent.putExtra(MediaNotificationService.EXTRA_ARTIST, artist);
+        intent.putExtra(MediaNotificationService.EXTRA_IS_PLAYING, player.isPlaying());
+        intent.putExtra(MediaNotificationService.EXTRA_IS_BUFFERING, player.getPlaybackState() == Player.STATE_BUFFERING);
+        intent.putExtra(MediaNotificationService.EXTRA_IS_LIVE, "radio".equals(mediaType));
+        intent.putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, player.getCurrentPosition() / 1000.0);
+        
+        long duration = player.getDuration();
+        intent.putExtra(MediaNotificationService.EXTRA_DURATION, duration == C.TIME_UNSET ? 0 : duration / 1000.0);
+        
+        intent.putExtra(MediaNotificationService.EXTRA_HAS_PREVIOUS, false);
+        intent.putExtra(MediaNotificationService.EXTRA_HAS_NEXT, false);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getContext().startForegroundService(intent);
+        } else {
+            getContext().startService(intent);
+        }
+    }
+
     private void emitPlaybackState(String error) {
         if (player == null) return;
         long positionMs = Math.max(0, player.getCurrentPosition());
@@ -272,6 +317,10 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 : 0
         );
         if (error != null) state.put("error", error);
+        
+        // Mettre à jour la notification à chaque changement d'état
+        updateMediaNotification();
+        
         notifyListeners("playbackState", state);
     }
 
@@ -286,8 +335,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         mainHandler.removeCallbacks(progressTicker);
-
-            if (mediaNotificationManager != null) 
+        
         if (mediaSession != null) {
             mediaSession.release();
         }
