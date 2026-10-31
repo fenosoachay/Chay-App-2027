@@ -245,7 +245,8 @@ export function AudioPlayerProvider({ children }) {
     const audio = audioRef.current;
     currentTrack?.onStop?.(currentTime);
     if (isNativeAndroidPlayer) {
-      stopAndroidExoPlayer().catch((error) => console.error("[AudioPlayer] Unable to stop ExoPlayer.", error));
+      stopAndroidExoPlayer(currentTrack?.audio_url, "audio")
+        .catch((error) => console.error("[AudioPlayer] Unable to stop ExoPlayer.", error));
       setNativePlayerState("idle");
       setNativeBufferedRatio(0);
     } else if (audio) {
