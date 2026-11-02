@@ -20,7 +20,6 @@ import {
   fromISODate,
   formatISODate,
   isISODate,
-  addDaysISO,
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
@@ -60,6 +59,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
   const { pending, publishing, stage, discard, publish } = useStagedPublish({
     entity: base44.entities.Announcement,
     dateField: "date",
+    allowMultiplePerDate: true,
     build: (p) => {
       const payload = {
         title: (p.title || "").trim(),
@@ -79,14 +79,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       // affichage reste exactement celui d'avant.
       return payload;
     },
-    // On met à jour l'entrée sélectionnée ; à défaut on en crée une. Une
-    // collision de date est REFUSÉE plutôt qu'écrasée : deux réunions peuvent
-    // cohabiter un même jour, remplacer silencieusement l'autre ferait perdre
-    // son contenu. `null` = date déjà occupée.
-    resolveId: (d, prev, server) => {
-      const id = d.id ?? prev?.id ?? undefined;
-      return id === undefined && server ? null : id;
-    },
+    resolveId: (d, prev) => d.id ?? prev?.id ?? undefined,
   });
 
   // Date de réunion affichée : les annonces d'avant la séparation des deux
@@ -154,6 +147,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       date: day,
       event_date: entry?.event_date || "",
       __legacy: Boolean(entry?.id) && !entry?.event_date,
+      __pendingKey: entry?.__pendingKey,
     });
   };
 
@@ -191,7 +185,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       id: undefined,
       title: "",
       body: "",
-      date: addDaysISO(day, 1),
+      date: day,
       event_date: "",
       __legacy: false,
     });
@@ -236,7 +230,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
   const removeOn = async (entry) => {
     // Entrée en attente : on la retire de la file, aucun appel serveur.
     if (entry.__pending) {
-      discard(entry.date);
+      discard(entry);
       toast({ title: "Retiré de la liste", description: "Rien n'était publié." });
       return;
     }
@@ -359,7 +353,8 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
               La date de publication programme l'apparition de l'affiche sur
               l'accueil ; la date de la réunion est celle affichée sur la
               carte. Elles peuvent être différentes : publié demain, réunion
-              dimanche.
+              dimanche. Plusieurs réunions peuvent partager la même date de
+              publication.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -428,6 +423,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
             focusDate={draft.date}
             entries={[...pending, ...events]}
             dateField="date"
+            allowMultiplePerDate
             labelFor={(e) => {
               // La ligne = date de publication ; on rappelle la date de la
               // réunion quand elle est différente.

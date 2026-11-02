@@ -51,6 +51,7 @@ export default function PeriodPlanner({
   labelFor,
   onPick,
   onDelete,
+  allowMultiplePerDate = false,
   loading = false,
   pendingCount = 0,
 }) {
@@ -76,7 +77,9 @@ export default function PeriodPlanner({
   const byDate = {};
   for (const entry of entries || []) {
     const day = entry?.[dateField];
-    if (isISODate(day) && !byDate[day]) byDate[day] = entry;
+    if (!isISODate(day)) continue;
+    if (!byDate[day]) byDate[day] = [];
+    byDate[day].push(entry);
   }
 
   const days = Array.from({ length: PLANNING_DAYS }, (_, k) =>
@@ -132,7 +135,8 @@ export default function PeriodPlanner({
       ) : (
         <ul className="rounded-xl border border-border divide-y divide-border max-h-56 overflow-y-auto">
           {days.map((day) => {
-            const entry = byDate[day];
+            const dayEntries = byDate[day] || [];
+            const entry = dayEntries[0];
             const isToday = day === today;
             return (
               <li
@@ -150,18 +154,55 @@ export default function PeriodPlanner({
                     {formatISODate(day)}
                     {isToday ? " · aujourd'hui" : ""}
                   </div>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-xs text-muted-foreground truncate">
-                      {entry ? labelFor(entry) : "— vide —"}
-                    </span>
-                    {entry?.__pending && (
-                      <span className="shrink-0 rounded-full bg-primary/10 text-primary px-1.5 text-2xs font-bold uppercase">
-                        à publier
+                  {allowMultiplePerDate ? (
+                    dayEntries.length ? (
+                      <ul className="space-y-1">
+                        {dayEntries.map((item, index) => (
+                          <li key={item.__pendingKey || item.id || `${day}-${index}`} className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-xs text-muted-foreground truncate">
+                              {labelFor(item)}
+                            </span>
+                            {item.__pending && (
+                              <span className="shrink-0 rounded-full bg-primary/10 text-primary px-1.5 text-2xs font-bold uppercase">
+                                à publier
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => onPick(day, item)}
+                              className="h-6 w-6 grid place-items-center rounded-full border border-border hover:bg-muted transition shrink-0"
+                              aria-label={`Modifier ${labelFor(item)} du ${formatISODate(day)}`}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDelete(item)}
+                              className="h-6 w-6 grid place-items-center rounded-full border border-border hover:bg-destructive/10 hover:text-destructive transition shrink-0"
+                              aria-label={`Supprimer ${labelFor(item)} du ${formatISODate(day)}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">— vide —</span>
+                    )
+                  ) : (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs text-muted-foreground truncate">
+                        {entry ? labelFor(entry) : "— vide —"}
                       </span>
-                    )}
-                  </div>
+                      {entry?.__pending && (
+                        <span className="shrink-0 rounded-full bg-primary/10 text-primary px-1.5 text-2xs font-bold uppercase">
+                          à publier
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <button
+                {!allowMultiplePerDate && <button
                   type="button"
                   onClick={() => onPick(day, entry)}
                   className="h-7 w-7 grid place-items-center rounded-full border border-border hover:bg-muted transition shrink-0"
@@ -176,8 +217,18 @@ export default function PeriodPlanner({
                   ) : (
                     <Plus className="h-3.5 w-3.5" />
                   )}
-                </button>
-                {entry && (
+                </button>}
+                {allowMultiplePerDate && (
+                  <button
+                    type="button"
+                    onClick={() => onPick(day)}
+                    className="h-7 w-7 grid place-items-center rounded-full border border-border hover:bg-muted transition shrink-0"
+                    aria-label={`Ajouter une entrée le ${formatISODate(day)}`}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {!allowMultiplePerDate && entry && (
                   <button
                     type="button"
                     onClick={() => onDelete(entry)}
