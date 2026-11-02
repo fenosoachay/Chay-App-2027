@@ -523,7 +523,7 @@ export default function BibleReader({ onBack }) {
           )}
           {chapterStatus === "ready" && (
             <article className="mx-auto max-w-3xl">
-              <div className="selectable space-y-3 text-[36px] leading-[1.6] text-foreground/80">
+              <div className="selectable space-y-3 text-[26px] leading-[1.6] text-foreground/80">
                 {verses.map((verse) => {
                   const ann = annotations[verse.number];
                   const hl = ann?.highlight_color ? HIGHLIGHT_COLORS.find((c) => c.id === ann.highlight_color) : null;
