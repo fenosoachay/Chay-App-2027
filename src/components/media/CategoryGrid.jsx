@@ -3,7 +3,7 @@ import { CATEGORIES } from "@/lib/mediaConstants";
 
 export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio }) {
   return (
-    <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 md:gap-6">
+    <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-4 md:gap-6">
       {/* « Votre Playlist » est visible pour TOUS les utilisateurs, admins inclus. */}
       {CATEGORIES.map((c) => {
         const Icon = c.icon;
@@ -27,7 +27,7 @@ export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio }) {
             {/* whitespace-nowrap : « Prédications » ne doit JAMAIS casser au
                 milieu du mot (le « s » seul sur une 2e ligne) — même avec une
                 grande taille de texte réglée dans l'app. */}
-            <span className="text-2xs md:text-sm font-semibold text-foreground/70 text-center leading-tight whitespace-nowrap">
+            <span className="max-w-full text-[0.9375rem] md:text-[1.3125rem] font-semibold text-foreground/70 text-center leading-tight whitespace-normal">
               {c.label}
             </span>
           </button>
