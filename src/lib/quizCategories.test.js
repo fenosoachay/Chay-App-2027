@@ -10,14 +10,23 @@ test("quizCategoryValue creates a stable slug from an accented label", () => {
   assert.equal(quizCategoryValue("Les paraboles de Jésus"), "les_paraboles_de_jesus");
 });
 
-test("mergeQuizCategories preserves defaults and adds custom categories once", () => {
+test("mergeQuizCategories applies persisted labels and adds custom categories once", () => {
   const categories = mergeQuizCategories([
-    { value: "jesus", label: "Jésus" },
+    { value: "jesus", label: "Les Évangiles" },
     { label: "Les paraboles", value: "les_paraboles" },
   ]);
-  assert.equal(categories.find((category) => category.value === "jesus").label, "Jésus");
+  assert.equal(categories.find((category) => category.value === "jesus").label, "Les Évangiles");
   assert.equal(categories.filter((category) => category.value === "jesus").length, 1);
   assert.ok(categories.some((category) => category.value === "les_paraboles"));
+});
+
+test("mergeQuizCategories hides defaults and custom categories marked deleted", () => {
+  const categories = mergeQuizCategories([
+    { value: "jesus", label: "Jésus", is_deleted: true },
+    { value: "les_paraboles", label: "Les paraboles", is_deleted: true },
+  ]);
+  assert.ok(!categories.some((category) => category.value === "jesus"));
+  assert.ok(!categories.some((category) => category.value === "les_paraboles"));
 });
 
 test("cleanQuizCategory accepts labels or category objects and rejects empty input", () => {

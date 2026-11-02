@@ -23,6 +23,11 @@ export default function QuizQuestionForm({
 }) {
   const [form, setForm] = useState(initial || EMPTY_QUESTION);
   useEffect(() => setForm(initial || EMPTY_QUESTION), [initial]);
+  useEffect(() => {
+    if (!categories.some((category) => category.value === form.category)) {
+      setForm((current) => ({ ...current, category: "autre" }));
+    }
+  }, [categories, form.category]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const valid =

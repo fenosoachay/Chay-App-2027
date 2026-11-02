@@ -12,11 +12,16 @@ export function quizCategoryValue(label) {
 export function mergeQuizCategories(categories = []) {
   const merged = new Map(QUIZ_CATEGORIES.map((category) => [category.value, category]));
   categories.forEach((category) => {
-    const label = typeof category?.label === "string" ? category.label.trim() : "";
     const value = typeof category?.value === "string"
       ? category.value.trim()
-      : quizCategoryValue(label);
-    if (label && value) merged.set(value, { value, label });
+      : "";
+    if (!value) return;
+    if (category.is_deleted) {
+      merged.delete(value);
+      return;
+    }
+    const label = typeof category.label === "string" ? category.label.trim() : "";
+    if (label) merged.set(value, { value, label });
   });
   return [...merged.values()];
 }
