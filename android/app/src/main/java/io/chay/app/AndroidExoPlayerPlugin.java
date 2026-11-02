@@ -41,14 +41,12 @@ public class AndroidExoPlayerPlugin extends Plugin {
             }
         }
     };
-    
+
     private ExoPlayer player;
     private PlayerView playerView;
     private MediaSession mediaSession;
     private String source = "";
     private String mediaType = "audio";
-    
-    // Variables de classe pour la notification (nécessaires pour updateMediaNotification)
     private String title = "Média";
     private String artist = "CHAY";
 
@@ -58,7 +56,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
             player = new ExoPlayer.Builder(getContext())
                 .setHandleAudioBecomingNoisy(true)
                 .build();
-            
+
             player.setAudioAttributes(
                 new AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -68,7 +66,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
             );
 
             mediaSession = new MediaSession.Builder(getContext(), player).build();
-            
+
             player.addListener(new Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
@@ -94,7 +92,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             playerView.setPlayer(player);
             playerView.setVisibility(View.GONE);
-            
+
             ViewGroup content = getActivity().findViewById(android.R.id.content);
             if (content != null) {
                 content.addView(
@@ -131,9 +129,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
             boolean sameMedia = nextSource.equals(source) && nextType.equals(mediaType);
             source = nextSource;
             mediaType = nextType;
-            title = nextTitle;       // Mise à jour des variables de classe
-            artist = nextArtist;     // Mise à jour des variables de classe
-            
+            title = nextTitle;
+            artist = nextArtist;
             if (playerView != null) {
                 playerView.setVisibility("video".equals(nextType) ? View.VISIBLE : View.GONE);
             }
@@ -159,10 +156,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 player.prepare();
             }
             player.play();
-            
-            // Déclencher la notification ici
             updateMediaNotification();
-            
             emitPlaybackState(null);
             call.resolve();
         });
@@ -349,7 +343,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         mainHandler.removeCallbacks(progressTicker);
-        
+
         if (mediaSession != null) {
             mediaSession.release();
         }
