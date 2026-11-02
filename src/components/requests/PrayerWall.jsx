@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   fetchPrayerWall,
   takePrayer,
-  PRAYER_CATEGORIES,
   PRAYER_STATUS_STYLE,
   PRAYER_STATUS_LABEL,
   timeAgo,
