@@ -121,6 +121,11 @@ Une catégorie ne peut être supprimée que lorsqu'aucun mot ne l'utilise.
 L'export JSON contient maintenant `categories` et `words`; l'import accepte
 aussi les anciennes listes de mots.
 
+## Réunions à venir
+
+L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,
+triées par date de réunion, avec la plus proche en premier.
+
 ## Docs & Support
 
 GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)
