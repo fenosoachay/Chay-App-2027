@@ -26,7 +26,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState("actualites"); // "actualites" | "membres"
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(true);
-  const [membersError, setMembersError] = useState(false);
+  const [membersError, setMembersError] = useState("");
   const [ejectTarget, setEjectTarget] = useState(null);
   const [ejecting, setEjecting] = useState(false);
 
@@ -41,12 +41,16 @@ export default function Community() {
 
   const loadMembers = async () => {
     setMembersLoading(true);
-    setMembersError(false);
+    setMembersError("");
     try {
-      const list = await base44.entities.User.list("-created_date", 100);
-      setMembers(Array.isArray(list) ? list : []);
-    } catch {
-      setMembersError(true);
+      const result = await base44.functions.invoke("listCommunityMembers", {});
+      const list = result?.data?.members;
+      if (!Array.isArray(list)) {
+        throw new Error(result?.data?.error || "Réponse invalide du serveur.");
+      }
+      setMembers(list);
+    } catch (error) {
+      setMembersError(error?.message || "Erreur inconnue.");
     } finally {
       setMembersLoading(false);
     }
@@ -306,8 +310,8 @@ export default function Community() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : membersError ? (
-            <p className="text-center text-foreground/50 py-12">
-              Impossible de charger les membres. Réessayez en ouvrant cet onglet.
+            <p role="alert" className="text-center text-foreground/50 py-12">
+              Impossible de charger les membres : {membersError}{" "}
               <button
                 type="button"
                 onClick={loadMembers}
