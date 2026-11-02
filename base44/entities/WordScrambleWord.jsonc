@@ -17,13 +17,7 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "personnage",
-        "lieu",
-        "objet",
-        "concept",
-        "livre_bible"
-      ]
+      "description": "Identifiant stable de la catégorie du mot"
     },
     "hint_phrase": {
       "type": "string",
