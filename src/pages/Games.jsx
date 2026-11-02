@@ -157,7 +157,7 @@ export default function Games() {
             onClick={() => navigate(g.path || "/quiz")}
             aria-label={g.live ? `Ouvrir le jeu ${g.name}` : `${g.name}, bientôt disponible`}
             title={g.live ? g.name : `${g.name} — bientôt disponible`}
-            className={`group flex aspect-square w-full max-w-44 flex-col items-center justify-center gap-3 rounded-full bg-gradient-to-br ${g.tone} p-4 text-center text-white shadow-md transition-all ${
+            className={`group flex aspect-square w-full max-w-32 flex-col items-center justify-center gap-2 rounded-full bg-gradient-to-br ${g.tone} p-3 text-center text-white shadow-md transition-all ${
               g.live
                 ? "hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 : "cursor-not-allowed opacity-65"
