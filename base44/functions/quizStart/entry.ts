@@ -28,6 +28,13 @@ export default async function (req: Request): Promise<Response> {
     }
 
     const pool = Array.isArray(page) ? page : page?.items || [];
+    if (pool.length < wanted) {
+      return Response.json({
+        error: `Ce niveau nécessite ${wanted} questions. Il en manque ${wanted - pool.length}.`,
+        requested: wanted,
+        available: pool.length,
+      }, { status: 409 });
+    }
     const picked = shuffle(pool).slice(0, wanted);
     const sessionId = crypto.randomUUID();
 

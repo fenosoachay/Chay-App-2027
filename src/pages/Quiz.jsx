@@ -30,10 +30,18 @@ export default function Quiz() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-display font-extrabold text-xl text-foreground">{l.emoji} {l.label}</div>
-                  <div className="text-sm text-foreground/60">{info.question_count} questions · meilleur score {info.best_score_percent} %</div>
+                  <div className="text-sm text-foreground/60">
+                    Manche de {info.question_count} questions · {info.available_questions} disponibles · meilleur score {info.best_score_percent} %
+                  </div>
                 </div>
                 {info.unlocked ? (
-                  <button onClick={() => navigate(`/quiz/play/${l.value}`)} className="rounded-full bg-primary px-6 py-2.5 font-bold text-primary-foreground">Jouer</button>
+                  info.available_questions >= info.question_count ? (
+                    <button onClick={() => navigate(`/quiz/play/${l.value}`)} className="rounded-full bg-primary px-6 py-2.5 font-bold text-primary-foreground">Jouer</button>
+                  ) : (
+                    <span className="text-right text-xs font-semibold text-foreground/55">
+                      Ajoutez {info.question_count - info.available_questions} question(s)
+                    </span>
+                  )
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-sm font-bold text-foreground/60">
                     <Lock className="h-4 w-4" /> Terminez le niveau précédent avec {info.threshold}%
