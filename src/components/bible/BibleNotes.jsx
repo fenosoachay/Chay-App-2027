@@ -48,7 +48,7 @@ export default function BibleNotes({ onBack }) {
         </div>
       </header>
 
-      <div className="mb-4 flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1 no-scrollbar">
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 sm:grid-cols-4">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -56,13 +56,13 @@ export default function BibleNotes({ onBack }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`min-w-max flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+              className={`min-w-0 inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2 py-2 text-xs font-bold transition sm:px-3 ${
                 active
                   ? "brand-gradient text-white shadow-sm"
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              <Icon className="h-4 w-4" /> {t.label}
+              <Icon className="h-4 w-4 shrink-0" /> {t.label}
             </button>
           );
         })}
