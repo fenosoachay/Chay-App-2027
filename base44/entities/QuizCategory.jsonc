@@ -9,6 +9,10 @@
     "label": {
       "type": "string",
       "description": "Nom affiché de la catégorie"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "description": "Masque une catégorie par défaut sans perdre son identifiant"
     }
   },
   "required": [

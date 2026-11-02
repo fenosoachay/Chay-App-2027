@@ -104,9 +104,12 @@ registration, and a fresh native build must contain Firebase configuration.
 
 ## Quiz biblique
 
-Les administrateurs peuvent ajouter des catégories depuis l'administration du
-quiz. Les catégories personnalisées sont enregistrées dans l'entité
-`QuizCategory` et sont incluses avec les questions lors de l'export JSON.
+Les administrateurs peuvent ajouter, renommer et supprimer des catégories
+depuis l'administration du quiz. Les catégories personnalisées et les
+modifications des catégories par défaut sont enregistrées dans l'entité
+`QuizCategory` et incluses avec les questions lors de l'export JSON. Lorsqu'une
+catégorie est supprimée, ses questions sont conservées et réassignées à
+« Autre ».
 Chaque manche comporte 10 questions ; un niveau attend d'avoir au moins
 10 questions disponibles avant de pouvoir démarrer.
 
