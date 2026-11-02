@@ -1,14 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Gamepad2, Trophy, Flame, Check, X, RefreshCw, ArrowRight } from "lucide-react";
+import {
+  Brain,
+  Check,
+  Flame,
+  Puzzle,
+  RefreshCw,
+  Search,
+  Shuffle,
+  Smile,
+  Trophy,
+  X,
+} from "lucide-react";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 
 const GAMES = [
-  { id: "trivia", name: "Quiz biblique", desc: "Testez vos connaissances", tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
-  { id: "emoji", name: "Émojis bibliques", desc: "Devinez à partir des émojis", tone: "from-[#8A56E2] to-[#FF57B2]", live: false },
-  { id: "scramble", name: "Mots mélangés", desc: "Reconstituez les noms", tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
-  { id: "puzzle", name: "Puzzle biblique", desc: "Reconstituez l'image", tone: "from-[#2E6F40] to-[#4A6CFE]", live: false },
-  { id: "detective", name: "Enquête biblique", desc: "Résolvez l'énigme", tone: "from-[#FF4D2D] to-[#8A56E2]", live: false },
+  { id: "trivia", name: "Quiz", icon: Brain, tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
+  { id: "emoji", name: "Émojis", icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]", live: false },
+  { id: "scramble", name: "Mots mélangés", icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
+  { id: "puzzle", name: "Puzzle", icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", live: false },
+  { id: "detective", name: "Enquête", icon: Search, tone: "from-[#FF4D2D] to-[#8A56E2]", live: false },
 ];
 
 const QUESTIONS = [
@@ -137,27 +148,26 @@ export default function Games() {
         <p className="mt-3 text-lg text-foreground/60">Découvrez la Parole en vous amusant.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="mx-auto grid max-w-5xl grid-cols-2 place-items-center gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
         {GAMES.map((g) => (
-          <div key={g.id} className="group rounded-[1.5rem] border border-border bg-card p-6 hover:-translate-y-1 hover:shadow-lg transition-all">
-            <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${g.tone} grid place-items-center text-white shadow-sm mb-4`}>
-              <Gamepad2 className="h-7 w-7" />
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-display font-bold text-xl">{g.name}</h3>
-              {g.live && <span className="rounded-full bg-secondary/10 text-secondary text-xs font-bold px-2 py-0.5">Disponible</span>}
-            </div>
-            <p className="text-sm text-foreground/55">{g.desc}</p>
-            {g.live ? (
-              <button onClick={() => navigate(g.path || "/quiz")} className="mt-5 w-full rounded-full bg-primary text-primary-foreground px-5 py-3 font-bold hover:scale-[1.02] transition">
-                Jouer
-              </button>
-            ) : (
-              <button disabled className="mt-5 w-full rounded-full border border-border text-foreground/40 px-5 py-3 font-bold cursor-not-allowed">
-                Bientôt disponible
-              </button>
-            )}
-          </div>
+          <button
+            key={g.id}
+            type="button"
+            disabled={!g.live}
+            onClick={() => navigate(g.path || "/quiz")}
+            aria-label={g.live ? `Ouvrir le jeu ${g.name}` : `${g.name}, bientôt disponible`}
+            title={g.live ? g.name : `${g.name} — bientôt disponible`}
+            className={`group flex aspect-square w-full max-w-44 flex-col items-center justify-center gap-3 rounded-full bg-gradient-to-br ${g.tone} p-4 text-center text-white shadow-md transition-all ${
+              g.live
+                ? "hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                : "cursor-not-allowed opacity-65"
+            }`}
+          >
+            <g.icon className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" aria-hidden="true" />
+            <span className="max-w-full break-words text-base font-bold leading-tight sm:text-lg">
+              {g.name}
+            </span>
+          </button>
         ))}
       </div>
     </div>
