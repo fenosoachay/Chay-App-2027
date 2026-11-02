@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Heart, MessageCircle, Send, Loader2, X, Maximize2, Pencil, Trash2, Check } from "lucide-react";
+import { Heart, MessageCircle, Send, Loader2, X, Maximize2, Pencil, Trash2, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import useKeyboardShortcuts, { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import useMemberDirectory from "@/hooks/useMemberDirectory";
 import { confirmFr } from "@/lib/confirmFr";
+import { communityPostImages } from "@/lib/communityPostImages";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   
   // NOUVEL ÉTAT POUR LE VIEWER D'IMAGE
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [viewerImageIndex, setViewerImageIndex] = useState(0);
   // Le bouton retour du téléphone ferme la visionneuse au lieu de quitter la page.
   useBackHandler(isViewerOpen, () => setIsViewerOpen(false));
   useKeyboardShortcuts(isViewerOpen, { Escape: () => setIsViewerOpen(false) });
@@ -52,20 +54,25 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   const displayName = nameOf(post.created_by_id, post.author_name || (isMine ? "Vous" : "Membre"));
   const liked = reactions.some((r) => r.user_id === currentUser?.id);
   const likeCount = reactions.length;
+  const imageUrls = communityPostImages(post);
 
   const savePost = async () => {
-    const hasImageAfterEdit = Boolean(editImageFile || (post.image_url && !removeImage));
+    const hasImageAfterEdit = Boolean(editImageFile || (imageUrls.length && !removeImage));
     if ((!editText.trim() && !hasImageAfterEdit) || savingPost) return;
     setSavingPost(true);
     try {
       const image_url = editImageFile
         ? await uploadToBase44(editImageFile)
-        : removeImage ? null : post.image_url;
+        : removeImage ? null : (imageUrls[0] || null);
+      const image_urls = editImageFile
+        ? [image_url]
+        : removeImage ? [] : imageUrls;
       const updated = await base44.entities.CommunityPost.update(post.id, {
         text: editText.trim(),
         image_url,
+        image_urls,
       });
-      onPostUpdated?.({ ...post, ...updated, text: editText.trim(), image_url });
+      onPostUpdated?.({ ...post, ...updated, text: editText.trim(), image_url, image_urls });
       setEditingPost(false);
       setEditImageFile(null);
       setRemoveImage(false);
@@ -294,11 +301,15 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
             className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
             aria-label="Modifier le texte de la publication"
           />
-          {post.image_url && !removeImage && (
-            <div className="flex items-center gap-3">
-              <Image src={post.image_url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+          {imageUrls.length > 0 && !removeImage && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex gap-2">
+                {imageUrls.map((url) => (
+                  <Image key={url} src={url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                ))}
+              </div>
               <button type="button" onClick={() => setRemoveImage(true)} className="text-xs font-semibold text-destructive">
-                Retirer l’image
+                Retirer les photos
               </button>
             </div>
           )}
@@ -322,7 +333,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
             <button
               type="button"
               onClick={savePost}
-              disabled={savingPost || (!editText.trim() && !(editImageFile || (post.image_url && !removeImage)))}
+              disabled={savingPost || (!editText.trim() && !(editImageFile || (imageUrls.length && !removeImage)))}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
             >
               {savingPost ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -337,22 +348,30 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
       )}
 
           {/* IMAGE CLIQUABLE - PROPORTIONS RESPECTÉES */}
-      {post.image_url && !(editingPost && removeImage) && (
-        <div 
-          className="mt-3 rounded-2xl overflow-hidden border border-border cursor-zoom-in group relative bg-muted/20 flex justify-center items-center"
-          onClick={() => setIsViewerOpen(true)}
-        >
-          <Image
-            src={post.image_url}
-            alt=""
-            fittingType="contain" // Force le respect des proportions
-            className="w-full h-auto max-h-[80vh] object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-          
-          {/* Petit indicateur visuel au survol */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-             <Maximize2 className="h-6 w-6 text-white drop-shadow-md" />
-          </div>
+      {imageUrls.length > 0 && !(editingPost && removeImage) && (
+        <div className={`mt-3 grid gap-2 ${imageUrls.length > 1 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-1"}`}>
+          {imageUrls.map((url, index) => (
+            <button
+              key={url}
+              type="button"
+              className="rounded-2xl overflow-hidden border border-border cursor-zoom-in group relative bg-muted/20 flex justify-center items-center"
+              onClick={() => {
+                setViewerImageIndex(index);
+                setIsViewerOpen(true);
+              }}
+              aria-label={`Afficher la photo ${index + 1} sur ${imageUrls.length}`}
+            >
+              <Image
+                src={url}
+                alt=""
+                fittingType="contain"
+                className={`w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02] ${imageUrls.length > 1 ? "aspect-square max-h-80" : "max-h-[80vh]"}`}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                <Maximize2 className="h-6 w-6 text-white drop-shadow-md" />
+              </div>
+            </button>
+          ))}
         </div>
       )}
 
@@ -520,7 +539,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
       </Dialog>
 
       {/* LIGHTBOX / VIEWER PLEIN ÉCRAN */}
-      {isViewerOpen && post.image_url && (
+      {isViewerOpen && imageUrls.length > 0 && (
         <div 
           className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setIsViewerOpen(false)} // Fermer si on clique sur le fond
@@ -537,13 +556,44 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
             <X className="h-6 w-6" />
           </button>
 
-          {/* L'image en grand */}
-          <img 
-            src={post.image_url} 
+          {imageUrls.length > 1 && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setViewerImageIndex((index) => (index - 1 + imageUrls.length) % imageUrls.length);
+              }}
+              className="absolute left-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center z-10"
+              aria-label="Photo précédente"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          <img
+            src={imageUrls[viewerImageIndex]}
             alt="Vue agrandie" 
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()} // Empêcher la fermeture quand on clique SUR l'image
           />
+          {imageUrls.length > 1 && (
+            <>
+              <span className="absolute bottom-4 text-sm text-white/80">
+                {viewerImageIndex + 1} / {imageUrls.length}
+              </span>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setViewerImageIndex((index) => (index + 1) % imageUrls.length);
+                }}
+                className="absolute right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center z-10"
+                aria-label="Photo suivante"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

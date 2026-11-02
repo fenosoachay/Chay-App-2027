@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
@@ -19,8 +19,8 @@ export default function Community() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const previewUrls = useRef(new Set());
   const [publishing, setPublishing] = useState(false);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("actualites"); // "actualites" | "membres"
@@ -94,30 +94,52 @@ export default function Community() {
     })();
   }, []);
 
+  useEffect(() => () => {
+    previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
+
   const handleImagePick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const images = files.map((file) => {
+      const previewUrl = URL.createObjectURL(file);
+      previewUrls.current.add(previewUrl);
+      return { file, previewUrl };
+    });
+    setSelectedImages((current) => [...current, ...images]);
+    e.target.value = "";
+  };
+
+  const removeSelectedImage = (previewUrl) => {
+    URL.revokeObjectURL(previewUrl);
+    previewUrls.current.delete(previewUrl);
+    setSelectedImages((current) => current.filter((image) => image.previewUrl !== previewUrl));
+  };
+
+  const clearSelectedImages = () => {
+    selectedImages.forEach(({ previewUrl }) => {
+      URL.revokeObjectURL(previewUrl);
+      previewUrls.current.delete(previewUrl);
+    });
+    setSelectedImages([]);
   };
 
   const publish = async () => {
-    if (!draft.trim() && !imageFile) return;
+    if (!draft.trim() && !selectedImages.length) return;
     setPublishing(true);
     try {
-      let image_url = null;
-      if (imageFile) {
-        image_url = await uploadToBase44(imageFile);
-      }
+      const image_urls = await Promise.all(
+        selectedImages.map(({ file }) => uploadToBase44(file)),
+      );
       const result = await base44.functions.invoke("createCommunityPost", {
         text: draft.trim(),
-        image_url,
+        image_urls,
+        image_url: image_urls[0] || null,
       });
       const notificationError = result?.data?.notification_error;
 
       setDraft("");
-      setImageFile(null);
-      setImagePreview(null);
+      clearSelectedImages();
       await loadPosts();
       toast({
         title: "Publication partagée",
@@ -186,38 +208,44 @@ export default function Community() {
               rows={3}
               className="w-full bg-transparent outline-none resize-none text-foreground/85 placeholder:text-foreground/40 font-medium"
             />
-            {imagePreview && (
-              <div className="relative mt-3 rounded-2xl overflow-hidden border border-border">
-                <Image
-                  src={imagePreview}
-                  alt=""
-                  fittingType="fill"
-                  className="w-full max-h-64 object-cover"
-                />
-                <button
-                  onClick={() => {
-                    setImageFile(null);
-                    setImagePreview(null);
-                  }}
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white grid place-items-center"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+            {selectedImages.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {selectedImages.map(({ file, previewUrl }) => (
+                  <div key={previewUrl} className="relative aspect-square rounded-xl overflow-hidden border border-border">
+                    <Image
+                      src={previewUrl}
+                      alt={file.name}
+                      fittingType="fill"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedImage(previewUrl)}
+                      disabled={publishing}
+                      aria-label={`Retirer ${file.name}`}
+                      className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 text-white grid place-items-center disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
               <label className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/60 hover:text-primary transition cursor-pointer">
-                <ImagePlus className="h-4 w-4" /> Photo
+                <ImagePlus className="h-4 w-4" /> Photos
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImagePick}
+                  disabled={publishing}
                   className="hidden"
                 />
               </label>
               <button
                 onClick={publish}
-                disabled={(!draft.trim() && !imageFile) || publishing}
+                disabled={(!draft.trim() && !selectedImages.length) || publishing}
                 className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-bold hover:scale-105 transition disabled:opacity-50"
               >
                 {publishing ? (
