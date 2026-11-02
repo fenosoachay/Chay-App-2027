@@ -15,7 +15,8 @@ export const QUIZ_CATEGORIES = [
 
 export const levelLabel = (value) => QUIZ_LEVELS.find((l) => l.value === value)?.label || value;
 export const levelOf = (value) => QUIZ_LEVELS.find((l) => l.value === value);
-export const categoryLabel = (value) => QUIZ_CATEGORIES.find((c) => c.value === value)?.label || value || "—";
+export const categoryLabel = (value, categories = QUIZ_CATEGORIES) =>
+  categories.find((category) => category.value === value)?.label || value || "—";
 
 export const EMPTY_QUESTION = {
   question: "",

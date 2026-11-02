@@ -102,6 +102,14 @@ Base44's `DeviceToken` entity for the signed-in user; use the Android push
 test there to check delivery. The native app must be online for initial token
 registration, and a fresh native build must contain Firebase configuration.
 
+## Quiz biblique
+
+Les administrateurs peuvent ajouter des catégories depuis l'administration du
+quiz. Les catégories personnalisées sont enregistrées dans l'entité
+`QuizCategory` et sont incluses avec les questions lors de l'export JSON.
+Chaque manche comporte 10 questions ; un niveau attend d'avoir au moins
+10 questions disponibles avant de pouvoir démarrer.
+
 ## Docs & Support
 
 GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)

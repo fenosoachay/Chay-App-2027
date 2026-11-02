@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -15,6 +15,9 @@ import QuizStats from "@/components/admin/quiz/QuizStats";
 import QuizQuestionForm from "@/components/admin/quiz/QuizQuestionForm";
 import QuizQuestionList from "@/components/admin/quiz/QuizQuestionList";
 import QuizImportExport from "@/components/admin/quiz/QuizImportExport";
+import QuizCategoryManager from "@/components/admin/quiz/QuizCategoryManager";
+import { QUIZ_CATEGORIES } from "@/lib/quizConstants";
+import { mergeQuizCategories } from "@/lib/quizCategories";
 
 function Block({ title, children }) {
   return (
@@ -31,7 +34,37 @@ export default function QuizAdminPanel() {
   const [editing, setEditing] = useState(null);
   const [toDelete, setToDelete] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState(QUIZ_CATEGORIES);
   const refresh = () => setRefreshKey((k) => k + 1);
+
+  useEffect(() => {
+    let active = true;
+    const loadCategories = async () => {
+      const loaded = [];
+      let cursor;
+      do {
+        const page = await base44.entities.QuizCategory.filter(
+          {},
+          { sort: "label", limit: 200, cursor }
+        );
+        loaded.push(...page.items);
+        cursor = page.has_more ? page.next_cursor : null;
+      } while (cursor);
+      return loaded;
+    };
+    loadCategories()
+      .then((loaded) => {
+        if (active) setCategories(mergeQuizCategories(loaded));
+      })
+      .catch((error) => {
+        toast({
+          title: "Impossible de charger les catégories",
+          description: error?.message || "Les catégories par défaut restent disponibles.",
+          variant: "destructive",
+        });
+      });
+    return () => { active = false; };
+  }, [refreshKey, toast]);
 
   const save = async (form) => {
     setSaving(true);
@@ -74,20 +107,33 @@ export default function QuizAdminPanel() {
           key={editing?.id || "new"}
           initial={editing}
           saving={saving}
+          categories={categories}
           onSave={save}
           onCancel={editing ? () => setEditing(null) : undefined}
+        />
+      </Block>
+
+      <Block title="Gérer les catégories">
+        <QuizCategoryManager
+          categories={categories}
+          onCreated={(category) =>
+            setCategories((current) => mergeQuizCategories([...current, category]))
+          }
         />
       </Block>
 
       <Block title="Gérer les questions">
         <QuizQuestionList
           refreshKey={refreshKey}
+          categories={categories}
           onEdit={(q) => { setEditing(q); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           onDelete={setToDelete}
         />
       </Block>
 
-      <Block title="Import / Export"><QuizImportExport onImported={refresh} /></Block>
+      <Block title="Import / Export">
+        <QuizImportExport categories={categories} onImported={refresh} />
+      </Block>
 
       <AlertDialog open={Boolean(toDelete)} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>

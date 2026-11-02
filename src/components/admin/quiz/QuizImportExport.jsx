@@ -3,6 +3,7 @@ import { Download, Upload, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { QUIZ_LEVELS } from "@/lib/quizConstants";
+import { cleanQuizCategory } from "@/lib/quizCategories";
 
 const FIELDS = [
   "question", "option_a", "option_b", "option_c", "option_d",
@@ -22,27 +23,37 @@ function clean(raw) {
   return q;
 }
 
-export default function QuizImportExport({ onImported }) {
+export default function QuizImportExport({ categories = [], onImported }) {
   const { toast } = useToast();
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
   const exportJson = async () => {
     setBusy(true);
-    const all = [];
-    let cursor;
-    do {
-      const page = await base44.entities.QuizQuestion.filter({}, { sort: "created_date", limit: 200, cursor });
-      all.push(...page.items.map((q) => Object.fromEntries(FIELDS.map((k) => [k, q[k] ?? ""]))));
-      cursor = page.has_more ? page.next_cursor : null;
-    } while (cursor);
-    const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "quiz-biblique.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setBusy(false);
+    try {
+      const all = [];
+      let cursor;
+      do {
+        const page = await base44.entities.QuizQuestion.filter({}, { sort: "created_date", limit: 200, cursor });
+        all.push(...page.items.map((q) => Object.fromEntries(FIELDS.map((k) => [k, q[k] ?? ""]))));
+        cursor = page.has_more ? page.next_cursor : null;
+      } while (cursor);
+      const payload = { categories, questions: all };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "quiz-biblique.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (error) {
+      toast({
+        title: "Export impossible",
+        description: error?.message || "Réessayez.",
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const importJson = async (e) => {
@@ -51,30 +62,59 @@ export default function QuizImportExport({ onImported }) {
     if (!file) return;
     setBusy(true);
     let list;
+    let importedCategories = [];
     try {
       const parsed = JSON.parse(await file.text());
       list = Array.isArray(parsed) ? parsed : parsed.questions;
-    } catch {
-      toast({ title: "Fichier invalide", description: "Le fichier n'est pas un JSON valide.", variant: "destructive" });
+      importedCategories = Array.isArray(parsed?.categories)
+        ? parsed.categories.map(cleanQuizCategory).filter(Boolean)
+        : [];
+      if (!Array.isArray(list)) throw new Error("Le fichier ne contient pas de liste de questions.");
+    } catch (error) {
+      toast({
+        title: "Fichier invalide",
+        description: error?.message || "Le fichier n'est pas un JSON valide.",
+        variant: "destructive",
+      });
       setBusy(false);
       return;
     }
     const valid = (list || []).map(clean).filter(Boolean);
     const skipped = (list || []).length - valid.length;
-    if (valid.length) await base44.entities.QuizQuestion.bulkCreate(valid);
-    toast({
-      title: `${valid.length} question(s) importée(s)`,
-      description: skipped ? `${skipped} ligne(s) ignorée(s) car incomplètes ou invalides.` : undefined,
-    });
-    setBusy(false);
-    onImported?.();
+    try {
+      const existingValues = new Set(categories.map((category) => category.value));
+      const newCategories = importedCategories.filter((category) => {
+        if (existingValues.has(category.value)) return false;
+        existingValues.add(category.value);
+        return true;
+      });
+      if (newCategories.length) {
+        await base44.entities.QuizCategory.bulkCreate(newCategories);
+      }
+      if (valid.length) await base44.entities.QuizQuestion.bulkCreate(valid);
+      toast({
+        title: `${valid.length} question(s) importée(s)`,
+        description: [
+          newCategories.length ? `${newCategories.length} catégorie(s) ajoutée(s)` : "",
+          skipped ? `${skipped} question(s) ignorée(s) car incomplètes ou invalides` : "",
+        ].filter(Boolean).join(" · ") || undefined,
+      });
+      onImported?.();
+    } catch (error) {
+      toast({
+        title: "Import impossible",
+        description: error?.message || "Réessayez.",
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-foreground/60">
-        Format attendu : une liste d'objets avec <code>question</code>, <code>option_a</code> à <code>option_d</code>,{" "}
-        <code>correct_answer</code> (A–D), <code>difficulty</code> (easy, medium, hard), <code>category</code>, <code>explanation</code>.
+        Format attendu : un objet JSON avec <code>categories</code> et <code>questions</code>. Les anciennes listes de questions restent importables.
       </p>
       <div className="flex flex-wrap gap-2">
         <button onClick={exportJson} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold hover:bg-muted disabled:opacity-50">

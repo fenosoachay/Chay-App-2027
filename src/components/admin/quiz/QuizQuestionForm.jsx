@@ -14,7 +14,13 @@ function Field({ label, children }) {
   );
 }
 
-export default function QuizQuestionForm({ initial, saving, onSave, onCancel }) {
+export default function QuizQuestionForm({
+  initial,
+  saving,
+  onSave,
+  onCancel,
+  categories = QUIZ_CATEGORIES,
+}) {
   const [form, setForm] = useState(initial || EMPTY_QUESTION);
   useEffect(() => setForm(initial || EMPTY_QUESTION), [initial]);
 
@@ -53,7 +59,7 @@ export default function QuizQuestionForm({ initial, saving, onSave, onCancel }) 
         </Field>
         <Field label="Catégorie">
           <select value={form.category || ""} onChange={set("category")} className={inputCls}>
-            {QUIZ_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </Field>
       </div>
