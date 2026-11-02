@@ -4,40 +4,9 @@ import PrefSwitch from "@/components/settings/PrefSwitch";
 
 export default function AccessibilitySection() {
   const { prefs, setPref } = usePreferences();
-  const textSizes = [
-    { value: "sm", label: "Petite" },
-    { value: "md", label: "Normale" },
-    { value: "lg", label: "Grande" },
-    { value: "xl", label: "Très grande" },
-  ];
 
   return (
     <div className="space-y-1">
-      <fieldset>
-        <legend className="text-xs font-semibold mb-1">Taille du texte</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {textSizes.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={prefs.text_size === value}
-              onClick={() => setPref("text_size", value)}
-              className={`min-h-11 rounded-xl border text-sm font-semibold ${
-                prefs.text_size === value
-                  ? "brand-gradient text-white border-transparent"
-                  : "border-border bg-card"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1 text-xs text-foreground/50">
-          Vous pouvez aussi agrandir l'affichage avec le zoom de votre appareil.
-        </p>
-      </fieldset>
-
-      <div className="border-t border-border my-2" />
       <PrefSwitch
         label="Contraste renforcé"
         checked={prefs.contrast === "high"}
@@ -70,10 +39,8 @@ export default function AccessibilitySection() {
         checked={prefs.tts}
         onChange={(v) => setPref("tts", v)}
       />
-
       <p className="text-xs text-foreground/50 pt-1">
-        Ces réglages sont partagés avec la section « Préférences d'affichage »
-        pour rester cohérents dans toute l'application.
+        Les réglages de contraste et d'assistance s'appliquent dans toute l'application.
       </p>
     </div>
   );

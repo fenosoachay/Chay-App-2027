@@ -101,7 +101,7 @@ export default function Settings() {
           value="accessibility"
           icon={Accessibility}
           title="Accessibilité"
-          description="Texte, contraste et assistance"
+          description="Contraste et assistance"
         >
           <AccessibilitySection />
         </SettingsSection>
