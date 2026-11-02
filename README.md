@@ -113,6 +113,14 @@ catégorie est supprimée, ses questions sont conservées et réassignées à
 Chaque manche comporte 10 questions ; un niveau attend d'avoir au moins
 10 questions disponibles avant de pouvoir démarrer.
 
+## Mots mélangés
+
+L'administration permet de créer, renommer et supprimer des catégories. La
+catégorie du mot apparaît gratuitement en haut à droite pendant la partie.
+Une catégorie ne peut être supprimée que lorsqu'aucun mot ne l'utilise.
+L'export JSON contient maintenant `categories` et `words`; l'import accepte
+aussi les anciennes listes de mots.
+
 ## Docs & Support
 
 GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)
