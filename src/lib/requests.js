@@ -50,9 +50,8 @@ export async function fetchMyThemeRequests(userId, limit = 50) {
 }
 
 export async function fetchAdminThemeRequests(status = null, limit = 200) {
-  const filter = status ? { status } : {};
-  const rows = await base44.entities.ThemeRequest.filter(filter, "-created_date", limit);
-  return Array.isArray(rows) ? rows : [];
+  const data = await _invoke("listThemeRequests", { status, limit });
+  return Array.isArray(data?.items) ? data.items : [];
 }
 
 // ─── Prières ─────────────────────────────────────────────────────────────────

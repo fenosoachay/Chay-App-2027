@@ -13,69 +13,9 @@
   },
   "required": ["user_id", "theme"],
   "rls": {
-    "read": {
-      "$or": [
-        { "data.user_id": "{{user.id}}" },
-        {
-          "$and": [
-            { "user_condition": { "role": "admin" } },
-            {
-              "$not": {
-                "entity_query": {
-                  "entity": "User",
-                  "filter_by": { "role": "admin" },
-                  "sort_by": "created_date",
-                  "limit": 1,
-                  "condition": { "id": "{{user.id}}" }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "create": { "auth": true },
-    "update": {
-      "$or": [
-        {
-          "$and": [
-            { "user_condition": { "role": "admin" } },
-            {
-              "$not": {
-                "entity_query": {
-                  "entity": "User",
-                  "filter_by": { "role": "admin" },
-                  "sort_by": "created_date",
-                  "limit": 1,
-                  "condition": { "id": "{{user.id}}" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "$and": [
-            { "data.user_id": "{{user.id}}" },
-            { "data.status": "pending" }
-          ]
-        }
-      ]
-    },
-    "delete": {
-      "$and": [
-        { "user_condition": { "role": "admin" } },
-        {
-          "$not": {
-            "entity_query": {
-              "entity": "User",
-              "filter_by": { "role": "admin" },
-              "sort_by": "created_date",
-              "limit": 1,
-              "condition": { "id": "{{user.id}}" }
-            }
-          }
-        }
-      ]
-    }
+    "read": { "data.user_id": "{{user.id}}" },
+    "create": false,
+    "update": false,
+    "delete": false
   }
 }
