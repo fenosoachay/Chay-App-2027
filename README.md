@@ -119,7 +119,10 @@ L'administration permet de créer, renommer et supprimer des catégories. La
 catégorie du mot apparaît gratuitement en haut à droite pendant la partie.
 Une catégorie ne peut être supprimée que lorsqu'aucun mot ne l'utilise.
 L'export JSON contient maintenant `categories` et `words`; l'import accepte
-aussi les anciennes listes de mots.
+aussi les anciennes listes de mots. Les imports sont suivis par fichier et
+peuvent être supprimés individuellement ou tous ensemble depuis
+l'administration. Celle-ci permet aussi d'effacer tous les mots d'un coup;
+les catégories restent conservées lorsqu'elles sont encore utilisées.
 
 ## Réunions à venir
 
