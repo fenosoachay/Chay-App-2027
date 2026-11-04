@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -122,6 +123,7 @@ export default function Layout() {
   };
 
   const urlParams = new URLSearchParams(location.search);
+  const isNativeAndroid = Capacitor.getPlatform() === "android";
   const hasSubView =
     urlParams.get("cat") ||
     urlParams.get("c") ||
@@ -131,6 +133,13 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background overflow-x-clip">
       <NotificationBanner />
+      {isNativeAndroid && hasSubView && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[45] bg-background md:hidden"
+          style={{ height: "max(24px, env(safe-area-inset-top))" }}
+        />
+      )}
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
@@ -232,7 +241,7 @@ export default function Layout() {
 
       <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
         {hasSubView && (
-          <div className="md:hidden" style={{ height: "env(safe-area-inset-top)" }} />
+          <div className="md:hidden" style={{ height: "max(24px, env(safe-area-inset-top))" }} />
         )}
         <AnimatedOutlet />
       </main>
