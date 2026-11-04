@@ -43,6 +43,10 @@
     "explanation": {
       "type": "string",
       "description": "Explication affich\u00e9e apr\u00e8s la r\u00e9ponse"
+    },
+    "import_batch_id": {
+      "type": "string",
+      "description": "Import JSON d'origine, pour permettre la suppression des questions import\u00e9es."
     }
   },
   "required": [
