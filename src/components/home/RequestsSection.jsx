@@ -43,21 +43,23 @@ export default function RequestsSection({ refreshKey = 0 }) {
         <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full brand-gradient opacity-10 blur-2xl" />
 
         <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="grid place-items-center h-9 w-9 rounded-xl bg-secondary/10 text-secondary shrink-0">
-              <MessageSquareQuote className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-display font-extrabold text-base md:text-lg text-foreground">
-                Requêtes
-              </h2>
-              <p className="text-xs md:text-sm text-foreground/60">
-                Propose un thème ou confie un sujet de prière.
-              </p>
+          <div className="mb-2 flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
+            <div className="flex min-w-0 items-center gap-2 md:flex-1">
+              <div className="grid place-items-center h-9 w-9 rounded-xl bg-secondary/10 text-secondary shrink-0">
+                <MessageSquareQuote className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-display font-extrabold text-base md:text-lg text-foreground">
+                  Requêtes
+                </h2>
+                <p className="text-xs md:text-sm text-foreground/60">
+                  Propose un thème ou confie un sujet de prière.
+                </p>
+              </div>
             </div>
             <Button
               onClick={() => navigate("/requests")}
-              className="brand-gradient text-white border-0 hover:opacity-90 text-xs md:text-sm font-bold rounded-xl shrink-0"
+              className="brand-gradient w-full text-white border-0 hover:opacity-90 text-xs md:text-sm font-bold rounded-xl shrink-0 md:w-auto"
               size="sm"
             >
               Y accéder

@@ -129,7 +129,7 @@ export default function Layout() {
     urlParams.get("view"); // sous-écrans Biblette (lecteur, dictionnaire, recherche)
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-clip">
       <NotificationBanner />
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
@@ -230,7 +230,7 @@ export default function Layout() {
       </header>
       )}
 
-      <main className="pb-28 md:pb-12">
+      <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
         {hasSubView && (
           <div className="md:hidden" style={{ height: "env(safe-area-inset-top)" }} />
         )}
@@ -238,7 +238,7 @@ export default function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 px-3" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
+      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background px-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-auto max-w-md flex items-center justify-around rounded-full border border-border bg-background/90 backdrop-blur-xl px-1.5 py-1.5 glow-soft">
           {NAV.map((item) => {
             const Icon = item.icon;
