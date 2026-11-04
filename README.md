@@ -150,6 +150,25 @@ fournit pas d'action de suppression physique des fichiers. L'entité applique
 une lecture publique pour afficher les puzzles et réserve création,
 modification et suppression aux administrateurs.
 
+## Test de personnalité biblique
+
+Le jeu « Quel personnage biblique te ressemble le plus ? » propose dix questions
+originales et huit profils configurables depuis Administration → Jeux → Test
+de personnalité. Les administrateurs peuvent gérer questions, réponses, points,
+profils et illustrations, importer ou exporter les contenus en JSON/CSV et
+consulter des statistiques agrégées. Les réponses et résultats individuels
+restent privés au compte du joueur et ne sont pas inclus dans les statistiques.
+Les citations sont recherchées dans la Bible LSG 1910 locale; la référence reste
+liée au lecteur Bible si le texte exact n'est pas disponible.
+
+Publiez les entités `PersonalityQuizQuestion`, `PersonalityQuizProfile` et
+`PersonalityQuizResult` dans Base44. Les questions et profils actifs sont
+lisibles par les joueurs; leur écriture est réservée aux administrateurs. Les
+résultats individuels ne sont lisibles que par leur propriétaire et les
+administrateurs. Les images remplacées restent référencées dans l'historique du
+profil, car le stockage Base44 de ce projet ne fournit pas de suppression
+physique des fichiers.
+
 ## Réunions à venir
 
 L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,

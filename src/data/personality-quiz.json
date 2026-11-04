@@ -1,0 +1,224 @@
+{
+  "title": "Quel personnage biblique te ressemble le plus ?",
+  "language": "fr",
+  "questions": [
+    {
+      "content_id": "q1",
+      "sort_order": 1,
+      "is_active": true,
+      "question": "Quand un projet important rencontre un obstacle, que fais-tu d'abord ?",
+      "answers": [
+        { "id": "a1", "text": "Je rassemble mon courage et je tente une première action concrète.", "scores": { "david": 2, "esther": 1 } },
+        { "id": "a2", "text": "Je prends du recul pour discerner le bon moment et la bonne manière d'agir.", "scores": { "esther": 2, "moise": 1 } },
+        { "id": "a3", "text": "Je m'adapte, je persévère et je cherche ce que je peux apprendre de l'épreuve.", "scores": { "joseph": 2, "paul": 1 } },
+        { "id": "a4", "text": "Je demande du soutien et je veille à ce que personne ne reste seul.", "scores": { "barnabas": 2, "ruth": 1 } }
+      ]
+    },
+    {
+      "content_id": "q2",
+      "sort_order": 2,
+      "is_active": true,
+      "question": "Une personne de ton entourage traverse une période difficile. Comment l'aides-tu le plus naturellement ?",
+      "answers": [
+        { "id": "a1", "text": "Je reste présent et fidèle, même si la situation dure.", "scores": { "ruth": 2, "joseph": 1 } },
+        { "id": "a2", "text": "Je l'écoute et je lui rappelle avec douceur ce qu'elle peut encore espérer.", "scores": { "barnabas": 2, "david": 1 } },
+        { "id": "a3", "text": "Je prends des initiatives pour trouver une aide ou une solution concrète.", "scores": { "esther": 2, "moise": 1 } },
+        { "id": "a4", "text": "Je l'encourage à avancer pas à pas et à ne pas abandonner.", "scores": { "paul": 2, "pierre": 1 } }
+      ]
+    },
+    {
+      "content_id": "q3",
+      "sort_order": 3,
+      "is_active": true,
+      "question": "Face à une injustice, quelle réaction te ressemble le plus ?",
+      "answers": [
+        { "id": "a1", "text": "Je prends la parole, même si cela me demande du courage.", "scores": { "esther": 2, "david": 1 } },
+        { "id": "a2", "text": "Je défends la personne concernée et je cherche à mobiliser le groupe.", "scores": { "moise": 2, "barnabas": 1 } },
+        { "id": "a3", "text": "Je m'appuie sur mes convictions et je continue à agir avec constance.", "scores": { "paul": 2, "joseph": 1 } },
+        { "id": "a4", "text": "Je réagis vivement, puis j'essaie de comprendre comment mieux agir.", "scores": { "pierre": 2, "david": 1 } }
+      ]
+    },
+    {
+      "content_id": "q4",
+      "sort_order": 4,
+      "is_active": true,
+      "question": "Quelle contribution apportes-tu souvent à un groupe ?",
+      "answers": [
+        { "id": "a1", "text": "Je donne une direction et j'assume les responsabilités nécessaires.", "scores": { "moise": 2, "esther": 1 } },
+        { "id": "a2", "text": "Je crée, j'imagine et j'aide le groupe à garder confiance.", "scores": { "david": 2, "barnabas": 1 } },
+        { "id": "a3", "text": "Je soutiens les personnes et je les aide à trouver leur place.", "scores": { "barnabas": 2, "ruth": 1 } },
+        { "id": "a4", "text": "Je lance les idées avec énergie et j'apprends en faisant.", "scores": { "pierre": 2, "paul": 1 } }
+      ]
+    },
+    {
+      "content_id": "q5",
+      "sort_order": 5,
+      "is_active": true,
+      "question": "Quand l'avenir te paraît incertain, qu'est-ce qui t'aide à avancer ?",
+      "answers": [
+        { "id": "a1", "text": "Je m'appuie sur ma foi et sur ce que je sais déjà de la fidélité de Dieu.", "scores": { "david": 2, "joseph": 1 } },
+        { "id": "a2", "text": "Je cherche conseil, je réfléchis, puis je choisis le moment d'agir.", "scores": { "esther": 2, "moise": 1 } },
+        { "id": "a3", "text": "Je reste fidèle aux personnes qui comptent et j'avance avec elles.", "scores": { "ruth": 2, "barnabas": 1 } },
+        { "id": "a4", "text": "Je garde le cap sur ma mission et je poursuis l'étape suivante.", "scores": { "paul": 2, "pierre": 1 } }
+      ]
+    },
+    {
+      "content_id": "q6",
+      "sort_order": 6,
+      "is_active": true,
+      "question": "Après avoir commis une erreur, quelle est ta tendance ?",
+      "answers": [
+        { "id": "a1", "text": "Je reconnais ce qui s'est passé et je cherche à réparer.", "scores": { "pierre": 2, "david": 1 } },
+        { "id": "a2", "text": "Je prends le temps de réfléchir à ce que je peux changer pour la suite.", "scores": { "joseph": 2, "paul": 1 } },
+        { "id": "a3", "text": "Je demande pardon et je tente de restaurer la relation.", "scores": { "ruth": 2, "barnabas": 1 } },
+        { "id": "a4", "text": "Je demande de l'aide et j'accepte d'être accompagné pour progresser.", "scores": { "moise": 2, "esther": 1 } }
+      ]
+    },
+    {
+      "content_id": "q7",
+      "sort_order": 7,
+      "is_active": true,
+      "question": "Quelle place le pardon prend-il dans tes relations ?",
+      "answers": [
+        { "id": "a1", "text": "Je crois qu'une relation peut se reconstruire avec du temps et de la vérité.", "scores": { "joseph": 2, "pierre": 1 } },
+        { "id": "a2", "text": "Je veux rester loyal et bienveillant, même quand c'est exigeant.", "scores": { "ruth": 2, "barnabas": 1 } },
+        { "id": "a3", "text": "Je m'efforce de ne pas laisser une faute définir toute une personne.", "scores": { "barnabas": 2, "david": 1 } },
+        { "id": "a4", "text": "Je reconnais mes torts et j'essaie de repartir sur de nouvelles bases.", "scores": { "paul": 2, "pierre": 1 } }
+      ]
+    },
+    {
+      "content_id": "q8",
+      "sort_order": 8,
+      "is_active": true,
+      "question": "Comment prends-tu une décision importante ?",
+      "answers": [
+        { "id": "a1", "text": "Je prie, je demande conseil et je pèse les conséquences pour les autres.", "scores": { "esther": 2, "moise": 1 } },
+        { "id": "a2", "text": "Je m'appuie sur mes convictions et je décide avec détermination.", "scores": { "paul": 2, "david": 1 } },
+        { "id": "a3", "text": "Je consulte les personnes concernées et je cherche une voie fidèle.", "scores": { "ruth": 2, "joseph": 1 } },
+        { "id": "a4", "text": "Je fais un premier pas avec enthousiasme, puis j'ajuste si nécessaire.", "scores": { "pierre": 2, "barnabas": 1 } }
+      ]
+    },
+    {
+      "content_id": "q9",
+      "sort_order": 9,
+      "is_active": true,
+      "question": "Qu'est-ce qui motive le plus ton engagement ?",
+      "answers": [
+        { "id": "a1", "text": "Mettre mes dons au service d'une cause qui me dépasse.", "scores": { "david": 2, "paul": 1 } },
+        { "id": "a2", "text": "Protéger quelqu'un ou défendre ce qui est juste au bon moment.", "scores": { "esther": 2, "moise": 1 } },
+        { "id": "a3", "text": "Prendre soin des personnes et bâtir des liens durables.", "scores": { "ruth": 2, "barnabas": 1 } },
+        { "id": "a4", "text": "Encourager quelqu'un à grandir et à croire en son potentiel.", "scores": { "barnabas": 2, "pierre": 1 } }
+      ]
+    },
+    {
+      "content_id": "q10",
+      "sort_order": 10,
+      "is_active": true,
+      "question": "Quelle qualité aimerais-tu particulièrement faire grandir ?",
+      "answers": [
+        { "id": "a1", "text": "Le courage de faire confiance et de me relever après un échec.", "scores": { "david": 2, "pierre": 1 } },
+        { "id": "a2", "text": "Le discernement et la patience avant de passer à l'action.", "scores": { "esther": 2, "joseph": 1 } },
+        { "id": "a3", "text": "La constance et la fidélité dans les petits pas quotidiens.", "scores": { "ruth": 2, "paul": 1 } },
+        { "id": "a4", "text": "L'humilité de demander de l'aide et de soutenir les autres.", "scores": { "moise": 2, "barnabas": 1 } }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "content_id": "david",
+      "sort_order": 1,
+      "is_active": true,
+      "name": "David",
+      "image_url": "",
+      "summary": "Tu as peut-être en commun avec David une foi vive, de l'élan et une capacité à te relever. Son histoire montre aussi qu'un cœur courageux a besoin d'humilité et de responsabilité.",
+      "qualities": ["Courage", "Foi", "Créativité", "Capacité à se relever"],
+      "growth_areas": ["Prendre le temps de discerner avant d'agir", "Reconnaître les conséquences de ses choix"],
+      "story": "Berger puis roi d'Israël, David a affronté Goliath, composé des chants et connu de grandes victoires comme de graves erreurs. La Bible raconte son parcours sans cacher ni sa confiance en Dieu ni ses manquements.",
+      "reference": "Psaumes 27:1"
+    },
+    {
+      "content_id": "esther",
+      "sort_order": 2,
+      "is_active": true,
+      "name": "Esther",
+      "image_url": "",
+      "summary": "Tu peux ressembler à Esther par ton discernement et ton courage au moment décisif. Son récit rappelle qu'une décision courageuse se prépare avec sagesse et peut servir les autres.",
+      "qualities": ["Courage", "Discernement", "Sagesse", "Sens du moment opportun"],
+      "growth_areas": ["Oser exprimer clairement ses convictions", "Ne pas porter seule les responsabilités"],
+      "story": "Devenue reine de Perse, Esther a risqué sa sécurité pour intervenir en faveur de son peuple. Elle a pris le temps de se préparer et de demander le soutien des siens.",
+      "reference": "Esther 4:14"
+    },
+    {
+      "content_id": "joseph",
+      "sort_order": 3,
+      "is_active": true,
+      "name": "Joseph",
+      "image_url": "",
+      "summary": "Tu as peut-être une persévérance proche de celle de Joseph : traverser une épreuve sans renoncer à l'espérance, puis choisir le pardon. Son histoire ne minimise pas les injustices subies.",
+      "qualities": ["Persévérance", "Patience", "Pardon", "Confiance dans l'épreuve"],
+      "growth_areas": ["Accueillir ses émotions et demander du soutien", "Laisser du temps à la réconciliation"],
+      "story": "Vendu par ses frères puis emprisonné en Égypte, Joseph a traversé de longues épreuves avant d'accéder à une position où il a pu sauver de nombreuses vies et retrouver sa famille.",
+      "reference": "Genèse 50:20"
+    },
+    {
+      "content_id": "ruth",
+      "sort_order": 4,
+      "is_active": true,
+      "name": "Ruth",
+      "image_url": "",
+      "summary": "Tu peux partager avec Ruth une fidélité concrète et une grande loyauté. Son parcours parle d'attachement et d'entraide dans une période de perte, non d'une vie sans difficulté.",
+      "qualities": ["Fidélité", "Loyauté", "Dévouement", "Amour"],
+      "growth_areas": ["Prendre aussi soin de ses propres besoins", "Accepter l'aide que l'on offre aux autres"],
+      "story": "Après la mort de son mari, Ruth a choisi d'accompagner sa belle-mère Naomi. Arrivée à Bethléhem comme étrangère, elle a travaillé avec courage et a trouvé une place dans une nouvelle communauté.",
+      "reference": "Ruth 1:16"
+    },
+    {
+      "content_id": "pierre",
+      "sort_order": 5,
+      "is_active": true,
+      "name": "Pierre",
+      "image_url": "",
+      "summary": "Tu as peut-être l'énergie et la spontanéité de Pierre. Ses hésitations et ses erreurs font partie de son récit : il a grandi au fil des rencontres, du pardon et de l'expérience.",
+      "qualities": ["Spontanéité", "Passion", "Élan", "Capacité à apprendre"],
+      "growth_areas": ["Réfléchir avant de réagir", "Accueillir ses limites sans perdre courage"],
+      "story": "Pêcheur devenu disciple de Jésus, Pierre s'est souvent exprimé avec audace. Il a aussi renié Jésus pendant sa passion, avant de recevoir une nouvelle responsabilité après sa résurrection.",
+      "reference": "Jean 21:17"
+    },
+    {
+      "content_id": "paul",
+      "sort_order": 6,
+      "is_active": true,
+      "name": "Paul",
+      "image_url": "",
+      "summary": "Tu peux ressembler à Paul par tes convictions et ta détermination à transmettre ce qui te semble essentiel. Son parcours rappelle aussi qu'une conviction doit s'accompagner d'écoute et d'humilité.",
+      "qualities": ["Détermination", "Conviction", "Transmission", "Engagement"],
+      "growth_areas": ["Rester attentif aux personnes et aux contextes", "Savoir collaborer et recevoir de l'aide"],
+      "story": "Après une conversion marquante, Paul a parcouru le monde méditerranéen pour annoncer l'Évangile et accompagner des communautés. Ses lettres témoignent aussi de désaccords, de fatigue et de collaborations.",
+      "reference": "Actes 20:24"
+    },
+    {
+      "content_id": "moise",
+      "sort_order": 7,
+      "is_active": true,
+      "name": "Moïse",
+      "image_url": "",
+      "summary": "Tu as peut-être le sens des responsabilités de Moïse, qui a conduit un peuple malgré ses propres doutes. Son histoire montre qu'un leadership exigeant se vit avec persévérance et avec le soutien d'autres personnes.",
+      "qualities": ["Leadership", "Responsabilité", "Humilité", "Persévérance"],
+      "growth_areas": ["Accepter les limites de ce que l'on peut porter", "Partager les responsabilités"],
+      "story": "Moïse a conduit les Israélites hors d'Égypte et dans le désert. Il a parfois douté et s'est heurté aux difficultés du peuple; son récit présente un dirigeant profondément humain.",
+      "reference": "Exode 3:12"
+    },
+    {
+      "content_id": "barnabas",
+      "sort_order": 8,
+      "is_active": true,
+      "name": "Barnabas",
+      "image_url": "",
+      "summary": "Tu peux partager avec Barnabas le goût d'encourager et d'ouvrir des chemins aux autres. Son soutien n'empêchait pas les désaccords ni les choix difficiles.",
+      "qualities": ["Encouragement", "Générosité", "Bienveillance", "Soutien des autres"],
+      "growth_areas": ["Poser des limites pour durer", "Chercher le dialogue quand les avis divergent"],
+      "story": "Compagnon de mission des premiers chrétiens, Barnabas a accueilli Paul lorsque d'autres se méfiaient de lui et a accompagné Marc après un désaccord sur la poursuite d'un voyage.",
+      "reference": "Actes 11:24"
+    }
+  ]
+}

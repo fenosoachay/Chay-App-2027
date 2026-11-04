@@ -45,6 +45,7 @@ export const ADMIN_NAV = [
       { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
       { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
       { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
+      { key: "personalityquiz", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
     ],
   },
   {
