@@ -22,12 +22,15 @@ public class ExternalLinkPlugin extends Plugin {
             return;
         }
 
+        // Textes écrits en dur : l'app est exclusivement en français, quel que
+        // soit la langue du téléphone (et même si les ressources sont écrasées).
+        String host = uri.getHost() != null ? uri.getHost() : url;
         getActivity().runOnUiThread(() ->
             new AlertDialog.Builder(getActivity())
-                .setTitle(R.string.external_link_confirmation_title)
-               .setMessage(getContext().getString(R.string.external_link_confirmation_message, uri.getHost()))
-                .setNegativeButton(R.string.external_link_confirmation_cancel, (dialog, which) -> call.resolve())
-                .setPositiveButton(R.string.external_link_confirmation_open, (dialog, which) -> {
+                .setTitle("Ouvrir un lien externe ?")
+                .setMessage("Voulez-vous ouvrir " + host + " dans votre navigateur ?")
+                .setNegativeButton("Annuler", (dialog, which) -> call.resolve())
+                .setPositiveButton("Ouvrir", (dialog, which) -> {
                     try {
                         getActivity().startActivity(new Intent(Intent.ACTION_VIEW, uri));
                         call.resolve();
