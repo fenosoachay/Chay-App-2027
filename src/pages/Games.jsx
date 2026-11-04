@@ -3,12 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Brain,
+  Blocks,
   Heart,
   Check,
   Flame,
   Puzzle,
   RefreshCw,
-  Search,
   Shuffle,
   Smile,
   Trophy,
@@ -18,11 +18,11 @@ import { hasNavigationOrigin } from "@/lib/backNavigation";
 
 const GAMES = [
   { id: "trivia", name: "Quiz", icon: Brain, tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
+  { id: "brique", name: "Brique", icon: Blocks, tone: "from-[#44916F] to-[#4A6CFE]", live: true, path: "/block-blast" },
   { id: "emoji", name: "Émojis", icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]", live: true, path: "/games/emojis" },
   { id: "scramble", name: "Mots mélangés", icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
   { id: "puzzle", name: "Puzzle", icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", live: true, path: "/puzzle" },
   { id: "personality", name: "Personnalité biblique", icon: Heart, tone: "from-[#C18B33] to-[#A84D70]", live: true, path: "/personality-quiz" },
-  { id: "detective", name: "Enquête", icon: Search, tone: "from-[#FF4D2D] to-[#8A56E2]", live: false },
 ];
 
 const QUESTIONS = [

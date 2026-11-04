@@ -310,7 +310,7 @@ export default function BlockBlast() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Blocks className="h-8 w-8" />
         </div>
-        <h1 className="mt-4 font-display text-3xl font-black sm:text-4xl">Block Blast</h1>
+        <h1 className="mt-4 font-display text-3xl font-black sm:text-4xl">Brique</h1>
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-foreground/65 sm:text-base">
           Place les trois formes sur la grille de 10 × 10. Complète des lignes ou des colonnes pour les libérer et marquer davantage de points.
         </p>
@@ -352,7 +352,7 @@ export default function BlockBlast() {
           <div
             className="relative mx-auto grid aspect-square w-full max-w-[34rem] touch-manipulation select-none overflow-hidden rounded-xl border-2 border-border bg-muted/45 p-1.5 sm:p-2"
             style={{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))`, gap: CELL_GAP }}
-            aria-label="Grille Block Blast de 10 par 10"
+            aria-label="Grille de Brique de 10 par 10"
           >
             {board.flatMap((line, row) => line.map((cell, column) => (
               <button

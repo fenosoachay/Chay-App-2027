@@ -46,7 +46,7 @@ export const ADMIN_NAV = [
       { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
       { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
       { key: "personalityquiz", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
-      { key: "blockblast", label: "Messages Block Blast", icon: Blocks, path: "/admin/block-blast" },
+      { key: "blockblast", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
     ],
   },
   {

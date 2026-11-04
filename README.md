@@ -169,16 +169,16 @@ administrateurs. Les images remplacées restent référencées dans l'historique
 profil, car le stockage Base44 de ce projet ne fournit pas de suppression
 physique des fichiers.
 
-## Block Blast
+## Brique
 
-Block Blast est accessible depuis Jeux. La partie utilise une grille de 10 × 10,
+Brique est accessible depuis Jeux. La partie utilise une grille de 10 × 10,
 trois pièces à la fois, le placement tactile par sélection puis toucher ainsi
 que le glisser-déposer. Les lignes et colonnes complètes sont effacées ensemble;
 le score ajoute un point par bloc et dix points par ligne/colonne. Chaque compte
 conserve ses parties, records, lignes/colonnes effacées et dates dans
 `BlockBlastScore`.
 
-Les messages sont gérés depuis Administration → Jeux → Messages Block Blast.
+Les messages sont gérés depuis Administration → Jeux → Messages Brique.
 L'admin peut créer, modifier, activer, désactiver ou supprimer des messages,
 prévisualiser et importer du JSON/CSV en mode ajout ou remplacement confirmé,
 et exporter la bibliothèque. Au premier usage, choisir « Charger les messages
