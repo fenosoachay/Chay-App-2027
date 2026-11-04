@@ -16,7 +16,7 @@ import { hasNavigationOrigin } from "@/lib/backNavigation";
 
 const GAMES = [
   { id: "trivia", name: "Quiz", icon: Brain, tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
-  { id: "emoji", name: "Émojis", icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]", live: false },
+  { id: "emoji", name: "Émojis", icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]", live: true, path: "/games/emojis" },
   { id: "scramble", name: "Mots mélangés", icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
   { id: "puzzle", name: "Puzzle", icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", live: false },
   { id: "detective", name: "Enquête", icon: Search, tone: "from-[#FF4D2D] to-[#8A56E2]", live: false },
