@@ -10,6 +10,7 @@ const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
 const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
 const PuzzleAdminPanel = lazy(() => import("@/components/admin/puzzles/PuzzleAdminPanel"));
+const PersonalityQuizAdminPanel = lazy(() => import("@/components/admin/personality/PersonalityQuizAdminPanel"));
 
 const PanelFallback = () => (
   <div className="py-16 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /></div>
@@ -33,6 +34,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "wordscramble") return <Suspense fallback={<PanelFallback />}><WordScrambleAdminPanel /></Suspense>;
   if (active === "emojis") return <Suspense fallback={<PanelFallback />}><EmojisAdminPanel /></Suspense>;
   if (active === "puzzles") return <Suspense fallback={<PanelFallback />}><PuzzleAdminPanel /></Suspense>;
+  if (active === "personalityquiz") return <Suspense fallback={<PanelFallback />}><PersonalityQuizAdminPanel /></Suspense>;
   if (active === "admins") return <AdminListPanel />;
 
   const section = SECTIONS.find((s) => s.key === active);

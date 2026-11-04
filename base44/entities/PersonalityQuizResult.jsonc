@@ -1,0 +1,28 @@
+{
+  "name": "PersonalityQuizResult",
+  "type": "object",
+  "properties": {
+    "user_id": { "type": "string" },
+    "profile_id": { "type": "string" },
+    "answers": { "type": "object", "additionalProperties": { "type": "string" } },
+    "scores": { "type": "object", "additionalProperties": { "type": "number" } },
+    "completed_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["user_id", "profile_id", "answers", "scores", "completed_at"],
+  "rls": {
+    "read": {
+      "$or": [
+        { "data.user_id": "{{user.id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "create": {
+      "$and": [
+        { "data.user_id": "{{user.id}}" },
+        { "created_by_id": "{{user.id}}" }
+      ]
+    },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
