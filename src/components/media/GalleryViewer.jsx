@@ -47,7 +47,6 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   const [deletingItem, setDeletingItem] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState("");
-  const [editVisibility, setEditVisibility] = useState("membre");
   const [replacementFile, setReplacementFile] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
@@ -227,7 +226,6 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   const beginEditItem = () => {
     setEditTitle(current?.title || "");
     setEditCategory(current?.category || "");
-    setEditVisibility(current?.visibility || "membre");
     setReplacementFile(null);
     setEditingItem(true);
   };
@@ -241,7 +239,6 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
       const patch = {
         title: editTitle.trim(),
         category: editCategory.trim() || null,
-        visibility: editVisibility,
         image_url,
       };
       const updated = await base44.entities.GalleryImage.update(current.id, patch);
@@ -556,13 +553,6 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                 {GALLERY_SECTIONS.map((section) => (
                   <option key={section.id} value={section.id}>{section.label}</option>
                 ))}
-              </select>
-            </label>
-            <label className="block text-sm font-medium">
-              Visibilité
-              <select value={editVisibility} onChange={(event) => setEditVisibility(event.target.value)} className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2">
-                <option value="membre">Membre</option>
-                <option value="non-membre">Non-membre</option>
               </select>
             </label>
             <label className="block text-sm font-medium">

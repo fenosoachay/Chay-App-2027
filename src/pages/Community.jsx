@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
-import { ImagePlus, Send, Loader2, X, Users, UserMinus, AlertTriangle } from "lucide-react";
+import { ImagePlus, Send, Loader2, X, Users, Trash2, AlertTriangle } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useToast } from "@/components/ui/use-toast";
 import PostCard from "@/components/community/PostCard";
@@ -23,12 +23,12 @@ export default function Community() {
   const previewUrls = useRef(new Set());
   const [publishing, setPublishing] = useState(false);
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("actualites"); // "actualites" | "membres"
-  const [members, setMembers] = useState([]);
-  const [membersLoading, setMembersLoading] = useState(true);
-  const [membersError, setMembersError] = useState("");
-  const [ejectTarget, setEjectTarget] = useState(null);
-  const [ejecting, setEjecting] = useState(false);
+  const [activeTab, setActiveTab] = useState("actualites"); // "actualites" | "utilisateurs"
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   const loadPosts = async () => {
     const p = await base44.entities.CommunityPost
@@ -39,54 +39,36 @@ export default function Community() {
   };
 
 
-  const loadMembers = async () => {
-    setMembersLoading(true);
-    setMembersError("");
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    setUsersError("");
     try {
-      const result = await base44.functions.invoke("listCommunityMembers", {});
-      const list = result?.data?.members;
+      const result = await base44.functions.invoke("listCommunityUsers", {});
+      const list = result?.data?.users;
       if (!Array.isArray(list)) {
         throw new Error(result?.data?.error || "Réponse invalide du serveur.");
       }
-      setMembers(list);
+      setUsers(list);
     } catch (error) {
-      setMembersError(error?.message || "Erreur inconnue.");
+      setUsersError(error?.message || "Erreur inconnue.");
     } finally {
-      setMembersLoading(false);
+      setUsersLoading(false);
     }
   };
 
-  const toggleMembre = async (targetUser, currentlyMembre) => {
-    if (!user || user.role !== "admin") return;
+  // La suppression de compte reste une action réservée aux administrateurs.
+  const confirmDeleteUser = async () => {
+    if (!deleteTarget || deletingUser) return;
+    setDeletingUser(true);
     try {
-      await base44.entities.User.update(targetUser.id, {
-        is_membre: !currentlyMembre,
-      });
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === targetUser.id ? { ...m, is_membre: !currentlyMembre } : m
-        )
-      );
-      toast({ title: currentlyMembre ? "Retiré du membre" : "Ajouté comme membre" });
-    } catch (e) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
-    }
-  };
-
-  // Éjection définitive d'un membre par un administrateur : supprime le
-  // compte (mêmes conséquences que l'auto-suppression dans « Mon compte »).
-  const confirmEject = async () => {
-    if (!ejectTarget || ejecting) return;
-    setEjecting(true);
-    try {
-      await base44.entities.User.delete(ejectTarget.id);
-      setMembers((prev) => prev.filter((m) => m.id !== ejectTarget.id));
-      toast({ title: `${ejectTarget.first_name || "Membre"} a été éjecté(e) de l'application.` });
-      setEjectTarget(null);
+      await base44.entities.User.delete(deleteTarget.id);
+      setUsers((prev) => prev.filter((m) => m.id !== deleteTarget.id));
+      toast({ title: `Le compte de ${deleteTarget.first_name || "cet utilisateur"} a été supprimé.` });
+      setDeleteTarget(null);
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
-      setEjecting(false);
+      setDeletingUser(false);
     }
   };
 
@@ -94,7 +76,7 @@ export default function Community() {
     (async () => {
       const me = await base44.auth.me().catch(() => null);
       setUser(me);
-      await Promise.all([loadPosts(), loadMembers()]);
+      await Promise.all([loadPosts(), loadUsers()]);
     })();
   }, []);
 
@@ -150,7 +132,7 @@ export default function Community() {
         ...(notificationError
           ? {
               description:
-                "Les notifications aux autres membres n'ont pas pu être envoyées.",
+                "Les notifications aux autres utilisateurs n'ont pas pu être envoyées.",
               variant: "destructive",
             }
           : {}),
@@ -189,15 +171,15 @@ export default function Community() {
           <Send className="h-4 w-4 mr-1.5" /> Actualités
         </button>
         <button
-          onClick={() => setActiveTab("membres")}
+          onClick={() => setActiveTab("utilisateurs")}
           className={`inline-flex items-center px-5 py-2 rounded-full text-sm font-bold transition ${
-            activeTab === "membres"
+            activeTab === "utilisateurs"
               ? "bg-primary text-primary-foreground"
               : "text-foreground/60"
           }`}
         >
-          <Users className="h-4 w-4 mr-1.5" /> Membres (
-          {membersLoading ? "…" : membersError ? "—" : members.length})
+          <Users className="h-4 w-4 mr-1.5" /> Utilisateurs (
+          {usersLoading ? "…" : usersError ? "—" : users.length})
         </button>
       </div>
 
@@ -303,27 +285,27 @@ export default function Community() {
         </>
       )}
 
-      {activeTab === "membres" && (
+      {activeTab === "utilisateurs" && (
         <div className="space-y-3">
-          {membersLoading ? (
+          {usersLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : membersError ? (
+          ) : usersError ? (
             <p role="alert" className="text-center text-foreground/50 py-12">
-              Impossible de charger les membres : {membersError}{" "}
+              Impossible de charger les utilisateurs : {usersError}{" "}
               <button
                 type="button"
-                onClick={loadMembers}
+                onClick={loadUsers}
                 className="ml-1 text-primary underline underline-offset-2"
               >
                 Réessayer
               </button>
             </p>
-          ) : members.length === 0 ? (
-            <p className="text-center text-foreground/50 py-12">Aucun membre trouvé.</p>
+          ) : users.length === 0 ? (
+            <p className="text-center text-foreground/50 py-12">Aucun utilisateur trouvé.</p>
           ) : (
-            members.map((m) => (
+            users.map((m) => (
               <div
                 key={m.id}
                 className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
@@ -357,21 +339,11 @@ export default function Community() {
                 {user?.role === "admin" && m.id !== user.id && (
                   <div className="shrink-0 flex items-center gap-1.5">
                     <button
-                      onClick={() => toggleMembre(m, m.is_membre)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                        m.is_membre
-                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                          : "bg-muted text-foreground/60 hover:bg-border"
-                      }`}
-                    >
-                      {m.is_membre ? "✓ Membre" : "Non-membre"}
-                    </button>
-                    <button
-                      onClick={() => setEjectTarget(m)}
-                      title="Éjecter ce membre"
+                      onClick={() => setDeleteTarget(m)}
+                      title="Supprimer ce compte"
                       className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white px-3 py-1.5 text-xs font-bold transition"
                     >
-                      <UserMinus className="h-3.5 w-3.5" /> Éjecter
+                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
                     </button>
                   </div>
                 )}
@@ -381,39 +353,39 @@ export default function Community() {
         </div>
       )}
 
-      {/* Confirmation d'éjection définitive d'un membre */}
-      <Dialog open={Boolean(ejectTarget)} onOpenChange={(v) => !v && setEjectTarget(null)}>
+      {/* Confirmation de suppression du compte */}
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Éjecter ce membre ?
+              <AlertTriangle className="h-5 w-5" /> Supprimer ce compte ?
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-foreground/75">
             Voulez-vous vraiment éjecter{" "}
             <strong>
-              {[ejectTarget?.first_name, ejectTarget?.last_name].filter(Boolean).join(" ") ||
-                ejectTarget?.email ||
-                "ce membre"}
+              {[deleteTarget?.first_name, deleteTarget?.last_name].filter(Boolean).join(" ") ||
+                deleteTarget?.email ||
+                "cet utilisateur"}
             </strong>{" "}
             ? Cette action est irrévocable et la personne ne peut plus revenir dans
             l'application, sauf avec une autre adresse e-mail.
           </p>
           <DialogFooter>
             <button
-              onClick={() => setEjectTarget(null)}
-              disabled={ejecting}
+              onClick={() => setDeleteTarget(null)}
+              disabled={deletingUser}
               className="flex-1 rounded-full border border-border py-2.5 text-sm font-bold hover:bg-muted disabled:opacity-50"
             >
               Non, annuler
             </button>
             <button
-              onClick={confirmEject}
-              disabled={ejecting}
+              onClick={confirmDeleteUser}
+              disabled={deletingUser}
               className="flex-1 rounded-full bg-destructive text-white py-2.5 text-sm font-bold hover:bg-destructive/90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
             >
-              {ejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Oui, éjecter
+              {deletingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Oui, supprimer
             </button>
           </DialogFooter>
         </DialogContent>

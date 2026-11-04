@@ -10,19 +10,10 @@
     },
     "category": {
       "type": "string"
-    },
-    "visibility": {
-      "type": "string",
-      "enum": [
-        "membre",
-        "non-membre"
-      ],
-      "description": "Qui peut voir cette image"
     }
   },
   "required": [
-    "image_url",
-    "visibility"
+    "image_url"
   ],
   "rls": {
     "create": {
