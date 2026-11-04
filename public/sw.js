@@ -116,6 +116,15 @@ self.addEventListener("activate", (event) =>
 // Ressources statiques de l'interface (même origine, ou polices Google).
 function isShellAsset(url, request) {
   if (url.origin === self.location.origin) {
+    // Modules servis par le serveur de développement / prévisualisation : jamais
+    // mis en cache, une copie obsolète empêcherait l'application de démarrer.
+    if (
+      url.pathname.startsWith("/src/") ||
+      url.pathname.startsWith("/@") ||
+      url.pathname.startsWith("/node_modules/")
+    ) {
+      return false;
+    }
     return (
       request.destination === "script" ||
       request.destination === "style" ||
