@@ -3,6 +3,7 @@ import { ImageOff, Loader2, Pencil, Plus, RotateCcw, Trash2, Upload, X } from "l
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
+import { PUZZLE_DIFFICULTIES } from "@/lib/puzzleGame";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,7 @@ const ACCEPTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const INPUT_CLASS =
   "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
-const EMPTY_FORM = { title: "", description: "", is_active: true };
+const EMPTY_FORM = { title: "", description: "", difficulty: "", is_active: true };
 
 function extensionOf(name = "") {
   return name.split(".").pop()?.toLowerCase() || "";
@@ -130,6 +131,7 @@ export default function PuzzleAdminPanel() {
     setForm({
       title: puzzle.title || "",
       description: puzzle.description || "",
+      difficulty: puzzle.difficulty || "",
       is_active: Boolean(puzzle.is_active),
     });
     setFile(null);
@@ -142,6 +144,10 @@ export default function PuzzleAdminPanel() {
     const title = form.title.trim();
     if (!title) {
       toast({ title: "Titre requis", variant: "destructive" });
+      return;
+    }
+    if (!PUZZLE_DIFFICULTIES.some((level) => level.value === form.difficulty)) {
+      toast({ title: "Niveau requis", description: "Choisissez le niveau de difficulté de cette image.", variant: "destructive" });
       return;
     }
     if (!editing && !file) {
@@ -178,6 +184,7 @@ export default function PuzzleAdminPanel() {
         image_url: imageUrl,
         image_history: imageHistory,
         image_sha256: imageSha256,
+        difficulty: form.difficulty,
         description: form.description.trim(),
         is_active: Boolean(form.is_active),
         is_deleted: false,
@@ -259,6 +266,22 @@ export default function PuzzleAdminPanel() {
             </label>
           </div>
           <label className="block">
+            <span className="mb-1 block text-xs font-bold text-foreground/70">Difficulté attribuée à cette image *</span>
+            <select
+              value={form.difficulty}
+              onChange={(event) => setField("difficulty", event.target.value)}
+              className={INPUT_CLASS}
+              required
+            >
+              <option value="" disabled>Choisir un niveau</option>
+              {PUZZLE_DIFFICULTIES.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label} · {level.size} × {level.size} pièces
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
             <span className="mb-1 block text-xs font-bold text-foreground/70">Description (facultative)</span>
             <textarea
               value={form.description}
@@ -318,6 +341,9 @@ export default function PuzzleAdminPanel() {
                   {puzzle.description && <p className="mt-1 line-clamp-2 text-sm text-foreground/55">{puzzle.description}</p>}
                   <span className={`mt-1 inline-block text-xs font-bold ${puzzle.is_deleted ? "text-foreground/45" : puzzle.is_active ? "text-emerald-600" : "text-amber-600"}`}>
                     {puzzle.is_deleted ? "Archivé" : puzzle.is_active ? "Actif" : "Inactif"}
+                  </span>
+                  <span className="ml-2 text-xs font-bold text-foreground/55">
+                    {PUZZLE_DIFFICULTIES.find((level) => level.value === puzzle.difficulty)?.label || "Niveau à définir"}
                   </span>
                 </div>
                 {puzzle.is_deleted ? (

@@ -4,6 +4,22 @@ export const PUZZLE_DIFFICULTIES = [
   { value: "hard", label: "Difficile", size: 5, pieces: 25 },
 ];
 
+export function getPuzzlesForDifficulty(puzzles, difficulty) {
+  return puzzles.filter((puzzle) => (
+    puzzle.is_active &&
+    !puzzle.is_deleted &&
+    puzzle.image_url &&
+    puzzle.difficulty === difficulty
+  ));
+}
+
+export function selectRandomPuzzle(puzzles, difficulty, random = Math.random) {
+  const eligible = getPuzzlesForDifficulty(puzzles, difficulty);
+  if (!eligible.length) return null;
+  const randomIndex = Math.min(eligible.length - 1, Math.floor(random() * eligible.length));
+  return eligible[randomIndex];
+}
+
 export function createShuffledPieces(count, random = Math.random) {
   const pieces = Array.from({ length: count }, (_, index) => index);
   for (let index = pieces.length - 1; index > 0; index -= 1) {

@@ -21,6 +21,15 @@
       "type": "string",
       "description": "Empreinte utilisée pour empêcher l'ajout du même fichier image plusieurs fois."
     },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "description": "Niveau attribué à l'image par un administrateur."
+    },
     "description": {
       "type": "string",
       "description": "Description facultative du puzzle."
@@ -39,6 +48,7 @@
   "required": [
     "title",
     "image_url",
+    "difficulty",
     "is_active"
   ],
   "rls": {
