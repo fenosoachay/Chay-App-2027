@@ -19,6 +19,7 @@ export default function useGameLogic(questions, timerEnabled = true) {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [correctCount, setCorrectCount] = useState(0);
+  const [foundAnswers, setFoundAnswers] = useState([]);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [hintsRevealed, setHintsRevealed] = useState(0);
   const [hintText, setHintText] = useState("");
@@ -36,6 +37,7 @@ export default function useGameLogic(questions, timerEnabled = true) {
     setScore(0);
     setLives(INITIAL_LIVES);
     setCorrectCount(0);
+    setFoundAnswers([]);
     setSelectedAnswer(null);
     setHintsRevealed(0);
     setHintText("");
@@ -54,6 +56,7 @@ export default function useGameLogic(questions, timerEnabled = true) {
     if (choice === question.answer) {
       setScore((current) => current + 10);
       setCorrectCount((current) => current + 1);
+      setFoundAnswers((current) => [...current, question.answer]);
       return;
     }
 
@@ -115,6 +118,7 @@ export default function useGameLogic(questions, timerEnabled = true) {
     score,
     lives,
     correctCount,
+    foundAnswers,
     selectedAnswer,
     timedOut,
     hintsRevealed,

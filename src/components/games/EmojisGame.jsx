@@ -3,6 +3,7 @@ import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  Check,
   Clock3,
   Heart,
   Lightbulb,
@@ -315,6 +316,37 @@ export default function EmojisGame() {
             </motion.section>
           )}
         </AnimatePresence>
+
+        {game.status === "playing" && (
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            aria-live="polite"
+            className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5"
+          >
+            <h2 className="flex items-center gap-2 text-sm font-extrabold text-white/75">
+              <Check className="h-4 w-4 text-emerald-300" />
+              Personnages trouvés
+              <span className="rounded-full bg-emerald-300/10 px-2 py-0.5 text-xs text-emerald-200">
+                {game.foundAnswers.length}
+              </span>
+            </h2>
+            {game.foundAnswers.length > 0 ? (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {game.foundAnswers.map((answer) => (
+                  <li
+                    key={answer}
+                    className="rounded-full border border-emerald-300/20 bg-emerald-300/[0.07] px-3 py-1.5 text-sm font-bold text-emerald-100"
+                  >
+                    {answer}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-white/45">Les bonnes réponses apparaîtront ici.</p>
+            )}
+          </motion.section>
+        )}
       </div>
     </main>
   );
