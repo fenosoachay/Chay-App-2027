@@ -169,6 +169,25 @@ administrateurs. Les images remplacées restent référencées dans l'historique
 profil, car le stockage Base44 de ce projet ne fournit pas de suppression
 physique des fichiers.
 
+## Block Blast
+
+Block Blast est accessible depuis Jeux. La partie utilise une grille de 10 × 10,
+trois pièces à la fois, le placement tactile par sélection puis toucher ainsi
+que le glisser-déposer. Les lignes et colonnes complètes sont effacées ensemble;
+le score ajoute un point par bloc et dix points par ligne/colonne. Chaque compte
+conserve ses parties, records, lignes/colonnes effacées et dates dans
+`BlockBlastScore`.
+
+Les messages sont gérés depuis Administration → Jeux → Messages Block Blast.
+L'admin peut créer, modifier, activer, désactiver ou supprimer des messages,
+prévisualiser et importer du JSON/CSV en mode ajout ou remplacement confirmé,
+et exporter la bibliothèque. Au premier usage, choisir « Charger les messages
+de départ » pour initialiser des messages exemples. Les messages ne sont
+affichés qu'en texte brut. Publiez les entités `BlockBlastMessage` et
+`BlockBlastScore` dans Base44; l'entité des messages autorise les joueurs à lire
+les messages actifs et réserve toutes les écritures aux admins, tandis que les
+scores ne sont accessibles qu'à leur propriétaire.
+
 ## Réunions à venir
 
 L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,

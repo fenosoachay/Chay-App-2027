@@ -1,0 +1,24 @@
+{
+  "name": "BlockBlastScore",
+  "type": "object",
+  "properties": {
+    "user_id": { "type": "string" },
+    "score": { "type": "number" },
+    "best_score": { "type": "number" },
+    "rows_cleared": { "type": "number" },
+    "columns_cleared": { "type": "number" },
+    "played_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["user_id", "score", "best_score", "rows_cleared", "columns_cleared", "played_at"],
+  "rls": {
+    "read": { "data.user_id": "{{user.id}}" },
+    "create": {
+      "$and": [
+        { "data.user_id": "{{user.id}}" },
+        { "created_by_id": "{{user.id}}" }
+      ]
+    },
+    "update": { "created_by_id": "{{user.id}}" },
+    "delete": { "created_by_id": "{{user.id}}" }
+  }
+}

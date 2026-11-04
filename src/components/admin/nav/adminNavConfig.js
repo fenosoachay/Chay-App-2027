@@ -3,7 +3,7 @@ import {
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
-  Smile, Puzzle,
+  Smile, Puzzle, Blocks,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -46,6 +46,7 @@ export const ADMIN_NAV = [
       { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
       { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
       { key: "personalityquiz", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
+      { key: "blockblast", label: "Messages Block Blast", icon: Blocks, path: "/admin/block-blast" },
     ],
   },
   {

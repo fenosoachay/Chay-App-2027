@@ -1,0 +1,39 @@
+{
+  "name": "BlockBlastMessage",
+  "type": "object",
+  "properties": {
+    "message_id": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": [
+        "line_completed",
+        "column_completed",
+        "multiple_lines",
+        "score_milestone",
+        "new_record",
+        "game_over",
+        "general"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "description": "Plain-text message displayed in the Block Blast success dialog."
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": ["message_id", "category", "message", "active"],
+  "rls": {
+    "read": {
+      "$or": [
+        { "data.active": true },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "create": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
