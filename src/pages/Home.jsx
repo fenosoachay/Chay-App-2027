@@ -11,6 +11,7 @@ import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import AnimatedBlobs from "@/components/home/AnimatedBlobs";
 import HomeSocialLinks from "@/components/home/HomeSocialLinks";
 import RequestsSection from "@/components/home/RequestsSection";
+import { WifiOff } from "lucide-react";
 
 export default function Home() {
   const { user, isLocalMode, isAuthenticated } = useAuth();
@@ -40,6 +41,13 @@ export default function Home() {
           <p className="mt-3 text-center text-sm md:text-xl text-foreground/60 max-w-xl mx-auto font-body animate-float-in" style={{ animationDelay: "0.05s" }}>
             Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra.
           </p>
+
+          {isLocalMode && (
+            <div className="mx-auto mt-5 flex max-w-xl items-center justify-center gap-2 rounded-xl border border-border bg-card/70 px-4 py-3 text-center text-sm text-foreground/80">
+              <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Bible, dictionnaire, concordance et favoris sont disponibles sur cet appareil.</span>
+            </div>
+          )}
 
           {/* 2. Verset du jour (utilisateurs connectés uniquement) */}
           {!isLocalMode && isAuthenticated && (
@@ -74,7 +82,7 @@ export default function Home() {
           </div>
 
           {/* 8. Connexion / création de compte (invités uniquement) */}
-          {!isAuthenticated && <AuthButtons />}
+          {!isAuthenticated && !isLocalMode && <AuthButtons />}
 
           {/* 9. Liens sociaux */}
           <HomeSocialLinks />
