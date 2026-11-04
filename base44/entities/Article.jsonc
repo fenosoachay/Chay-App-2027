@@ -23,20 +23,11 @@
     "order": {
       "type": "number",
       "description": "Ordre d'affichage des articles (réorganisable par les admins via glisser-déposer)"
-    },
-    "visibility": {
-      "type": "string",
-      "enum": [
-        "membre",
-        "non-membre"
-      ],
-      "description": "Qui peut voir ce contenu"
     }
   },
   "required": [
     "title",
-    "body",
-    "visibility"
+    "body"
   ],
   "rls": {
     "create": {

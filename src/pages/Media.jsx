@@ -9,7 +9,6 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useRadio } from "@/lib/RadioContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
-import { filterVisible } from "@/lib/mediaConstants";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { Loader2 } from "lucide-react";
 import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
@@ -91,7 +90,7 @@ export default function Media() {
         || new Date(y.created_date || 0) - new Date(x.created_date || 0))
     );
     setYoutube(mergeById(y, targetVideos));
-    setGallery(filterVisible(mergeById(g, targetImages), user));
+    setGallery(mergeById(g, targetImages));
     setPlaylist(Array.isArray(p) ? p : []);
     setPlaylists(mergeById(pl, extraPlaylists));
     setPlaylistTracks(mergeById(pt, targetTracks));

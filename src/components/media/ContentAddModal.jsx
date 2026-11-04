@@ -22,14 +22,12 @@ export default function ContentAddModal({ open, onOpenChange, onSaved }) {
   const [type, setType] = useState("article");
   const [loading, setLoading] = useState(false);
 
-  const [article, setArticle] = useState({ title: "", excerpt: "", body: "", cover_url: "", category: "", author: "", visibility: "membre" });
+  const [article, setArticle] = useState({ title: "", excerpt: "", body: "", cover_url: "", category: "", author: "" });
   const [galleryUrl, setGalleryUrl] = useState("");
-  const [galleryVisibility, setGalleryVisibility] = useState("membre");
 
   const reset = () => {
-    setArticle({ title: "", excerpt: "", body: "", cover_url: "", category: "", author: "", visibility: "membre" });
+    setArticle({ title: "", excerpt: "", body: "", cover_url: "", category: "", author: "" });
     setGalleryUrl("");
-    setGalleryVisibility("membre");
   };
 
   const submit = async () => {
@@ -48,7 +46,7 @@ export default function ContentAddModal({ open, onOpenChange, onSaved }) {
           setLoading(false);
           return;
         }
-        await base44.entities.GalleryImage.create({ image_url: galleryUrl, visibility: galleryVisibility });
+        await base44.entities.GalleryImage.create({ image_url: galleryUrl });
       }
       toast({ title: "Contenu ajouté" });
       reset();
@@ -114,17 +112,6 @@ export default function ContentAddModal({ open, onOpenChange, onSaved }) {
               <Label>Contenu *</Label>
               <RichTextEditor value={article.body} onChange={(v) => setArticle({ ...article, body: v })} placeholder="Rédigez votre article…" />
             </div>
-            <div className="space-y-1.5">
-              <Label>Visibilité *</Label>
-              <select
-                value={article.visibility}
-                onChange={(e) => setArticle({ ...article, visibility: e.target.value })}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="membre">Membre uniquement</option>
-                <option value="non-membre">Non-membre</option>
-              </select>
-            </div>
           </div>
         )}
 
@@ -134,17 +121,6 @@ export default function ContentAddModal({ open, onOpenChange, onSaved }) {
             <div className="space-y-1.5">
               <Label>Image *</Label>
               <CroppableUploader value={galleryUrl} onChange={setGalleryUrl} aspect={1} crop label="une image" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Visibilité *</Label>
-              <select
-                value={galleryVisibility}
-                onChange={(e) => setGalleryVisibility(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="membre">Membre uniquement</option>
-                <option value="non-membre">Non-membre</option>
-              </select>
             </div>
           </div>
         )}

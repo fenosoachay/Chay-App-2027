@@ -32,14 +32,6 @@
     "duration_seconds": {
       "type": "number"
     },
-    "visibility": {
-      "type": "string",
-      "enum": [
-        "membre",
-        "non-membre"
-      ],
-      "description": "Qui peut voir ce contenu"
-    },
     "created_by_admin": {
       "type": "boolean",
       "default": false
@@ -47,8 +39,7 @@
   },
   "required": [
     "title",
-    "artist",
-    "visibility"
+    "artist"
   ],
   "rls": {
     "create": {

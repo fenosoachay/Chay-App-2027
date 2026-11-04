@@ -103,7 +103,7 @@ export default function MediaUploader({ onClose, onSaved }) {
           ...(durationSeconds ? { duration_seconds: durationSeconds } : {}),
           // Champs requis par le schéma de l'entité : sans eux la création est
           // rejetée (422) ou le contenu reste invisible dans l'app.
-          visibility: "non-membre", created_by_admin: true,
+          created_by_admin: true,
         });
       } else if (type === "sermon") {
         created = await base44.entities.Sermon.create({
@@ -111,13 +111,13 @@ export default function MediaUploader({ onClose, onSaved }) {
           date: form.date || new Date().toISOString().slice(0, 10),
           cover_url: coverUrl, audio_url: mediaUrl,
           ...(durationSeconds ? { duration_minutes: Math.max(1, Math.round(durationSeconds / 60)) } : {}),
-          visibility: "non-membre", created_by_admin: true,
+          created_by_admin: true,
         });
       } else {
         created = await base44.entities.Video.create({
           title: form.title, description: form.description || "", category: form.category || "Enseignement",
           cover_url: coverUrl, video_url: mediaUrl,
-          visibility: "non-membre", created_by_admin: true,
+          created_by_admin: true,
         });
       }
 

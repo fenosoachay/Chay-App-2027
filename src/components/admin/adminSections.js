@@ -10,8 +10,6 @@ const LANGS = [
   { value: "mg", label: "Malagasy" },
 ];
 
-const VISIBILITY = [{ value: "membre", label: "Membre" }, { value: "non-membre", label: "Non-membre" }];
-
 export const SECTIONS = [
   {
     key: "Devotional",
@@ -40,7 +38,6 @@ export const SECTIONS = [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "description", label: "Description", type: "textarea" },
       { name: "audio_url", label: "Audio", type: "file", accept: "audio/*", required: true },
-      { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },
     ],
     showPlaylist: true,
   },
@@ -78,7 +75,6 @@ export const SECTIONS = [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "artist", label: "Artiste", type: "text", required: true },
       { name: "audio_url", label: "Audio", type: "file", accept: "audio/*", required: true },
-      { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },
     ],
     showPlaylist: true,
   },
@@ -97,7 +93,6 @@ export const SECTIONS = [
       { name: "language", label: "Langue", type: "select", options: LANGS },
       { name: "cover_url", label: "Couverture", type: "file", accept: "image/*" },
       { name: "duration_seconds", label: "Durée (s)", type: "number" },
-      { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },
     ],
     showPlaylist: true,
   },
@@ -117,7 +112,6 @@ export const SECTIONS = [
       { name: "cover_cropped", label: "Couverture recadrée", type: "boolean" },
       { name: "category", label: "Catégorie", type: "text" },
       { name: "author", label: "Auteur", type: "text" },
-      { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },
     ],
   },
   {
@@ -150,7 +144,6 @@ export const SECTIONS = [
         type: "select",
         options: GALLERY_SECTIONS.map((s) => ({ value: s.id, label: s.label })),
       },
-      { name: "visibility", label: "Visibilité", type: "select", options: VISIBILITY, required: true },
     ],
   },
   {
