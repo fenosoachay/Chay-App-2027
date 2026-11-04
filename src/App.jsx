@@ -32,6 +32,7 @@ const Home = lazy(homeImport);
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
+const Puzzle = lazy(() => import("@/pages/Puzzle"));
 const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
@@ -109,6 +110,7 @@ const AuthenticatedApp = () => {
           <Route path="/bible" element={<Bible />} />
           <Route path="/media" element={<Media />} />
           <Route path="/games" element={<Games />} />
+          <Route path="/puzzle" element={<Puzzle />} />
           <Route path="/games/emojis" element={<EmojisGame />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/play/:difficulty" element={<QuizPlay />} />

@@ -1,0 +1,62 @@
+{
+  "name": "PuzzleImage",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Titre du puzzle."
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL de l'image stockée dans Base44."
+    },
+    "image_history": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs des images remplacées ou archivées, conservées pour éviter les fichiers orphelins."
+    },
+    "image_sha256": {
+      "type": "string",
+      "description": "Empreinte utilisée pour empêcher l'ajout du même fichier image plusieurs fois."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description facultative du puzzle."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indique si le puzzle est disponible dans la galerie."
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Puzzle archivé, masqué du jeu mais conservé pour référencer ses images."
+    }
+  },
+  "required": [
+    "title",
+    "image_url",
+    "is_active"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

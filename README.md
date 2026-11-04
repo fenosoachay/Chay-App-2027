@@ -132,6 +132,22 @@ importer et exporter les énigmes. Le panneau peut également charger les
 30 énigmes initiales depuis `src/data/emojis-quiz.json` quand la collection
 est vide.
 
+## Puzzle biblique
+
+Le jeu Puzzle est accessible depuis Jeux. Les administrateurs gèrent les images,
+les titres, les descriptions et leur visibilité depuis Administration → Jeux →
+Gestion des puzzles. Les images JPG, JPEG, PNG et WEBP sont vérifiées avant
+l'envoi via le stockage Base44 (10 Mo maximum). La partie propose des grilles
+de 3 × 3, 4 × 4 et 5 × 5, avec glisser-déposer ou échange par touches, aperçu,
+chronomètre et compteur de déplacements.
+
+La suppression d'un puzzle l'archive et le retire de la galerie. Les URL des
+images remplacées ou archivées restent référencées dans l'entité
+`PuzzleImage`, car le service de stockage Base44 utilisé par ce projet ne
+fournit pas d'action de suppression physique des fichiers. L'entité applique
+une lecture publique pour afficher les puzzles et réserve création,
+modification et suppression aux administrateurs.
+
 ## Réunions à venir
 
 L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,
