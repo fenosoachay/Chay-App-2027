@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -6,12 +6,13 @@ import {
   Clock3,
   Heart,
   Lightbulb,
+  Loader2,
   RefreshCw,
   Sparkles,
   Trophy,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import emojiQuiz from "@/data/emojis-quiz.json";
+import { base44 } from "@/api/base44Client";
 import useGameLogic from "@/hooks/useGameLogic";
 
 const gold = "#F6C453";
@@ -31,9 +32,38 @@ function BackButton({ onClick }) {
 export default function EmojisGame() {
   const navigate = useNavigate();
   const [timerEnabled, setTimerEnabled] = useState(true);
-  const game = useGameLogic(emojiQuiz.questions, timerEnabled);
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const game = useGameLogic(questions, timerEnabled);
   const correct = game.selectedAnswer === game.question?.answer;
   const questionFinished = game.selectedAnswer !== null;
+
+  const loadQuestions = useCallback(async () => {
+    setLoadingQuestions(true);
+    setLoadError("");
+    try {
+      const all = [];
+      let cursor;
+      do {
+        const page = await base44.entities.EmojiQuizQuestion.filter(
+          {},
+          { sort: "created_date", limit: 200, cursor }
+        );
+        all.push(...page.items);
+        cursor = page.has_more ? page.next_cursor : null;
+      } while (cursor);
+      setQuestions(all);
+    } catch (error) {
+      setLoadError(error?.message || "Impossible de charger les énigmes.");
+    } finally {
+      setLoadingQuestions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
 
   useEffect(() => {
     if (game.status !== "playing" || !questionFinished || !correct) return;
@@ -70,7 +100,43 @@ export default function EmojisGame() {
         </div>
 
         <AnimatePresence mode="wait">
-          {game.status === "ready" && (
+          {game.status === "ready" && loadingQuestions && (
+            <motion.section
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-10 text-center"
+            >
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-200" />
+              <p className="mt-4 text-sm font-semibold text-white/65">Chargement des énigmes…</p>
+            </motion.section>
+          )}
+
+          {game.status === "ready" && !loadingQuestions && questions.length === 0 && (
+            <motion.section
+              key="empty"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-8 text-center sm:p-10"
+            >
+              <p className="text-4xl">🧩</p>
+              <h1 className="mt-4 text-3xl font-black">{loadError ? "Jeu indisponible" : "Le jeu se prépare"}</h1>
+              <p className="mt-3 text-white/65">
+                {loadError || "Un administrateur doit charger les énigmes de départ dans le panneau d’administration."}
+              </p>
+              {loadError ? (
+                <button type="button" onClick={loadQuestions} className="mt-6 rounded-full bg-white px-6 py-3 font-black text-[#17151a]">
+                  Réessayer
+                </button>
+              ) : (
+                <button type="button" onClick={() => navigate("/admin/emojis")} className="mt-6 rounded-full bg-white px-6 py-3 font-black text-[#17151a]">
+                  Ouvrir la gestion du jeu
+                </button>
+              )}
+            </motion.section>
+          )}
+
+          {game.status === "ready" && !loadingQuestions && questions.length > 0 && (
             <motion.section
               key="welcome"
               initial={{ opacity: 0, y: 16 }}
@@ -232,7 +298,7 @@ export default function EmojisGame() {
                 <Trophy className="h-10 w-10 text-amber-200" />
               </div>
               <p className="text-sm font-extrabold uppercase tracking-[0.22em] text-amber-200">
-                {game.gameOver ? "Partie terminée" : "Bravo, tu as tout deviné !"}
+                {game.gameOver ? "Partie terminée" : "Fin de la partie"}
               </p>
               <h1 className="mt-3 text-5xl font-black sm:text-7xl">{game.score} <span className="text-2xl text-amber-200">pts</span></h1>
               <p className="mt-4 text-white/65">

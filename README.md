@@ -124,6 +124,14 @@ peuvent être supprimés individuellement ou tous ensemble depuis
 l'administration. Celle-ci permet aussi d'effacer tous les mots d'un coup;
 les catégories restent conservées lorsqu'elles sont encore utilisées.
 
+## Devine qui je suis
+
+Les énigmes du jeu d'émojis sont gérées depuis Administration → Jeux →
+Devine qui je suis. L'administrateur peut ajouter, modifier, supprimer,
+importer et exporter les énigmes. Le panneau peut également charger les
+30 énigmes initiales depuis `src/data/emojis-quiz.json` quand la collection
+est vide.
+
 ## Réunions à venir
 
 L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,
