@@ -1,0 +1,68 @@
+[
+  {
+    "id": "line_001",
+    "category": "line_completed",
+    "message": "Bravo ! Chaque étape franchie te rapproche du but.",
+    "active": true
+  },
+  {
+    "id": "line_002",
+    "category": "line_completed",
+    "message": "Une ligne de plus, un bel effort de persévérance !",
+    "active": true
+  },
+  {
+    "id": "column_001",
+    "category": "column_completed",
+    "message": "Continue avec persévérance, tu progresses !",
+    "active": true
+  },
+  {
+    "id": "column_002",
+    "category": "column_completed",
+    "message": "Bien joué ! Tu as libéré une colonne entière.",
+    "active": true
+  },
+  {
+    "id": "multiple_001",
+    "category": "multiple_lines",
+    "message": "Magnifique ! Plusieurs obstacles viennent de tomber.",
+    "active": true
+  },
+  {
+    "id": "multiple_002",
+    "category": "multiple_lines",
+    "message": "Quel coup d'éclat : plusieurs lignes s'effacent d'un coup !",
+    "active": true
+  },
+  {
+    "id": "milestone_001",
+    "category": "score_milestone",
+    "message": "Félicitations pour ce nouveau palier !",
+    "active": true
+  },
+  {
+    "id": "record_001",
+    "category": "new_record",
+    "message": "Un nouveau record ! Bravo pour ta persévérance !",
+    "active": true
+  },
+  {
+    "id": "gameover_001",
+    "category": "game_over",
+    "message": "Belle partie ! Chaque essai t'aide à progresser.",
+    "active": true
+  },
+  {
+    "id": "general_001",
+    "category": "general",
+    "message": "Chaque petit progrès compte. Continue !",
+    "active": true
+  },
+  {
+    "id": "general_002",
+    "category": "general",
+    "message": "Tu avances à ton rythme, et c'est déjà une belle réussite.",
+    "active": true
+  }
+]

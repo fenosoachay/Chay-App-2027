@@ -35,6 +35,7 @@ const Games = lazy(() => import("@/pages/Games"));
 const Puzzle = lazy(() => import("@/pages/Puzzle"));
 const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
 const PersonalityQuiz = lazy(() => import("@/pages/PersonalityQuiz"));
+const BlockBlast = lazy(() => import("@/pages/BlockBlast"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
 const QuizResults = lazy(() => import("@/pages/QuizResults"));
@@ -114,6 +115,7 @@ const AuthenticatedApp = () => {
           <Route path="/puzzle" element={<Puzzle />} />
           <Route path="/games/emojis" element={<EmojisGame />} />
           <Route path="/personality-quiz" element={<PersonalityQuiz />} />
+          <Route path="/block-blast" element={<BlockBlast />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/play/:difficulty" element={<QuizPlay />} />
           <Route path="/quiz/results" element={<QuizResults />} />
