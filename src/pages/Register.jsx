@@ -38,6 +38,7 @@ import {
 import PasswordInput from "@/components/PasswordInput";
 import { dialFor, formatPhoneFor } from "@/lib/countryDial";
 import { canSubmitRegistration } from "@/lib/registrationValidation";
+import AuthPageBackground from "@/components/auth/AuthPageBackground";
 
 const GENDERS = [
   { label: "Homme", value: "Homme" },
@@ -291,7 +292,7 @@ export default function Register() {
   // ---------- OTP step ----------
   if (step === 1) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <AuthPageBackground className="flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 md:p-8 shadow-sm">
           <div className="text-center mb-6">
             <div className="mx-auto mb-3 h-14 w-14 rounded-2xl bg-[#E6F1FB] dark:bg-[#0C447C]/40 grid place-items-center">
@@ -349,13 +350,13 @@ export default function Register() {
             </button>
           </div>
         </div>
-      </div>
+      </AuthPageBackground>
     );
   }
 
   // ---------- Form step ----------
   return (
-    <div className="min-h-screen bg-background">
+    <AuthPageBackground>
       <div className="mx-auto max-w-2xl px-4 py-8 md:py-12">
         {/* Header */}
         <header className="mb-6 text-center">
@@ -710,6 +711,6 @@ export default function Register() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AuthPageBackground>
   );
 }
