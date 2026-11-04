@@ -10,8 +10,8 @@ export default function usePuzzleGame(pieceCount) {
   const startedAt = useRef(0);
   const piecesRef = useRef([]);
 
-  const restart = useCallback(() => {
-    const shuffled = createShuffledPieces(pieceCount);
+  const restart = useCallback((count = pieceCount) => {
+    const shuffled = createShuffledPieces(count);
     piecesRef.current = shuffled;
     setPieces(shuffled);
     setMoves(0);

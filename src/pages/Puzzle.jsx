@@ -21,7 +21,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import usePuzzleGame from "@/hooks/usePuzzleGame";
-import { PUZZLE_DIFFICULTIES } from "@/lib/puzzleGame";
+import {
+  getPuzzlesForDifficulty,
+  PUZZLE_DIFFICULTIES,
+  selectRandomPuzzle,
+} from "@/lib/puzzleGame";
 
 const gold = "#F6C453";
 
@@ -186,7 +190,7 @@ function PuzzleBoard({ imageUrl, size, game }) {
           <div>
             <ImageOff className="mx-auto h-8 w-8 text-destructive" />
             <p className="mt-2 text-sm font-bold">Cette image ne peut pas être chargée.</p>
-            <p className="mt-1 text-xs text-foreground/60">Quittez la partie et choisissez un autre puzzle.</p>
+            <p className="mt-1 text-xs text-foreground/60">Quittez la partie et choisissez un autre niveau.</p>
           </div>
         </div>
       )}
@@ -202,12 +206,11 @@ export default function Puzzle() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [selectedPuzzle, setSelectedPuzzle] = useState(null);
-  const [difficulty, setDifficulty] = useState(PUZZLE_DIFFICULTIES[0]);
+  const [difficulty, setDifficulty] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [failedImages, setFailedImages] = useState({});
   const [resultImageFailed, setResultImageFailed] = useState(false);
-  const game = usePuzzleGame(difficulty.pieces);
+  const game = usePuzzleGame(difficulty?.pieces || PUZZLE_DIFFICULTIES[0].pieces);
 
   const loadPuzzles = useCallback(async () => {
     setLoading(true);
@@ -247,13 +250,24 @@ export default function Puzzle() {
 
   const startPuzzle = () => {
     setResultImageFailed(false);
-    game.restart();
+    game.restart(difficulty.pieces);
+    setPlaying(true);
+  };
+
+  const startLevel = (level) => {
+    const puzzle = selectRandomPuzzle(puzzles, level.value);
+    if (!puzzle) return;
+    setSelectedPuzzle(puzzle);
+    setDifficulty(level);
+    setResultImageFailed(false);
+    game.restart(level.pieces);
     setPlaying(true);
   };
 
   const quitPuzzle = () => {
     setPlaying(false);
     setSelectedPuzzle(null);
+    setDifficulty(null);
   };
 
   const formatTitle = (puzzle) => puzzle.title || "Puzzle biblique";
@@ -334,7 +348,7 @@ export default function Puzzle() {
                 <RefreshCw className="h-4 w-4" /> Rejouer
               </button>
               <button type="button" onClick={quitPuzzle} className="min-h-11 rounded-full border border-border px-5 py-2.5 font-bold hover:bg-muted">
-                Choisir un autre puzzle
+                Choisir un autre niveau
               </button>
             </div>
           </DialogContent>
@@ -348,7 +362,7 @@ export default function Puzzle() {
       <header className="mb-7">
         <h1 className="display-fluid">Puzzle <span className="brand-gradient-text">biblique</span></h1>
         <p className="mt-3 max-w-2xl text-foreground/60">
-          Choisissez une image et un niveau, puis reconstituez-la en échangeant les pièces.
+          Reconstituez une image biblique pièce par pièce. L’administrateur attribue un niveau à chaque image; vous choisissez seulement votre difficulté. Une image de ce niveau vous sera proposée au hasard.
         </p>
       </header>
 
@@ -359,89 +373,43 @@ export default function Puzzle() {
           <p className="text-sm text-destructive">{loadError}</p>
           <button type="button" onClick={loadPuzzles} className="mt-4 rounded-full border border-border px-5 py-2.5 text-sm font-bold hover:bg-muted">Réessayer</button>
         </div>
-      ) : puzzles.length === 0 ? (
+      ) : !PUZZLE_DIFFICULTIES.some((level) => getPuzzlesForDifficulty(puzzles, level.value).length > 0) ? (
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
           <ImageOff className="mx-auto h-9 w-9 text-foreground/35" />
-          <p className="mt-3 font-bold">Aucun puzzle disponible pour le moment.</p>
-          <p className="mt-1 text-sm text-foreground/55">De nouvelles images seront bientôt ajoutées.</p>
+          <p className="mt-3 font-bold">Aucun niveau n’est disponible pour le moment.</p>
+          <p className="mt-1 text-sm text-foreground/55">L’administrateur doit ajouter des images et leur attribuer une difficulté.</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {puzzles.map((puzzle) => (
-              <button
-                key={puzzle.id}
-                type="button"
-                onClick={() => setSelectedPuzzle(puzzle)}
-                aria-pressed={selectedPuzzle?.id === puzzle.id}
-                className={`overflow-hidden rounded-[1.5rem] border bg-card text-left transition hover:-translate-y-0.5 hover:shadow-lg ${
-                  selectedPuzzle?.id === puzzle.id ? "border-primary ring-2 ring-primary/30" : "border-border"
-                }`}
-              >
-                <div className="relative aspect-[4/3] bg-muted">
-                  {failedImages[puzzle.id] ? (
-                    <div className="grid h-full place-items-center text-foreground/35"><ImageOff className="h-9 w-9" /></div>
-                  ) : (
-                    <img
-                      src={puzzle.image_url}
-                      alt={formatTitle(puzzle)}
-                      onError={() => setFailedImages((current) => ({ ...current, [puzzle.id]: true }))}
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                  {selectedPuzzle?.id === puzzle.id && (
-                    <span className="absolute right-3 top-3 rounded-full bg-primary p-1.5 text-primary-foreground"><Check className="h-4 w-4" /></span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h2 className="font-display text-lg font-extrabold">{formatTitle(puzzle)}</h2>
-                  {puzzle.description && <p className="mt-1 line-clamp-2 text-sm text-foreground/60">{puzzle.description}</p>}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {PUZZLE_DIFFICULTIES.map((level) => (
-                      <span key={level.value} className="rounded-full border border-border px-2.5 py-1 text-xs font-bold text-foreground/65">
-                        {level.label} · {level.size}×{level.size}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {selectedPuzzle && (
-            <motion.section
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 rounded-[1.5rem] border border-primary/25 bg-primary/5 p-5"
-            >
-              <h2 className="font-display text-xl font-extrabold">Choisissez votre difficulté</h2>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {PUZZLE_DIFFICULTIES.map((level) => (
-                  <button
+          <section aria-labelledby="puzzle-difficulty-heading">
+            <h2 id="puzzle-difficulty-heading" className="mb-4 font-display text-xl font-extrabold">
+              Choisissez votre niveau
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {PUZZLE_DIFFICULTIES.map((level) => {
+                const count = getPuzzlesForDifficulty(puzzles, level.value).length;
+                return (
+                  <motion.button
                     key={level.value}
                     type="button"
-                    aria-pressed={difficulty.value === level.value}
-                    onClick={() => setDifficulty(level)}
-                    className={`min-h-12 rounded-xl border px-4 py-2 text-sm font-bold transition ${
-                      difficulty.value === level.value
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background hover:border-primary/50"
-                    }`}
+                    disabled={!count}
+                    onClick={() => startLevel(level)}
+                    whileHover={count ? { y: -3 } : undefined}
+                    whileTap={count ? { scale: 0.98 } : undefined}
+                    className="min-h-36 rounded-[1.5rem] border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/50 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {level.label} · {level.size} × {level.size} ({level.pieces} pièces)
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={startPuzzle}
-                disabled={Boolean(failedImages[selectedPuzzle.id])}
-                className="mt-4 min-h-12 rounded-full bg-primary px-7 py-3 font-bold text-primary-foreground transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Commencer le puzzle
-              </button>
-            </motion.section>
-          )}
+                    <span className="block font-display text-2xl font-extrabold">{level.label}</span>
+                    <span className="mt-2 block text-sm text-foreground/65">
+                      {level.size} × {level.size} pièces
+                    </span>
+                    <span className="mt-4 block text-xs font-bold text-primary">
+                      {count ? `${count} image${count > 1 ? "s" : ""} disponible${count > 1 ? "s" : ""}` : "Aucune image disponible"}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </section>
         </>
       )}
     </main>

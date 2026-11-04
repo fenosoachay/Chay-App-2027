@@ -135,11 +135,13 @@ est vide.
 ## Puzzle biblique
 
 Le jeu Puzzle est accessible depuis Jeux. Les administrateurs gèrent les images,
-les titres, les descriptions et leur visibilité depuis Administration → Jeux →
-Gestion des puzzles. Les images JPG, JPEG, PNG et WEBP sont vérifiées avant
-l'envoi via le stockage Base44 (10 Mo maximum). La partie propose des grilles
-de 3 × 3, 4 × 4 et 5 × 5, avec glisser-déposer ou échange par touches, aperçu,
-chronomètre et compteur de déplacements.
+leurs titres, descriptions, visibilité et niveau attribué depuis Administration
+→ Jeux → Gestion des puzzles. Les images JPG, JPEG, PNG et WEBP sont vérifiées
+avant l'envoi via le stockage Base44 (10 Mo maximum). Le joueur lit une courte
+explication et choisit uniquement Facile, Moyen ou Difficile; le jeu lui propose
+une image active du niveau choisi, avec des grilles de 3 × 3, 4 × 4 ou 5 × 5.
+La partie permet le glisser-déposer ou l'échange par touches, l'aperçu,
+le chronomètre et le compteur de déplacements.
 
 La suppression d'un puzzle l'archive et le retire de la galerie. Les URL des
 images remplacées ou archivées restent référencées dans l'entité
