@@ -42,6 +42,7 @@ export default function QuizImportExport({ categories = [], onImported }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllQuestionsOpen, setDeleteAllQuestionsOpen] = useState(false);
 
   const loadImports = async () => {
     const all = [];
@@ -153,6 +154,44 @@ export default function QuizImportExport({ categories = [], onImported }) {
       toast({
         title: "Suppression interrompue",
         description: `${deletedFiles} fichier(s) supprimé(s). ${error?.message || "Réessayez."}`,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteAllQuestions = async () => {
+    setDeleting(true);
+    let deletedQuestions = 0;
+    try {
+      const questions = [];
+      let cursor;
+      do {
+        const page = await base44.entities.QuizQuestion.filter(
+          {},
+          { sort: "created_date", limit: 200, cursor }
+        );
+        questions.push(...page.items);
+        cursor = page.has_more ? page.next_cursor : null;
+      } while (cursor);
+
+      for (const question of questions) {
+        await base44.entities.QuizQuestion.delete(question.id);
+        deletedQuestions += 1;
+      }
+
+      setDeleteAllQuestionsOpen(false);
+      onImported?.();
+      toast({
+        title: "Questions supprimées",
+        description: `${deletedQuestions} question(s) supprimée(s). Les catégories et l’historique des imports sont conservés.`,
+      });
+    } catch (error) {
+      if (deletedQuestions > 0) onImported?.();
+      toast({
+        title: "Suppression interrompue",
+        description: `${deletedQuestions} question(s) supprimée(s). ${error?.message || "Réessayez."}`,
         variant: "destructive",
       });
     } finally {
@@ -287,16 +326,26 @@ export default function QuizImportExport({ categories = [], onImported }) {
       <div className="space-y-3 border-t border-border pt-4">
         <div className="flex items-center justify-between gap-3">
           <h4 className="font-bold">Fichiers JSON importés</h4>
-          {imports.length > 0 && (
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              onClick={() => setDeleteAllOpen(true)}
+              onClick={() => setDeleteAllQuestionsOpen(true)}
               disabled={busy || deleting}
               className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/10 disabled:opacity-50"
             >
-              <Trash2 className="h-3.5 w-3.5" /> Tout supprimer
+              <Trash2 className="h-3.5 w-3.5" /> Supprimer toutes les questions
             </button>
-          )}
+            {imports.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDeleteAllOpen(true)}
+                disabled={busy || deleting}
+                className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 px-3 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Tout supprimer
+              </button>
+            )}
+          </div>
         </div>
         {loadingImports ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -379,6 +428,27 @@ export default function QuizImportExport({ categories = [], onImported }) {
             }}>
               {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               Tout supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAllQuestionsOpen} onOpenChange={(open) => !open && !deleting && setDeleteAllQuestionsOpen(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer toutes les questions du quiz ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toutes les questions seront supprimées, qu’elles aient été importées ou ajoutées manuellement. Les catégories et l’historique des imports seront conservés. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={(event) => {
+              event.preventDefault();
+              deleteAllQuestions();
+            }}>
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Supprimer toutes les questions
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
