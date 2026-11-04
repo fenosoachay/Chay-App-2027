@@ -122,24 +122,11 @@ export default function Layout() {
     return stored ? `${path}${stored}` : path;
   };
 
-  const urlParams = new URLSearchParams(location.search);
   const isNativeAndroid = Capacitor.getPlatform() === "android";
-  const hasSubView =
-    urlParams.get("cat") ||
-    urlParams.get("c") ||
-    urlParams.get("game") ||
-    urlParams.get("view"); // sous-écrans Biblette (lecteur, dictionnaire, recherche)
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip">
       <NotificationBanner />
-      {isNativeAndroid && hasSubView && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-x-0 top-0 z-[45] bg-background md:hidden"
-          style={{ height: "max(24px, env(safe-area-inset-top))" }}
-        />
-      )}
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
@@ -189,22 +176,30 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Mobile top bar — hidden on sub-views to avoid double headers */}
-      {!hasSubView && (
+      {/* Mobile top bar stays visible on every page, including nested views. */}
       <header
         className="md:hidden sticky top-0 z-40 px-4 bg-background/80 backdrop-blur-xl"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        style={{
+          paddingTop: isNativeAndroid
+            ? "max(24px, env(safe-area-inset-top))"
+            : "max(1rem, env(safe-area-inset-top))",
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {showBack ? (
-              <button
-                onClick={goBack}
-                className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition"
-                aria-label="Retour"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+              <>
+                <button
+                  onClick={goBack}
+                  className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition"
+                  aria-label="Retour"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <Link to="/" className="flex items-center" aria-label="Accueil">
+                  <BrandLogo className="h-8 w-8" />
+                </Link>
+              </>
             ) : (
               <Link to="/" className="flex items-center">
                 <BrandLogo className="h-8 w-8" />
@@ -237,12 +232,8 @@ export default function Layout() {
           </div>
         </div>
       </header>
-      )}
 
       <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
-        {hasSubView && (
-          <div className="md:hidden" style={{ height: "max(24px, env(safe-area-inset-top))" }} />
-        )}
         <AnimatedOutlet />
       </main>
 
