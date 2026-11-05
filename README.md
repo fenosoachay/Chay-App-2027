@@ -60,21 +60,22 @@ This repo syncs to Base44 through git, so publish from the dashboard rather than
 
 ## Android APK Now Playing controls
 
-The Android APK uses a native media session and foreground service to expose the
-active player's artwork, metadata, progress, and playback controls in Android's
-notification shade. Changes to the Android native project require rebuilding
-and reinstalling the APK; publishing the web app in the Base44 dashboard alone
-does not update an already-installed APK. Android controls notification
+The Android APK uses a Media3 `MediaSessionService` that owns ExoPlayer and
+publishes its playback state, queue, metadata, and controls to Android's media
+notification. Changes to the Android native project require rebuilding and
+reinstalling the APK; publishing the web app in the Base44 dashboard alone does
+not update an already-installed APK. Android controls notification
 visibility and output routing, so its notification permission and device
 settings can affect what is displayed. The in-app `PullDownMediaBar` is only a
 web overlay: Android reserves the swipe from the status bar for its system
 notification shade, so that gesture cannot reveal a React component. The native
-media notification appears in the shade while playback is active, provided app
-and media-notification permissions are enabled. Android may show media controls
-in its media player/quick settings rather than as a heads-up popup.
-MP3, MP4, and live radio playback in the Android app use Media3 ExoPlayer;
-Web and iPhone continue using browser playback. Android playback notifications
-include play/pause, stop, and available queue navigation controls.
+media notification appears while playback is active, provided Android allows
+the app's notifications. Android may show media controls in its media
+player/quick settings rather than as a heads-up popup. MP3, MP4, and live radio
+playback in the Android app use the same Media3 ExoPlayer session; Web and
+iPhone continue using browser playback. Media controls expose play/pause,
+stop, seeking for on-demand media, and next/previous when the active queue has
+matching tracks.
 
 ## Android push notifications
 

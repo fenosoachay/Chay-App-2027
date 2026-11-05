@@ -10,13 +10,14 @@ import { useRadio } from "@/lib/RadioContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
+import { buildFavoriteAudioQueue } from "@/lib/favoriteAudioQueue";
 import { Loader2 } from "lucide-react";
 import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
 
 export default function Media() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { currentTrack, isPlaying, play, playQueue, toggle } = useAudioPlayer();
+  const { currentTrack, isPlaying, playQueue, toggle } = useAudioPlayer();
   const radio = useRadio();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -151,18 +152,12 @@ export default function Media() {
   };
 
   const playPlaylistItem = (item) => {
-    if (currentTrack?.id === item.track_id) {
+    if (currentTrack?.queueId === item.id) {
       toggle();
       return;
     }
-    play({
-      id: item.track_id,
-      title: item.title,
-      artist: item.artist,
-      audio_url: item.audio_url,
-      cover_url: item.cover_url,
-      mediaType: item.category === "sermons" ? "sermons" : "music",
-    });
+    const { tracks, startIndex } = buildFavoriteAudioQueue(playlist, item.id);
+    if (startIndex >= 0) playQueue(tracks, startIndex);
   };
 
   const isPinned = (id, sourcePlaylistId) =>

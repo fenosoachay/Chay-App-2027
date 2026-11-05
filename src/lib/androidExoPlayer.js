@@ -36,6 +36,10 @@ export function setAndroidExoPlayerVolume(volume) {
   return AndroidExoPlayer.setVolume({ volume });
 }
 
+export function setAndroidExoPlayerRepeatMode(mode) {
+  return AndroidExoPlayer.setRepeatMode({ mode });
+}
+
 export function setAndroidExoPlayerVideoBounds(bounds) {
   return AndroidExoPlayer.setVideoBounds(bounds);
 }

@@ -101,20 +101,31 @@ function FavoriteGroup({
                 <GripVertical className="h-4 w-4" />
               </button>
             )}
-            <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground grid place-items-center shrink-0">
-              <Music className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold truncate">{item.title}</div>
-              <div className="text-xs text-foreground/55">{item.artist || "Audio"}</div>
-            </div>
+            <button
+              type="button"
+              onClick={() => playPlaylistItem(item)}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              aria-label={`Lire ${item.title}`}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Music className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-bold">{item.title}</span>
+                <span className="block truncate text-xs text-foreground/55">{item.artist || "Audio"}</span>
+              </span>
+            </button>
             <button
               type="button"
               onClick={() => playPlaylistItem(item)}
               className="h-10 w-10 rounded-full bg-primary text-primary-foreground grid place-items-center"
-              aria-label={currentTrack?.id === item.track_id && isPlaying ? "Mettre en pause" : "Lire"}
+              aria-label={
+                currentTrack?.queueId === item.id && isPlaying
+                  ? `Mettre en pause ${item.title}`
+                  : `Lire ${item.title}`
+              }
             >
-              {currentTrack?.id === item.track_id && isPlaying
+              {currentTrack?.queueId === item.id && isPlaying
                 ? <Pause className="h-4 w-4" />
                 : <Play className="h-4 w-4" />}
             </button>
