@@ -13,7 +13,34 @@ import {
   subscribeAndroidExoPlayer,
 } from "@/lib/androidExoPlayer";
 
-const AudioPlayerContext = createContext();
+// Valeur par défaut : après une mise à jour de l'app, un composant peut être
+// évalué avant que le fournisseur soit monté (ou avec un module de contexte
+// périmé). Sans valeur par défaut, `useAudioPlayer()` renvoyait `undefined` et
+// faisait planter tout l'écran. Ce repli neutre évite le crash : aucune lecture,
+// aucun état, mais l'interface reste utilisable.
+const AudioPlayerFallback = {
+  currentTrack: null,
+  isPlaying: false,
+  currentTime: 0,
+  duration: 0,
+  play: () => {},
+  playQueue: () => {},
+  toggle: () => {},
+  seek: () => false,
+  stop: () => {},
+  next: () => {},
+  prev: () => {},
+  shuffle: false,
+  loop: "off",
+  toggleShuffle: () => {},
+  toggleLoop: () => {},
+  playerState: "idle",
+  bufferedRatio: 0,
+  hasPrevious: false,
+  hasNext: false,
+};
+
+const AudioPlayerContext = createContext(AudioPlayerFallback);
 
 function shuffledIndices(n, startAt = 0) {
   if (n <= 0) return [];
@@ -480,4 +507,4 @@ export function AudioPlayerProvider({ children }) {
   );
 }
 
-export const useAudioPlayer = () => useContext(AudioPlayerContext);
+export const useAudioPlayer = () => useContext(AudioPlayerContext) || AudioPlayerFallback;

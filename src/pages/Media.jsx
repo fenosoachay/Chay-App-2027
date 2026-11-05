@@ -17,7 +17,7 @@ import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
 export default function Media() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { currentTrack, isPlaying, playQueue, toggle } = useAudioPlayer();
+  const { currentTrack, isPlaying, play, playQueue, toggle } = useAudioPlayer();
   const radio = useRadio();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
