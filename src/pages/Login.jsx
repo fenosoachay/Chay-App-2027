@@ -8,6 +8,7 @@ import { Mail, Lock, AlertCircle } from "lucide-react";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import LoginButton from "@/components/auth/LoginButton";
 import PasswordInput from "@/components/PasswordInput";
+import AuthPageBackground from "@/components/auth/AuthPageBackground";
 
 const LOGO_URL =
   "https://media.base44.com/images/public/6aa138d0e963d9e5f59d838c/0a45870cf_Untitled_design__2_-removebg-preview.png";
@@ -61,7 +62,7 @@ export default function Login() {
     (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "");
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B1220] flex flex-col items-center justify-center p-4">
+    <AuthPageBackground className="flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo — seule zone en dégradé */}
         <div className="flex justify-center mb-6">
@@ -144,6 +145,6 @@ export default function Login() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthPageBackground>
   );
 }

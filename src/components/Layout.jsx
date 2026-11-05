@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -121,15 +122,10 @@ export default function Layout() {
     return stored ? `${path}${stored}` : path;
   };
 
-  const urlParams = new URLSearchParams(location.search);
-  const hasSubView =
-    urlParams.get("cat") ||
-    urlParams.get("c") ||
-    urlParams.get("game") ||
-    urlParams.get("view"); // sous-écrans Biblette (lecteur, dictionnaire, recherche)
+  const isNativeAndroid = Capacitor.getPlatform() === "android";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-clip">
       <NotificationBanner />
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
@@ -180,22 +176,30 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Mobile top bar — hidden on sub-views to avoid double headers */}
-      {!hasSubView && (
+      {/* Mobile top bar stays visible on every page, including nested views. */}
       <header
         className="md:hidden sticky top-0 z-40 px-4 bg-background/80 backdrop-blur-xl"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        style={{
+          paddingTop: isNativeAndroid
+            ? "max(24px, env(safe-area-inset-top))"
+            : "max(1rem, env(safe-area-inset-top))",
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {showBack ? (
-              <button
-                onClick={goBack}
-                className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition"
-                aria-label="Retour"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+              <>
+                <button
+                  onClick={goBack}
+                  className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition"
+                  aria-label="Retour"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <Link to="/" className="flex items-center" aria-label="Accueil">
+                  <BrandLogo className="h-8 w-8" />
+                </Link>
+              </>
             ) : (
               <Link to="/" className="flex items-center">
                 <BrandLogo className="h-8 w-8" />
@@ -228,17 +232,13 @@ export default function Layout() {
           </div>
         </div>
       </header>
-      )}
 
-      <main className="pb-28 md:pb-12">
-        {hasSubView && (
-          <div className="md:hidden" style={{ height: "env(safe-area-inset-top)" }} />
-        )}
+      <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
         <AnimatedOutlet />
       </main>
 
       {/* Mobile bottom nav */}
-      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 px-3" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
+      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background px-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-auto max-w-md flex items-center justify-around rounded-full border border-border bg-background/90 backdrop-blur-xl px-1.5 py-1.5 glow-soft">
           {NAV.map((item) => {
             const Icon = item.icon;

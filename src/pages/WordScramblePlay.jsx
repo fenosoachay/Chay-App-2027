@@ -66,7 +66,16 @@ function PlayView({ difficulty }) {
       </div>
 
       <div key={g.word.wordId} className="animate-float-in rounded-[2rem] border border-border bg-card p-6 md:p-8">
-        {level && <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${level.badge}`}>{level.emoji} {level.label}</span>}
+        <div className="flex items-center justify-between gap-3">
+          {level ? (
+            <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${level.badge}`}>{level.emoji} {level.label}</span>
+          ) : <span />}
+          {g.word.categoryLabel && (
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              {g.word.categoryLabel}
+            </span>
+          )}
+        </div>
 
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {g.pool.map((t) => <WsTile key={t.id} char={t.char} disabled={locked} onClick={() => g.place(t)} />)}

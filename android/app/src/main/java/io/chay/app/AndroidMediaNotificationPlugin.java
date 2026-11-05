@@ -86,6 +86,7 @@ public class AndroidMediaNotificationPlugin extends Plugin {
             .putExtra(MediaNotificationService.EXTRA_ARTIST, call.getString("artist", "CHAY"))
             .putExtra(MediaNotificationService.EXTRA_ARTWORK_URL, call.getString("artworkUrl", ""))
             .putExtra(MediaNotificationService.EXTRA_IS_PLAYING, call.getBoolean("isPlaying", false))
+            .putExtra(MediaNotificationService.EXTRA_IS_BUFFERING, call.getBoolean("isBuffering", false))
             .putExtra(MediaNotificationService.EXTRA_IS_LIVE, call.getBoolean("isLive", false))
             .putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, call.getDouble("currentTime", 0.0))
             .putExtra(MediaNotificationService.EXTRA_DURATION, call.getDouble("duration", 0.0))

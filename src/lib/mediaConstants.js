@@ -45,15 +45,6 @@ export const GALLERY_SECTIONS = [
 
 // Compare une valeur saisie à la main (« Église », « EGLISE », « eglise »…)
 // avec l'id d'une section, sans se faire piéger par les accents ni la casse.
-// Filtre les images de la galerie selon la visibilité :
-// « non-membre » = public (tout le monde), « membre » = réservé aux
-// utilisateurs connectés (membres de l'église). Les anciennes images sans
-// champ `visibility` restent visibles par défaut.
-export const filterVisible = (images, user) => {
-  if (!Array.isArray(images)) return [];
-  return images.filter((g) => !g.visibility || g.visibility !== "membre" || Boolean(user));
-};
-
 export const normalizeSection = (value) =>
   (value || "")
     .toString()

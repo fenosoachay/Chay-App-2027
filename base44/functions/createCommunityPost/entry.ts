@@ -11,8 +11,15 @@ export default async function (req) {
 
     const body = await req.json().catch(() => ({}));
     const text = typeof body.text === "string" ? body.text.trim() : "";
-    const imageUrl = typeof body.image_url === "string" ? body.image_url : null;
-    if (!text && !imageUrl) return Response.json({ error: "text requis" }, { status: 400 });
+    const imageUrls = Array.isArray(body.image_urls)
+      ? [...new Set(body.image_urls.filter((url) => typeof url === "string" && url.trim()))]
+      : [];
+    const legacyImageUrl = typeof body.image_url === "string" && body.image_url.trim()
+      ? body.image_url
+      : null;
+    const allImageUrls = [...new Set([...imageUrls, ...(legacyImageUrl ? [legacyImageUrl] : [])])];
+    const imageUrl = legacyImageUrl || allImageUrls[0] || null;
+    if (!text && !allImageUrls.length) return Response.json({ error: "text requis" }, { status: 400 });
     if (text.length > 5000) return Response.json({ error: "texte trop long" }, { status: 400 });
 
     const authorName = caller.full_name
@@ -21,6 +28,7 @@ export default async function (req) {
     const post = await base44.asServiceRole.entities.CommunityPost.create({
       text,
       image_url: imageUrl,
+      image_urls: allImageUrls,
       author_name: authorName,
       likes: 0,
       created_by_id: caller.id,

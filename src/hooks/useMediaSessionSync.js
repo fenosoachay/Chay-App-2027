@@ -36,6 +36,14 @@ export function useMediaSessionSync(control) {
       return;
     }
 
+    if (["audio", "radio", "video"].includes(current.engine)) {
+      clearAndroidMediaNotification().catch((error) => {
+        console.error("[MediaNotification] Unable to clear the duplicate native notification.", error);
+      });
+      notificationStartedRef.current = false;
+      return;
+    }
+
     try {
       if (!permissionResultRef.current) {
         if (!permissionCheckRef.current) {
@@ -109,6 +117,7 @@ export function useMediaSessionSync(control) {
     control?.subtitle,
     control?.artwork,
     control?.isPlaying,
+    control?.isBuffering,
     control?.isLive,
     Math.floor(control?.currentTime || 0),
     control?.duration,

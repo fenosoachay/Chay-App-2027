@@ -60,18 +60,22 @@ This repo syncs to Base44 through git, so publish from the dashboard rather than
 
 ## Android APK Now Playing controls
 
-The Android APK uses a native media session and foreground service to expose the
-active player's artwork, metadata, progress, and playback controls in Android's
-notification shade. Changes to the Android native project require rebuilding
-and reinstalling the APK; publishing the web app in the Base44 dashboard alone
-does not update an already-installed APK. Android controls notification
+The Android APK uses a Media3 `MediaSessionService` that owns ExoPlayer and
+publishes its playback state, queue, metadata, and controls to Android's media
+notification. Changes to the Android native project require rebuilding and
+reinstalling the APK; publishing the web app in the Base44 dashboard alone does
+not update an already-installed APK. Android controls notification
 visibility and output routing, so its notification permission and device
 settings can affect what is displayed. The in-app `PullDownMediaBar` is only a
 web overlay: Android reserves the swipe from the status bar for its system
 notification shade, so that gesture cannot reveal a React component. The native
-media notification appears in the shade while playback is active, provided app
-and media-notification permissions are enabled. Android may show media controls
-in its media player/quick settings rather than as a heads-up popup.
+media notification appears while playback is active, provided Android allows
+the app's notifications. Android may show media controls in its media
+player/quick settings rather than as a heads-up popup. MP3, MP4, and live radio
+playback in the Android app use the same Media3 ExoPlayer session; Web and
+iPhone continue using browser playback. Media controls expose play/pause,
+stop, seeking for on-demand media, and next/previous when the active queue has
+matching tracks.
 
 ## Android push notifications
 
@@ -98,6 +102,97 @@ that Android reports the device as registered. The FCM token is stored in
 Base44's `DeviceToken` entity for the signed-in user; use the Android push
 test there to check delivery. The native app must be online for initial token
 registration, and a fresh native build must contain Firebase configuration.
+
+## Quiz biblique
+
+Les administrateurs peuvent ajouter, renommer et supprimer des catégories
+depuis l'administration du quiz. Les catégories personnalisées et les
+modifications des catégories par défaut sont enregistrées dans l'entité
+`QuizCategory` et incluses avec les questions lors de l'export JSON. Lorsqu'une
+catégorie est supprimée, ses questions sont conservées et réassignées à
+« Autre ».
+Chaque manche comporte 10 questions ; un niveau attend d'avoir au moins
+10 questions disponibles avant de pouvoir démarrer.
+
+## Mots mélangés
+
+L'administration permet de créer, renommer et supprimer des catégories. La
+catégorie du mot apparaît gratuitement en haut à droite pendant la partie.
+Une catégorie ne peut être supprimée que lorsqu'aucun mot ne l'utilise.
+L'export JSON contient maintenant `categories` et `words`; l'import accepte
+aussi les anciennes listes de mots. Les imports sont suivis par fichier et
+peuvent être supprimés individuellement ou tous ensemble depuis
+l'administration. Celle-ci permet aussi d'effacer tous les mots d'un coup;
+les catégories restent conservées lorsqu'elles sont encore utilisées.
+
+## Devine qui je suis
+
+Les énigmes du jeu d'émojis sont gérées depuis Administration → Jeux →
+Devine qui je suis. L'administrateur peut ajouter, modifier, supprimer,
+importer et exporter les énigmes. Le panneau peut également charger les
+30 énigmes initiales depuis `src/data/emojis-quiz.json` quand la collection
+est vide.
+
+## Puzzle biblique
+
+Le jeu Puzzle est accessible depuis Jeux. Les administrateurs gèrent les images,
+leurs titres, descriptions, visibilité et niveau attribué depuis Administration
+→ Jeux → Gestion des puzzles. Les images JPG, JPEG, PNG et WEBP sont vérifiées
+avant l'envoi via le stockage Base44 (10 Mo maximum). Le joueur lit une courte
+explication et choisit uniquement Facile, Moyen ou Difficile; le jeu lui propose
+une image active du niveau choisi, avec des grilles de 3 × 3, 4 × 4 ou 5 × 5.
+La partie permet le glisser-déposer ou l'échange par touches, l'aperçu,
+le chronomètre et le compteur de déplacements.
+
+La suppression d'un puzzle l'archive et le retire de la galerie. Les URL des
+images remplacées ou archivées restent référencées dans l'entité
+`PuzzleImage`, car le service de stockage Base44 utilisé par ce projet ne
+fournit pas d'action de suppression physique des fichiers. L'entité applique
+une lecture publique pour afficher les puzzles et réserve création,
+modification et suppression aux administrateurs.
+
+## Test de personnalité biblique
+
+Le jeu « Quel personnage biblique te ressemble le plus ? » propose dix questions
+originales et huit profils configurables depuis Administration → Jeux → Test
+de personnalité. Les administrateurs peuvent gérer questions, réponses, points,
+profils et illustrations, importer ou exporter les contenus en JSON/CSV et
+consulter des statistiques agrégées. Les réponses et résultats individuels
+restent privés au compte du joueur et ne sont pas inclus dans les statistiques.
+Les citations sont recherchées dans la Bible LSG 1910 locale; la référence reste
+liée au lecteur Bible si le texte exact n'est pas disponible.
+
+Publiez les entités `PersonalityQuizQuestion`, `PersonalityQuizProfile` et
+`PersonalityQuizResult` dans Base44. Les questions et profils actifs sont
+lisibles par les joueurs; leur écriture est réservée aux administrateurs. Les
+résultats individuels ne sont lisibles que par leur propriétaire et les
+administrateurs. Les images remplacées restent référencées dans l'historique du
+profil, car le stockage Base44 de ce projet ne fournit pas de suppression
+physique des fichiers.
+
+## Brique
+
+Brique est accessible depuis Jeux. La partie utilise une grille de 10 × 10,
+trois pièces à la fois, le placement tactile par sélection puis toucher ainsi
+que le glisser-déposer. Les lignes et colonnes complètes sont effacées ensemble;
+le score ajoute un point par bloc et dix points par ligne/colonne. Chaque compte
+conserve ses parties, records, lignes/colonnes effacées et dates dans
+`BlockBlastScore`.
+
+Les messages sont gérés depuis Administration → Jeux → Messages Brique.
+L'admin peut créer, modifier, activer, désactiver ou supprimer des messages,
+prévisualiser et importer du JSON/CSV en mode ajout ou remplacement confirmé,
+et exporter la bibliothèque. Au premier usage, choisir « Charger les messages
+de départ » pour initialiser des messages exemples. Les messages ne sont
+affichés qu'en texte brut. Publiez les entités `BlockBlastMessage` et
+`BlockBlastScore` dans Base44; l'entité des messages autorise les joueurs à lire
+les messages actifs et réserve toutes les écritures aux admins, tandis que les
+scores ne sont accessibles qu'à leur propriétaire.
+
+## Réunions à venir
+
+L'accueil affiche toutes les réunions annoncées qui n'ont pas encore eu lieu,
+triées par date de réunion, avec la plus proche en premier.
 
 ## Docs & Support
 

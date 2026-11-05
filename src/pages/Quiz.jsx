@@ -27,13 +27,26 @@ export default function Quiz() {
           const info = levels[l.value];
           return (
             <div key={l.value} className={`rounded-[1.5rem] border p-5 ${l.badge}`}>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <div className="font-display font-extrabold text-xl text-foreground">{l.emoji} {l.label}</div>
-                  <div className="text-sm text-foreground/60">{info.question_count} questions · meilleur score {info.best_score_percent} %</div>
+                  <div className="text-sm leading-relaxed text-foreground/60">
+                    Manche de {info.question_count} questions · {info.available_questions} disponibles · meilleur score {info.best_score_percent} %
+                  </div>
                 </div>
                 {info.unlocked ? (
-                  <button onClick={() => navigate(`/quiz/play/${l.value}`)} className="rounded-full bg-primary px-6 py-2.5 font-bold text-primary-foreground">Jouer</button>
+                  info.available_questions >= info.question_count ? (
+                    <button
+                      onClick={() => navigate(`/quiz/play/${l.value}`)}
+                      className="inline-flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-bold text-primary-foreground sm:w-auto"
+                    >
+                      Jouer
+                    </button>
+                  ) : (
+                    <span className="text-xs font-semibold text-foreground/55 sm:text-right">
+                      Ajoutez {info.question_count - info.available_questions} question(s)
+                    </span>
+                  )
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-sm font-bold text-foreground/60">
                     <Lock className="h-4 w-4" /> Terminez le niveau précédent avec {info.threshold}%

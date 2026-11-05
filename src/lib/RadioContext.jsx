@@ -9,6 +9,13 @@ import { RADIO_URL, RADIO_LOGO } from "@/lib/mediaConstants";
 import { isRadioMseSupported, startRadioStream } from "@/lib/radioMse";
 import { MEDIA_PLAYER_BUFFERING_POLICY, useMediaPlayerState } from "@/hooks/useMediaPlayerState";
 import { clearMediaControl, publishMediaControl } from "@/lib/mediaControl";
+import {
+  isAndroidExoPlayerAvailable,
+  playWithAndroidExoPlayer,
+  setAndroidExoPlayerVolume,
+  stopAndroidExoPlayer,
+  subscribeAndroidExoPlayer,
+} from "@/lib/androidExoPlayer";
 
 const RadioContext = createContext(null);
 export const useRadio = () => useContext(RadioContext);
@@ -32,9 +39,12 @@ const RADIO_STALL_MS = MEDIA_PLAYER_BUFFERING_POLICY.radioStallMs;
 export const MAX_RADIO_RETRIES = 12;
 
 export function RadioPlayerProvider({ children }) {
+  const isNativeAndroidPlayer = isAndroidExoPlayerAvailable();
   const audioRef = useRef(null);
   const [retries, setRetries] = useState(0);
   const [preparing, setPreparing] = useState(false);
+  const [nativeRadioState, setNativeRadioState] = useState("idle");
+  const [nativeRadioError, setNativeRadioError] = useState(null);
   // Volume maximal : la radio suit directement le volume système du téléphone.
   const [volume, setVolumeState] = useState(1);
   const attemptsRef = useRef(0);
@@ -47,11 +57,13 @@ export function RadioPlayerProvider({ children }) {
   const mediaControlIdRef = useRef(null);
 
   // Machine à états partagée — radio en direct (isLive = true).
-  const { state, errorCode } = useMediaPlayerState(audioRef, {
+  const { state: webState, errorCode: webErrorCode } = useMediaPlayerState(audioRef, {
     isLive: true,
     errorTimeoutMs: RADIO_STALL_MS,
   });
 
+  const state = isNativeAndroidPlayer ? nativeRadioState : webState;
+  const errorCode = isNativeAndroidPlayer ? nativeRadioError : webErrorCode;
   const isPlaying = state === "playing";
   const isLoading = state === "connecting" || state === "buffering";
   const error = state === "error";
@@ -92,8 +104,22 @@ export function RadioPlayerProvider({ children }) {
 
   const loadStream = () => {
     const a = audioRef.current;
-    if (!a) return;
     stopStream();
+    if (isNativeAndroidPlayer) {
+      playWithAndroidExoPlayer({
+        url: RADIO_URL,
+        mediaType: "radio",
+        title: "Radio Chay",
+        artist: "Radio Chay",
+      }).catch((error) => {
+        console.error("[RadioPlayer] Unable to start ExoPlayer radio.", error);
+        setNativeRadioError(error?.message || "Lecture radio impossible.");
+        setNativeRadioState("error");
+        setPreparing(false);
+      });
+      return;
+    }
+    if (!a) return;
     if (USE_MSE) {
       streamRef.current = startRadioStream(a, RADIO_URL, { onFailed: onStreamFailed });
       if (streamRef.current) return; // on lit nous-mêmes les octets du flux
@@ -123,6 +149,7 @@ export function RadioPlayerProvider({ children }) {
       done = true;
       clearTimers();
       setPreparing(false);
+      if (isNativeAndroidPlayer) return;
       const el = audioRef.current;
       if (el) el.play().catch(() => {});
     };
@@ -138,10 +165,18 @@ export function RadioPlayerProvider({ children }) {
 
   const play = () => {
     const a = audioRef.current;
-    if (a && !a.paused && !a.ended) return; // déjà en lecture
+    if (isNativeAndroidPlayer && (isPlaying || isLoading || preparing)) return;
+    if (!isNativeAndroidPlayer && a && !a.paused && !a.ended) return; // déjà en lecture
     clearTimers();
     attemptsRef.current = 0;
     setRetries(0);
+    setNativeRadioError(null);
+    if (isNativeAndroidPlayer) {
+      setNativeRadioState("connecting");
+      setPreparing(true);
+      loadStream();
+      return;
+    }
     setPreparing(true);
     loadStream();
     beginPreroll();
@@ -151,6 +186,12 @@ export function RadioPlayerProvider({ children }) {
     clearTimers();
     setPreparing(false);
     stopStream();
+    if (isNativeAndroidPlayer) {
+      stopAndroidExoPlayer(RADIO_URL, "radio")
+        .catch((error) => console.error("[RadioPlayer] Unable to stop ExoPlayer radio.", error));
+      setNativeRadioState("idle");
+      setNativeRadioError(null);
+    }
     const a = audioRef.current;
     if (a) {
       a.pause();
@@ -167,16 +208,54 @@ export function RadioPlayerProvider({ children }) {
     const c = Math.min(1, Math.max(0, v));
     setVolumeState(c);
     if (audioRef.current) audioRef.current.volume = c;
+    if (isNativeAndroidPlayer) {
+      setAndroidExoPlayerVolume(c).catch((error) => console.error("[RadioPlayer] Unable to set ExoPlayer volume.", error));
+    }
   };
 
   const retryNow = () => {
     clearTimers();
     attemptsRef.current = 0;
     setRetries(0);
+    setNativeRadioError(null);
+    if (isNativeAndroidPlayer) {
+      setNativeRadioState("connecting");
+      setPreparing(true);
+      loadStream();
+      return;
+    }
     setPreparing(true);
     loadStream();
     beginPreroll();
   };
+
+  useEffect(() => {
+    if (!isNativeAndroidPlayer) return undefined;
+    let subscription;
+    let isSubscribed = true;
+    subscribeAndroidExoPlayer((event) => {
+      if (event.source !== RADIO_URL || event.mediaType !== "radio") return;
+      setPreparing(false);
+      if (event.error) {
+        setNativeRadioError(event.error);
+        setNativeRadioState("error");
+        return;
+      }
+      setNativeRadioError(null);
+      setNativeRadioState(
+        event.isBuffering ? "buffering" : event.isPlaying ? "playing" : event.isEnded ? "error" : "paused"
+      );
+    }).then((handle) => {
+      if (isSubscribed) subscription = handle;
+      else handle.remove();
+    }).catch((error) => {
+      console.error("[RadioPlayer] Unable to subscribe to ExoPlayer state.", error);
+    });
+    return () => {
+      isSubscribed = false;
+      subscription?.remove();
+    };
+  }, [isNativeAndroidPlayer]);
 
   // Reprise après coupure réseau : après un passage à l'erreur, on relance la
   // lecture. Plafonné à 12 tentatives pour éviter une boucle infinie.
@@ -192,12 +271,12 @@ export function RadioPlayerProvider({ children }) {
           // et on laisse le tampon se remplir avant de relancer le son.
           setPreparing(true);
           loadStream();
-          beginPreroll();
+          if (!isNativeAndroidPlayer) beginPreroll();
         }, RESUME_MS);
       }
     }
     prevStateRef.current = state;
-  }, [state]);
+  }, [state, isNativeAndroidPlayer]);
 
   useEffect(() => {
     if (isPlaying || isLoading || preparing) {
@@ -206,7 +285,7 @@ export function RadioPlayerProvider({ children }) {
           type: "radio",
           engine: "radio",
           title: "Radio Chay",
-          subtitle: "En direct",
+          subtitle: isLoading ? "Mise en mémoire tampon" : "Radio Chay",
           artwork: RADIO_LOGO,
           source: RADIO_URL,
           isPlaying: isPlaying || isLoading || preparing,

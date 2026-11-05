@@ -30,6 +30,7 @@ public class MediaNotificationService extends Service {
     static final String ACTION_CLEAR = "io.chay.app.media.CLEAR";
     private static final String ACTION_PLAY = "io.chay.app.media.PLAY";
     private static final String ACTION_PAUSE = "io.chay.app.media.PAUSE";
+    private static final String ACTION_STOP = "io.chay.app.media.STOP";
     private static final String ACTION_PREVIOUS = "io.chay.app.media.PREVIOUS";
     private static final String ACTION_NEXT = "io.chay.app.media.NEXT";
     private static final String ACTION_SEEK = "io.chay.app.media.SEEK";
@@ -40,6 +41,7 @@ public class MediaNotificationService extends Service {
     static final String EXTRA_ARTIST = "artist";
     static final String EXTRA_ARTWORK_URL = "artworkUrl";
     static final String EXTRA_IS_PLAYING = "isPlaying";
+    static final String EXTRA_IS_BUFFERING = "isBuffering";
     static final String EXTRA_IS_LIVE = "isLive";
     static final String EXTRA_CURRENT_TIME = "currentTime";
     static final String EXTRA_DURATION = "duration";
@@ -56,6 +58,7 @@ public class MediaNotificationService extends Service {
     private String artworkUrl = "";
     private Bitmap artwork;
     private boolean isPlaying;
+    private boolean isBuffering;
     private boolean isLive;
     private boolean hasPrevious;
     private boolean hasNext;
@@ -82,7 +85,7 @@ public class MediaNotificationService extends Service {
         mediaSession.setCallback(new MediaSession.Callback() {
             @Override public void onPlay() { AndroidMediaNotificationPlugin.dispatchAction("play", -1); }
             @Override public void onPause() { AndroidMediaNotificationPlugin.dispatchAction("pause", -1); }
-            @Override public void onStop() { AndroidMediaNotificationPlugin.dispatchAction("pause", -1); }
+            @Override public void onStop() { AndroidMediaNotificationPlugin.dispatchAction("stop", -1); }
             @Override public void onSkipToPrevious() { AndroidMediaNotificationPlugin.dispatchAction("previous", -1); }
             @Override public void onSkipToNext() { AndroidMediaNotificationPlugin.dispatchAction("next", -1); }
             @Override public void onSeekTo(long position) { AndroidMediaNotificationPlugin.dispatchAction("seek", position); }
@@ -107,6 +110,7 @@ public class MediaNotificationService extends Service {
         }
         if (ACTION_PLAY.equals(action)) AndroidMediaNotificationPlugin.dispatchAction("play", -1);
         else if (ACTION_PAUSE.equals(action)) AndroidMediaNotificationPlugin.dispatchAction("pause", -1);
+        else if (ACTION_STOP.equals(action)) AndroidMediaNotificationPlugin.dispatchAction("stop", -1);
         else if (ACTION_PREVIOUS.equals(action)) AndroidMediaNotificationPlugin.dispatchAction("previous", -1);
         else if (ACTION_NEXT.equals(action)) AndroidMediaNotificationPlugin.dispatchAction("next", -1);
         else if (ACTION_SEEK.equals(action)) {
@@ -125,6 +129,7 @@ public class MediaNotificationService extends Service {
         artist = valueOr(intent.getStringExtra(EXTRA_ARTIST), "CHAY");
         artworkUrl = valueOr(nextArtworkUrl, "");
         isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, false);
+        isBuffering = intent.getBooleanExtra(EXTRA_IS_BUFFERING, false);
         isLive = intent.getBooleanExtra(EXTRA_IS_LIVE, false);
         currentTime = Math.max(0, intent.getDoubleExtra(EXTRA_CURRENT_TIME, 0));
         duration = Math.max(0, intent.getDoubleExtra(EXTRA_DURATION, 0));
@@ -140,7 +145,7 @@ public class MediaNotificationService extends Service {
         MediaMetadata.Builder metadata = new MediaMetadata.Builder()
             .putString(MediaMetadata.METADATA_KEY_TITLE, title)
             .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
-            .putString(MediaMetadata.METADATA_KEY_ALBUM, isLive ? "En direct" : "ÉGLISE CHAY")
+            .putString(MediaMetadata.METADATA_KEY_ALBUM, isLive ? "Radio" : "ÉGLISE CHAY")
             .putLong(MediaMetadata.METADATA_KEY_DURATION, (long) (duration * 1000));
         if (!artworkUrl.isEmpty()) {
             metadata.putString(MediaMetadata.METADATA_KEY_ART_URI, artworkUrl);
@@ -151,7 +156,8 @@ public class MediaNotificationService extends Service {
         }
         mediaSession.setMetadata(metadata.build());
 
-        long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE;
+        long actions = PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE |
+            PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_STOP;
         if (!isLive && duration > 0) {
             actions |= PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_REWIND | PlaybackState.ACTION_FAST_FORWARD;
         }
@@ -160,16 +166,18 @@ public class MediaNotificationService extends Service {
         PlaybackState.Builder playback = new PlaybackState.Builder().setActions(actions);
         if (!isLive && duration > 0) {
             playback.setState(
-                isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                isBuffering ? PlaybackState.STATE_BUFFERING :
+                    isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                 Math.min((long) (currentTime * 1000), (long) (duration * 1000)),
-                isPlaying ? 1f : 0f,
+                isPlaying && !isBuffering ? 1f : 0f,
                 SystemClock.elapsedRealtime()
             );
         } else {
             playback.setState(
-                isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                isBuffering ? PlaybackState.STATE_BUFFERING :
+                    isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                 PlaybackState.PLAYBACK_POSITION_UNKNOWN,
-                isPlaying ? 1f : 0f
+                isPlaying && !isBuffering ? 1f : 0f
             );
         }
         mediaSession.setPlaybackState(playback.build());
@@ -208,7 +216,11 @@ public class MediaNotificationService extends Service {
             .setOngoing(true)
             .setShowWhen(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            builder.setSubText(isLive ? "En direct" : "ÉGLISE CHAY");
+            builder.setSubText(
+                isLive
+                    ? (isBuffering ? "Mise en mémoire tampon" : "Radio Chay")
+                    : "ÉGLISE CHAY"
+            );
         }
         if (artwork != null) builder.setLargeIcon(artwork);
 
@@ -242,6 +254,9 @@ public class MediaNotificationService extends Service {
             builder.addAction(action(android.R.drawable.ic_media_next, "Suivant", ACTION_NEXT, 3));
             compactActions.add(actionIndex);
         }
+        builder.addAction(
+            action(android.R.drawable.ic_menu_close_clear_cancel, "Arrêter", ACTION_STOP, 4)
+        );
         int[] compact = new int[compactActions.size()];
         for (int i = 0; i < compactActions.size(); i++) compact[i] = compactActions.get(i);
         builder.setStyle(

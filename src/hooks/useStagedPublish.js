@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 /**
  * File d'attente de publication (« à publier »).
@@ -22,9 +22,11 @@ export default function useStagedPublish({
   dateField,
   build,
   resolveId,
+  allowMultiplePerDate = false,
 }) {
   const [pending, setPending] = useState([]);
   const [publishing, setPublishing] = useState(false);
+  const pendingKey = useRef(0);
 
   const atDate = (list, day) =>
     (Array.isArray(list) ? list : []).find((e) => e && e[dateField] === day) ||
@@ -33,21 +35,53 @@ export default function useStagedPublish({
   // Ajoute (ou remplace) l'entrée du jour dans la file. Rien n'est envoyé.
   const stage = (draft, serverEntries, blockedMessage) => {
     const day = draft[dateField];
-    const prev = atDate(pending, day);
-    const server = atDate(serverEntries, day);
+    const sameEntry = (entry) =>
+      (draft.__pendingKey && entry.__pendingKey === draft.__pendingKey) ||
+      (draft.id && entry.id === draft.id);
+    const prev = allowMultiplePerDate
+      ? pending.find(sameEntry) || null
+      : atDate(pending, day);
+    const server = allowMultiplePerDate
+      ? serverEntries?.find((entry) => draft.id && entry.id === draft.id) || null
+      : atDate(serverEntries, day);
     const id = resolveId(draft, prev, server);
     if (id === null) {
       return { ok: false, error: blockedMessage || "Date déjà occupée" };
     }
-    const others = pending.filter((p) => p[dateField] !== day);
-    setPending([...others, { ...draft, id, __pending: true }]);
-    return { ok: true, pendingCount: others.length + 1 };
+    const staged = {
+      ...draft,
+      id,
+      ...(allowMultiplePerDate
+        ? { __pendingKey: draft.__pendingKey || `pending-${++pendingKey.current}` }
+        : {}),
+      __pending: true,
+    };
+    const next = allowMultiplePerDate
+      ? prev
+        ? pending.map((entry) => (sameEntry(entry) ? staged : entry))
+        : [...pending, staged]
+      : [...pending.filter((p) => p[dateField] !== day), staged];
+    setPending(next);
+    return { ok: true, pendingCount: next.length };
   };
 
-  // Retire de la file l'entrée du jour ; renvoie ce qui a été retiré.
-  const discard = (day) => {
-    const removed = atDate(pending, day);
-    if (removed) setPending((list) => list.filter((p) => p[dateField] !== day));
+  // Retire une entrée précise, ou l'entrée d'une date pour les anciens appels.
+  const discard = (target) => {
+    const removed = typeof target === "object" && target !== null
+      ? pending.find((entry) =>
+        (target.__pendingKey && entry.__pendingKey === target.__pendingKey) ||
+        (target.id && entry.id === target.id)
+      )
+      : atDate(pending, target);
+    if (removed) {
+      setPending((list) =>
+        list.filter((entry) =>
+          typeof target === "object" && target !== null
+            ? entry !== removed
+            : entry[dateField] !== target
+        )
+      );
+    }
     return removed;
   };
 
@@ -60,7 +94,9 @@ export default function useStagedPublish({
     try {
       const results = await Promise.allSettled(
         list.map(async (entry) => {
-          const server = atDate(serverEntries, entry[dateField]);
+          const server = allowMultiplePerDate
+            ? (entry.id && serverEntries?.find((item) => item.id === entry.id)) || null
+            : atDate(serverEntries, entry[dateField]);
           const id = resolveId(entry, null, server);
           if (id === null) {
             throw new Error("Date déjà occupée par une autre entrée");

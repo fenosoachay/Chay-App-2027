@@ -16,12 +16,12 @@ export default function BookGroupList({ word, groups, onPick }) {
           <li key={b.bookIdx} className={i % 2 === 0 ? "bg-black" : "bg-zinc-900"}>
             <button
               onClick={() => onPick(b)}
-              className="flex w-full items-center justify-between px-4 py-4 text-left text-base text-white/90"
+              className="flex w-full items-center gap-3 px-4 py-4 text-left text-base text-white/90"
             >
-              <span>
+              <span className="min-w-0 flex-1 break-words">
                 {b.name} ({b.count})
               </span>
-              <ChevronRight className="h-5 w-5 text-slate-500" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
             </button>
           </li>
         ))}

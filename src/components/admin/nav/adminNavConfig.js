@@ -2,7 +2,8 @@ import {
   LayoutDashboard, BookOpen, Film, Users, Gamepad2, Heart, Shield,
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
-  Send, Library, Newspaper, Shuffle,
+  Send, Library, Newspaper, Shuffle, MessageSquareQuote,
+  Smile, Puzzle, Blocks,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -42,12 +43,17 @@ export const ADMIN_NAV = [
     items: [
       { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },
       { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
+      { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
+      { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
+      { key: "personalityquiz", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
+      { key: "blockblast", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
     ],
   },
   {
     id: "engagement", label: "Engagement", icon: Heart,
     items: [
       { key: "donations", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
+      { key: "theme_requests", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
       { key: "Faq", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
     ],
   },

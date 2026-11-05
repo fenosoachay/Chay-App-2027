@@ -15,7 +15,8 @@ export const WS_CATEGORIES = [
 
 export const wsLevelOf = (value) => WS_LEVELS.find((l) => l.value === value);
 export const wsLevelLabel = (value) => wsLevelOf(value)?.label || value;
-export const wsCategoryLabel = (value) => WS_CATEGORIES.find((c) => c.value === value)?.label || value || "—";
+export const wsCategoryLabel = (value, categories = WS_CATEGORIES) =>
+  categories.find((c) => c.value === value)?.label || value || "—";
 
 export const WS_HINT_COSTS = { first_letter: 1, phrase: 2 };
 

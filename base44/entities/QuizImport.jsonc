@@ -1,0 +1,64 @@
+{
+  "name": "QuizImport",
+  "type": "object",
+  "properties": {
+    "file_name": {
+      "type": "string",
+      "description": "Nom du fichier JSON import\u00e9."
+    },
+    "question_count": {
+      "type": "number",
+      "description": "Nombre de questions import\u00e9es depuis ce fichier."
+    },
+    "skipped_count": {
+      "type": "number",
+      "description": "Nombre de questions ignor\u00e9es car invalides."
+    },
+    "category_values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Cat\u00e9gories cr\u00e9\u00e9es par cet import."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "complete",
+        "failed"
+      ],
+      "description": "\u00c9tat de l'import."
+    },
+    "error": {
+      "type": "string",
+      "description": "Erreur rencontr\u00e9e pendant l'import, le cas \u00e9ch\u00e9ant."
+    }
+  },
+  "required": [
+    "file_name",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -6,7 +6,12 @@ import { QUIZ_LEVELS, QUIZ_CATEGORIES, levelOf, categoryLabel } from "@/lib/quiz
 const selectCls = "rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
 const PAGE = 20;
 
-export default function QuizQuestionList({ refreshKey, onEdit, onDelete }) {
+export default function QuizQuestionList({
+  refreshKey,
+  onEdit,
+  onDelete,
+  categories = QUIZ_CATEGORIES,
+}) {
   const [difficulty, setDifficulty] = useState("");
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
@@ -69,7 +74,7 @@ export default function QuizQuestionList({ refreshKey, onEdit, onDelete }) {
         </select>
         <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectCls}>
           <option value="">Toutes catégories</option>
-          {QUIZ_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
 
@@ -89,7 +94,7 @@ export default function QuizQuestionList({ refreshKey, onEdit, onDelete }) {
                   <p className="font-bold text-sm leading-snug">{q.question}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-2xs font-bold">
                     {lvl && <span className={`rounded-full border px-2 py-0.5 ${lvl.badge}`}>{lvl.emoji} {lvl.label}</span>}
-                    <span className="rounded-full border border-border px-2 py-0.5 text-foreground/60">{categoryLabel(q.category)}</span>
+                    <span className="rounded-full border border-border px-2 py-0.5 text-foreground/60">{categoryLabel(q.category, categories)}</span>
                     <span className="rounded-full bg-green-500/15 text-green-500 px-2 py-0.5">Réponse : {q.correct_answer}</span>
                   </div>
                 </div>

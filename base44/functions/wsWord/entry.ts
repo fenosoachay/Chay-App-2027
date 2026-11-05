@@ -27,6 +27,19 @@ export default async function (req: Request): Promise<Response> {
     const entry = await db.entities.WordScrambleWord.get(wordId);
     if (!entry) return Response.json({ error: 'Mot introuvable' }, { status: 404 });
 
+    const categoryRows = entry.category
+      ? pageItems(await db.entities.WordScrambleCategory.filter(
+        { value: entry.category }, { limit: 20 },
+      ))
+      : [];
+    const activeCategory = categoryRows.find((category: any) => !category.is_deleted);
+    const defaultCategoryLabels: Record<string, string> = {
+      personnage: 'Personnage',
+      lieu: 'Lieu',
+      objet: 'Objet',
+      concept: 'Concept',
+      livre_bible: 'Livre de la Bible',
+    };
     const bought = (progress.session_hints || {})[wordId] || {};
     const solvedRows = pageItems(
       await db.entities.WordScrambleHistory.filter(
@@ -37,6 +50,8 @@ export default async function (req: Request): Promise<Response> {
       wordId,
       shuffledLetters: scrambleLetters(entry.word),
       wordLength: entry.word.length,
+      category: entry.category || null,
+      category_label: activeCategory?.label || defaultCategoryLabels[entry.category] || entry.category || null,
       hintAvailable: true,
       first_letter: bought.first_letter ? entry.word[0] : null,
       hint_phrase: bought.phrase ? entry.hint_phrase : null,

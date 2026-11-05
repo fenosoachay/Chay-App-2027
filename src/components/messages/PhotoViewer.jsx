@@ -3,6 +3,7 @@ import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { openExternal } from "@/lib/openExternal";
+import { useToast } from "@/components/ui/use-toast";
 
 /**
  * Visionneuse plein écran des photos d'une conversation.
@@ -11,6 +12,7 @@ import { openExternal } from "@/lib/openExternal";
  */
 export default function PhotoViewer({ images, index, onClose }) {
   useBackHandler(true, onClose);
+  const { toast } = useToast();
   const [i, setI] = useState(index || 0);
   const [downloading, setDownloading] = useState(false);
   const total = images.length;
@@ -40,7 +42,15 @@ export default function PhotoViewer({ images, index, onClose }) {
       a.remove();
       URL.revokeObjectURL(obj);
     } catch {
-      openExternal(url);
+      try {
+        await openExternal(url);
+      } catch (error) {
+        toast({
+          title: "Impossible d'ouvrir le lien",
+          description: error?.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setDownloading(false);
     }

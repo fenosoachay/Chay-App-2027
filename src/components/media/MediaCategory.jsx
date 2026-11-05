@@ -113,7 +113,7 @@ function useDragSort(items, onReorder) {
   return { listRef, onMouseDown, onTouchStart };
 }
 
-// Grille des articles avec cadenas de réorganisation réservé aux admins :
+// Liste des articles avec cadenas de réorganisation réservé aux admins :
 // verrouillé = ordre figé ; déverrouillé = glisser-déposer via la poignée,
 // puis sauvegarde du nouvel ordre (champ `order` de l'entité Article).
 // Pour les non-admins, le rendu est exactement celui d'avant (aucun cadenas).
@@ -183,17 +183,15 @@ function ArticlesGrid({
         )}
       </div>
       {fArticles.length ? (
-        <div
-          ref={canDrag ? drag.listRef : null}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-        >
+        <div ref={canDrag ? drag.listRef : null} className="space-y-2">
           {fArticles.map((a, index) => (
-            <div key={a.id} className="relative">
+            <div key={a.id} className="flex min-w-0 items-center gap-2">
               {canDrag && (
                 <button
                   type="button"
                   aria-label={`Réorganiser ${a.title}`}
-                  className="absolute left-2 top-2 z-10 cursor-grab touch-none rounded-full bg-background/90 p-1 shadow-sm text-foreground/60 hover:text-foreground"
+                  title={`Réorganiser ${a.title}`}
+                  className="grid h-11 w-11 shrink-0 cursor-grab touch-none place-items-center rounded-full border border-border bg-card text-foreground/60 shadow-sm hover:text-foreground"
                   onMouseDown={drag.onMouseDown(index)}
                   onTouchStart={drag.onTouchStart(index)}
                 >

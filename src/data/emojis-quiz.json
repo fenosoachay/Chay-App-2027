@@ -1,0 +1,244 @@
+{
+  "questions": [
+    {
+      "emojis": "🐑👑🎵🪨",
+      "answer": "David",
+      "options": ["David", "Salomon", "Samson", "Saül"],
+      "hint": "Il a vaincu Goliath avec une fronde.",
+      "difficulty": "easy",
+      "category": "rois"
+    },
+    {
+      "emojis": "🧺🌊🔥📜",
+      "answer": "Moïse",
+      "options": ["Aaron", "Moïse", "Josué", "Joseph"],
+      "hint": "Il a conduit le peuple hors d’Égypte.",
+      "difficulty": "easy",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "🛶🌧️🕊️🌈",
+      "answer": "Noé",
+      "options": ["Élie", "Noé", "Jonas", "Abraham"],
+      "hint": "Il a construit une arche avant le déluge.",
+      "difficulty": "easy",
+      "category": "patriarches"
+    },
+    {
+      "emojis": "⭐️🐑⛰️👴",
+      "answer": "Abraham",
+      "options": ["Isaac", "Jacob", "Abraham", "Job"],
+      "hint": "Dieu lui a promis une descendance aussi nombreuse que les étoiles.",
+      "difficulty": "hard",
+      "category": "patriarches"
+    },
+    {
+      "emojis": "👑🌹🏰🛡️",
+      "answer": "Esther",
+      "options": ["Ruth", "Débora", "Esther", "Sara"],
+      "hint": "Devenue reine, elle a risqué sa vie pour sauver son peuple.",
+      "difficulty": "easy",
+      "category": "reines"
+    },
+    {
+      "emojis": "💪🦁✂️⛓️",
+      "answer": "Samson",
+      "options": ["Gédéon", "Samson", "Saül", "Ésaü"],
+      "hint": "Sa force extraordinaire était liée à ses cheveux.",
+      "difficulty": "easy",
+      "category": "juges"
+    },
+    {
+      "emojis": "🐋🌊🙏",
+      "answer": "Jonas",
+      "options": ["Jonas", "Élie", "Amos", "Pierre"],
+      "hint": "Il a passé trois jours dans le ventre d’un grand poisson.",
+      "difficulty": "easy",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "🦁🕳️🙏",
+      "answer": "Daniel",
+      "options": ["Daniel", "David", "Joseph", "Ézéchiel"],
+      "hint": "Il a été jeté dans une fosse aux lions, mais Dieu l’a protégé.",
+      "difficulty": "easy",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "🌈👕🌾🌙",
+      "answer": "Joseph",
+      "options": ["Benjamin", "Jacob", "Joseph", "Isaac"],
+      "hint": "Ses frères l’ont vendu, puis il a interprété des rêves en Égypte.",
+      "difficulty": "easy",
+      "category": "patriarches"
+    },
+    {
+      "emojis": "🌳🍎🐍",
+      "answer": "Ève",
+      "options": ["Ève", "Sara", "Marie", "Ruth"],
+      "hint": "Elle est présentée comme la première femme dans la Genèse.",
+      "difficulty": "easy",
+      "category": "genèse"
+    },
+    {
+      "emojis": "🌍🌳🦴",
+      "answer": "Adam",
+      "options": ["Abel", "Adam", "Noé", "Caïn"],
+      "hint": "Dieu l’a formé à partir de la poussière du sol.",
+      "difficulty": "easy",
+      "category": "genèse"
+    },
+    {
+      "emojis": "👑🧠🏛️📜",
+      "answer": "Salomon",
+      "options": ["David", "Salomon", "Samuel", "Ézéchias"],
+      "hint": "Ce roi est célèbre pour sa grande sagesse et le temple de Jérusalem.",
+      "difficulty": "easy",
+      "category": "rois"
+    },
+    {
+      "emojis": "🌾🤝👵",
+      "answer": "Ruth",
+      "options": ["Ruth", "Esther", "Noémi", "Débora"],
+      "hint": "Elle est restée fidèle à sa belle-mère Noémi.",
+      "difficulty": "easy",
+      "category": "famille"
+    },
+    {
+      "emojis": "🔥🐎☁️🙏",
+      "answer": "Élie",
+      "options": ["Élisée", "Élie", "Ésaïe", "Jérémie"],
+      "hint": "Un char de feu l’a emporté dans un tourbillon.",
+      "difficulty": "hard",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "🧱🎺🏰",
+      "answer": "Josué",
+      "options": ["Caleb", "Aaron", "Josué", "Gédéon"],
+      "hint": "Sous sa conduite, les murailles de Jéricho sont tombées.",
+      "difficulty": "medium",
+      "category": "juges"
+    },
+    {
+      "emojis": "👂🌙🛏️🙏",
+      "answer": "Samuel",
+      "options": ["Samuel", "Élie", "Saül", "David"],
+      "hint": "Enfant, il a entendu Dieu l’appeler pendant la nuit.",
+      "difficulty": "medium",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "🏺🔥🐑⚔️",
+      "answer": "Gédéon",
+      "options": ["Samson", "Gédéon", "Josué", "Barak"],
+      "hint": "Avec seulement trois cents hommes, il a surpris les Madianites.",
+      "difficulty": "medium",
+      "category": "juges"
+    },
+    {
+      "emojis": "🌪️🐪🙏📜",
+      "answer": "Job",
+      "options": ["Job", "Abraham", "Isaac", "Ésaïe"],
+      "hint": "Malgré de grandes épreuves, il a continué à faire confiance à Dieu.",
+      "difficulty": "hard",
+      "category": "sagesse"
+    },
+    {
+      "emojis": "🙏🍼👦",
+      "answer": "Anne",
+      "options": ["Anne", "Sara", "Élisabeth", "Noémi"],
+      "hint": "Après avoir prié pour un fils, elle a consacré Samuel à Dieu.",
+      "difficulty": "medium",
+      "category": "famille"
+    },
+    {
+      "emojis": "🧺🌊🎶👧",
+      "answer": "Myriam",
+      "options": ["Débora", "Myriam", "Ruth", "Esther"],
+      "hint": "Sœur de Moïse, elle a célébré la traversée de la mer.",
+      "difficulty": "medium",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "✝️🐟🍞👑",
+      "answer": "Jésus",
+      "options": ["Jésus", "Pierre", "Paul", "Jean-Baptiste"],
+      "hint": "Ses disciples l’appelaient aussi le Messie.",
+      "difficulty": "easy",
+      "category": "nouveau testament"
+    },
+    {
+      "emojis": "👶🕊️⭐️👩",
+      "answer": "Marie",
+      "options": ["Marthe", "Marie", "Élisabeth", "Anne"],
+      "hint": "Elle est la mère de Jésus.",
+      "difficulty": "easy",
+      "category": "nouveau testament"
+    },
+    {
+      "emojis": "🎣🐟🗝️🐓",
+      "answer": "Pierre",
+      "options": ["André", "Jean", "Pierre", "Thomas"],
+      "hint": "Pêcheur, il a renié Jésus trois fois avant le chant du coq.",
+      "difficulty": "easy",
+      "category": "disciples"
+    },
+    {
+      "emojis": "📜✉️⛓️🌍",
+      "answer": "Paul",
+      "options": ["Barnabas", "Paul", "Luc", "Étienne"],
+      "hint": "Ancien persécuteur des chrétiens, il a écrit de nombreuses lettres du Nouveau Testament.",
+      "difficulty": "hard",
+      "category": "apôtres"
+    },
+    {
+      "emojis": "🌊🐪📣🕊️",
+      "answer": "Jean-Baptiste",
+      "options": ["Jean-Baptiste", "Jacques", "Philippe", "André"],
+      "hint": "Il a baptisé Jésus dans le Jourdain.",
+      "difficulty": "medium",
+      "category": "prophètes"
+    },
+    {
+      "emojis": "✋❓🩹👀",
+      "answer": "Thomas",
+      "options": ["Matthieu", "Thomas", "Judas", "Jacques"],
+      "hint": "Il a voulu voir les marques des clous avant de croire à la résurrection.",
+      "difficulty": "medium",
+      "category": "disciples"
+    },
+    {
+      "emojis": "🏠🍞👩‍🍳📖",
+      "answer": "Marthe",
+      "options": ["Marie de Béthanie", "Marthe", "Marie de Magdala", "Salomé"],
+      "hint": "Sœur de Marie et de Lazare, elle a accueilli Jésus chez elle.",
+      "difficulty": "medium",
+      "category": "nouveau testament"
+    },
+    {
+      "emojis": "🌳🪙👨‍💼👀",
+      "answer": "Zachée",
+      "options": ["Nicodème", "Zachée", "Matthieu", "Philippe"],
+      "hint": "Petit de taille, il est monté dans un arbre pour voir Jésus.",
+      "difficulty": "easy",
+      "category": "nouveau testament"
+    },
+    {
+      "emojis": "🪦🧍🗣️✨",
+      "answer": "Lazare",
+      "options": ["Lazare", "Étienne", "Jaïrus", "Joseph"],
+      "hint": "Jésus l’a fait sortir du tombeau après quatre jours.",
+      "difficulty": "medium",
+      "category": "nouveau testament"
+    },
+    {
+      "emojis": "🫙🌹🪦✨",
+      "answer": "Marie de Magdala",
+      "options": ["Marie, mère de Jésus", "Marthe", "Marie de Magdala", "Salomé"],
+      "hint": "Elle a été parmi les premières à découvrir le tombeau vide.",
+      "difficulty": "hard",
+      "category": "nouveau testament"
+    }
+  ]
+}

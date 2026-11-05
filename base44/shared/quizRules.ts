@@ -2,7 +2,7 @@
 
 export const LEVELS = ["easy", "medium", "hard"];
 
-export const QUESTION_COUNT: Record<string, number> = { easy: 5, medium: 10, hard: 15 };
+export const QUESTION_COUNT: Record<string, number> = { easy: 10, medium: 10, hard: 10 };
 
 // Niveau à terminer (et seuil en %) pour débloquer chaque niveau.
 export const UNLOCK_RULES: Record<string, { requires: string; threshold: number } | null> = {

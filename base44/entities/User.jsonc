@@ -141,11 +141,6 @@
       "type": "boolean",
       "default": true,
       "description": "R\u00e9glage admin : activer l'envoi d'e-mails de nouveaut\u00e9s en masse lors d'une publication."
-    },
-    "is_membre": {
-      "type": "boolean",
-      "default": false,
-      "description": "Membre de l'\u00e9glise (d\u00e9faut: false). Modifi\u00e9 manuellement par un admin."
     }
   },
   "required": [

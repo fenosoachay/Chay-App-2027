@@ -32,7 +32,12 @@ export default function useWordScrambleGame(difficulty) {
     });
     const d = res.data;
     const tiles = toTiles(d.shuffledLetters, i);
-    setWord({ wordId: d.wordId, wordLength: d.wordLength });
+    setWord({
+      wordId: d.wordId,
+      wordLength: d.wordLength,
+      category: d.category,
+      categoryLabel: d.category_label,
+    });
     setPhrase(d.hint_phrase ? { hint: d.hint_phrase, reference: d.hint_bible_reference } : null);
     setFeedback(null);
     setLastGain(0);

@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import ExternalLink from "@/components/ExternalLink";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -293,14 +294,12 @@ export default function AboutDialog({ open, onOpenChange }) {
               <br />
               <span>
                 Téléchargez{" "}
-                <a
+                <ExternalLink
                   href={latestApkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-primary underline hover:no-underline font-medium"
                 >
                   ici
-                </a>
+                </ExternalLink>
                 .
               </span>
             </div>

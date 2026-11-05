@@ -17,13 +17,7 @@
     },
     "category": {
       "type": "string",
-      "enum": [
-        "personnage",
-        "lieu",
-        "objet",
-        "concept",
-        "livre_bible"
-      ]
+      "description": "Identifiant stable de la catégorie du mot"
     },
     "hint_phrase": {
       "type": "string",
@@ -32,6 +26,10 @@
     "hint_bible_reference": {
       "type": "string",
       "description": "R\u00e9f\u00e9rence biblique optionnelle"
+    },
+    "import_batch_id": {
+      "type": "string",
+      "description": "Import JSON d'origine, pour permettre la suppression des mots import\u00e9s."
     }
   },
   "required": [

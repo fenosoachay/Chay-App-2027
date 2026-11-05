@@ -5,8 +5,13 @@ import DashboardHome from "@/components/admin/DashboardHome";
 import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
+import AdminThemeRequests from "@/components/requests/AdminThemeRequests";
 const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel"));
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
+const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
+const PuzzleAdminPanel = lazy(() => import("@/components/admin/puzzles/PuzzleAdminPanel"));
+const PersonalityQuizAdminPanel = lazy(() => import("@/components/admin/personality/PersonalityQuizAdminPanel"));
+const BlockBlastMessagesAdminPanel = lazy(() => import("@/components/admin/blockblast/BlockBlastMessagesAdminPanel"));
 
 const PanelFallback = () => (
   <div className="py-16 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /></div>
@@ -23,10 +28,15 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
 
   if (active === "overview") return <DashboardHome onNavigate={onNavigate} />;
   if (active === "donations") return <DonationRequests onChange={onDonationsChange} />;
+  if (active === "theme_requests") return <AdminThemeRequests />;
   if (active === "publish") return <PublishContent />;
   if (active === "bible_sync") return <BibleSyncPanel />;
   if (active === "quiz") return <Suspense fallback={<PanelFallback />}><QuizAdminPanel /></Suspense>;
   if (active === "wordscramble") return <Suspense fallback={<PanelFallback />}><WordScrambleAdminPanel /></Suspense>;
+  if (active === "emojis") return <Suspense fallback={<PanelFallback />}><EmojisAdminPanel /></Suspense>;
+  if (active === "puzzles") return <Suspense fallback={<PanelFallback />}><PuzzleAdminPanel /></Suspense>;
+  if (active === "personalityquiz") return <Suspense fallback={<PanelFallback />}><PersonalityQuizAdminPanel /></Suspense>;
+  if (active === "blockblast") return <Suspense fallback={<PanelFallback />}><BlockBlastMessagesAdminPanel /></Suspense>;
   if (active === "admins") return <AdminListPanel />;
 
   const section = SECTIONS.find((s) => s.key === active);

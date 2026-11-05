@@ -1,0 +1,44 @@
+{
+  "name": "QuizCategory",
+  "type": "object",
+  "properties": {
+    "value": {
+      "type": "string",
+      "description": "Identifiant stable utilisé dans les questions"
+    },
+    "label": {
+      "type": "string",
+      "description": "Nom affiché de la catégorie"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "description": "Masque une catégorie par défaut sans perdre son identifiant"
+    }
+  },
+  "required": [
+    "value",
+    "label"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

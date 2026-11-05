@@ -117,11 +117,11 @@ export function PreferencesProvider({ children }) {
   // Application des data-attributs d'affichage
   useEffect(() => {
     const root = document.documentElement;
-    root.dataset.textSize = prefs.text_size;
+    root.dataset.textSize = "md";
     root.dataset.contrast = prefs.contrast;
     root.dataset.density = prefs.density;
     root.classList.toggle("reduce-animations", !!prefs.reduce_animations);
-  }, [prefs.text_size, prefs.contrast, prefs.density, prefs.reduce_animations]);
+  }, [prefs.contrast, prefs.density, prefs.reduce_animations]);
 
   const persistToAccount = useCallback(
     (next, previous) => {

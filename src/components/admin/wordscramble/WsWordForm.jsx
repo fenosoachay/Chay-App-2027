@@ -14,7 +14,7 @@ function Field({ label, children }) {
   );
 }
 
-export default function WsWordForm({ initial, saving, onSave, onCancel }) {
+export default function WsWordForm({ initial, saving, onSave, onCancel, categories = WS_CATEGORIES }) {
   const [form, setForm] = useState(initial || EMPTY_WORD);
   useEffect(() => setForm(initial || EMPTY_WORD), [initial]);
 
@@ -39,7 +39,7 @@ export default function WsWordForm({ initial, saving, onSave, onCancel }) {
         </Field>
         <Field label="Catégorie">
           <select value={form.category || ""} onChange={set("category")} className={inputCls}>
-            {WS_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </Field>
       </div>

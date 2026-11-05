@@ -1,0 +1,63 @@
+{
+  "name": "EmojiQuizQuestion",
+  "type": "object",
+  "properties": {
+    "emojis": {
+      "type": "string",
+      "description": "Suite d'émojis représentant le personnage biblique."
+    },
+    "answer": {
+      "type": "string",
+      "description": "Nom du personnage attendu."
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Quatre choix affichés au joueur."
+    },
+    "hint": {
+      "type": "string",
+      "description": "Indice progressif affiché au joueur."
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "description": "Catégorie biblique du personnage."
+    }
+  },
+  "required": [
+    "emojis",
+    "answer",
+    "options",
+    "hint",
+    "difficulty",
+    "category"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -32,6 +32,10 @@ const Home = lazy(homeImport);
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
+const Puzzle = lazy(() => import("@/pages/Puzzle"));
+const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
+const PersonalityQuiz = lazy(() => import("@/pages/PersonalityQuiz"));
+const BlockBlast = lazy(() => import("@/pages/BlockBlast"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
 const QuizResults = lazy(() => import("@/pages/QuizResults"));
@@ -43,6 +47,7 @@ const Community = lazy(() => import("@/pages/Community"));
 const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
 const Donate = lazy(() => import("@/pages/Donate"));
 const Contact = lazy(() => import("@/pages/Contact"));
+const Requests = lazy(() => import("@/pages/Requests"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const Messages = lazy(() => import("@/pages/Messages"));
 import AppLoader from '@/components/AppLoader';
@@ -107,6 +112,10 @@ const AuthenticatedApp = () => {
           <Route path="/bible" element={<Bible />} />
           <Route path="/media" element={<Media />} />
           <Route path="/games" element={<Games />} />
+          <Route path="/puzzle" element={<Puzzle />} />
+          <Route path="/games/emojis" element={<EmojisGame />} />
+          <Route path="/personality-quiz" element={<PersonalityQuiz />} />
+          <Route path="/block-blast" element={<BlockBlast />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/quiz/play/:difficulty" element={<QuizPlay />} />
           <Route path="/quiz/results" element={<QuizResults />} />
@@ -119,6 +128,7 @@ const AuthenticatedApp = () => {
           <Route path="/donate" element={<Donate />} />
           <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/requests" element={<Requests />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />

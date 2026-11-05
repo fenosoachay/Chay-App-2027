@@ -6,6 +6,7 @@ export function createMediaNotificationState(control) {
     artist: control.subtitle || "CHAY",
     artworkUrl: control.artwork || "",
     isPlaying: Boolean(control.isPlaying),
+    isBuffering: Boolean(control.isBuffering),
     currentTime: Math.max(0, Number(control.currentTime) || 0),
     duration: Math.max(0, Number(control.duration) || 0),
     isLive: Boolean(control.isLive),
@@ -38,6 +39,10 @@ export function dispatchMediaNotificationAction(control, action, details = {}) {
   if (action === "previous") {
     control.previous?.();
     return Boolean(control.previous);
+  }
+  if (action === "stop") {
+    control.stop?.();
+    return Boolean(control.stop);
   }
   if (action === "seek") {
     if (!control.seek || !(control.duration > 0)) return false;

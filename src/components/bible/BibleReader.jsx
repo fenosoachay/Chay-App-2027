@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
+  Search,
   StickyNote,
   Highlighter,
   Copy,
@@ -38,6 +39,12 @@ import { parseReference } from "@/lib/bibleBookRefs";
 // public/data/bibles : aucune API distante, lecture possible hors ligne.
 const ALL_VERSIONS = Object.values(VERSIONS).flat();
 const langOfVersion = (versionId) => ALL_VERSIONS.find((v) => v.id === versionId)?.lang || "fr";
+const bookPickerLabel = (book) => ({
+  ...book,
+  displayName: book.id === "1TH" ? "1 Thess." : book.id === "2TH" ? "2 Thess." : book.name,
+});
+const normalizeBookSearch = (value) =>
+  value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase();
 
 export default function BibleReader({ onBack }) {
   const { toast } = useToast();
@@ -67,6 +74,7 @@ export default function BibleReader({ onBack }) {
 
   // Sheet (modal) du sélecteur de livres : grille de cases, comme les chapitres.
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [bookSearch, setBookSearch] = useState("");
 
   const [booksStatus, setBooksStatus] = useState("loading");
   const [chapterStatus, setChapterStatus] = useState("idle");
@@ -132,6 +140,20 @@ export default function BibleReader({ onBack }) {
   );
   const otBooks = useMemo(() => booksWithTestament.filter((b) => b.testament === "OT"), [booksWithTestament]);
   const ntBooks = useMemo(() => booksWithTestament.filter((b) => b.testament === "NT"), [booksWithTestament]);
+  const filteredBookLists = useMemo(() => {
+    const query = normalizeBookSearch(bookSearch.trim());
+    const filterBooks = (list) => list
+      .map(bookPickerLabel)
+      .filter((book) =>
+        !query ||
+        normalizeBookSearch(book.name).includes(query) ||
+        normalizeBookSearch(book.displayName).includes(query)
+      );
+    return [
+      { label: "Ancienne Alliance", list: filterBooks(otBooks) },
+      { label: "Nouvelle Alliance", list: filterBooks(ntBooks) },
+    ];
+  }, [bookSearch, ntBooks, otBooks]);
   const chapterNumbers = useMemo(() => {
     const count = selectedBook?.numberOfChapters || 1;
     return Array.from({ length: count }, (_, i) => i + 1);
@@ -346,7 +368,13 @@ export default function BibleReader({ onBack }) {
                 <ChevronDown className="h-4 w-4 shrink-0 text-foreground/50" />
               </button>
 
-              <Drawer open={bookPickerOpen} onOpenChange={setBookPickerOpen}>
+              <Drawer
+                open={bookPickerOpen}
+                onOpenChange={(open) => {
+                  setBookPickerOpen(open);
+                  if (!open) setBookSearch("");
+                }}
+              >
                 <DrawerContent className="max-h-[85vh]">
                   <DrawerHeader className="text-left">
                     <DrawerTitle>Livre</DrawerTitle>
@@ -354,11 +382,21 @@ export default function BibleReader({ onBack }) {
                       Ancienne Alliance ({otBooks.length}) · Nouvelle Alliance ({ntBooks.length})
                     </DrawerDescription>
                   </DrawerHeader>
+                  <div className="px-4 pb-3">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="search"
+                        value={bookSearch}
+                        onChange={(event) => setBookSearch(event.target.value)}
+                        placeholder="Rechercher un livre…"
+                        aria-label="Rechercher un livre de la Bible"
+                        className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
                   <div className="overflow-y-auto overscroll-contain px-4 pb-6 max-h-[60vh]">
-                    {[
-                      { label: "Ancienne Alliance", list: otBooks },
-                      { label: "Nouvelle Alliance", list: ntBooks },
-                    ].map(({ label, list }) => (
+                    {filteredBookLists.map(({ label, list }) => list.length > 0 && (
                       <div key={label} className="mb-4 last:mb-0">
                         <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-primary">
                           {label}
@@ -381,19 +419,24 @@ export default function BibleReader({ onBack }) {
                                   setSelectedChapter(1);
                                   setBookPickerOpen(false);
                                 }}
-                                className={`flex h-12 items-center justify-center rounded-sm px-1 text-center text-[11px] font-bold leading-tight transition ${
+                                className={`flex h-12 items-center justify-center rounded-sm px-1 text-center text-sm font-bold leading-tight transition ${
                                   isActive
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "border border-border bg-card text-foreground/80 hover:bg-primary/10 hover:text-primary"
                                 }`}
                               >
-                                {b.name}
+                                {b.displayName}
                               </button>
                             );
                           })}
                         </div>
                       </div>
                     ))}
+                    {filteredBookLists.every(({ list }) => list.length === 0) && (
+                      <p className="py-6 text-center text-sm text-muted-foreground">
+                        Aucun livre ne correspond à cette recherche.
+                      </p>
+                    )}
                   </div>
                 </DrawerContent>
               </Drawer>
@@ -523,7 +566,7 @@ export default function BibleReader({ onBack }) {
           )}
           {chapterStatus === "ready" && (
             <article className="mx-auto max-w-3xl">
-              <div className="selectable space-y-3 text-sm md:text-[1.04rem] leading-6 md:leading-8 text-foreground/80">
+              <div className="selectable space-y-3 text-[20px] leading-[1.6] text-foreground/80">
                 {verses.map((verse) => {
                   const ann = annotations[verse.number];
                   const hl = ann?.highlight_color ? HIGHLIGHT_COLORS.find((c) => c.id === ann.highlight_color) : null;

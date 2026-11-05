@@ -9,8 +9,8 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { useRadio } from "@/lib/RadioContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
-import { filterVisible } from "@/lib/mediaConstants";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
+import { buildFavoriteAudioQueue } from "@/lib/favoriteAudioQueue";
 import { Loader2 } from "lucide-react";
 import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
 
@@ -91,7 +91,7 @@ export default function Media() {
         || new Date(y.created_date || 0) - new Date(x.created_date || 0))
     );
     setYoutube(mergeById(y, targetVideos));
-    setGallery(filterVisible(mergeById(g, targetImages), user));
+    setGallery(mergeById(g, targetImages));
     setPlaylist(Array.isArray(p) ? p : []);
     setPlaylists(mergeById(pl, extraPlaylists));
     setPlaylistTracks(mergeById(pt, targetTracks));
@@ -152,18 +152,12 @@ export default function Media() {
   };
 
   const playPlaylistItem = (item) => {
-    if (currentTrack?.id === item.track_id) {
+    if (currentTrack?.queueId === item.id) {
       toggle();
       return;
     }
-    play({
-      id: item.track_id,
-      title: item.title,
-      artist: item.artist,
-      audio_url: item.audio_url,
-      cover_url: item.cover_url,
-      mediaType: item.category === "sermons" ? "sermons" : "music",
-    });
+    const { tracks, startIndex } = buildFavoriteAudioQueue(playlist, item.id);
+    if (startIndex >= 0) playQueue(tracks, startIndex);
   };
 
   const isPinned = (id, sourcePlaylistId) =>

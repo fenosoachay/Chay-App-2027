@@ -20,18 +20,18 @@ import {
   fromISODate,
   formatISODate,
   isISODate,
-  addDaysISO,
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
 import { confirmFr } from "@/lib/confirmFr";
+import { meetingDateOf, upcomingEvents } from "@/lib/upcomingEvents";
 
 // Les réunions sont espacées : 500 annonces de type « event » couvrent
 // plusieurs années d'historique.
 const PLANNING_LIMIT = 500;
 
-// Prochaine réunion : affiche l'événement le plus proche à venir (aujourd'hui
-// ou plus tard) et permet à un administrateur de le programmer à l'avance,
+// Prochaine réunion : affiche tous les événements à venir dans l'ordre des dates
+// et permet à un administrateur de les programmer à l'avance,
 // avec le même système que le verset du jour (date d'affichage + planning).
 // Une réunion passée n'est jamais supprimée avec le temps : elle reste
 // consultable dans le planning via « Précédents ».
@@ -39,7 +39,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
-  const [reunion, setReunion] = useState(null);
+  const [reunions, setReunions] = useState([]);
   const [events, setEvents] = useState([]); // réunions chargées (planning)
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -52,12 +52,14 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
     event_date: "", // date de la réunion affichée sur la carte
     __legacy: false, // annonce d'avant les deux dates : comportement inchangé
   });
+  const reunion = reunions[0] || null;
 
   // File « à publier » : on enregistre plusieurs réunions dans la fenêtre,
   // rien ne part au serveur, puis un seul « Publier » les écrit toutes.
   const { pending, publishing, stage, discard, publish } = useStagedPublish({
     entity: base44.entities.Announcement,
     dateField: "date",
+    allowMultiplePerDate: true,
     build: (p) => {
       const payload = {
         title: (p.title || "").trim(),
@@ -77,37 +79,13 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       // affichage reste exactement celui d'avant.
       return payload;
     },
-    // On met à jour l'entrée sélectionnée ; à défaut on en crée une. Une
-    // collision de date est REFUSÉE plutôt qu'écrasée : deux réunions peuvent
-    // cohabiter un même jour, remplacer silencieusement l'autre ferait perdre
-    // son contenu. `null` = date déjà occupée.
-    resolveId: (d, prev, server) => {
-      const id = d.id ?? prev?.id ?? undefined;
-      return id === undefined && server ? null : id;
-    },
+    resolveId: (d, prev) => d.id ?? prev?.id ?? undefined,
   });
 
   // Date de réunion affichée : les annonces d'avant la séparation des deux
   // dates n'ont pas de `event_date` — leur unique date servait des deux rôles.
-  const meetingOf = (a) => a.event_date || a.date;
-
-  // Prochaine réunion à venir : réunion pas encore passée ET affiche déjà
-  // publiée. Exemple : l'affiche est publiée demain, la réunion est dimanche
-  // → rien aujourd'hui, la carte apparaît demain et affiche « dimanche ».
-  // Une annonce sans date de réunion distincte garde l'ancien comportement
-  // (visible tant que sa date n'est pas passée).
-  const upcomingOf = (list) => {
-    const now = toISODate();
-    const upcoming = list
-      .filter((a) => {
-        const evt = meetingOf(a);
-        return evt >= now && (!a.event_date || a.date <= now);
-      })
-      .sort((a, b) =>
-        meetingOf(a) < meetingOf(b) ? -1 : meetingOf(a) > meetingOf(b) ? 1 : 0
-      );
-    return upcoming[0] || null;
-  };
+  const meetingOf = meetingDateOf;
+  const upcomingOf = (list) => upcomingEvents(list);
 
   const loadEvents = async (limit) => {
     const rows = await base44.entities.Announcement
@@ -118,8 +96,8 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
 
   const load = async () => {
     try {
-      const list = await loadEvents(100);
-      setReunion(upcomingOf(list));
+      const list = await loadEvents(PLANNING_LIMIT);
+      setReunions(upcomingOf(list));
     } finally {
       setLoading(false);
     }
@@ -133,7 +111,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
     try {
       const list = await loadEvents(PLANNING_LIMIT);
       setEvents(list);
-      setReunion(upcomingOf(list));
+      setReunions(upcomingOf(list));
     } finally {
       setPlanningLoading(false);
     }
@@ -144,7 +122,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
   }, [refreshKey]);
 
   const openEdit = () => {
-    const base = reunion;
+    const base = reunions[0];
     setDraft({
       id: base?.id,
       title: base?.title || "",
@@ -169,6 +147,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       date: day,
       event_date: entry?.event_date || "",
       __legacy: Boolean(entry?.id) && !entry?.event_date,
+      __pendingKey: entry?.__pendingKey,
     });
   };
 
@@ -206,7 +185,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       id: undefined,
       title: "",
       body: "",
-      date: addDaysISO(day, 1),
+      date: day,
       event_date: "",
       __legacy: false,
     });
@@ -251,7 +230,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
   const removeOn = async (entry) => {
     // Entrée en attente : on la retire de la file, aucun appel serveur.
     if (entry.__pending) {
-      discard(entry.date);
+      discard(entry);
       toast({ title: "Retiré de la liste", description: "Rien n'était publié." });
       return;
     }
@@ -285,13 +264,6 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
         ? "La réunion est antérieure à la publication : elle n'apparaîtra pas sur l'accueil."
         : `Date affichée sur la carte : ${formatISODate(draft.event_date, { long: true })}.`;
 
-  const reunionDate = reunion
-    ? fromISODate(meetingOf(reunion))?.toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-      })
-    : null;
-
   return (
     <section className={adminOnly ? "mb-4" : "mt-6"}>
       {/* Panneau admin : même fenêtre « Programmer la prochaine réunion » que
@@ -302,7 +274,11 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
             {loading
               ? "Chargement…"
               : reunion
-                ? `Prochaine réunion : ${reunion.title}`
+                ? reunions.length === 1
+                  ? `Prochaine réunion : ${reunion.title}`
+                  : reunions.length > 1
+                    ? `${reunions.length} réunions à venir · prochaine : ${reunion.title}`
+                    : "Aucune réunion annoncée."
                 : "Aucune réunion annoncée."}
           </p>
           <Button onClick={openEdit} className="rounded-full shrink-0">
@@ -313,9 +289,11 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       <div className={`${adminOnly ? "hidden " : ""}rounded-[1.5rem] border border-border bg-card p-5 md:p-8`}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            <h2 className="font-display font-extrabold text-base md:text-xl">
-              Prochaine réunion
+            <div className="grid place-items-center h-9 w-9 rounded-xl bg-secondary/10 text-secondary">
+              <Bell className="h-5 w-5" />
+            </div>
+            <h2 className="font-display font-extrabold text-base md:text-lg">
+              {reunions.length > 1 ? "Prochaines réunions" : "Prochaine réunion"}
             </h2>
           </div>
           {isAdmin && !editing && (
@@ -329,25 +307,37 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
         </div>
         {loading ? (
           <div className="h-16 bg-background rounded-2xl animate-pulse" />
-        ) : reunion ? (
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center text-primary shrink-0">
-              <CalendarDays className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="font-bold text-sm md:text-lg">{reunion.title}</div>
-              {reunion.body && (
-                <div className="text-foreground/60 text-xs md:text-sm mt-1">
-                  {reunion.body}
-                </div>
-              )}
-              {reunionDate && (
-                <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-primary">
-                  <Clock className="h-3.5 w-3.5" /> {reunionDate}
-                </div>
-              )}
-            </div>
-          </div>
+        ) : reunions.length ? (
+          <ul className="space-y-4">
+            {reunions.map((event) => {
+              const date = fromISODate(meetingOf(event))?.toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              });
+              return (
+                <li key={event.id} className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-secondary/10 grid place-items-center text-secondary shrink-0">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm md:text-lg">{event.title}</div>
+                    {event.body && (
+                      <div className="text-foreground/60 text-xs md:text-sm mt-1">
+                        {event.body}
+                      </div>
+                    )}
+                    {date && (
+                      <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-primary">
+                        <Clock className="h-3.5 w-3.5" /> {date}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <p className="text-sm text-foreground/50">
             Aucune réunion annoncée pour le moment.
@@ -363,7 +353,8 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
               La date de publication programme l'apparition de l'affiche sur
               l'accueil ; la date de la réunion est celle affichée sur la
               carte. Elles peuvent être différentes : publié demain, réunion
-              dimanche.
+              dimanche. Plusieurs réunions peuvent partager la même date de
+              publication.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -432,6 +423,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
             focusDate={draft.date}
             entries={[...pending, ...events]}
             dateField="date"
+            allowMultiplePerDate
             labelFor={(e) => {
               // La ligne = date de publication ; on rappelle la date de la
               // réunion quand elle est différente.

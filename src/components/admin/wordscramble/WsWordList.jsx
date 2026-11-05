@@ -6,7 +6,7 @@ import { WS_LEVELS, WS_CATEGORIES, wsLevelOf, wsCategoryLabel } from "@/lib/word
 const selectCls = "rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
 const PAGE = 20;
 
-export default function WsWordList({ refreshKey, onEdit, onDelete, onPreview }) {
+export default function WsWordList({ refreshKey, onEdit, onDelete, onPreview, categories = WS_CATEGORIES }) {
   const [difficulty, setDifficulty] = useState("");
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
@@ -65,7 +65,7 @@ export default function WsWordList({ refreshKey, onEdit, onDelete, onPreview }) 
         </select>
         <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectCls}>
           <option value="">Toutes catégories</option>
-          {WS_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
 
@@ -91,7 +91,7 @@ export default function WsWordList({ refreshKey, onEdit, onDelete, onPreview }) 
                   <tr key={w.id} className="border-t border-border">
                     <td className="px-3 py-2 font-extrabold">{w.word}</td>
                     <td className="px-3 py-2">{lvl && <span className={`rounded-full border px-2 py-0.5 text-2xs font-bold ${lvl.badge}`}>{lvl.emoji} {lvl.label}</span>}</td>
-                    <td className="px-3 py-2">{wsCategoryLabel(w.category)}</td>
+                    <td className="px-3 py-2">{wsCategoryLabel(w.category, categories)}</td>
                     <td className="px-3 py-2 min-w-[14rem]">{w.hint_phrase}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{w.hint_bible_reference || "—"}</td>
                     <td className="px-3 py-2">
