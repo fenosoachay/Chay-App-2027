@@ -1,162 +1,170 @@
 package io.chay.app;
 
-import android.content.Intent;
+import android.content.ComponentName;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import androidx.media3.common.AudioAttributes;
+import androidx.core.content.ContextCompat;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
-import androidx.media3.exoplayer.ExoPlayer;
-import androidx.media3.session.MediaSession;
+import androidx.media3.session.MediaController;
+import androidx.media3.session.SessionToken;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @CapacitorPlugin(name = "AndroidExoPlayer")
 public class AndroidExoPlayerPlugin extends Plugin {
+    private interface ControllerCommand {
+        void run(MediaController controller) throws Exception;
+    }
+
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Runnable progressTicker = new Runnable() {
         @Override
         public void run() {
-            if (player == null) return;
+            if (controller == null) return;
             emitPlaybackState(null);
-            if (player.isPlaying() || player.getPlaybackState() == Player.STATE_BUFFERING) {
+            if (controller.isPlaying() ||
+                controller.getPlaybackState() == Player.STATE_BUFFERING) {
                 mainHandler.postDelayed(this, 500);
             }
         }
     };
 
-    private ExoPlayer player;
+    private MediaController controller;
+    private ListenableFuture<MediaController> controllerFuture;
     private PlayerView playerView;
-    private MediaSession mediaSession;
-    private String source = "";
-    private String mediaType = "audio";
-    private String title = "Média";
-    private String artist = "CHAY";
 
     @Override
     public void load() {
+        super.load();
         getActivity().runOnUiThread(() -> {
-            player = new ExoPlayer.Builder(getContext())
-                .setHandleAudioBecomingNoisy(true)
-                .build();
-
-            player.setAudioAttributes(
-                new AudioAttributes.Builder()
-                    .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                    .build(),
-                true
+            SessionToken token = new SessionToken(
+                getContext(),
+                new ComponentName(getContext(), ChayMediaSessionService.class)
             );
+            controllerFuture = new MediaController.Builder(getContext(), token)
+                .buildAsync();
+            controllerFuture.addListener(() -> {
+                try {
+                    controller = controllerFuture.get();
+                    controller.addListener(new Player.Listener() {
+                        @Override
+                        public void onIsPlayingChanged(boolean isPlaying) {
+                            emitPlaybackState(null);
+                            scheduleProgressUpdates();
+                        }
 
-            mediaSession = new MediaSession.Builder(getContext(), player).build();
+                        @Override
+                        public void onPlaybackStateChanged(int playbackState) {
+                            emitPlaybackState(null);
+                            scheduleProgressUpdates();
+                        }
 
-            player.addListener(new Player.Listener() {
-                @Override
-                public void onIsPlayingChanged(boolean isPlaying) {
+                        @Override
+                        public void onMediaItemTransition(
+                            MediaItem mediaItem,
+                            int reason
+                        ) {
+                            emitPlaybackState(null);
+                        }
+
+                        @Override
+                        public void onPlayerError(PlaybackException error) {
+                            emitPlaybackState(error.getMessage());
+                        }
+                    });
+                    attachPlayerView();
                     emitPlaybackState(null);
-                    scheduleProgressUpdates();
+                } catch (ExecutionException error) {
+                    android.util.Log.e(
+                        "ExoPlayerPlugin",
+                        "Unable to connect to the media session service.",
+                        error
+                    );
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
                 }
-
-                @Override
-                public void onPlaybackStateChanged(int playbackState) {
-                    emitPlaybackState(null);
-                    scheduleProgressUpdates();
-                }
-
-                @Override
-                public void onPlayerError(PlaybackException error) {
-                    emitPlaybackState(error.getMessage());
-                }
-            });
-
-            playerView = new PlayerView(getContext());
-            playerView.setUseController(false);
-            playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
-            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
-            playerView.setPlayer(player);
-            playerView.setVisibility(View.GONE);
-
-            ViewGroup content = getActivity().findViewById(android.R.id.content);
-            if (content != null) {
-                content.addView(
-                    playerView,
-                    new FrameLayout.LayoutParams(1, 1, Gravity.TOP | Gravity.START)
-                );
-            }
+            }, ContextCompat.getMainExecutor(getContext()));
         });
     }
 
     @PluginMethod
     public void playMedia(PluginCall call) {
-        String url = call.getString("url");
-        Uri uri = url == null ? null : Uri.parse(url);
-        String scheme = uri == null ? null : uri.getScheme();
-        if (uri == null || uri.getHost() == null ||
-            !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+        String requestedUrl = call.getString("url");
+        if (!isHttpUrl(requestedUrl)) {
             call.reject("L’URL du média est invalide.");
             return;
         }
+        String mediaType = call.getString("mediaType", "audio");
+        double initialPosition = Math.max(
+            0,
+            call.getDouble("initialPositionSeconds", 0.0)
+        );
+        JSArray queue = call.getArray("queue");
+        int requestedIndex = Math.max(0, call.getInt("queueIndex", 0));
+        String requestedQueueId = call.getString("queueId");
 
-        String nextSource = uri.toString();
-        String nextType = call.getString("mediaType", "audio");
-        String nextTitle = call.getString("title", "Média");
-        String nextArtist = call.getString("artist", "CHAY");
-        double initialPosition = Math.max(0, call.getDouble("initialPositionSeconds", 0.0));
-
-        getActivity().runOnUiThread(() -> {
-            if (player == null) {
-                call.reject("Le lecteur Android n’est pas disponible.");
+        withController(call, mediaController -> {
+            List<MediaItem> mediaItems = buildMediaItems(
+                queue,
+                requestedUrl,
+                mediaType,
+                call.getString("title", "Média"),
+                call.getString("artist", "CHAY"),
+                call.getString("artworkUrl", ""),
+                requestedQueueId
+            );
+            if (mediaItems.isEmpty()) {
+                call.reject("La file de lecture ne contient aucun média valide.");
                 return;
             }
 
-            boolean sameMedia = nextSource.equals(source) && nextType.equals(mediaType);
-            source = nextSource;
-            mediaType = nextType;
-            title = nextTitle;
-            artist = nextArtist;
-            if (playerView != null) {
-                playerView.setVisibility("video".equals(nextType) ? View.VISIBLE : View.GONE);
+            int currentIndex = findRequestedIndex(
+                mediaItems,
+                requestedUrl,
+                requestedQueueId,
+                requestedIndex
+            );
+            long startPositionMs = (long) (initialPosition * 1000);
+            boolean alreadyAtRequestedItem =
+                mediaController.getMediaItemCount() == mediaItems.size() &&
+                mediaController.getCurrentMediaItemIndex() == currentIndex &&
+                requestedUrl.equals(currentSource(mediaController)) &&
+                sameQueue(mediaController, mediaItems);
+
+            if (!alreadyAtRequestedItem) {
+                mediaController.setMediaItems(mediaItems, currentIndex, startPositionMs);
+                mediaController.prepare();
+            } else if (mediaController.getPlaybackState() == Player.STATE_ENDED) {
+                mediaController.seekTo(0);
+            } else if (mediaController.getPlaybackState() == Player.STATE_IDLE) {
+                mediaController.prepare();
             }
-            if (!sameMedia) {
-                MediaMetadata metadata = new MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setArtist(artist)
-                    .build();
-                MediaItem.Builder itemBuilder = new MediaItem.Builder()
-                    .setUri(uri)
-                    .setMediaMetadata(metadata);
-                if ("radio".equals(nextType)) {
-                    itemBuilder.setLiveConfiguration(new MediaItem.LiveConfiguration.Builder().build());
-                }
-                player.setMediaItem(itemBuilder.build());
-                player.prepare();
-                if (initialPosition > 0) {
-                    player.seekTo((long) (initialPosition * 1000));
-                }
-            } else if (player.getPlaybackState() == Player.STATE_ENDED) {
-                player.seekTo(0);
-            } else if (player.getPlaybackState() == Player.STATE_IDLE) {
-                player.prepare();
-            }
-            player.play();
-            updateMediaNotification();
+            mediaController.play();
             emitPlaybackState(null);
             call.resolve();
         });
@@ -164,45 +172,65 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
     @PluginMethod
     public void pauseMedia(PluginCall call) {
-        if (player != null) player.pause();
-        call.resolve();
+        withController(call, mediaController -> {
+            mediaController.pause();
+            call.resolve();
+        });
     }
 
     @PluginMethod
     public void resumeMedia(PluginCall call) {
-        if (player != null) {
-            if (player.getPlaybackState() == Player.STATE_ENDED) player.seekTo(0);
-            else if (player.getPlaybackState() == Player.STATE_IDLE && player.getMediaItemCount() > 0) {
-                player.prepare();
+        withController(call, mediaController -> {
+            if (mediaController.getPlaybackState() == Player.STATE_ENDED) {
+                mediaController.seekTo(0);
+            } else if (mediaController.getPlaybackState() == Player.STATE_IDLE &&
+                mediaController.getMediaItemCount() > 0) {
+                mediaController.prepare();
             }
-            player.play();
-        }
-        call.resolve();
+            mediaController.play();
+            call.resolve();
+        });
     }
 
     @PluginMethod
     public void seekMedia(PluginCall call) {
         double seconds = Math.max(0, call.getDouble("positionSeconds", 0.0));
-        if (player != null) player.seekTo((long) (seconds * 1000));
-        call.resolve();
+        withController(call, mediaController -> {
+            mediaController.seekTo((long) (seconds * 1000));
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void setRepeatMode(PluginCall call) {
+        String mode = call.getString("mode", "off");
+        withController(call, mediaController -> {
+            mediaController.setRepeatMode(
+                "one".equals(mode) ? Player.REPEAT_MODE_ONE :
+                    "all".equals(mode) ? Player.REPEAT_MODE_ALL :
+                        Player.REPEAT_MODE_OFF
+            );
+            call.resolve();
+        });
     }
 
     @PluginMethod
     public void setVolume(PluginCall call) {
         double volume = Math.max(0, Math.min(1, call.getDouble("volume", 1.0)));
-        if (player != null) player.setVolume((float) volume);
-        call.resolve();
+        withController(call, mediaController -> {
+            mediaController.setVolume((float) volume);
+            call.resolve();
+        });
     }
 
     @PluginMethod
     public void stopMedia(PluginCall call) {
-        if (player != null) {
-            player.stop();
-            player.clearMediaItems();
-        }
-        source = "";
-        emitPlaybackState(null);
-        call.resolve();
+        withController(call, mediaController -> {
+            mediaController.stop();
+            mediaController.clearMediaItems();
+            emitPlaybackState(null);
+            call.resolve();
+        });
     }
 
     @PluginMethod
@@ -245,8 +273,10 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 call.resolve();
                 return;
             }
-            int x = webViewLocation[0] - contentLocation[0] + (int) Math.round(left * scale);
-            int y = webViewLocation[1] - contentLocation[1] + (int) Math.round(top * scale);
+            int x = webViewLocation[0] - contentLocation[0] +
+                (int) Math.round(left * scale);
+            int y = webViewLocation[1] - contentLocation[1] +
+                (int) Math.round(top * scale);
             int viewWidth = (int) Math.round(width * scale);
             int viewHeight = (int) Math.round(height * scale);
 
@@ -263,65 +293,182 @@ public class AndroidExoPlayerPlugin extends Plugin {
         });
     }
 
-    private void updateMediaNotification() {
-        Log.d("ExoPlayerPlugin", "Preparing media notification update.");
-        if (getActivity() == null) {
-            Log.d("ExoPlayerPlugin", "Cannot start media notification service: activity is unavailable.");
-            return;
-        }
-
-        android.content.Context appContext = getActivity().getApplicationContext();
-        Intent intent = new Intent(appContext, MediaNotificationService.class)
-            .setAction(MediaNotificationService.ACTION_UPDATE)
-            .putExtra(MediaNotificationService.EXTRA_TITLE, title)
-            .putExtra(MediaNotificationService.EXTRA_ARTIST, artist)
-            .putExtra(MediaNotificationService.EXTRA_IS_PLAYING, player != null && player.isPlaying())
-            .putExtra(
-                MediaNotificationService.EXTRA_IS_BUFFERING,
-                player != null && player.getPlaybackState() == Player.STATE_BUFFERING
-            )
-            .putExtra(MediaNotificationService.EXTRA_IS_LIVE, "radio".equals(mediaType))
-            .putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, player != null ? player.getCurrentPosition() / 1000.0 : 0.0)
-            .putExtra(MediaNotificationService.EXTRA_DURATION, player != null && player.getDuration() != C.TIME_UNSET ? player.getDuration() / 1000.0 : 0.0)
-            .putExtra(MediaNotificationService.EXTRA_HAS_PREVIOUS, false)
-            .putExtra(MediaNotificationService.EXTRA_HAS_NEXT, false);
-
-        String action = intent.getAction();
-        Log.d("ExoPlayerPlugin", "Media notification intent action: " + action);
-        if (!MediaNotificationService.ACTION_UPDATE.equals(action)) {
-            Log.d("ExoPlayerPlugin", "Not starting service because the update action is invalid.");
-            return;
-        }
-
-        try {
-            Log.d("ExoPlayerPlugin", "Starting media notification foreground service.");
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                appContext.startForegroundService(intent);
-            } else {
-                appContext.startService(intent);
-            }
-            Log.d("ExoPlayerPlugin", "Media notification service start requested.");
-        } catch (SecurityException error) {
-            Log.e("ExoPlayerPlugin", "Security exception while starting media notification service.", error);
-        } catch (Exception error) {
-            Log.e("ExoPlayerPlugin", "Failed to start media notification service.", error);
+    private void attachPlayerView() {
+        if (controller == null || getActivity() == null) return;
+        playerView = new PlayerView(getContext());
+        playerView.setUseController(false);
+        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
+        playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+        playerView.setPlayer(controller);
+        playerView.setVisibility(View.GONE);
+        ViewGroup content = getActivity().findViewById(android.R.id.content);
+        if (content != null) {
+            content.addView(
+                playerView,
+                new FrameLayout.LayoutParams(1, 1, Gravity.TOP | Gravity.START)
+            );
         }
     }
 
+    private void withController(PluginCall call, ControllerCommand command) {
+        ListenableFuture<MediaController> future = controllerFuture;
+        if (future == null) {
+            call.reject("Le lecteur Android n’est pas encore initialisé.");
+            return;
+        }
+        future.addListener(() -> {
+            try {
+                MediaController connectedController = future.get();
+                controller = connectedController;
+                command.run(connectedController);
+            } catch (ExecutionException error) {
+                call.reject("Impossible de connecter le lecteur Android.", error);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                call.reject("La connexion au lecteur Android a été interrompue.", error);
+            } catch (Exception error) {
+                call.reject("La commande du lecteur Android a échoué.", error);
+            }
+        }, ContextCompat.getMainExecutor(getContext()));
+    }
+
+    private List<MediaItem> buildMediaItems(
+        JSArray queue,
+        String fallbackUrl,
+        String fallbackType,
+        String fallbackTitle,
+        String fallbackArtist,
+        String fallbackArtwork,
+        String fallbackQueueId
+    ) throws Exception {
+        List<MediaItem> items = new ArrayList<>();
+        if (queue != null && queue.length() > 0) {
+            for (int i = 0; i < queue.length(); i++) {
+                JSONObject entry = queue.getJSONObject(i);
+                String url = entry.optString("audio_url", entry.optString("url", ""));
+                if (!isHttpUrl(url)) continue;
+                items.add(createMediaItem(
+                    url,
+                    entry.optString("mediaType", fallbackType),
+                    entry.optString("title", "Média"),
+                    entry.optString("artist", "CHAY"),
+                    entry.optString("cover_url", entry.optString("artworkUrl", "")),
+                    entry.optString("queueId", entry.optString("id", url))
+                ));
+            }
+        }
+        if (items.isEmpty()) {
+            items.add(createMediaItem(
+                fallbackUrl,
+                fallbackType,
+                fallbackTitle,
+                fallbackArtist,
+                fallbackArtwork,
+                fallbackQueueId == null ? fallbackUrl : fallbackQueueId
+            ));
+        }
+        return items;
+    }
+
+    private MediaItem createMediaItem(
+        String url,
+        String mediaType,
+        String title,
+        String artist,
+        String artworkUrl,
+        String queueId
+    ) {
+        Uri uri = Uri.parse(url);
+        Bundle extras = new Bundle();
+        extras.putString("mediaType", mediaType);
+        MediaMetadata.Builder metadata = new MediaMetadata.Builder()
+            .setTitle(title)
+            .setArtist(artist)
+            .setExtras(extras);
+        if (isHttpUrl(artworkUrl)) {
+            metadata.setArtworkUri(Uri.parse(artworkUrl));
+        }
+        MediaItem.Builder item = new MediaItem.Builder()
+            .setMediaId(queueId)
+            .setUri(uri)
+            .setMediaMetadata(metadata.build());
+        if ("radio".equals(mediaType)) {
+            item.setLiveConfiguration(new MediaItem.LiveConfiguration.Builder().build());
+        }
+        return item.build();
+    }
+
+    private int findRequestedIndex(
+        List<MediaItem> items,
+        String url,
+        String queueId,
+        int requestedIndex
+    ) {
+        if (queueId != null) {
+            for (int i = 0; i < items.size(); i++) {
+                if (queueId.equals(items.get(i).mediaId)) return i;
+            }
+        }
+        for (int i = 0; i < items.size(); i++) {
+            if (url.equals(items.get(i).localConfiguration.uri.toString())) return i;
+        }
+        return Math.min(requestedIndex, items.size() - 1);
+    }
+
+    private boolean sameQueue(MediaController mediaController, List<MediaItem> items) {
+        if (mediaController.getMediaItemCount() != items.size()) return false;
+        for (int i = 0; i < items.size(); i++) {
+            MediaItem current = mediaController.getMediaItemAt(i);
+            MediaItem requested = items.get(i);
+            if (!current.mediaId.equals(requested.mediaId) ||
+                !current.localConfiguration.uri.equals(requested.localConfiguration.uri)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String currentSource(MediaController mediaController) {
+        MediaItem current = mediaController.getCurrentMediaItem();
+        return current == null || current.localConfiguration == null
+            ? ""
+            : current.localConfiguration.uri.toString();
+    }
+
+    private boolean isHttpUrl(String value) {
+        if (value == null) return false;
+        Uri uri = Uri.parse(value);
+        String scheme = uri.getScheme();
+        return uri.getHost() != null &&
+            ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme));
+    }
+
     private void emitPlaybackState(String error) {
-        if (player == null) return;
-        long positionMs = Math.max(0, player.getCurrentPosition());
-        long durationMs = Math.max(0, player.getDuration());
-        long bufferedMs = Math.max(0, player.getBufferedPosition());
+        if (controller == null) return;
+        MediaItem item = controller.getCurrentMediaItem();
+        Uri uri = item == null || item.localConfiguration == null
+            ? null
+            : item.localConfiguration.uri;
+        Bundle extras = item == null ? null : item.mediaMetadata.extras;
+        String mediaType = extras == null
+            ? "audio"
+            : extras.getString("mediaType", "audio");
+        long positionMs = Math.max(0, controller.getCurrentPosition());
+        long durationMs = Math.max(0, controller.getDuration());
+        long bufferedMs = Math.max(0, controller.getBufferedPosition());
         JSObject state = new JSObject();
-        state.put("source", source);
+        state.put("source", uri == null ? "" : uri.toString());
+        state.put("queueId", item == null ? "" : item.mediaId);
         state.put("mediaType", mediaType);
-        state.put("isPlaying", player.isPlaying());
-        state.put("isBuffering", player.getPlaybackState() == Player.STATE_BUFFERING);
-        state.put("isEnded", player.getPlaybackState() == Player.STATE_ENDED);
+        state.put("isPlaying", controller.isPlaying());
+        state.put("isBuffering", controller.getPlaybackState() == Player.STATE_BUFFERING);
+        state.put("isEnded", controller.getPlaybackState() == Player.STATE_ENDED);
         state.put("isLive", "radio".equals(mediaType));
         state.put("currentTime", positionMs / 1000.0);
-        state.put("duration", durationMs == C.TIME_UNSET ? 0 : durationMs / 1000.0);
+        state.put(
+            "duration",
+            durationMs == C.TIME_UNSET ? 0 : durationMs / 1000.0
+        );
         state.put(
             "bufferedRatio",
             durationMs > 0 && durationMs != C.TIME_UNSET
@@ -334,8 +481,9 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
     private void scheduleProgressUpdates() {
         mainHandler.removeCallbacks(progressTicker);
-        if (player != null &&
-            (player.isPlaying() || player.getPlaybackState() == Player.STATE_BUFFERING)) {
+        if (controller != null &&
+            (controller.isPlaying() ||
+                controller.getPlaybackState() == Player.STATE_BUFFERING)) {
             mainHandler.postDelayed(progressTicker, 500);
         }
     }
@@ -343,20 +491,17 @@ public class AndroidExoPlayerPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         mainHandler.removeCallbacks(progressTicker);
-
-        if (mediaSession != null) {
-            mediaSession.release();
-        }
         if (playerView != null) {
             ViewGroup parent = (ViewGroup) playerView.getParent();
             if (parent != null) parent.removeView(playerView);
             playerView.setPlayer(null);
             playerView = null;
         }
-        if (player != null) {
-            player.release();
-            player = null;
+        if (controllerFuture != null) {
+            MediaController.releaseFuture(controllerFuture);
+            controllerFuture = null;
         }
+        controller = null;
         super.handleOnDestroy();
     }
 }

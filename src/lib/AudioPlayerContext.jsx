@@ -8,6 +8,7 @@ import {
   playWithAndroidExoPlayer,
   resumeAndroidExoPlayer,
   seekAndroidExoPlayer,
+  setAndroidExoPlayerRepeatMode,
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
 } from "@/lib/androidExoPlayer";
@@ -53,7 +54,29 @@ export function AudioPlayerProvider({ children }) {
     let subscription;
     let isSubscribed = true;
     subscribeAndroidExoPlayer((event) => {
-      if (event.source !== stateRef.current.currentTrack?.audio_url) return;
+      const current = stateRef.current;
+      const queueIndex = current.order.findIndex((index) => {
+        const track = current.queue[index];
+        return (
+          (event.queueId && String(track.queueId || track.id) === event.queueId) ||
+          track.audio_url === event.source
+        );
+      });
+      if (queueIndex >= 0) {
+        const track = current.queue[current.order[queueIndex]];
+        if (
+          track?.audio_url === event.source &&
+          (track.queueId || track.id) !==
+            (current.currentTrack?.queueId || current.currentTrack?.id)
+        ) {
+          setOrderIndex(queueIndex);
+          setCurrentTrack(track);
+        }
+      }
+      const matchesCurrent =
+        event.source === current.currentTrack?.audio_url ||
+        queueIndex >= 0;
+      if (!matchesCurrent) return;
       setIsPlaying(Boolean(event.isPlaying));
       setCurrentTime(Number(event.currentTime) || 0);
       setDuration(Number(event.duration) || 0);
@@ -100,7 +123,19 @@ export function AudioPlayerProvider({ children }) {
         mediaType: "audio",
         title: currentTrack.title || "Média",
         artist: currentTrack.artist || currentTrack.speaker || currentTrack.subtitle || "CHAY",
+        artworkUrl: currentTrack.cover_url || currentTrack.artwork || "",
         initialPositionSeconds: Number(currentTrack.initialTime) || 0,
+        queue: order.map((queueIndex) => {
+          const track = queue[queueIndex];
+          return {
+            ...track,
+            queueId: track.queueId || String(track.id),
+            url: track.audio_url,
+            artworkUrl: track.cover_url || track.artwork || "",
+          };
+        }),
+        queueIndex: orderIndex,
+        queueId: currentTrack.queueId || String(currentTrack.id),
       }).catch((error) => {
         console.error("[AudioPlayer] Unable to start ExoPlayer playback.", error);
         if (stateRef.current.currentTrack?.audio_url !== currentTrack.audio_url) return;
@@ -118,7 +153,14 @@ export function AudioPlayerProvider({ children }) {
     audio.play().then(() => setIsPlaying(true)).catch((e) => {
       console.warn("[AudioPlayer] lecture impossible (URL media invalide ou bloquée) :", currentTrack.audio_url, e?.name, e?.message);
     });
-  }, [currentTrack, isNativeAndroidPlayer]);
+  }, [currentTrack, isNativeAndroidPlayer, order, orderIndex, queue]);
+
+  useEffect(() => {
+    if (!isNativeAndroidPlayer) return;
+    setAndroidExoPlayerRepeatMode(loop).catch((error) => {
+      console.error("[AudioPlayer] Unable to update ExoPlayer repeat mode.", error);
+    });
+  }, [isNativeAndroidPlayer, loop]);
 
   // Erreur de chargement du média (404/403/format non supporté) → log explicite.
   useEffect(() => {
