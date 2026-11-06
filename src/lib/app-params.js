@@ -1,4 +1,5 @@
 import { getAccessToken } from '@base44/sdk';
+import { IS_POCKETBASE, readPocketBaseToken } from '@/api/backendConfig';
 
 const isNode = typeof window === 'undefined';
 
@@ -16,7 +17,8 @@ const getAppParams = () => {
 	}
 	return {
 		appId: import.meta.env.VITE_BASE44_APP_ID,
-		token: getAccessToken(),
+		// Mode PocketBase : jeton du authStore PocketBase (le stockage Base44 n'est pas lu).
+		token: IS_POCKETBASE ? readPocketBaseToken() : getAccessToken(),
 		functionsVersion: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION,
 		appBaseUrl: import.meta.env.VITE_BASE44_APP_BASE_URL,
 	}
