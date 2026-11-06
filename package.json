@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "test": "node --test src/lib/*.test.js",
+    "test:adapter": "vitest run",
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android"
   },
