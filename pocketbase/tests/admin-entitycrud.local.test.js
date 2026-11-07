@@ -7,6 +7,7 @@ import PocketBase from 'pocketbase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createPocketBaseAdapter } from '@/api/pocketbase/adapter';
 import { SECTIONS } from '@/components/admin/adminSections';
+import { deletePlaylistWithContents } from '@/lib/playlistAttachment';
 import { retry429 } from './retry429.js';
 
 const BASE = process.env.PB_TEST_URL || 'http://127.0.0.1:8090';
@@ -104,16 +105,40 @@ describe('EntityCrud en mode PocketBase', () => {
     });
   }
 
-  it('suppression de playlist : PlaylistTrack.list(\'-playlist_id eq "<id>"\', 500) ne renvoie jamais les morceaux des autres playlists', async () => {
-    const pl = await admin.entities.Playlist.create({ name: 'bloc6 test', category: 'music', cover_url: `${BASE}/api/files/test/bloc6/cover.png` });
-    created.push(['Playlist', pl.id]);
-    let rows;
-    try {
-      rows = await admin.entities.PlaylistTrack.list(`-playlist_id eq "${pl.id}"`, 500);
-    } catch {
-      rows = []; // EntityCrud fait .catch(() => [])
+  it('suppression de playlist (mode PocketBase) : ses contenus et liens sont supprimés, pas ceux d’une autre playlist', async () => {
+    const cover = `${BASE}/api/files/test/bloc7/cover.png`;
+    const music = SECTIONS.find((x) => x.key === 'MusicTrack');
+    const newTrack = async (n) => {
+      const data = {};
+      for (const f of music.fields) { const v = sample(f, `piste${n}`); if (v !== undefined && v !== null) data[f.name] = v; }
+      const t = await admin.entities.MusicTrack.create(data);
+      created.push(['MusicTrack', t.id]);
+      return t;
+    };
+    const link = async (pl, t) => {
+      const r = await admin.entities.PlaylistTrack.create({ playlist_id: pl.id, track_id: t.id, title: t.title || 'piste' });
+      created.push(['PlaylistTrack', r.id]);
+      return r;
+    };
+    const pl = await admin.entities.Playlist.create({ name: 'bloc7 à supprimer', category: 'music', cover_url: cover });
+    const other = await admin.entities.Playlist.create({ name: 'bloc7 témoin', category: 'music', cover_url: cover });
+    created.push(['Playlist', pl.id], ['Playlist', other.id]);
+    const [t1, t2, t3] = [await newTrack(1), await newTrack(2), await newTrack(3)];
+    const [l1, l2] = [await link(pl, t1), await link(pl, t2)];
+    const l3 = await link(other, t3);
+
+    // Ancien appel (filtre passé comme tri) : ne trouvait rien, d'où les contenus orphelins.
+    const old = await admin.entities.PlaylistTrack.list(`-playlist_id eq "${pl.id}"`, 500).catch(() => []);
+    expect(old).toEqual([]);
+
+    const n = await deletePlaylistWithContents(admin, 'MusicTrack', pl.id, true);
+    expect(n).toBe(2);
+    for (const [entity, id] of [['Playlist', pl.id], ['MusicTrack', t1.id], ['MusicTrack', t2.id], ['PlaylistTrack', l1.id], ['PlaylistTrack', l2.id]]) {
+      await expect(admin.entities[entity].get(id), `${entity} supprimé`).rejects.toBeTruthy();
     }
-    expect(rows.filter((r) => r.playlist_id !== pl.id)).toEqual([]);
+    expect((await admin.entities.Playlist.get(other.id)).id).toBe(other.id);
+    expect((await admin.entities.MusicTrack.get(t3.id)).id).toBe(t3.id);
+    expect((await admin.entities.PlaylistTrack.get(l3.id)).id).toBe(l3.id);
   });
 });
 

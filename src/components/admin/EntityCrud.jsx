@@ -18,6 +18,7 @@ import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import {
   buildPlaylistTrackRecord,
+  deletePlaylistWithContents,
   resolveSelectedPlaylistId,
   savePlaylistTrack,
 } from "@/lib/playlistAttachment";
@@ -473,13 +474,7 @@ export default function EntityCrud({
   const removePlaylist = async (playlist) => {
     if (!(await confirmFr({ title: "Supprimer la playlist ?", message: `« ${playlist.name} » et les contenus qu'elle contient seront supprimés.`, confirmLabel: "Supprimer" }))) return;
     try {
-      const pts = await base44.entities.PlaylistTrack.list(`-playlist_id eq "${playlist.id}"`, 500).catch(() => []);
-      const arr = Array.isArray(pts) ? pts : [];
-      for (const pt of arr) {
-        await base44.entities[entity].delete(pt.track_id).catch(() => {});
-        await base44.entities.PlaylistTrack.delete(pt.id).catch(() => {});
-      }
-      await base44.entities.Playlist.delete(playlist.id);
+      await deletePlaylistWithContents(base44, entity, playlist.id);
       toast({ title: "Playlist supprimée" });
       await load();
       await loadPlaylists();

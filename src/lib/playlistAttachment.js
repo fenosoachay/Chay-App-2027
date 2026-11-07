@@ -1,4 +1,4 @@
-import { backendText } from "../api/backendConfig.js";
+import { IS_POCKETBASE, backendText } from "../api/backendConfig.js";
 
 export function buildPlaylistTrackRecord({
   entity,
@@ -124,4 +124,23 @@ export async function savePlaylistTrack(
     );
   }
   return persisted;
+}
+
+/**
+ * Suppression d'une playlist avec ses contenus (écran admin EntityCrud).
+ * Mode PocketBase : vrai filtre sur playlist_id ; une erreur de lecture arrête tout (rien n'est supprimé,
+ * pas de contenus orphelins). Mode Base44 : appel d'origine inchangé (filtre passé comme tri, erreurs ignorées).
+ * @returns nombre de liens PlaylistTrack traités
+ */
+export async function deletePlaylistWithContents(api, entity, playlistId, isPocketBase = IS_POCKETBASE) {
+  const rows = isPocketBase
+    ? await api.entities.PlaylistTrack.filter({ playlist_id: playlistId }, "-created_date", 5000)
+    : await api.entities.PlaylistTrack.list(`-playlist_id eq "${playlistId}"`, 500).catch(() => []);
+  const list = (Array.isArray(rows) ? rows : []).filter((pt) => !isPocketBase || pt.playlist_id === playlistId);
+  for (const pt of list) {
+    await api.entities[entity].delete(pt.track_id).catch(() => {});
+    await api.entities.PlaylistTrack.delete(pt.id).catch(() => {});
+  }
+  await api.entities.Playlist.delete(playlistId);
+  return list.length;
 }
