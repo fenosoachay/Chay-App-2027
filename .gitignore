@@ -9,3 +9,15 @@ pocketbase/pb_data/
 pocketbase/pocketbase
 pocketbase/pocketbase.exe
 pocketbase/*.zip
+
+# Secrets et données sensibles (bloc 8) : ne jamais suivre
+.env.production
+.env.*
+!.env.example
+*.pem
+*.key
+serviceAccount*.json
+*firebase-adminsdk*.json
+identifiants*.txt
+baiboly-cache/
+pb_data/
