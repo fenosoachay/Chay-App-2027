@@ -1,0 +1,35 @@
+# Modèle de service systemd du sidecar push (voir docs/PUSH.md).
+# Installation (serveur) :
+#   sudo cp chay-push.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now chay-push
+# Les secrets sont dans /etc/chay/push.env (droits 600, propriétaire root) : jamais dans ce fichier.
+[Unit]
+Description=Chay - sidecar push (FCM, Web Push)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chay-push
+Group=chay-push
+WorkingDirectory=/opt/chay/sidecar-push
+EnvironmentFile=/etc/chay/push.env
+ExecStart=/usr/bin/node /opt/chay/sidecar-push/serveur.mjs
+Restart=on-failure
+RestartSec=5
+# Durcissement
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+# Le compte de service peut être un fichier lisible par chay-push seulement :
+# FIREBASE_SERVICE_ACCOUNT=/etc/chay/firebase-sa.json
+ReadOnlyPaths=/etc/chay
+
+[Install]
+WantedBy=multi-user.target
