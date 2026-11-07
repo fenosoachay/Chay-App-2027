@@ -11,6 +11,7 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "test": "node --test src/lib/*.test.js",
     "test:adapter": "vitest run",
+    "test:pb-local": "node pocketbase/tests/fn-pilote.integration.mjs && vitest run --config vitest.pb-local.config.js",
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android"
   },
