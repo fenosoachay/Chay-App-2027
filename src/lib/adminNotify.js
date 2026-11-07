@@ -72,12 +72,13 @@ export async function notifyAdminUpload({
 
   try {
     // Crée une entrée Content visible dans NewContentsSection
-    await base44.entities.Content.create({
+    const content = await base44.entities.Content.create({
       status: "published",
       published_at: new Date().toISOString(),
       type: contentType,
       title,
-      description: "",
+      // Texte de la notification (in-app et push) : notifyNewContent lit la description du Content.
+      description: message,
       resource_id: contentId || null,
       resource_type: resourceType || null,
       playlist_id: playlistId || null,
@@ -85,12 +86,14 @@ export async function notifyAdminUpload({
       link: linkPath,
     });
 
-    // Fan-out notifications in-app via la fonction backend existante
+    // Fan-out notifications in-app via la fonction backend existante.
+    // La fonction attend l'identifiant de l'entrée Content (content_id) : sans lui, elle répond
+    // 400 « content_id required » et personne n'est notifié (bogue hérité de Base44).
+    if (!content?.id) return;
     await base44.functions.invoke("notifyNewContent", {
-      message,
-      link: linkPath,
+      content_id: content.id,
       send_email: false,
-    }).catch(() => {});
+    }).catch((e) => console.warn("[notifyNewContent]", e?.message || e));
   } catch {
     // Silencieux — l'upload a réussi, la notif est best-effort
   }

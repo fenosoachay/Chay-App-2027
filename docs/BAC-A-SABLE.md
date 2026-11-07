@@ -169,7 +169,7 @@ npm run test:pb-local
 - `pocketbase/tests/fn-fichiers.integration.mjs` : fichiers (membre, admin, anonyme, taille / type, propriétaire falsifié, morceaux, multipart R2, abandon, nettoyages) (**faux S3 requis**).
 - `pocketbase/tests/fn-push.integration.mjs` : push et e-mails du bloc 5 (bon destinataire, charge utile chiffrée, jetons invalides supprimés, file et réessais, préférences, anonyme refusé, limites, échappement HTML, journaux) (**faux push, sidecar et faux SMTP requis**).
 - `pocketbase/tests/migration-fichiers.integration.mjs` : script de migration des fichiers (envoi R2 d'une vidéo générée).
-- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations, authentification avec le faux SMTP, fichiers avec le vrai `upload.js` et le faux S3, écran admin EntityCrud sur ses 12 sections, badge des non-lus).
+- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations, authentification avec le faux SMTP, fichiers avec le vrai `upload.js` et le faux S3, écran admin EntityCrud sur ses 12 sections, badge des non-lus, notification « nouveau contenu » après un ajout admin avec le vrai `adminNotify.js`).
 - `pocketbase/tests/fn-limites.integration.mjs` : limites de tentatives ; **toujours en dernier** (il épuise les compteurs pendant 60 s).
 
 Sans bac à sable : `npm run test:pb-unit` (signature SigV4 avec les vecteurs AWS, chiffrement Web Push avec le vecteur de la RFC 8291, JWT RS256 / ES256, fuseaux horaires, échappement des e-mails, écrans MFA / OAuthConsent absents).
