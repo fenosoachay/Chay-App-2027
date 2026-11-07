@@ -1,7 +1,13 @@
 import { base44 } from "@/api/base44Client";
+import { IS_POCKETBASE } from "@/api/backendConfig";
 import { appParams } from "@/lib/app-params";
 
 const SERVER_BASE = appParams.appBaseUrl || "https://base44.app";
+// Mode PocketBase : mêmes fonctions, servies par les routes POST /api/fn/<nom> du serveur PocketBase
+// (pocketbase/pb_hooks/fichiers.pb.js), avec le jeton PocketBase. Mode Base44 : inchangé.
+const fnUrl = (name) => (IS_POCKETBASE
+  ? `${base44.config?.serverUrl}/api/fn/${name}`
+  : `${SERVER_BASE}/api/functions/${name}`);
 export const REMOTE_APP_URL = "https://chay.base44.app";
 
 export const CHUNK_SIZE = 8 * 1024 * 1024; // 8 Mo
@@ -19,6 +25,10 @@ const pickUrl = (res) => {
 };
 
 function authHeaders(extra = {}) {
+  if (IS_POCKETBASE) {
+    const token = base44.config?.token;
+    return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...extra };
+  }
   const token = appParams.token || base44.config?.token;
   return {
     "X-App-Id": String(appParams.appId ?? ""),
@@ -86,7 +96,7 @@ export function formatBytes(n) {
 const MAX_PARTS = 10_000;
 
 async function callFn(name, payload, { signal, timeoutMs = 60_000 } = {}) {
-  const res = await postWithRetry(`${SERVER_BASE}/api/functions/${name}`, JSON.stringify(payload), {
+  const res = await postWithRetry(fnUrl(name), JSON.stringify(payload), {
     headers: { "Content-Type": "application/json" },
     signal,
     timeoutMs,
@@ -270,9 +280,9 @@ export async function uploadChunked(file, onProgress, opts = {}) {
   const signal = (typeof onProgress === "object" ? onProgress.signal : undefined) ?? opts.signal;
 
   const sessionId = btoa(`${file.name}:${file.size}:${file.lastModified}`).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48);
-  const fnUrl = `${SERVER_BASE}/api/functions/upload_chunk`;
+  const chunkUrl = fnUrl("upload_chunk");
 
-  const init = await postWithRetry(fnUrl, JSON.stringify({ action: "init", session_id: sessionId, name: file.name, size: file.size }), { headers: { "Content-Type": "application/json" }, signal });
+  const init = await postWithRetry(chunkUrl, JSON.stringify({ action: "init", session_id: sessionId, name: file.name, size: file.size }), { headers: { "Content-Type": "application/json" }, signal });
   if (init?.error) throw new Error(init.error);
 
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -299,7 +309,7 @@ export async function uploadChunked(file, onProgress, opts = {}) {
     fd.append("name", file.name);
     fd.append("chunk", blob, `${sessionId}_${i}`);
     
-    const res = await postWithRetry(fnUrl, fd, { timeoutMs: Math.max(60_000, (blob.size / (1024 * 1024)) * 1000 + 30_000), signal });
+    const res = await postWithRetry(chunkUrl, fd, { timeoutMs: Math.max(60_000, (blob.size / (1024 * 1024)) * 1000 + 30_000), signal });
     if (res?.error) throw new Error(res.error);
     uploaded.add(i);
     uploadedBytes += blob.size;
@@ -307,7 +317,7 @@ export async function uploadChunked(file, onProgress, opts = {}) {
   }
 
   pctCb?.(97);
-  const fin = await postWithRetry(fnUrl, JSON.stringify({ action: "finalize", session_id: sessionId, name: file.name }), { headers: { "Content-Type": "application/json" }, timeoutMs: Math.max(300_000, (file.size / (1024 * 1024)) * 400), signal });
+  const fin = await postWithRetry(chunkUrl, JSON.stringify({ action: "finalize", session_id: sessionId, name: file.name }), { headers: { "Content-Type": "application/json" }, timeoutMs: Math.max(300_000, (file.size / (1024 * 1024)) * 400), signal });
   if (fin?.error) throw new Error(fin.error);
   const url = pickUrl(fin);
   if (!url) throw new Error("Upload terminé mais aucune URL reçue");
@@ -316,6 +326,18 @@ export async function uploadChunked(file, onProgress, opts = {}) {
 }
 
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {
+  // Mode PocketBase : choix par la taille seulement (forceChunked ignoré) :
+  // <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ; > 100 Mo -> R2 (admin, vidéos).
+  if (IS_POCKETBASE) {
+    if (file.size <= SEUIL_UPLOAD_DIRECT) {
+      const url = await directUpload(file);
+      onProgress?.(100);
+      return url;
+    }
+    if (file.size <= SEUIL_MULTIPART_S3) return uploadChunked(file, { onProgress, onDetail, signal });
+    return uploadMultipartS3(file, { onProgress, onDetail, signal });
+  }
+
   if (!appParams.appId) throw new Error("VITE_BASE44_APP_ID est vide.");
 
   if (!forceChunked && file.size <= SEUIL_UPLOAD_DIRECT) {

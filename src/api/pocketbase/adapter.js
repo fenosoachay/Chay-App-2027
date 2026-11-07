@@ -432,6 +432,31 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
     try { globalThis.sessionStorage?.setItem(otpKey(email), res.otpId); } catch { /* indisponible */ }
   }
 
+  // ── integrations.Core.UploadFile ───────────────────────────────────────────
+  // Fichier (membre : images et audio, 15 Mo) ou FichierAdmin (admin : 100 Mo). Le serveur impose le
+  // propriétaire, un nom aléatoire, la taille et le type réel. Réponse au format Base44 : { file_url }.
+  const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'audio/mpeg': 'mp3', 'video/mp4': 'mp4', 'application/pdf': 'pdf' };
+  async function uploadFile({ file } = {}) {
+    if (!file || typeof file !== 'object' || typeof file.size !== 'number') throw new TranslationError('UploadFile : fichier manquant');
+    const user = pb.authStore?.record;
+    if (!pb.authStore?.token || !user) throw authRequiredError();
+    const collection = user.role === 'admin' ? 'FichierAdmin' : 'Fichier';
+    const name = file.name || `fichier.${EXT_BY_TYPE[file.type] || 'bin'}`;
+    const form = new FormData();
+    form.append('fichier', file, name);
+    let record;
+    try {
+      record = await pb.collection(collection).create(form);
+    } catch (err) {
+      const code = err?.response?.data?.fichier?.code || '';
+      const max = collection === 'FichierAdmin' ? '100 Mo' : '15 Mo';
+      if (code === 'validation_file_size_limit' || err?.status === 413) throw new BackendError(`Fichier trop volumineux (max ${max})`, 413, 'file_too_large', null, err);
+      if (code === 'validation_invalid_mime_type') throw new BackendError('Type de fichier non autorisé', 415, 'file_type_not_allowed', null, err);
+      throw wrapError(err);
+    }
+    return { file_url: pb.files.getURL(record, record.fichier) };
+  }
+
   // ── functions ──────────────────────────────────────────────────────────────
   const functions = notMigratedProxy('functions', {
     async invoke(name, data) {
@@ -484,6 +509,7 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
     integrations: new Proxy({}, {
       get(_, pkg) {
         if (typeof pkg !== 'string' || pkg === 'then' || pkg.startsWith('_')) return undefined;
+        if (pkg === 'Core') return notMigratedProxy('integrations.Core', { UploadFile: uploadFile });
         return notMigratedProxy(`integrations.${pkg}`);
       },
     }),

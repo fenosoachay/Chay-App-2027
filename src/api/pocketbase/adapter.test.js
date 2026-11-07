@@ -358,9 +358,44 @@ describe('functions, intégrations, divers', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('integrations.Core.UploadFile : pas encore migré', () => {
-    const api = createPocketBaseAdapter(fakePb());
-    expect(() => api.integrations.Core.UploadFile({})).toThrow(NotMigratedError);
+  it('integrations.Core.UploadFile : membre -> Fichier, réponse { file_url }', async () => {
+    const pb = fakePb();
+    pb.files = { getURL: (rec, name) => `https://pb.test/api/files/c/${rec.id}/${name}` };
+    pb.collection('Fichier').create.mockImplementation(async () => ({ id: 'f'.repeat(24), fichier: 'f_abc.png' }));
+    const api = createPocketBaseAdapter(pb);
+    const file = new File([new Uint8Array([1, 2])], 'photo.png', { type: 'image/png' });
+    const res = await api.integrations.Core.UploadFile({ file });
+    expect(res).toEqual({ file_url: `https://pb.test/api/files/c/${'f'.repeat(24)}/f_abc.png` });
+    const form = pb.collection('Fichier').create.mock.calls[0][0];
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get('fichier').name).toBe('photo.png');
+    expect([...form.keys()]).toEqual(['fichier']); // ni propriétaire ni autre champ envoyé par le client
+  });
+
+  it('integrations.Core.UploadFile : admin -> FichierAdmin ; Blob sans nom -> nom selon le type', async () => {
+    const pb = fakePb();
+    pb.authStore.record = { id: 'a'.repeat(24), role: 'admin' };
+    pb.files = { getURL: () => 'u' };
+    pb.collection('FichierAdmin').create.mockImplementation(async () => ({ id: 'x', fichier: 'f.jpg' }));
+    const api = createPocketBaseAdapter(pb);
+    await api.integrations.Core.UploadFile({ file: new Blob([new Uint8Array([1])], { type: 'image/jpeg' }) });
+    expect(pb.collection('FichierAdmin').create.mock.calls[0][0].get('fichier').name).toBe('fichier.jpg');
+  });
+
+  it('integrations.Core.UploadFile : erreurs traduites, anonyme refusé, autres intégrations non migrées', async () => {
+    const pb = fakePb();
+    pb.collection('Fichier').create
+      .mockRejectedValueOnce({ status: 400, response: { data: { fichier: { code: 'validation_file_size_limit' } } } })
+      .mockRejectedValueOnce({ status: 400, response: { data: { fichier: { code: 'validation_invalid_mime_type' } } } });
+    const api = createPocketBaseAdapter(pb);
+    const file = new File([new Uint8Array([1])], 'a.png');
+    await expect(api.integrations.Core.UploadFile({ file })).rejects.toMatchObject({ status: 413, message: 'Fichier trop volumineux (max 15 Mo)' });
+    await expect(api.integrations.Core.UploadFile({ file })).rejects.toMatchObject({ status: 415, message: 'Type de fichier non autorisé' });
+    await expect(api.integrations.Core.UploadFile({})).rejects.toBeInstanceOf(TranslationError);
+    const anon = createPocketBaseAdapter(fakePb({ token: '' }));
+    await expect(anon.integrations.Core.UploadFile({ file })).rejects.toMatchObject({ code: 'auth_required' });
+    expect(() => api.integrations.Core.InvokeLLM({})).toThrow(NotMigratedError);
+    expect(() => api.integrations.Other.Thing({})).toThrow(NotMigratedError);
   });
 
   it('users.inviteUser et User.delete -> routes serveur', async () => {
