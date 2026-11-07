@@ -227,21 +227,14 @@ describe('enregistrements', () => {
     expect(fromPbDate('texte')).toBe('texte');
   });
 
-  it('toRecord : création -> created_by_id et dates base44 ; champs système ignorés', () => {
-    const now = new Date('2026-11-06T10:00:00.000Z');
-    expect(toRecord('Comment', { text: 'x', created_date: 'z', created_by: 'e', updated_date: 'y' }, { isCreate: true, userId: 'u1', now }))
-      .toEqual({
-        text: 'x',
-        created_by_id: 'u1',
-        base44_created_date: '2026-11-06 10:00:00.000Z',
-        base44_updated_date: '2026-11-06 10:00:00.000Z',
-      });
+  it('toRecord : création -> created_by_id ; champs système et dates base44 jamais envoyés (posés par le hook serveur)', () => {
+    expect(toRecord('Comment', { text: 'x', created_date: 'z', created_by: 'e', updated_date: 'y', base44_updated_date: 'w' }, { isCreate: true, userId: 'u1' }))
+      .toEqual({ text: 'x', created_by_id: 'u1' });
   });
 
-  it('toRecord : created_by_id fourni conservé ; id ignoré en mise à jour', () => {
-    const now = new Date('2026-11-06T10:00:00.000Z');
-    expect(toRecord('Comment', { created_by_id: 'u2', id: 'i' }, { isCreate: true, userId: 'u1', now }).created_by_id).toBe('u2');
-    expect(toRecord('Comment', { id: 'i', text: 't' }, { now })).toEqual({ text: 't', base44_updated_date: '2026-11-06 10:00:00.000Z' });
+  it('toRecord : created_by_id fourni conservé ; id ignoré en mise à jour ; pas de date en mise à jour', () => {
+    expect(toRecord('Comment', { created_by_id: 'u2', id: 'i' }, { isCreate: true, userId: 'u1' }).created_by_id).toBe('u2');
+    expect(toRecord('Comment', { id: 'i', text: 't' })).toEqual({ text: 't' });
   });
 
   it('toRecord : User (full_name -> name, date seule, aucun champ verrouillé envoyé)', () => {

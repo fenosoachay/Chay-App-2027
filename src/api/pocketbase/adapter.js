@@ -84,10 +84,18 @@ function notMigratedProxy(prefix, known = {}) {
 
 // ── Adaptateur ───────────────────────────────────────────────────────────────
 
-export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl, now = () => new Date() } = {}) {
+// Opérations d'entités confiées à une route serveur, parce que la règle de collection
+// les interdit au client (voir regles.md, « Conversations et messages : routes serveur »).
+const SERVER_ROUTES = {
+  Conversation: { create: 'createConversation', participants: 'updateConversationParticipants' },
+};
+
+export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
   const apiBase = String(baseUrl || pb.baseURL || '').replace(/\/+$/, '');
   const doFetch = (...args) => (fetchImpl || globalThis.fetch)(...args);
   const currentUserId = () => pb.authStore?.record?.id || null;
+  // Défini plus bas ; appelé seulement après la création de l'adaptateur.
+  const invokeFn = (name, data) => functions.invoke(name, data);
 
   function entityHandler(entity) {
     const col = () => pb.collection(collectionName(entity));
@@ -158,11 +166,21 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl, now = () => ne
         return res?.totalItems ?? 0;
       },
       async create(data) {
-        const body = toRecord(entity, data, { isCreate: true, userId: currentUserId(), now: now() });
+        const body = toRecord(entity, data, { isCreate: true, userId: currentUserId() });
+        const route = SERVER_ROUTES[entity]?.create;
+        if (route) return map((await invokeFn(route, body)).data);
         return map(await guard(col().create(body)));
       },
       async update(id, data) {
-        return map(await guard(col().update(id, toRecord(entity, data, { now: now() }))));
+        const body = toRecord(entity, data);
+        const route = SERVER_ROUTES[entity]?.participants;
+        if (route && 'participant_ids' in body) {
+          const { participant_ids: participantIds, ...rest } = body;
+          const res = await invokeFn(route, { conversation_id: id, participant_ids: participantIds });
+          if (!Object.keys(rest).length) return map(res.data);
+          return map(await guard(col().update(id, rest)));
+        }
+        return map(await guard(col().update(id, body)));
       },
       async delete(id) {
         await guard(col().delete(id));

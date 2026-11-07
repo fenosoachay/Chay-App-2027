@@ -42,7 +42,6 @@ function fakePb({ pages = {}, token = 'tok', userId = 'u'.repeat(24) } = {}) {
 }
 
 const rows = (n) => Array.from({ length: n }, (_, i) => ({ id: String(i).padStart(24, '0') }));
-const NOW = () => new Date('2026-11-06T10:00:00.000Z');
 
 describe('entities : lecture', () => {
   it('list(sort, limit) -> getList(page 1, perPage = limit) avec tri traduit', async () => {
@@ -105,31 +104,55 @@ describe('entities : lecture', () => {
 });
 
 describe('entities : écriture', () => {
-  it('create : created_by_id = utilisateur connecté, dates base44', async () => {
+  it('create : created_by_id = utilisateur connecté ; aucune date base44 envoyée', async () => {
     const pb = fakePb();
-    const api = createPocketBaseAdapter(pb, { now: NOW });
-    const rec = await api.entities.Comment.create({ text: 'x', created_date: 'ignoré' });
-    expect(pb.calls[0].body).toEqual({
-      text: 'x',
-      created_by_id: 'u'.repeat(24),
-      base44_created_date: '2026-11-06 10:00:00.000Z',
-      base44_updated_date: '2026-11-06 10:00:00.000Z',
-    });
-    expect(rec.created_date).toBe('2026-11-06T10:00:00.000Z');
+    const api = createPocketBaseAdapter(pb);
+    await api.entities.Comment.create({ text: 'x', created_date: 'ignoré' });
+    expect(pb.calls[0].body).toEqual({ text: 'x', created_by_id: 'u'.repeat(24) });
   });
 
   it('update / delete', async () => {
     const pb = fakePb();
-    const api = createPocketBaseAdapter(pb, { now: NOW });
+    const api = createPocketBaseAdapter(pb);
     await api.entities.Comment.update('i', { text: 'y', id: 'autre' });
-    expect(pb.calls[0]).toMatchObject({ op: 'update', id: 'i', body: { text: 'y', base44_updated_date: '2026-11-06 10:00:00.000Z' } });
+    expect(pb.calls[0]).toMatchObject({ op: 'update', id: 'i', body: { text: 'y' } });
+    expect(pb.calls[0].body).not.toHaveProperty('base44_updated_date');
     await api.entities.Comment.delete('i');
     expect(pb.calls[1]).toMatchObject({ op: 'delete', id: 'i' });
   });
 
+  it('Conversation.create -> route createConversation (aucune création directe)', async () => {
+    const pb = fakePb();
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, headers: {}, json: async () => ({ id: 'c1', type: 'direct', participant_ids: ['a', 'b'], collectionId: 'x', base44_created_date: '2026-11-06 10:00:00.000Z' }) }));
+    const api = createPocketBaseAdapter(pb, { baseUrl: 'https://pb.test', fetchImpl });
+    const c = await api.entities.Conversation.create({ type: 'direct', participant_ids: ['a', 'b'] });
+    expect(c).toMatchObject({ id: 'c1', created_date: '2026-11-06T10:00:00.000Z' });
+    expect(c).not.toHaveProperty('collectionId');
+    expect(pb.calls).toHaveLength(0);
+    expect(fetchImpl).toHaveBeenCalledWith('https://pb.test/api/fn/createConversation', expect.objectContaining({
+      body: JSON.stringify({ type: 'direct', participant_ids: ['a', 'b'], created_by_id: 'u'.repeat(24) }),
+    }));
+  });
+
+  it('Conversation.update : participant_ids -> route, autres champs -> mise à jour directe', async () => {
+    const pb = fakePb();
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, headers: {}, json: async () => ({ id: 'c1', participant_ids: ['a', 'b', 'c'] }) }));
+    const api = createPocketBaseAdapter(pb, { baseUrl: 'https://pb.test', fetchImpl });
+    const only = await api.entities.Conversation.update('c1', { participant_ids: ['a', 'b', 'c'] });
+    expect(only.participant_ids).toEqual(['a', 'b', 'c']);
+    expect(pb.calls).toHaveLength(0);
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toEqual({ conversation_id: 'c1', participant_ids: ['a', 'b', 'c'] });
+    await api.entities.Conversation.update('c1', { participant_ids: ['a', 'b'], name: 'Groupe' });
+    expect(pb.calls[0]).toMatchObject({ op: 'update', id: 'c1', body: { name: 'Groupe' } });
+    expect(pb.calls[0].body).not.toHaveProperty('participant_ids');
+    await api.entities.Conversation.update('c1', { pinned_by: ['a'] });
+    expect(pb.calls[1]).toMatchObject({ op: 'update', body: { pinned_by: ['a'] } });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it('bulkCreate et bulkUpdate', async () => {
     const pb = fakePb();
-    const api = createPocketBaseAdapter(pb, { now: NOW });
+    const api = createPocketBaseAdapter(pb);
     expect(await api.entities.QuizQuestion.bulkCreate([{ question: 'a' }, { question: 'b' }])).toHaveLength(2);
     await api.entities.Message.bulkUpdate([{ id: 'm1', read_by: ['u'] }, { id: 'm2', read_by: [] }]);
     expect(pb.calls.filter((c) => c.op === 'update').map((c) => c.id)).toEqual(['m1', 'm2']);
@@ -138,7 +161,7 @@ describe('entities : écriture', () => {
 
   it('updateMany { $set } sur les enregistrements correspondants', async () => {
     const pb = fakePb({ pages: { DonationRequest: rows(3) } });
-    const api = createPocketBaseAdapter(pb, { now: NOW });
+    const api = createPocketBaseAdapter(pb);
     const res = await api.entities.DonationRequest.updateMany({ is_read: { $ne: true } }, { $set: { is_read: true } });
     expect(res).toEqual({ matched: 3, modified: 3 });
     expect(pb.calls[0].opts.filter).toBe('is_read != true');

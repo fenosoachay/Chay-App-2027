@@ -275,8 +275,12 @@ export function fromRecord(entity, rec) {
   return out;
 }
 
-/** Données Base44 -> corps d'écriture PocketBase. */
-export function toRecord(entity, data, { isCreate = false, userId = null, now = new Date() } = {}) {
+/**
+ * Données Base44 -> corps d'écriture PocketBase.
+ * Les dates base44_created_date / base44_updated_date ne sont PAS envoyées : le hook serveur
+ * (pocketbase/pb_hooks/base44_compat.pb.js) les pose, et les règles les interdisent à un client.
+ */
+export function toRecord(entity, data, { isCreate = false, userId = null } = {}) {
   if (!isPlainObject(data)) throw new TranslationError('les données à écrire doivent être un objet');
   const out = {};
   for (const [k, v] of Object.entries(data)) {
@@ -286,14 +290,8 @@ export function toRecord(entity, data, { isCreate = false, userId = null, now = 
     const field = entity === 'User' && USER_FIELDS[k] ? USER_FIELDS[k] : k;
     out[field] = isDateOnlyField(entity, field) && typeof v === 'string' && DATE_ONLY.test(v) ? `${v} 00:00:00.000Z` : v;
   }
-  // users : base44_* et created_by_id sont verrouillés par les règles ; on ne les envoie pas.
-  if (entity !== 'User') {
-    const stamp = toPbDate(now);
-    if (isCreate) {
-      out.base44_created_date = stamp;
-      if (!('created_by_id' in out) && userId) out.created_by_id = userId;
-    }
-    out.base44_updated_date = stamp;
-  }
+  // Création : created_by_id = utilisateur connecté (les règles l'exigent). Jamais pour users (champ verrouillé).
+  if (entity !== 'User' && isCreate && !('created_by_id' in out) && userId) out.created_by_id = userId;
+  for (const k of Object.keys(out)) if (k.startsWith('base44_')) delete out[k];
   return out;
 }
