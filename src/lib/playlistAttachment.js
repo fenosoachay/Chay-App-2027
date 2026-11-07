@@ -1,3 +1,5 @@
+import { backendText } from "../api/backendConfig.js";
+
 export function buildPlaylistTrackRecord({
   entity,
   playlistId,
@@ -101,12 +103,12 @@ export async function savePlaylistTrack(
   if (!persisted) {
     if (readError) {
       throw new Error(
-        `Base44 n'a pas confirmé le lien playlist : ${readError.message || String(readError)}`
+        `${backendText("Base44", "Le serveur")} n'a pas confirmé le lien playlist : ${readError.message || String(readError)}`
       );
     }
     if (createError) throw createError;
     throw new Error(
-      "Base44 n'a pas confirmé l'ajout du contenu à la playlist. Le contenu reste enregistré; réessayez l'ajout."
+      `${backendText("Base44", "Le serveur")} n'a pas confirmé l'ajout du contenu à la playlist. Le contenu reste enregistré; réessayez l'ajout.`
     );
   }
 
@@ -115,7 +117,10 @@ export async function savePlaylistTrack(
   const stillMissing = missingFields(persisted);
   if (stillMissing.length) {
     throw new Error(
-      `Base44 n'a pas enregistré le lien playlist (${stillMissing.join(", ")}). Vérifiez les champs de l'entité PlaylistTrack, puis publiez.`
+      backendText(
+        `Base44 n'a pas enregistré le lien playlist (${stillMissing.join(", ")}). Vérifiez les champs de l'entité PlaylistTrack, puis publiez.`,
+        `Le serveur n'a pas enregistré le lien playlist (${stillMissing.join(", ")}). Vérifiez les champs de la collection PlaylistTrack.`,
+      )
     );
   }
   return persisted;

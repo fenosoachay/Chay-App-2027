@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { uploadToBase44, formatBytes } from "@/lib/upload";
 import { X, Loader2, Upload, Music2, Mic, Film, RotateCcw, Ban } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -130,7 +131,10 @@ export default function MediaUploader({ onClose, onSaved }) {
         } catch {
           toast({
             title: "Média non enregistré côté serveur",
-            description: "Le champ audio_url/video_url semble absent de l'entité. Ouvrez le dashboard Base44 → Entities → ajoutez le champ, puis Publish.",
+            description: backendText(
+              "Le champ audio_url/video_url semble absent de l'entité. Ouvrez le dashboard Base44 → Entities → ajoutez le champ, puis Publish.",
+              "Le champ audio_url/video_url semble absent de la collection. Ajoutez-le dans le tableau de bord PocketBase (Collections).",
+            ),
             variant: "destructive",
           });
           onSaved?.();

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { notifyAdminUpload } from "@/lib/adminNotify";
@@ -258,7 +259,10 @@ export default function EntityCrud({
       toast({
         title: "Réorganisation non enregistrée",
         description:
-          "Le champ « order » semble absent de l'entité Playlist côté Base44. Ajoutez-le (type nombre) dans Entities → Playlist, puis Publish.",
+          backendText(
+            "Le champ « order » semble absent de l'entité Playlist côté Base44. Ajoutez-le (type nombre) dans Entities → Playlist, puis Publish.",
+            "Le champ « order » semble absent de la collection Playlist. Ajoutez-le (type nombre) dans le tableau de bord PocketBase (Collections → Playlist).",
+          ),
         variant: "destructive",
       });
     }
@@ -400,7 +404,10 @@ export default function EntityCrud({
         if (stillDropped.length) {
           toast({
             title: "Enregistré, mais un champ image est manquant",
-            description: `Le champ « ${stillDropped.join(", ")} » semble absent de l'entité ${entity} côté Base44. Ajoutez-le (type texte) dans Entities → ${entity}, puis Publish.`,
+            description: backendText(
+              `Le champ « ${stillDropped.join(", ")} » semble absent de l'entité ${entity} côté Base44. Ajoutez-le (type texte) dans Entities → ${entity}, puis Publish.`,
+              `Le champ « ${stillDropped.join(", ")} » semble absent de la collection ${entity}. Ajoutez-le (type texte) dans le tableau de bord PocketBase (Collections → ${entity}).`,
+            ),
             variant: "destructive",
           });
           setOpen(false);

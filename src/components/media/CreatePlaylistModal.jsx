@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Library, Upload } from "lucide-react";
@@ -112,7 +113,7 @@ export default function CreatePlaylistModal({
       } else {
         savedPlaylist = await base44.entities.Playlist.create(playlistData);
         if (!savedPlaylist?.id) {
-          throw new Error("Base44 n'a pas renvoyé l'identifiant de la playlist.");
+          throw new Error(backendText("Base44 n'a pas renvoyé l'identifiant de la playlist.", "Le serveur n'a pas renvoyé l'identifiant de la playlist."));
         }
         pendingPlaylistIdRef.current = savedPlaylist.id;
         savedPlaylist = await base44.entities.Playlist.get(savedPlaylist.id);
@@ -129,7 +130,10 @@ export default function CreatePlaylistModal({
       }
       if (!matchesSubmittedData(savedPlaylist)) {
         const message =
-          "Base44 n'a pas conservé le nom ou l'image. Vérifiez les champs « name » et « cover_url » de l'entité Playlist, puis publiez.";
+          backendText(
+            "Base44 n'a pas conservé le nom ou l'image. Vérifiez les champs « name » et « cover_url » de l'entité Playlist, puis publiez.",
+            "Le serveur n'a pas conservé le nom ou l'image. Vérifiez les champs « name » et « cover_url » de la collection Playlist.",
+          );
         setSaveError(message);
         toast({ title: "Playlist non enregistrée", description: message, variant: "destructive" });
         return;

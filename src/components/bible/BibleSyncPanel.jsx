@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { IS_POCKETBASE } from "@/api/backendConfig";
 import { Loader2, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const TRANSLATIONS = [
@@ -61,6 +62,12 @@ export default function BibleSyncPanel() {
           Indexe le texte des traductions pour la recherche plein texte (66 livres). La synchronisation
           malgache se fait par lots : cliquez à nouveau si le statut reste « partiel ».
         </p>
+        {IS_POCKETBASE && (
+          <p className="mt-2 text-xs text-foreground/60">
+            Sur ce serveur, les versets sont importés par un script d'administration
+            (pocketbase/scripts/importer-baiboly.mjs) : la synchronisation depuis l'app est désactivée.
+          </p>
+        )}
       </div>
       {TRANSLATIONS.map((t) => {
         const rec = records[t.id];
@@ -76,7 +83,7 @@ export default function BibleSyncPanel() {
               </div>
               <button
                 onClick={() => runSync(t.id)}
-                disabled={running[t.id]}
+                disabled={running[t.id] || IS_POCKETBASE}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
                 {running[t.id] ? (

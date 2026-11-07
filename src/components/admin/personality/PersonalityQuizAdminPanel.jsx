@@ -3,6 +3,7 @@ import {
   BarChart3, Download, FileUp, Loader2, Pencil, Save, Trash2, Upload, Users, X,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
 import initialQuiz from "@/data/personality-quiz.json";
@@ -122,7 +123,7 @@ export default function PersonalityQuizAdminPanel() {
   useEffect(() => {
     reload().catch((error) => toast({
       title: "Impossible de charger le test",
-      description: error?.message || "Vérifiez que les entités Base44 sont publiées.",
+      description: error?.message || backendText("Vérifiez que les entités Base44 sont publiées.", "Vérifiez les collections dans le tableau de bord PocketBase."),
       variant: "destructive",
     })).finally(() => setLoading(false));
   }, []);

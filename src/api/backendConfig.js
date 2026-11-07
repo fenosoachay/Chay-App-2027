@@ -13,6 +13,12 @@ if (requested !== 'base44' && requested !== 'pocketbase') {
 export const BACKEND = requested === 'pocketbase' ? 'pocketbase' : 'base44';
 export const IS_POCKETBASE = BACKEND === 'pocketbase';
 export const PB_URL = String(env.VITE_PB_URL || 'https://api.chay.fr').replace(/\/+$/, '');
+// VITE_PUBLIC_APP_URL (mode PocketBase) : adresse publique du site de l'app, pour les liens partagés
+// depuis l'APK. À confirmer avant le basculement (défaut : https://chay.fr).
+export const PB_PUBLIC_APP_URL = String(env.VITE_PUBLIC_APP_URL || 'https://chay.fr').replace(/\/+$/, '');
+
+/** Texte selon le backend : le mode Base44 garde son texte d'origine. */
+export const backendText = (base44Text, pocketbaseText) => (IS_POCKETBASE ? pocketbaseText : base44Text);
 
 // Clé de stockage du authStore PocketBase (distincte de celles de Base44).
 export const PB_AUTH_STORAGE_KEY = 'pocketbase_auth';

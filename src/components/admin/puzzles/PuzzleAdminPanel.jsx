@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ImageOff, Loader2, Pencil, Plus, RotateCcw, Trash2, Upload, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
 import { PUZZLE_DIFFICULTIES } from "@/lib/puzzleGame";
@@ -237,7 +238,10 @@ export default function PuzzleAdminPanel() {
     <div className="space-y-5">
       <Block title={editing ? "Modifier un puzzle" : "Ajouter un puzzle"}>
         <p className="mb-4 text-sm text-foreground/60">
-          Ajoutez une image et ses informations. Les fichiers sont stockés via le service d'upload Base44, jamais dans la base sous forme Base64.
+          {backendText(
+            "Ajoutez une image et ses informations. Les fichiers sont stockés via le service d'upload Base44, jamais dans la base sous forme Base64.",
+            "Ajoutez une image et ses informations. Les fichiers sont stockés comme fichiers sur le serveur, jamais dans la base sous forme Base64.",
+          )}
         </p>
         <form onSubmit={save} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -367,7 +371,10 @@ export default function PuzzleAdminPanel() {
           <p className="py-6 text-center text-sm text-foreground/50">Aucun puzzle n'est enregistré.</p>
         )}
         <p className="mt-4 text-xs text-foreground/50">
-          La suppression retire le puzzle du jeu et l'archive pour conserver la référence à son image. Base44 ne fournit pas ici d'action de suppression physique des fichiers stockés.
+          {backendText(
+            "La suppression retire le puzzle du jeu et l'archive pour conserver la référence à son image. Base44 ne fournit pas ici d'action de suppression physique des fichiers stockés.",
+            "La suppression retire le puzzle du jeu et l'archive pour conserver la référence à son image. Les fichiers qui ne sont plus référencés sont nettoyés par le serveur.",
+          )}
         </p>
       </Block>
 
