@@ -21,3 +21,11 @@ serviceAccount*.json
 identifiants*.txt
 baiboly-cache/
 pb_data/
+
+# Android / iOS : configuration Firebase et clés de signature, à garder sur le disque seulement
+google-services.json
+GoogleService-Info.plist
+*.keystore
+*.jks
+local.properties
+keystore.properties
