@@ -24,7 +24,13 @@ try {
   // ═══════════════════ 1. PrayerRequest ═══════════════════════════════════
   console.log('\n■ Règle PrayerRequest (lecture directe et modification)');
   {
+    const rawCreate = await http('POST', '/api/collections/PrayerRequest/records', {
+      token: A.token, body: { requester_id: B.id, category: 'Autre', content: 'direct', status: 'open', created_by_id: A.id },
+    });
+    check('AVANT autorisé, MAINTENANT refusé : création directe d’une prière par l’API (contournait la limite de 3 / jour)',
+      rawCreate.status >= 400, `HTTP ${rawCreate.status}`);
     const p = await fn('createPrayerRequest', { token: A.token, body: { category: 'Santé', content: 'lot3' } });
+    check('légitime : createPrayerRequest fonctionne', p.status === 200 && typeof p.data?.id === 'string');
     const pid = p.data.id;
     const bList = await http('GET', `/api/collections/PrayerRequest/records?filter=${q(`id = "${pid}"`)}`, { token: B.token });
     check('AVANT autorisé, MAINTENANT refusé : B liste la prière ouverte de A', bList.status === 200 && bList.data.totalItems === 0);
