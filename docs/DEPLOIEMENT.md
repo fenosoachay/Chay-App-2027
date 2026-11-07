@@ -348,7 +348,40 @@ Résultats attendus :
 - le port 8091 répond `TcpTestSucceeded : False` ;
 - chaque route répond `401` ou `403`. Un `404` signifie que les hooks ne sont pas chargés.
 
-Tâches planifiées, via le tunnel de l'étape 3 : tableau d'administration → Settings → **Crons**. On doit y voir `push_reessais`, `verset_du_jour`, `televersements_incomplets` et `fichiers_orphelins`.
+Tâches planifiées : à chaque démarrage, le journal doit contenir **une** ligne écrite par `zz_demarrage.pb.js`, sans aucune donnée personnelle :
+```
+[chay] hooks chargés : 4 tâches planifiées (fichiers_orphelins, push_reessais, televersements_incomplets, verset_du_jour), mode notifications = off
+```
+```bash
+sudo journalctl -u pocketbase -b --no-pager | grep -E '\[chay\]|failed to execute'
+```
+- `failed to execute <fichier>` : ce fichier de hooks a échoué. PocketBase **démarre quand même**, mais sans les routes et les tâches de ce fichier.
+- Ligne absente : `zz_demarrage.pb.js` n'a pas été copié, ou les hooks ne sont pas lus depuis `/opt/pocketbase/pb_hooks`.
+
+Dans le tableau d'administration (Settings → **Crons**, via le tunnel de l'étape 3), on doit voir nos 4 tâches **et** 6 tâches internes `__pb…Cleanup__`, `__pbDBOptimize__`, `__pbAutoBackup__`. Cette liste est vérifiée dans le bac à sable.
+
+**Si la page Crons est vide** (« No registered crons found »), sans même les `__pb…` : PocketBase enregistre toujours ses tâches internes. Le tableau ne parle donc probablement pas au même processus que `api.chay.fr`, ou la requête `/api/crons` échoue. Diagnostic en lecture seule :
+
+🐧 **SERVEUR**
+```bash
+# 1. Ligne de démarrage et erreurs de hooks depuis le dernier démarrage
+sudo journalctl -u pocketbase -b --no-pager | grep -E '\[chay\]|failed to execute|Server started'
+# 2. Un seul PocketBase, et c'est celui de systemd qui écoute 127.0.0.1:8090
+systemctl show pocketbase -p MainPID -p ExecStart --no-pager
+pgrep -a pocketbase
+sudo ss -ltnp | grep ':8090'
+# 3. Version, dossier des hooks et droits
+/opt/pocketbase/pocketbase --version
+ls -l /opt/pocketbase/pb_hooks
+# 4. NOMS des variables vues par le processus (valeurs jamais affichées)
+sudo cat /proc/$(systemctl show pocketbase -p MainPID --value)/environ | tr '\0' '\n' | cut -d= -f1 | sort
+```
+À lire :
+- le PID de `ss` doit être celui de `MainPID`, et `pgrep` ne doit montrer **qu'un** processus. Un deuxième PocketBase (lancé à la main, `--dir` différent) peut occuper le port du tunnel ;
+- `ExecStart` doit contenir `--hooksDir=/opt/pocketbase/pb_hooks` si les hooks ne sont pas à côté de `pb_data` ;
+- la version doit être `0.40.6`.
+
+🪟 **PC** : dans le navigateur où le tableau est ouvert, ouvrir F12 → Réseau, recharger la page Crons, puis cliquer la requête `crons`. Lire son code (200, 401, 403…) et sa réponse : une liste vide `[]` ou une erreur. Comparer l'adresse du tableau (`http://127.0.0.1:8092/_/`) avec le tunnel réellement ouvert.
 
 **Retour arrière** : étapes 2, 4 et 5 (hooks, sidecar, variables), ou sauvegarde de l'étape 1.
 
