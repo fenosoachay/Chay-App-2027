@@ -34,6 +34,27 @@ Accès superuser local : la sauvegarde contient les superusers du serveur. Pour 
 C:\PB-local\bin\pocketbase.exe superuser upsert <e-mail> <mot-de-passe> --dir=C:\PB-local\pb_data
 ```
 
+### Avec le faux R2 (fichiers, bloc 4)
+
+Les routes vidéo lisent la configuration R2 dans l'environnement du processus. Pour le bac à sable, elle vise le faux S3 local ; les clés sont dans `C:\PB-localaux-s3.env` (créé au premier lancement du faux S3, ne pas partager) :
+
+```powershell
+Get-Content C:\PB-localaux-s3.env | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
+C:\PB-localin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
+```
+
+## Faux S3 local (simule Cloudflare R2)
+
+Dans un autre terminal, depuis le worktree :
+
+```powershell
+node pocketbase/tests/faux-s3.mjs   # écoute 127.0.0.1:9000, stockage C:\PB-localaux-s3
+```
+
+Il refuse toute requête mal signée (SigV4 recalculée avec `node:crypto`), simule le multipart, la lecture publique (`/public/<bucket>/<clé>`) et CORS (`ETag` exposé). Voir `docs/FICHIERS.md`.
+
+⚠️ Disque : le disque C: est presque plein ; la vidéo réelle de 1,87 Go n'est pas simulée.
+
 ## Arrêter
 
 `Ctrl+C` dans le terminal qui l'exécute, ou :
@@ -94,6 +115,9 @@ Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la 
 | `pocketbase/pb_hooks/fn_messagerie_priere.pb.js` | `createMessage`, `createPrayerRequest`, `takePrayer`, `answerPrayer` |
 | `pocketbase/pb_hooks/fn_jeux.pb.js` | `quizLevels`, `quizStart`, `quizAnswer`, `quizFinish`, `quizAdminStats`, `wsLevels`, `wsStart`, `wsWord`, `wsAnswer`, `wsHint`, `wsFinish`, `wsAdminStats` |
 | `pocketbase/pb_hooks/fn_conversations_dons.pb.js` | `createConversation`, `updateConversationParticipants`, `listThemeRequests`, `createDonationRequest` |
+| `pocketbase/pb_hooks/fichiers.pb.js` | `Fichier` / `FichierAdmin` (propriétaire imposé, nom aléatoire) ; `upload_chunk`, `initMultipartUpload`, `getPresignedUrl`, `completeMultipartUpload`, `cleanupIncompleteUploads`, `cleanupOrphanFiles` ; tâches planifiées `televersements_incomplets` (horaire) et `fichiers_orphelins` (hebdomadaire) |
+| `pocketbase/pb_hooks/lib/televersement.js` | R2 (requêtes S3 signées), sessions, morceaux sur disque, nettoyages |
+| `pocketbase/pb_hooks/lib/sigv4.js` | signature AWS SigV4 en JavaScript pur |
 | `pocketbase/pb_hooks/lib/conversations.js` | validation des participants, recherche de conversation directe existante |
 | `pocketbase/pb_hooks/lib/fn.js` | module partagé (utilisateur via `e.auth`, connexion / admin exigés, validation, transactions, réponses et erreurs au format Base44) |
 | `pocketbase/pb_hooks/lib/games.js` | règles du quiz et de Mots Mélangés (reprises de `base44/shared`) |
@@ -110,8 +134,12 @@ npm run test:pb-local
 - `pocketbase/tests/fn-lot3.integration.mjs` : règles corrigées (PrayerRequest, Message, Conversation : ce qui passait avant est refusé, l'usage légitime marche), routes de conversation, `listThemeRequests`, `createDonationRequest`.
 - `pocketbase/tests/fn-bloc3-collections.integration.mjs` : corrections de collections du bloc 3 (appareils, notifications, réactions, nom affiché, scores, listes d'identifiants).
 - `pocketbase/tests/fn-auth.integration.mjs` : inscription par code, mot de passe oublié, changement d'e-mail, règles de `users`, invitation, suppression de compte, dernier administrateur (**faux SMTP requis**).
-- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations, authentification de bout en bout avec le faux SMTP).
+- `pocketbase/tests/fn-fichiers.integration.mjs` : fichiers (membre, admin, anonyme, taille / type, propriétaire falsifié, morceaux, multipart R2, abandon, nettoyages) (**faux S3 requis**).
+- `pocketbase/tests/migration-fichiers.integration.mjs` : script de migration des fichiers (envoi R2 d'une vidéo générée).
+- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations, authentification avec le faux SMTP, fichiers avec le vrai `upload.js` et le faux S3).
 - `pocketbase/tests/fn-limites.integration.mjs` : limites de tentatives ; **toujours en dernier** (il épuise les compteurs pendant 60 s).
+
+Sans bac à sable : `npm run test:pb-unit` (signature SigV4 avec les vecteurs AWS, écrans MFA / OAuthConsent absents).
 
 Les connexions des tests patientent et réessaient si elles reçoivent un 429.
 
