@@ -169,9 +169,8 @@ try {
   }
   {
     const lb = await listAs(B.token, 'PrayerRequest', `id = "${prayers[2]}"`);
-    const exposed = lb.data?.items?.[0];
-    check('[RÈGLE] lecture directe d’une prière ouverte par B : requester_id exposé ? (attendu : oui avec la règle actuelle)',
-      Boolean(exposed && exposed.requester_id === A.id), 'requester_id non visible');
+    check('[RÈGLE corrigée] B ne lit plus directement la prière ouverte de A (requester_id protégé)',
+      lb.status === 200 && lb.data.totalItems === 0, `${lb.data?.totalItems} visible(s)`);
   }
 
   // ═══════════════════════════ QUIZ ════════════════════════════════════════
