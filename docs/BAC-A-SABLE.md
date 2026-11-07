@@ -42,6 +42,49 @@ C:\PB-local\bin\pocketbase.exe superuser upsert <e-mail> <mot-de-passe> --dir=C:
 Stop-Process -Name pocketbase
 ```
 
+## Redémarrer après une modification des hooks
+
+Sous Windows, PocketBase **ne recharge pas** `pocketbase\pb_hooks` automatiquement. Après chaque modification, depuis la racine du worktree :
+
+```powershell
+Stop-Process -Name pocketbase -ErrorAction SilentlyContinue
+C:\PB-local\bin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
+```
+
+Une erreur de syntaxe dans un hook apparaît au démarrage dans ce terminal.
+
+## Comptes de test (bac à sable uniquement)
+
+`C:\PB-local\identifiants-test.txt` (hors dépôt, ne pas partager) contient, séparés par des tabulations :
+
+| Ligne | Usage |
+|---|---|
+| `superuser` | superuser local (tableau de bord, scripts de test) |
+| `admin` | utilisateur de l'app avec `role = "admin"` |
+| `membre` | utilisateur de l'app avec `role = "user"` |
+
+Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la sauvegarde les efface (les recréer ensuite).
+
+## Hooks et routes
+
+| Fichier | Contenu |
+|---|---|
+| `pocketbase/pb_hooks/base44_compat.pb.js` | `base44_created_date` / `base44_updated_date` tenues à jour ; valeurs par défaut à la création ; `role = "user"` par défaut |
+| `pocketbase/pb_hooks/fn_pilote.pb.js` | `POST /api/fn/listCommunityUsers`, `getPrayerWall`, `recordMediaListen`, `recordVideoView` |
+| `pocketbase/pb_hooks/lib/fn.js` | module partagé (utilisateur via `e.auth`, connexion / admin exigés, validation, réponses et erreurs au format Base44) |
+| `pocketbase/pb_hooks/lib/defaults.js` | valeurs par défaut (générées depuis `regles.md`) |
+
+## Tests contre le bac à sable
+
+```powershell
+npm run test:pb-local
+```
+
+- `pocketbase/tests/fn-pilote.integration.mjs` : refus anonymes, appels membre / admin, entrées invalides, hooks ; remet les données dans leur état initial.
+- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK.
+
+Ces tests refusent toute adresse autre que `127.0.0.1` / `localhost` et lisent les identifiants dans `C:\PB-local\identifiants-test.txt` (variable `PB_TEST_CREDENTIALS` pour un autre chemin).
+
 ## Réinitialiser depuis la sauvegarde
 
 PocketBase doit être arrêté.
