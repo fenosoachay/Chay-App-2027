@@ -91,7 +91,13 @@ routerAdd('POST', '/api/fn/listThemeRequests', (e) => {
       if (!Number.isInteger(body.limit) || body.limit < 1) throw new fn.HttpError(400, 'Limite invalide.');
       limit = Math.min(body.limit, 200);
     }
-    const first = fn.findOne($app, 'users', "id != ''", 'base44_created_date,created', {});
+    // Premier compte = date de création effective la plus ancienne (base44_created_date, sinon created) :
+    // un compte sans base44_created_date ne doit pas passer en tête du tri à cause d'une date vide.
+    const dated = fn.findOne($app, 'users', "base44_created_date != ''", 'base44_created_date', {});
+    const undated = fn.findOne($app, 'users', "base44_created_date = ''", 'created', {});
+    const when = (r) => (r ? (r.getString('base44_created_date') || r.getString('created')) : null);
+    let first = dated || undated;
+    if (dated && undated && when(undated) < when(dated)) first = undated;
     if (!first || first.id === caller.id) throw new fn.HttpError(403, 'Réservé aux admins désignés.');
 
     const rows = status
