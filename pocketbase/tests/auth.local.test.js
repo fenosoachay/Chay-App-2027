@@ -60,10 +60,10 @@ describe('authentification en mode PocketBase (bac à sable + faux SMTP)', () =>
     const token = tokenFrom((await waitForMail(email, since, 10000, /reset-password/)).text);
     newPassword = `${crypto.randomBytes(9).toString('base64url')}B2`;
     await retry429(() => client().auth.resetPassword({ resetToken: token, newPassword }));
-    await expect(client().auth.resetPassword({ resetToken: token, newPassword: `${newPassword}x` })).rejects.toMatchObject({ message: /invalide ou expiré/ });
+    await expect(retry429(() => client().auth.resetPassword({ resetToken: token, newPassword: `${newPassword}x` }))).rejects.toMatchObject({ message: /invalide ou expiré/ });
     const ok = await retry429(() => client().auth.loginViaEmailPassword(email, newPassword));
     expect(ok.access_token).toBeTruthy();
-    await expect(client().auth.loginViaEmailPassword(email, password)).rejects.toMatchObject({ message: 'E-mail ou mot de passe incorrect.' });
+    await expect(retry429(() => client().auth.loginViaEmailPassword(email, password))).rejects.toMatchObject({ message: 'E-mail ou mot de passe incorrect.' });
   });
 
   it('changement d’e-mail (SecuritySection) : demande de confirmation envoyée à la nouvelle adresse', async () => {
@@ -82,6 +82,6 @@ describe('authentification en mode PocketBase (bac à sable + faux SMTP)', () =>
     const me = await app.auth.me();
     const res = await app.entities.User.delete(me.id);
     expect(res).toMatchObject({ deleted: true, ok: true });
-    await expect(client().auth.loginViaEmailPassword(email, newPassword)).rejects.toMatchObject({ message: 'E-mail ou mot de passe incorrect.' });
+    await expect(retry429(() => client().auth.loginViaEmailPassword(email, newPassword))).rejects.toMatchObject({ message: 'E-mail ou mot de passe incorrect.' });
   });
 });

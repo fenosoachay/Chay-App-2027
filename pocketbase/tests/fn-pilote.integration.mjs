@@ -218,9 +218,12 @@ console.log('\n■ Hooks de compatibilité (base44_*, valeurs par défaut, role)
     check('base44_created_date / base44_updated_date remplies', Boolean(rec.base44_created_date && rec.base44_updated_date));
     check('date de création imposée par un client ignorée', !rec.base44_created_date.startsWith('2000-'));
     await new Promise((ok) => setTimeout(ok, 20));
-    const u = await http('PATCH', `/api/collections/PostReaction/records/${reactionId}`, { token: membre, body: { type: 'like', base44_created_date: '2000-01-01 00:00:00.000Z' } });
+    // Depuis le bloc 3, les champs système (base44_*) sont verrouillés en mise à jour : la requête qui les envoie est refusée.
+    const forged = await http('PATCH', `/api/collections/PostReaction/records/${reactionId}`, { token: membre, body: { type: 'like', base44_created_date: '2000-01-01 00:00:00.000Z' } });
+    check('mise à jour avec base44_created_date imposée -> refusée', forged.status >= 400, `HTTP ${forged.status}`);
+    const u = await http('PATCH', `/api/collections/PostReaction/records/${reactionId}`, { token: membre, body: { type: 'like' } });
     const rec2 = (await http('GET', `/api/collections/PostReaction/records/${reactionId}`, asSu)).data;
-    check('mise à jour : base44_updated_date avance', u.status === 200 && rec2.base44_updated_date > rec.base44_updated_date);
+    check('mise à jour : base44_updated_date avance', u.status === 200 && rec2.base44_updated_date > rec.base44_updated_date, `HTTP ${u.status}`);
     check('mise à jour : base44_created_date inchangée', rec2.base44_created_date === rec.base44_created_date);
 
     const pwd = crypto.randomBytes(18).toString('base64url');

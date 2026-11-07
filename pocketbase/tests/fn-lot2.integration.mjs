@@ -99,8 +99,12 @@ try {
     check('B s’ajoute aux participants -> refusé', jb.status === 404 || jb.status === 403, `HTTP ${jb.status}`);
     const direct = await http('POST', '/api/collections/Message/records', { token: A.token, body: { conversation_id: convId, participant_ids: [A.id], text: 'direct', created_by_id: A.id } });
     check('création directe de Message par un membre -> refusée (passe par createMessage)', direct.status >= 400, `HTTP ${direct.status}`);
-    const ra = await http('PATCH', `/api/collections/Message/records/${msgId}`, { token: A.token, body: { read_by: [A.id, ADM.id] } });
-    check('A (participant) met à jour read_by', ra.status === 200);
+    // Depuis le bloc 3, un membre n'ajoute ou ne retire que son propre id dans read_by.
+    const readBy = (await get('Message', msgId, 'read_by')).read_by || [];
+    const other = await http('PATCH', `/api/collections/Message/records/${msgId}`, { token: A.token, body: { read_by: [...new Set([...readBy, A.id, ADM.id])] } });
+    check('A ajoute l’id d’un autre dans read_by -> refusé', other.status >= 400, `HTTP ${other.status}`);
+    const ra = await http('PATCH', `/api/collections/Message/records/${msgId}`, { token: A.token, body: { read_by: [...new Set([...readBy, A.id])] } });
+    check('A (participant) met à jour read_by', ra.status === 200, `HTTP ${ra.status}`);
     const still = await get('Message', msgId, 'text');
     check('le texte n’a pas été modifié par B', still.text === 'bonjour');
   }

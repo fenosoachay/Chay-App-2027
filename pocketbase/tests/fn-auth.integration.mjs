@@ -16,14 +16,23 @@ const tempUsers = [];
 const extra = []; // [collection, id]
 const rnd = () => crypto.randomBytes(5).toString('hex');
 const pwdGen = () => `${crypto.randomBytes(10).toString('base64url')}A1`;
-const pwLogin = (identity, password) => http('POST', '/api/collections/users/auth-with-password', { body: { identity, password } });
+// Routes d'authentification soumises aux limites de tentatives : patiente et réessaie sur 429,
+// pour que le test vérifie la réponse réelle (200 / 204 / 400…).
+async function authHttp(method, path, opts) {
+  for (let attempt = 0; ; attempt++) {
+    const r = await http(method, path, opts);
+    if (r.status !== 429 || attempt >= 14) return r;
+    await sleep(5000);
+  }
+}
+const pwLogin = (identity, password) => authHttp('POST', '/api/collections/users/auth-with-password', { body: { identity, password } });
 const get = async (col, id) => (await http('GET', `/api/collections/${col}/records/${id}`, su)).data;
 
 /** Compte vérifié (superuser) pour les tests ; supprimé à la fin. */
 async function tempUser(prefix = 'tmp') {
   const email = `${prefix}-${rnd()}@chay.test`;
   const password = pwdGen();
-  const r = await http('POST', '/api/collections/users/records', { ...su, body: { email, password, passwordConfirm: password, name: `Test ${prefix}`, verified: true } });
+  const r = await authHttp('POST', '/api/collections/users/records', { ...su, body: { email, password, passwordConfirm: password, name: `Test ${prefix}`, verified: true } });
   tempUsers.push(r.data.id);
   return { email, password, id: r.data.id };
 }
@@ -34,11 +43,11 @@ try {
   const email = `inscription-${rnd()}@chay.test`;
   const password = pwdGen();
   {
-    const asAdmin = await http('POST', '/api/collections/users/records', { body: { email: `x-${rnd()}@chay.test`, password, passwordConfirm: password, role: 'admin' } });
+    const asAdmin = await authHttp('POST', '/api/collections/users/records', { body: { email: `x-${rnd()}@chay.test`, password, passwordConfirm: password, role: 'admin' } });
     check('inscription avec role = "admin" -> refusée (le client ne choisit jamais son rôle)', asAdmin.status >= 400, `HTTP ${asAdmin.status}`);
-    const asVerified = await http('POST', '/api/collections/users/records', { body: { email: `x-${rnd()}@chay.test`, password, passwordConfirm: password, verified: true } });
+    const asVerified = await authHttp('POST', '/api/collections/users/records', { body: { email: `x-${rnd()}@chay.test`, password, passwordConfirm: password, verified: true } });
     check('inscription avec verified = true -> refusée', asVerified.status >= 400, `HTTP ${asVerified.status}`);
-    const r = await http('POST', '/api/collections/users/records', { body: { email, password, passwordConfirm: password } });
+    const r = await authHttp('POST', '/api/collections/users/records', { body: { email, password, passwordConfirm: password } });
     tempUsers.push(r.data?.id);
     const u = await get('users', r.data.id);
     check('inscription sans rôle -> rôle « user » imposé, compte non vérifié', r.status === 200 && u.role === 'user' && u.verified === false);
@@ -50,18 +59,18 @@ try {
       [unverified, unknown, wrong].every((x) => x.status === 400 && x.data?.message === 'Failed to authenticate.'));
 
     const since = Date.now() - 1000;
-    const otpUnknown = await http('POST', '/api/collections/users/request-otp', { body: { email: `inconnu-${rnd()}@chay.test` } });
-    const otp = await http('POST', '/api/collections/users/request-otp', { body: { email } });
+    const otpUnknown = await authHttp('POST', '/api/collections/users/request-otp', { body: { email: `inconnu-${rnd()}@chay.test` } });
+    const otp = await authHttp('POST', '/api/collections/users/request-otp', { body: { email } });
     check('demande de code : même réponse que l’adresse existe ou non', otpUnknown.status === 200 && otp.status === 200 && Boolean(otpUnknown.data?.otpId) && Boolean(otp.data?.otpId));
     const mail = await waitForMail(email, since, 10000, /Voici votre code/);
     const code = otpFrom(mail.text);
     check('e-mail capturé par le faux SMTP : code à 6 chiffres, texte français, aucun lien Base44',
       /^\d{6}$/.test(code || '') && /Voici votre code/.test(mail.text) && !/base44/i.test(mail.text));
-    const bad = await http('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: '000000' === code ? '111111' : '000000' } });
+    const bad = await authHttp('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: '000000' === code ? '111111' : '000000' } });
     check('mauvais code -> refusé', bad.status === 400);
-    const ok = await http('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: code } });
+    const ok = await authHttp('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: code } });
     check('bon code -> connecté, compte vérifié', ok.status === 200 && ok.data.record.verified === true);
-    const reuse = await http('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: code } });
+    const reuse = await authHttp('POST', '/api/collections/users/auth-with-otp', { body: { otpId: otp.data.otpId, password: code } });
     check('code réutilisé -> refusé (usage unique)', reuse.status >= 400, `HTTP ${reuse.status}`);
     const setPwd = await fn('setSignupPassword', { token: ok.data.token, body: { password } });
     check('mot de passe d’inscription posé après le code (nouvelle session)', setPwd.status === 200 && Boolean(setPwd.data?.token));
@@ -76,23 +85,23 @@ try {
   console.log('\n■ Mot de passe oublié');
   {
     const t = await tempUser('reset');
-    const unknownReset = await http('POST', '/api/collections/users/request-password-reset', { body: { email: `inconnu-${rnd()}@chay.test` } });
+    const unknownReset = await authHttp('POST', '/api/collections/users/request-password-reset', { body: { email: `inconnu-${rnd()}@chay.test` } });
     const since = Date.now() - 1000;
-    const known = await http('POST', '/api/collections/users/request-password-reset', { body: { email: t.email } });
+    const known = await authHttp('POST', '/api/collections/users/request-password-reset', { body: { email: t.email } });
     check('demande : même réponse que l’adresse existe ou non', unknownReset.status === 204 && known.status === 204);
     const mail = await waitForMail(t.email, since, 10000, /reset-password/);
     const token = tokenFrom(mail.text);
     check('e-mail : lien vers la page /reset-password de l’app, texte français, aucun lien Base44',
       Boolean(token) && mail.text.includes('http://127.0.0.1:5173/reset-password?token=') && /nouveau mot de passe/.test(mail.text) && !/base44/i.test(mail.text));
-    const short = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: 'court', passwordConfirm: 'court' } });
+    const short = await authHttp('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: 'court', passwordConfirm: 'court' } });
     check('nouveau mot de passe trop court -> refusé', short.status === 400);
     const newPwd = pwdGen();
-    const conf = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: newPwd, passwordConfirm: newPwd } });
+    const conf = await authHttp('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: newPwd, passwordConfirm: newPwd } });
     check('nouveau mot de passe enregistré', conf.status === 204);
     check('connexion avec le nouveau mot de passe', (await pwLogin(t.email, newPwd)).status === 200);
     check('ancien mot de passe refusé', (await pwLogin(t.email, t.password)).status === 400);
-    const again = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: pwdGen(), passwordConfirm: 'x' } });
-    const again2 = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: newPwd + 'Z', passwordConfirm: newPwd + 'Z' } });
+    const again = await authHttp('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: pwdGen(), passwordConfirm: 'x' } });
+    const again2 = await authHttp('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: newPwd + 'Z', passwordConfirm: newPwd + 'Z' } });
     check('lien réutilisé -> refusé (usage unique)', again.status === 400 && again2.status === 400);
   }
 
@@ -103,20 +112,20 @@ try {
     const tok = (await login('users', t)).token;
     const direct = await http('PATCH', `/api/collections/users/records/${t.id}`, { token: tok, body: { email: `direct-${rnd()}@chay.test` } });
     check('modification directe de l’e-mail -> refusée', direct.status >= 400);
-    const anon = await http('POST', '/api/collections/users/request-email-change', { body: { newEmail: `x-${rnd()}@chay.test` } });
+    const anon = await authHttp('POST', '/api/collections/users/request-email-change', { body: { newEmail: `x-${rnd()}@chay.test` } });
     check('demande sans être connecté -> refusée', anon.status === 401);
     const newEmail = `nouvelle-${rnd()}@chay.test`;
     const since = Date.now() - 1000;
-    const req = await http('POST', '/api/collections/users/request-email-change', { token: tok, body: { newEmail } });
+    const req = await authHttp('POST', '/api/collections/users/request-email-change', { token: tok, body: { newEmail } });
     check('demande de changement acceptée', req.status === 204);
     const mail = await waitForMail(newEmail, since, 10000, /confirmer-email/);
     const token = tokenFrom(mail.text);
     check('e-mail envoyé à la NOUVELLE adresse, lien vers /confirmer-email', Boolean(token) && mail.text.includes('http://127.0.0.1:8090/confirmer-email?token='));
     const page = await fetch(`http://127.0.0.1:8090/confirmer-email?token=${token}`);
     check('page de confirmation disponible (français)', page.status === 200 && /Confirmer ma nouvelle adresse/.test(await page.text()));
-    const wrongPwd = await http('POST', '/api/collections/users/confirm-email-change', { body: { token, password: 'mauvais' } });
+    const wrongPwd = await authHttp('POST', '/api/collections/users/confirm-email-change', { body: { token, password: 'mauvais' } });
     check('confirmation avec un mauvais mot de passe -> refusée', wrongPwd.status === 400);
-    const conf = await http('POST', '/api/collections/users/confirm-email-change', { body: { token, password: t.password } });
+    const conf = await authHttp('POST', '/api/collections/users/confirm-email-change', { body: { token, password: t.password } });
     check('confirmation -> adresse changée', conf.status === 204 && (await get('users', t.id)).email === newEmail);
     check('connexion avec la nouvelle adresse, plus avec l’ancienne', (await pwLogin(newEmail, t.password)).status === 200 && (await pwLogin(t.email, t.password)).status === 400);
   }
@@ -160,7 +169,7 @@ try {
     check('compte invité : rôle demandé, non vérifié', u.role === 'admin' && u.verified === false);
     const token = tokenFrom((await waitForMail(invited, since, 10000, /token=/)).text);
     const pwd = pwdGen();
-    const conf = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: pwd, passwordConfirm: pwd } });
+    const conf = await authHttp('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: pwd, passwordConfirm: pwd } });
     check('l’invité définit son mot de passe par le lien reçu', conf.status === 204);
     const l = await pwLogin(invited, pwd);
     check('l’invité peut se connecter (le lien a vérifié son adresse)', l.status === 200, `HTTP ${l.status} ; vérifié : ${(await get('users', u.id)).verified}`);
