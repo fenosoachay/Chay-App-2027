@@ -1,4 +1,4 @@
-# Caddy : servir l'app web sur `https://app.chay.fr`
+# Caddy : servir l'app web sur `https://membres.chay.fr`
 
 Configuration **proposée, installée nulle part**. Le build web statique (`dist/`) est servi par le Caddy déjà présent devant PocketBase.
 
@@ -6,17 +6,17 @@ Configuration **proposée, installée nulle part**. Le build web statique (`dist
 
 ```sh
 # sur la machine de build
-VITE_BACKEND=pocketbase VITE_PB_URL=https://api.chay.fr VITE_PUBLIC_APP_URL=https://app.chay.fr npm run build
+VITE_BACKEND=pocketbase VITE_PB_URL=https://api.chay.fr VITE_PUBLIC_APP_URL=https://membres.chay.fr npm run build
 # copie sur le serveur (dossier en lecture seule pour Caddy)
 rsync -a --delete dist/ chay@serveur:/srv/chay-app/dist/
 ```
 
-Le DNS de `app.chay.fr` doit pointer vers le serveur ; Caddy obtient le certificat tout seul.
+Le DNS de `membres.chay.fr` doit pointer vers le serveur ; Caddy obtient le certificat tout seul.
 
 ## Bloc Caddyfile
 
 ```caddyfile
-app.chay.fr {
+membres.chay.fr {
 	root * /srv/chay-app/dist
 	encode zstd gzip
 
@@ -51,7 +51,7 @@ app.chay.fr {
 	}
 
 	log {
-		output file /var/log/caddy/app.chay.fr.log
+		output file /var/log/caddy/membres.chay.fr.log
 		format json
 	}
 }
@@ -67,4 +67,4 @@ app.chay.fr {
   - `*.r2.cloudflarestorage.com` sert à l'envoi direct des vidéos (URL présignées).
 - **Journaux** : le journal d'accès contient les adresses IP ; à conserver le moins longtemps possible (rotation Caddy).
 - **PocketBase** (`api.chay.fr`) garde son propre bloc (`reverse_proxy 127.0.0.1:8090`) ; régler « Trusted proxy » dans PocketBase. Le sidecar push (`127.0.0.1:8091`) n'apparaît **dans aucun bloc**.
-- **CORS côté PocketBase** : `--origins=https://app.chay.fr,https://localhost` (APK Android).
+- **CORS côté PocketBase** : `--origins=https://membres.chay.fr,https://localhost` (APK Android).

@@ -7,7 +7,7 @@ Examen de `capacitor.config.json` et de `android/` dans le dossier habituel (`Ch
 | Point | État |
 |---|---|
 | Appels API | Le WebView sert l'app sur `https://localhost` (`androidScheme: https`) ; les requêtes vers `https://api.chay.fr` sont de simples `fetch`, pas de la navigation. **Aucune modification native n'est nécessaire** : il suffit d'un build web `VITE_BACKEND=pocketbase`. |
-| CORS | PocketBase accepte toutes les origines par défaut. Pour restreindre : `--origins=https://app.chay.fr,https://localhost` (ajouter `capacitor://localhost` pour iOS). |
+| CORS | PocketBase accepte toutes les origines par défaut. Pour restreindre : `--origins=https://membres.chay.fr,https://localhost` (ajouter `capacitor://localhost` pour iOS). |
 | Permissions | `INTERNET`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)` : nécessaires. Localisation fine et approximative : utilisées par l'option facultative de localisation. |
 | Icône de notification | `@drawable/ic_stat_chay` déclarée pour FCM (`default_notification_icon`). |
 | Canal `chay-default` | Créé par l'app au démarrage (`usePushNotifications.js`, importance haute) ; le sidecar l'indique dans chaque message (`android.notification.channel_id`). |
@@ -35,7 +35,7 @@ Après `git apply` : `npm run build` (avec `VITE_BACKEND=pocketbase`, `VITE_PB_U
 Aucun schéma de lien profond n'est déclaré : `custom_url_scheme` vaut `io.chay.app`, mais aucun `intent-filter`. La connexion Google n'est pas migrée en mode PocketBase (seuls les écrans MFA non routés l'utilisaient), donc **rien n'est nécessaire maintenant**. Si elle est voulue plus tard :
 1. fournisseur Google dans PocketBase avec l'adresse de retour `https://api.chay.fr/api/oauth2-redirect` ;
 2. ouverture par `@capacitor/browser` ;
-3. `intent-filter` `io.chay.app://auth` (ou App Link vérifié `https://app.chay.fr/auth`) pour revenir dans l'app.
+3. `intent-filter` `io.chay.app://auth` (ou App Link vérifié `https://membres.chay.fr/auth`) pour revenir dans l'app.
 
 ## À tester avec un vrai téléphone
 

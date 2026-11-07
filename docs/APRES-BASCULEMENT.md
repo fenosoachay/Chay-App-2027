@@ -34,7 +34,7 @@ Activer le MFA natif de PocketBase (mot de passe + code par e-mail) pour `role =
 
 ## 5. Politique de confidentialité à écrire
 
-L'app n'a pas de page de politique de confidentialité ; les conditions d'utilisation (inscription) parlent seulement de « services techniques ». À rédiger côté église, puis à publier dans l'app (Réglages → Confidentialité) et sur `app.chay.fr` :
+L'app n'a pas de page de politique de confidentialité ; les conditions d'utilisation (inscription) parlent seulement de « services techniques ». À rédiger côté église, puis à publier dans l'app (Réglages → Confidentialité) et sur `membres.chay.fr` :
 - responsable du traitement et contact ;
 - données collectées : profil, messages, prières, localisation facultative, jetons de notification ;
 - sous-traitants et pays :

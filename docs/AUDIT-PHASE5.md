@@ -15,7 +15,7 @@ Méthode : recherche des imports du SDK, des domaines Base44, des fonctions et e
 
 | # | Fichier | Problème | Correction | Risque | Statut |
 |---|---|---|---|---|---|
-| 1 | `src/lib/publicOrigin.js` | Liens partagés depuis l'APK (verset, radio) vers `chay.base44.app` | `VITE_PUBLIC_APP_URL` en mode PocketBase (défaut `https://app.chay.fr`) | moyen | **corrigé** |
+| 1 | `src/lib/publicOrigin.js` | Liens partagés depuis l'APK (verset, radio) vers `chay.base44.app` | `VITE_PUBLIC_APP_URL` en mode PocketBase (défaut `https://membres.chay.fr`) | moyen | **corrigé** |
 | 2 | 7 écrans admin (`EntityCrud`, `MediaUploader`, `CreatePlaylistModal`, `PuzzleAdminPanel`, `PersonalityQuizAdminPanel`, `playlistAttachment`, `usePushNotifications`) | Messages « dashboard Base44 → Entities → Publish », « Publish → Mobile app » | `backendText()` : texte PocketBase en mode PocketBase | faible | **corrigé** |
 | 3 | `src/components/bible/BibleSyncPanel.jsx` | Bouton « Synchroniser » → erreur « pas encore migré » | Bouton désactivé + explication (import par `importer-baiboly.mjs`) | faible | **corrigé** |
 | 4 | `src/pages/Messages.jsx`, `src/hooks/useUnreadMessages.js` | Un admin voit **toutes** les conversations dans sa boîte et le badge compte tous les messages (198 → « 99+ ») | N'afficher et ne compter que les conversations où l'on participe | moyen | **corrigé** (affichage) ; règles : voir § Conversations |

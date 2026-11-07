@@ -140,7 +140,7 @@ La première commande est une simulation : la lire avant de lancer `--appliquer`
 
 | Réglage | Valeur |
 |---|---|
-| Settings → Application → **Application URL** | `https://app.chay.fr` |
+| Settings → Application → **Application URL** | `https://membres.chay.fr` |
 | Settings → Mail settings | SMTP du fournisseur, expéditeur `noreply@…` |
 | Settings → Rate limits | règles de `pocketbase/config/settings-bac-a-sable.json` (section `rateLimits`) |
 | Settings → Application → **Trusted proxy** | en-tête `X-Forwarded-For` (voir § Durcissement) |
@@ -309,13 +309,21 @@ Tâches planifiées, via le tunnel de l'étape 3 : tableau d'administration → 
 
 ---
 
-## 7. Site web `app.chay.fr` (Caddy)
+## 7. Site web `membres.chay.fr` (Caddy)
 
-1. **DNS** : enregistrement `A` (et `AAAA` si IPv6) `app.chay.fr` vers l'adresse du serveur.
+⚠️ **`app.chay.fr` est l'ancienne application PHP de l'église, toujours en service : ne pas toucher à son bloc Caddy ni à son DNS.** La nouvelle app web est servie sur **`https://membres.chay.fr`**, avec un bloc séparé.
+
+> **CORS** : PocketBase et R2 doivent autoriser l'origine **`https://membres.chay.fr`**.
+> - PocketBase : `--origins=https://membres.chay.fr,https://localhost` (point 4 ci-dessous ; `https://localhost` = APK Android).
+> - R2, bucket `chay-videos` → Settings → CORS policy : `AllowedOrigins` = `https://membres.chay.fr`, `https://localhost`, `capacitor://localhost` ; méthodes `PUT`, `GET`, `HEAD` ; `ExposeHeaders` = `ETag` (voir `docs/FICHIERS.md`).
+>
+> Sans ces deux réglages, les appels à l'API et l'envoi des vidéos échouent dans le navigateur, avec une erreur CORS dans la console.
+
+1. **DNS** : enregistrement `A` (et `AAAA` si IPv6) `membres.chay.fr` vers l'adresse du serveur.
 
 2. 🪟 **PC** : construire le site et l'envoyer.
 ```powershell
-$env:VITE_BACKEND = "pocketbase"; $env:VITE_PB_URL = "https://api.chay.fr"; $env:VITE_PUBLIC_APP_URL = "https://app.chay.fr"
+$env:VITE_BACKEND = "pocketbase"; $env:VITE_PB_URL = "https://api.chay.fr"; $env:VITE_PUBLIC_APP_URL = "https://membres.chay.fr"
 npx vite build --outDir C:\Temp\chay-dist --emptyOutDir
 Remove-Item Env:VITE_BACKEND, Env:VITE_PB_URL, Env:VITE_PUBLIC_APP_URL
 ssh $SERVEUR "rm -rf /tmp/chay-dist && mkdir -p /tmp/chay-dist"
@@ -334,17 +342,17 @@ sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.avant-app
 sudo nano /etc/caddy/Caddyfile
 ```
 
-Ajouter le bloc `app.chay.fr { … }` de `docs/CADDY-APP.md`, puis :
+Ajouter le bloc `membres.chay.fr { … }` de `docs/CADDY-APP.md`, puis :
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
-curl -sI https://app.chay.fr | head -5
-curl -s -o /dev/null -w "%{http_code}\n" https://app.chay.fr/messages
+curl -sI https://membres.chay.fr | head -5
+curl -s -o /dev/null -w "%{http_code}\n" https://membres.chay.fr/messages
 ```
 
 Résultats attendus : `200` et `strict-transport-security` dans les en-têtes, puis `200` pour `/messages` (retour à l'application monopage).
 
-4. Origines autorisées par PocketBase : ajouter `--origins=https://app.chay.fr,https://localhost` à la ligne `ExecStart` (`sudo systemctl edit --full pocketbase`), puis `sudo systemctl restart pocketbase`.
+4. Origines autorisées par PocketBase : ajouter `--origins=https://membres.chay.fr,https://localhost` à la ligne `ExecStart` (`sudo systemctl edit --full pocketbase`), puis `sudo systemctl restart pocketbase`.
 
 **Retour arrière**
 ```bash
@@ -366,8 +374,8 @@ Utiliser de vraies boîtes e-mail que tu consultes. Ne jamais utiliser le compte
 
 | # | Vérification | Où | Attendu |
 |---|---|---|---|
-| 1 | Inscription de `test-membre` | app.chay.fr | e-mail avec code reçu (regarder aussi les indésirables), code accepté |
-| 2 | Connexion, déconnexion, mot de passe oublié | app.chay.fr + APK | e-mail de réinitialisation reçu, lien vers `app.chay.fr` |
+| 1 | Inscription de `test-membre` | membres.chay.fr | e-mail avec code reçu (regarder aussi les indésirables), code accepté |
+| 2 | Connexion, déconnexion, mot de passe oublié | membres.chay.fr + APK | e-mail de réinitialisation reçu, lien vers `membres.chay.fr` |
 | 3 | Push navigateur | Réglages → Notifications → Activer, puis « Tester » | notification affichée |
 | 4 | Push Android | APK installé, notifications autorisées, « Tester le push Android » | notification affichée **app fermée** et au premier plan ; le clic ouvre la bonne page |
 | 5 | Message entre les deux comptes | Messages | push et e-mail chez le destinataire ; pas d'e-mail en double dans les 30 min |
@@ -377,7 +385,7 @@ Utiliser de vraies boîtes e-mail que tu consultes. Ne jamais utiliser le compte
 | 9 | Conversations privées | `test-admin` ouvre Messages | il ne voit **que** ses conversations |
 | 10 | Prière | `test-membre` crée, `test-admin` prend en charge | push « Quelqu'un prie pour toi » |
 | 11 | Verset du jour | le lendemain à 07:00 (heure de Paris) | notification si un dévotionnel est planifié |
-| 12 | Liens partagés depuis l'APK | verset, radio | adresse en `https://app.chay.fr/…` |
+| 12 | Liens partagés depuis l'APK | verset, radio | adresse en `https://membres.chay.fr/…` |
 
 ---
 
