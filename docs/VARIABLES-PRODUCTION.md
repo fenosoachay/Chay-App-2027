@@ -45,6 +45,7 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 |---|---|---|
 | `VITE_BACKEND` | `pocketbase` | choisit l'adaptateur PocketBase (défaut : Base44) |
 | `VITE_PB_URL` | `https://api.chay.fr` | adresse de PocketBase (valeur par défaut) |
+| `VITE_PUBLIC_APP_URL` | `https://chay.fr` (**à confirmer**) | adresse publique du site de l'app : liens partagés depuis l'APK (verset, radio) |
 
 Les variables `VITE_BASE44_*` ne servent plus qu'au mode Base44.
 
