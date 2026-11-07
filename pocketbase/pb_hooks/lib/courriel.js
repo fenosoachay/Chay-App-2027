@@ -1,5 +1,9 @@
 // E-mails de notification (français), envoyés par le client SMTP de PocketBase (réglages « Mail settings »).
 // Tout texte venant d'un membre est échappé ; le sujet est nettoyé (pas de retour à la ligne).
+// Interrupteur NOTIFICATIONS_MODE (lib/sortie.js) : vérifié ici pour chaque e-mail de notification.
+
+/** Chargé à l'usage (le fichier reste chargeable hors de PocketBase pour les tests unitaires). */
+const sortie = () => require(`${__hooks}/lib/sortie.js`);
 
 const AMP = String.fromCharCode(38);
 
@@ -44,8 +48,15 @@ function shell(title, bodyHtml) {
     + '</div></body></html>';
 }
 
-/** Envoie un e-mail ; lève une erreur si l'envoi échoue. */
+/**
+ * Envoie un e-mail : true si envoyé, false si bloqué par NOTIFICATIONS_MODE (rien ne sort) ;
+ * lève une erreur si l'envoi échoue.
+ */
 function send(to, subject, html, text) {
+  if (!sortie().emailAllowed(to)) {
+    sortie().blocked('email', 1);
+    return false;
+  }
   const meta = $app.settings().meta;
   const message = new MailerMessage({
     from: { address: meta.senderAddress, name: meta.senderName || 'Église Chay' },
@@ -55,14 +66,14 @@ function send(to, subject, html, text) {
     text: text || '',
   });
   $app.newMailClient().send(message);
+  return true;
 }
 
 /** Envoi « au mieux » : renvoie true / false, journalise sans adresse ni contenu. */
 function trySend(context, to, subject, html, text) {
   if (!to) return false;
   try {
-    send(to, subject, html, text);
-    return true;
+    return send(to, subject, html, text);
   } catch (_) {
     $app.logger().warn('[courriel] envoi impossible', 'contexte', context);
     return false;

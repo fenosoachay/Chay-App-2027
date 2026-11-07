@@ -66,6 +66,7 @@ node pocketbase/sidecar-push/serveur.mjs   # 127.0.0.1:8091
 - `faux-push.env` contient un secret partagé, des clés VAPID **de test** et un faux compte de service (clé RSA générée localement) : ne pas partager, jamais en production.
 - `PUSH_LOCAL_ONLY=1` : le sidecar refuse toute adresse hors 127.0.0.1 (aucun envoi réel possible).
 - Le faux service vérifie les signatures (JWT RS256 OAuth, JWT VAPID ES256) et refuse les requêtes mal signées. Jetons spéciaux : `invalide-*` (UNREGISTERED / 410), `absent-*` (404), `autre-cle-*` (403, abonnement créé avec une autre clé VAPID), `surcharge-*` (503 permanent), `instable-*` (503 une fois).
+- **`NOTIFICATIONS_MODE`** (PocketBase **et** sidecar) : `on` pour les suites habituelles ; sans la variable, rien ne part (`off`). Test des 3 modes : relancer PocketBase et le sidecar avec `NOTIFICATIONS_MODE=off`, puis `test` (avec `NOTIFICATIONS_TEST_EMAILS=mode-liste@chay.test`), puis `on`, et lancer chaque fois `node pocketbase/tests/fn-mode-notifications.integration.mjs <mode>`.
 - Les e-mails de notification partent vers le faux SMTP (`C:\PB-local\mails`). Ils contiennent les adresses des membres : ne pas partager ce dossier.
 
 ## Faux S3 local (simule Cloudflare R2)

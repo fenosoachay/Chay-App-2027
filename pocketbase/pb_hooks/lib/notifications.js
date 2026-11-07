@@ -229,7 +229,7 @@ function messagePush(messageRecord) {
     pushSent = r.sent + r.webPush.sent;
     pushFailed = r.failed + r.webPush.failed;
     if (r.webPush.skipped && r.sent === 0 && r.webPush.subscriptions > 0) pushFailed = Math.max(pushFailed, 1);
-    if (r.tokensFound === 0 && r.webPush.subscriptions === 0) pushNoSubscriptions = pushTargets.length;
+    if (!r.blocked && r.tokensFound === 0 && r.webPush.subscriptions === 0) pushNoSubscriptions = pushTargets.length;
   }
   return {
     notifCreated, notifFailed, emailsSent, emailsSkipped, pushSent, pushFailed, android, web,
@@ -330,6 +330,10 @@ function newContentNotify(contentRecord, sendEmail) {
  * 06:00 UTC pour couvrir l'heure d'été et l'heure d'hiver). Idempotent par jour.
  */
 function dailyVerse(nowMs, fromCron) {
+  // Mode off : la tâche s'arrête AVANT de parcourir les destinataires ; mode test : seuls les comptes listés.
+  const sortie = require(`${__hooks}/lib/sortie.js`);
+  const mode = sortie.mode();
+  if (mode === 'off') return { skipped: 'notifications_off' };
   const paris = fuseaux.localParts(nowMs, APP_TZ);
   const dateStr = paris.dateStr;
   if (paris.hhmm < '06:55') return { skipped: 'too_early', date: dateStr };
@@ -348,7 +352,11 @@ function dailyVerse(nowMs, fromCron) {
   const message = (reference + (d.verse_text ? ` — ${d.verse_text}` : '')).slice(0, 300);
   const targets = [];
   const pushTargets = [];
-  for (const u of activeUsers()) {
+  const candidates = mode === 'test'
+    ? sortie.testEmails().map((e) => { try { return $app.findAuthRecordByEmail('users', e); } catch (_) { return null; } })
+      .filter((u) => u && !u.getBool('disabled'))
+    : activeUsers();
+  for (const u of candidates) {
     if (done[u.id]) continue;
     const s = settingsOf(u);
     if (s.notifications_enabled === false || s.notif_verse === false) continue;

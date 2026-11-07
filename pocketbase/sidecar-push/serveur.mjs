@@ -16,6 +16,10 @@ const HOST = '127.0.0.1';
 const SECRET = env.PUSH_SIDECAR_SECRET || '';
 const FCM_API_BASE = (env.FCM_API_BASE || 'https://fcm.googleapis.com').replace(/\/+$/, '');
 const LOCAL_ONLY = env.PUSH_LOCAL_ONLY === '1';
+// Interrupteur NOTIFICATIONS_MODE (comme les hooks) : "off" (défaut si absent ou invalide) = rien ne sort ;
+// "test" et "on" = envoi (en mode test, les hooks ne transmettent que les cibles des comptes listés).
+const NOTIFICATIONS_MODE = ['off', 'test', 'on'].includes(String(env.NOTIFICATIONS_MODE || '').trim().toLowerCase())
+  ? String(env.NOTIFICATIONS_MODE).trim().toLowerCase() : 'off';
 const VAPID_SUBJECT = env.VAPID_SUBJECT || 'mailto:no-reply@chay.fr';
 const MAX_TARGETS = 500;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -189,6 +193,12 @@ function validate(body) {
 async function handleSend(body) {
   const { notification, fcm, web, ttl } = validate(body);
   if (fcm.length + web.length > MAX_TARGETS) return [413, { error: `${MAX_TARGETS} cibles maximum par appel` }];
+  if (NOTIFICATIONS_MODE === 'off') {
+    // Rien ne sort : ni remise en file (retry false) ni suppression (invalid false).
+    const blocked = (t) => ({ ref: t.ref, ok: false, invalid: false, retry: false, classification: 'notifications_off' });
+    log('envoi bloqué (NOTIFICATIONS_MODE=off)', { fcm: fcm.length, web: web.length });
+    return [200, { fcm: fcm.map(blocked), web: web.map(blocked), fcmError: fcm.length ? 'notifications_off' : null, webSkipped: web.length ? 'notifications_off' : null }];
+  }
 
   let fcmResults = [];
   let fcmError = null;
@@ -236,7 +246,7 @@ const server = http.createServer((req, res) => {
   };
   if (!sameSecret(req.headers['x-chay-push-secret'], SECRET)) return reply(401, { error: 'unauthorized' });
   if (req.method === 'GET' && req.url === '/etat') {
-    return reply(200, { fcm: sa ? 'configured' : fcmConfigError, web: vapidError || 'configured', localOnly: LOCAL_ONLY });
+    return reply(200, { fcm: sa ? 'configured' : fcmConfigError, web: vapidError || 'configured', localOnly: LOCAL_ONLY, mode: NOTIFICATIONS_MODE });
   }
   if (req.method !== 'POST' || req.url !== '/envoyer') return reply(404, { error: 'not found' });
   const chunks = [];
@@ -261,5 +271,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  log(`à l'écoute sur ${HOST}:${PORT}`, { fcm: sa ? 'configuré' : 'non configuré', web: vapidError || 'configuré', localOnly: LOCAL_ONLY });
+  log(`à l'écoute sur ${HOST}:${PORT}`, { fcm: sa ? 'configuré' : 'non configuré', web: vapidError || 'configuré', localOnly: LOCAL_ONLY, mode: NOTIFICATIONS_MODE });
 });

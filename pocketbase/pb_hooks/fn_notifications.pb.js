@@ -224,9 +224,9 @@ routerAdd('POST', '/api/fn/sendTestNotification', (e) => {
         + mail.paragraph('Ceci est un e-mail de test du système de notifications de l\'Église Chay. Si vous le recevez, l\'envoi d\'e-mails fonctionne correctement.')
         + mail.button(mail.appUrl() || '/', 'Ouvrir l\'application'));
       try {
-        mail.send(to, 'Notification de test — Église Chay', html,
+        emailSent = mail.send(to, 'Notification de test — Église Chay', html,
           `Bonjour ${name},\n\nCeci est un e-mail de test du système de notifications de l'Église Chay.`);
-        emailSent = true;
+        if (!emailSent) emailError = `bloqué par NOTIFICATIONS_MODE (${require(`${__hooks}/lib/sortie.js`).mode()})`;
       } catch (_) {
         emailError = 'envoi impossible (voir les réglages SMTP)';
       }

@@ -2,7 +2,11 @@
 //  - cibles : DeviceToken (FCM) et WebPushSubscription (Web Push) des destinataires, créés par eux-mêmes ;
 //  - jetons / abonnements invalides : supprimés ;
 //  - échecs temporaires : file PushEnvoi, reprise par la tâche planifiée push_reessais ;
-//  - journaux : nombres seulement.
+//  - journaux : nombres seulement ;
+//  - interrupteur NOTIFICATIONS_MODE (lib/sortie.js) : vérifié ici pour TOUT envoi, file comprise.
+
+/** Chargé à l'usage (le fichier reste chargeable hors de PocketBase pour les tests unitaires). */
+const sortie = () => require(`${__hooks}/lib/sortie.js`);
 
 const QUEUE = 'PushEnvoi';
 const BATCH = 500;
@@ -114,14 +118,32 @@ function enqueue(canal, ref, notification, attempts, error) {
  * Envoie `notification` aux cibles données (déjà filtrées). `attempts` = numéro de la tentative.
  * Renvoie les compteurs et, par cible, le résultat.
  */
-function deliverTargets(targets, notification, attempts) {
+function deliverTargets(targetsIn, notification, attempts) {
+  // Interrupteur : en mode off / test, seules les cibles des comptes autorisés restent (dernier verrou,
+  // valable aussi pour la file PushEnvoi). Les cibles bloquées ne sont ni envoyées ni remises en file.
+  let targets = targetsIn;
+  let blockedTargets = 0;
+  const mode = sortie().mode();
+  if (mode !== 'on') {
+    const all = targetsIn.fcm.concat(targetsIn.web);
+    const allowed = {};
+    for (const id of sortie().filterUserIds(all.map((t) => t.user).filter((u, i, a) => u && a.indexOf(u) === i))) allowed[id] = true;
+    targets = { fcm: targetsIn.fcm.filter((t) => allowed[t.user]), web: targetsIn.web.filter((t) => allowed[t.user]) };
+    blockedTargets = all.length - targets.fcm.length - targets.web.length;
+    sortie().blocked('push', blockedTargets);
+  }
   const out = {
     fcm: { found: targets.fcm.length, sent: 0, failed: 0, removed: 0, queued: 0 },
     web: { found: targets.web.length, sent: 0, failed: 0, removed: 0, queued: 0 },
     fcmError: null,
     webSkipped: null,
     perRef: {},
+    blocked: blockedTargets,
   };
+  if (blockedTargets && !targets.fcm.length && !targets.web.length) {
+    out.fcmError = targetsIn.fcm.length ? `notifications_${mode}` : null;
+    out.webSkipped = targetsIn.web.length ? `notifications_${mode}` : null;
+  }
   if (!targets.fcm.length && !targets.web.length) return out;
   const cfg = config();
   if (!cfg) {
@@ -173,9 +195,10 @@ function deliverTargets(targets, notification, attempts) {
  * Push vers des membres (Android + navigateur). Résultat au format de sendFcmPush (Base44) :
  * { sent, failed, tokensFound, invalidDeactivated, fcmError, webPush: {...}, recipients, queued }.
  */
-function sendToUsers(userIds, notificationIn, label) {
+function sendToUsers(userIdsIn, notificationIn, label) {
   const notification = normalize(notificationIn);
-  const targets = collectTargets(userIds || []);
+  const { userIds, blockedUsers, mode } = allowedUsers(userIdsIn);
+  const targets = collectTargets(userIds);
   const r = deliverTargets(targets, notification, 1);
   const recipients = targets.ids.map((uid, i) => {
     const mine = (list) => list.filter((t) => t.user === uid);
@@ -194,7 +217,7 @@ function sendToUsers(userIds, notificationIn, label) {
   $app.logger().info('[push] envoi', 'fonction', label || '', 'destinataires', targets.ids.length,
     'android', `${r.fcm.sent}/${r.fcm.found}`, 'navigateur', `${r.web.sent}/${r.web.found}`,
     'supprimes', r.fcm.removed + r.web.removed, 'en_file', r.fcm.queued + r.web.queued);
-  return {
+  const res = {
     sent: r.fcm.sent,
     failed: r.fcm.failed,
     tokensFound: r.fcm.found,
@@ -211,13 +234,30 @@ function sendToUsers(userIds, notificationIn, label) {
     },
     queued: r.fcm.queued + r.web.queued,
     recipients,
+    blocked: blockedUsers,
   };
+  if (blockedUsers && !targets.ids.length) {
+    res.fcmError = `notifications_${mode}`;
+    res.webPush.skipped = `notifications_${mode}`;
+  }
+  return res;
+}
+
+/** Destinataires autorisés par l'interrupteur NOTIFICATIONS_MODE (les autres sont ignorés et comptés). */
+function allowedUsers(userIdsIn) {
+  const list = Array.isArray(userIdsIn) ? userIdsIn : [];
+  const mode = sortie().mode();
+  const userIds = mode === 'on' ? list : sortie().filterUserIds(list);
+  const blockedUsers = list.length - userIds.length;
+  sortie().blocked('push_destinataires', blockedUsers);
+  return { userIds, blockedUsers, mode };
 }
 
 /** Web Push seul (route sendWebPush). */
-function sendWebToUsers(userIds, notificationIn) {
+function sendWebToUsers(userIdsIn, notificationIn) {
   const notification = normalize(notificationIn);
-  const targets = collectTargets(userIds || []);
+  const { userIds, blockedUsers, mode } = allowedUsers(userIdsIn);
+  const targets = collectTargets(userIds);
   targets.fcm = [];
   const r = deliverTargets(targets, notification, 1);
   return {
@@ -225,7 +265,8 @@ function sendWebToUsers(userIds, notificationIn) {
     failed: r.web.failed,
     subscriptions: r.web.found,
     deactivated: r.web.removed,
-    skipped: r.webSkipped,
+    skipped: blockedUsers && !targets.ids.length ? `notifications_${mode}` : r.webSkipped,
+    blocked: blockedUsers,
     byUser: targets.ids.map((uid, i) => {
       const w = targets.web.filter((t) => t.user === uid);
       const ok = w.filter((t) => r.perRef[t.ref] && r.perRef[t.ref].ok).length;
@@ -256,13 +297,15 @@ function processQueue(limit) {
     });
     const key = `${attempts}|${JSON.stringify(notification)}`;
     if (!groups[key]) groups[key] = { attempts, notification, targets: { fcm: [], web: [] } };
-    if (canal === 'fcm') groups[key].targets.fcm.push({ ref: target.id, token: target.getString('token') });
-    else groups[key].targets.web.push({ ref: target.id, endpoint: target.getString('endpoint'), p256dh: target.getString('p256dh'), auth: target.getString('auth') });
+    const user = target.getString('user_id');
+    if (canal === 'fcm') groups[key].targets.fcm.push({ ref: target.id, token: target.getString('token'), user });
+    else groups[key].targets.web.push({ ref: target.id, endpoint: target.getString('endpoint'), p256dh: target.getString('p256dh'), auth: target.getString('auth'), user });
   }
   for (const key of Object.keys(groups)) {
     const g = groups[key];
     const r = deliverTargets(g.targets, g.notification, g.attempts);
     stats.envoyes += r.fcm.sent + r.web.sent;
+    stats.bloques = (stats.bloques || 0) + r.blocked;
   }
   if (stats.traites) $app.logger().info('[push] reprise de la file', 'traites', stats.traites, 'envoyes', stats.envoyes, 'expires', stats.expires, 'abandonnes', stats.abandonnes);
   return stats;

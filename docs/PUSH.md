@@ -42,6 +42,10 @@ app ──► PocketBase (hooks /api/fn/*) ──$http──► sidecar push (No
 - **Côté serveur** : un refus 403, 404 ou 410 supprime le `WebPushSubscription` (la paire du sidecar étant vérifiée au démarrage, un 403 vient de l'abonnement, pas du serveur).
 - **Côté app** (mode PocketBase, `src/lib/webPushCore.js`) : à chaque ouverture (permission déjà accordée) ou activation, si l'abonnement du navigateur a été créé avec une autre clé (`options.applicationServerKey` différente), l'app le désabonne, en crée un nouveau avec la nouvelle clé et **remplace** l'ancienne ligne `WebPushSubscription` (mise à jour avec le nouvel endpoint et les nouvelles clés, pas de doublon). Rien à faire pour les membres : ils doivent seulement rouvrir l'app (sans nouvelle demande de permission). Navigateur qui n'expose pas la clé : abonnement gardé ; s'il est refusé, le serveur le supprime et l'app en recrée un à l'ouverture suivante.
 
+## Interrupteur `NOTIFICATIONS_MODE`
+
+`off` (défaut) / `test` / `on`, lu par les hooks **et** le sidecar. Vérifié en un seul point pour le push (`deliverTargets` dans `lib/push.js`, file `PushEnvoi` comprise) et pour les e-mails (`send` dans `lib/courriel.js`) ; logique dans `lib/sortie.js`. Détails : `docs/VARIABLES-PRODUCTION.md`.
+
 ## Jetons invalides
 
 | Réponse | Action |

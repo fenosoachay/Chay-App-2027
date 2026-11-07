@@ -83,21 +83,25 @@ scp -r pocketbase\pb_hooks "${SERVEUR}:/tmp/chay/pb_hooks"
 scp -r pocketbase\sidecar-push "${SERVEUR}:/tmp/chay/sidecar-push"
 ```
 
-🐧 **SERVEUR** : remplacer les hooks en gardant les anciens.
+🐧 **SERVEUR** : installer les hooks. Au premier déploiement, `/opt/pocketbase/pb_hooks` **n'existe pas encore** : on le crée, sans copie de sauvegarde.
 ```bash
-sudo cp -a /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks.avant-phase6
-sudo rsync -a --delete /tmp/chay/pb_hooks/ /opt/pocketbase/pb_hooks/
+ls -d /opt/pocketbase/pb_hooks 2>/dev/null && echo "EXISTE : voir l'encadré ci-dessous" || echo "absent : normal au premier déploiement"
+sudo mkdir -p /opt/pocketbase/pb_hooks
+sudo cp -a /tmp/chay/pb_hooks/. /opt/pocketbase/pb_hooks/
 sudo chown -R root:root /opt/pocketbase/pb_hooks
 ls /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks/lib
 ```
 
+> **Seulement si le dossier existait déjà** (redéploiement) : avant le `cp -a`, le mettre de côté puis repartir d'un dossier vide, pour qu'aucun ancien fichier ne reste :
+> ```bash
+> sudo mv /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks.avant-$(date +%Y%m%d-%H%M)
+> ```
+
 Les nouveaux hooks ne sont lus qu'au redémarrage (étape 6).
 
 **Retour arrière**
-```bash
-sudo rsync -a --delete /opt/pocketbase/pb_hooks.avant-phase6/ /opt/pocketbase/pb_hooks/
-sudo systemctl restart pocketbase
-```
+- premier déploiement : `sudo rm -rf /opt/pocketbase/pb_hooks && sudo systemctl restart pocketbase` ;
+- redéploiement : remettre le dossier mis de côté (`sudo rm -rf /opt/pocketbase/pb_hooks && sudo mv /opt/pocketbase/pb_hooks.avant-<date> /opt/pocketbase/pb_hooks`), puis `sudo systemctl restart pocketbase`.
 
 ---
 
@@ -105,17 +109,17 @@ sudo systemctl restart pocketbase
 
 L'import passe par le tableau d'administration, à travers un **tunnel SSH**. Le tableau `/_/` n'a pas à être exposé (voir § Durcissement). Il ne touche ni aux collections système (`_superusers`, `users`…) ni aux données.
 
-🪟 **PC** : ouvrir le tunnel dans une fenêtre PowerShell à part et la laisser ouverte. Arrêter d'abord le PocketBase du bac à sable s'il tourne : il utilise le port 8090.
+🪟 **PC** : ouvrir le tunnel dans une fenêtre PowerShell à part et la laisser ouverte. Le port **local 8091** mène au port 8090 du serveur : `127.0.0.1:8090` reste le bac à sable, `127.0.0.1:8091` est la **production** (aucune confusion possible). Sur le PC, le sidecar push du bac à sable écoute aussi sur 8091 : l'arrêter d'abord s'il tourne.
 ```powershell
-ssh -N -L 8090:127.0.0.1:8090 $SERVEUR
+ssh -N -L 8091:127.0.0.1:8090 $SERVEUR
 ```
 
-Puis, dans le navigateur du PC : `http://127.0.0.1:8090/_/` → connexion superuser.
+Puis, dans le navigateur du PC : `http://127.0.0.1:8091/_/` → connexion superuser.
 
 **3a. Collections**, dans le tableau d'administration :
 1. Settings → **Import collections** ;
 2. charger `C:\Export-Base44\_outil\pb\collections.json` ;
-3. **ne pas** cocher la suppression des collections ou champs absents (« Delete missing… ») ;
+3. **activer « Merge with the existing collections »** : sans cette option, les collections et champs absents du fichier (dont `users`) seraient **supprimés** ;
 4. **lire l'écran de comparaison** : seules des collections de l'app doivent apparaître, jamais une collection système ni une suppression ;
 5. confirmer.
 
@@ -126,25 +130,29 @@ Changements attendus depuis le premier import :
 **3b. Collection `users`** (champs et règles), 🪟 **PC**, dans une nouvelle fenêtre, le tunnel restant ouvert :
 ```powershell
 cd C:\Export-Base44\_outil\pb
-$env:PB_URL = "http://127.0.0.1:8090"
+$env:PB_URL = "http://127.0.0.1:8091"
 $env:PB_EMAIL = Read-Host "E-mail superuser"
-$env:PB_PASSWORD = Read-Host "Mot de passe superuser"
+$s = Read-Host "Mot de passe superuser" -AsSecureString
+$b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
+$env:PB_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b)
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b); Remove-Variable s, b
 node apply-users.mjs
 node apply-users.mjs --appliquer
-Remove-Item Env:PB_PASSWORD, Env:PB_EMAIL
+Remove-Item Env:PB_PASSWORD, Env:PB_EMAIL, Env:PB_URL
 ```
 
-La première commande est une simulation : la lire avant de lancer `--appliquer`.
+Le mot de passe s'affiche en `*` pendant la saisie et n'est jamais écrit à l'écran. La première commande `node` est une simulation : la lire avant de lancer `--appliquer`.
 
 **3c. Réglages** (tableau d'administration, à la main ; le script du bac à sable n'accepte que le SMTP local) :
 
 | Réglage | Valeur |
 |---|---|
 | Settings → Application → **Application URL** | `https://membres.chay.fr` |
-| Settings → Mail settings | SMTP du fournisseur, expéditeur `noreply@…` |
+| Settings → Mail settings → expéditeur | adresse `no-reply@chay.fr`, nom **« Église Chay »** |
+| Settings → Mail settings → **Use SMTP mail server** | hôte `ssl0.ovh.net`, port `465`, **TLS activé** (TLS direct sur 465), utilisateur `no-reply@chay.fr`, mot de passe de la boîte tapé dans le champ (jamais dans un fichier ni une commande) ; puis « Send test email » vers une boîte de test |
 | Settings → Rate limits | règles de `pocketbase/config/settings-bac-a-sable.json` (section `rateLimits`) |
 | Settings → Application → **Trusted proxy** | en-tête `X-Forwarded-For` (voir § Durcissement) |
-| Collections → users → Options | OTP, modèles d'e-mail, durées : `pocketbase/config/users-auth.json` |
+| Collections → users → Options | OTP, modèles d'e-mail, durées : `pocketbase/config/users-auth.json` (fichier de référence), en remplaçant `%PB_URL%` par `https://api.chay.fr` dans les modèles. **À recopier à la main** : `configurer-auth.mjs` ne configure que le bac à sable (il refuse le port 8091 du tunnel) |
 
 **Retour arrière** : restaurer la sauvegarde de l'étape 1. Le schéma et les données reviennent ensemble ; c'est la seule méthode sûre.
 
@@ -189,6 +197,7 @@ FIREBASE_SERVICE_ACCOUNT=/etc/chay/firebase-sa.json
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:no-reply@chay.fr
+NOTIFICATIONS_MODE=test
 ```
 
 Clés VAPID : la **nouvelle** paire générée sur le 🪟 **PC** par `node pocketbase/scripts/generer-vapid.mjs C:Secrets-Chayapid.txt` (clé publique affichée, clé privée dans le fichier). `VAPID_PUBLIC_KEY` = la clé publique affichée (la même que `VITE_VAPID_PUBLIC_KEY` à l'étape du build) ; `VAPID_PRIVATE_KEY` = la valeur du fichier, à coller directement dans `nano` sans l'afficher ailleurs.
@@ -217,7 +226,7 @@ sudo systemctl status chay-push --no-pager
 sudo journalctl -u chay-push -n 20 --no-pager
 ```
 
-Le journal doit afficher `à l'écoute sur 127.0.0.1:8091 {"fcm":"configuré","web":"configuré","localOnly":false}`. Si `web` affiche `vapid_key_mismatch`, la clé privée ne correspond pas à la clé publique de l'app.
+Le journal doit afficher `à l'écoute sur 127.0.0.1:8091 {"fcm":"configuré","web":"configuré","localOnly":false,"mode":"test"}`. Si `web` affiche `vapid_key_mismatch`, la clé privée ne correspond pas à la clé publique de l'app.
 
 **Retour arrière**
 ```bash
@@ -248,7 +257,11 @@ R2_PREFIX=videos
 CHAY_PUBLIC_URL=https://api.chay.fr
 PUSH_SIDECAR_URL=http://127.0.0.1:8091
 PUSH_SIDECAR_SECRET=
+NOTIFICATIONS_MODE=test
+NOTIFICATIONS_TEST_EMAILS=
 ```
+
+**Interrupteur des envois** (`docs/VARIABLES-PRODUCTION.md`) : `NOTIFICATIONS_MODE=test` **au départ**. Seules les adresses de `NOTIFICATIONS_TEST_EMAILS` (séparées par des virgules : les deux comptes de test de l'étape 8) reçoivent push et e-mails de notification ; les membres ne reçoivent rien. Mettre la **même** valeur `NOTIFICATIONS_MODE=test` dans `/etc/chay/push.env` (étape 4). Passer à `on` **seulement le jour du basculement** (voir la fin de ce document). Les e-mails d'authentification (code de connexion, mot de passe oublié, vérification) ne dépendent pas de ce réglage.
 
 `PUSH_SIDECAR_SECRET` doit être **la même valeur** que dans `/etc/chay/push.env`. Les clés R2 sont **les nouvelles**, créées après la révocation de l'ancien jeton.
 
@@ -290,7 +303,7 @@ sudo ss -ltnp | grep -E ':8090|:8091'
 ```
 
 Résultats attendus :
-- `{"fcm":"configured","web":"configured","localOnly":false}` ;
+- `{"fcm":"configured","web":"configured","localOnly":false,"mode":"test"}` ;
 - deux lignes, **toutes deux sur `127.0.0.1`**, jamais `0.0.0.0` ni `*`.
 
 🪟 **PC** : vérifications depuis l'extérieur.
@@ -404,7 +417,7 @@ Utiliser de vraies boîtes e-mail que tu consultes. Ne jamais utiliser le compte
    - leurs fichiers (`Fichier` / `FichierAdmin`, filtre `proprietaire = "<id du compte de test>"`) ;
    - la vidéo de test dans R2 (Cloudflare → bucket → `videos/…`).
 3. **File push** : Collections → `PushEnvoi` doit être vide (sinon tout supprimer).
-4. **Nettoyage des fichiers orphelins** : tableau d'administration → Settings → Crons → lancer `fichiers_orphelins`. C'est une simulation par défaut ; la route `cleanupOrphanFiles` applique.
+4. **Nettoyage des fichiers orphelins** : **attention**, lancer le cron `fichiers_orphelins` (Settings → Crons) **supprime réellement** les fichiers non référencés depuis plus de 7 jours. Pour une simulation, appeler d'abord la route `cleanupOrphanFiles` en superuser (simulation par défaut, `{"simulation": false}` pour appliquer).
 5. **Sauvegarde** « propre » juste avant le basculement (étape 1, avec un autre nom de fichier).
 
 ---
@@ -493,4 +506,5 @@ Hors de cette mise en service, à préparer à part :
 - migration des fichiers (`pocketbase/scripts/migrer-fichiers.mjs`, à ouvrir au serveur réel) ;
 - import de la Bible malgache (`importer-baiboly.mjs`, depuis le cache) ;
 - build de l'APK (correctif Android déjà appliqué) ;
-- bascule de l'app vers `VITE_BACKEND=pocketbase`.
+- bascule de l'app vers `VITE_BACKEND=pocketbase` ;
+- **`NOTIFICATIONS_MODE=on`** dans `/etc/chay/pocketbase.env` **et** `/etc/chay/push.env`, puis `sudo systemctl restart pocketbase chay-push` (avant cela, seuls les comptes de test reçoivent push et e-mails).

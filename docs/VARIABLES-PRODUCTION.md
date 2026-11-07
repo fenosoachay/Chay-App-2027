@@ -20,6 +20,21 @@ Aucune de ces valeurs ne va dans le dépôt. Fichiers sur le serveur, droits `60
 | `PUSH_SIDECAR_SECRET` | 32 octets aléatoires, base64url | pour le push | **secret** partagé avec le sidecar |
 | `PB_ENCRYPTION_KEY` | 32 caractères aléatoires | recommandé | à passer par `--encryptionEnv=PB_ENCRYPTION_KEY` : chiffre en base les réglages (dont le mot de passe SMTP) |
 
+| `NOTIFICATIONS_MODE` | `test` au départ, `on` au basculement | **oui** (défaut `off`) | interrupteur des envois sortants des hooks, voir ci-dessous |
+| `NOTIFICATIONS_TEST_EMAILS` | `test-admin@…,test-membre@…` | en mode `test` | adresses autorisées en mode `test`, séparées par des virgules (casse ignorée) |
+
+### Interrupteur `NOTIFICATIONS_MODE`
+
+| Valeur | Effet |
+|---|---|
+| `off` (**défaut**, aussi si absente ou invalide) | aucun push (FCM, Web Push) ni e-mail de notification ne sort ; file `PushEnvoi` vidée sans envoi ; la tâche `verset_du_jour` s'arrête **avant** de parcourir les membres. Seul un compteur est journalisé (`[sortie] envois bloques`), sans adresse ni identifiant |
+| `test` | envoi **uniquement** aux comptes dont l'e-mail est dans `NOTIFICATIONS_TEST_EMAILS` ; les autres sont ignorés (comptés dans le journal) ; le verset du jour ne parcourt que ces comptes |
+| `on` | comportement normal |
+
+Couvert : push Android et navigateur (toutes les routes, prière, messages, communauté, réactions, thèmes, nouveautés, verset du jour, tests), file `PushEnvoi` et ses réessais, e-mails envoyés par les hooks (messages, thèmes, nouveautés, e-mail de test). **Non couvert** : les e-mails d'authentification de PocketBase (code de connexion, réinitialisation, vérification, changement d'e-mail), toujours déclenchés par l'action d'un membre. Les notifications in-app (`UserNotification`) restent créées : elles ne quittent pas le serveur (sauf le verset du jour, limité comme ci-dessus).
+
+Le sidecar lit aussi `NOTIFICATIONS_MODE` (même valeur, dans `/etc/chay/push.env`) : en `off`, il refuse tout envoi (double verrou). Le filtrage par adresse du mode `test` est fait par les hooks.
+
 Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-mails partent, le push est signalé `push_not_configured`.
 
 ### Réglages PocketBase (tableau de bord, pas des variables)
@@ -45,6 +60,7 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 | `VAPID_PUBLIC_KEY` | clé affichée par `generer-vapid.mjs` | pour le navigateur | **nouvelle** clé publique, identique à `VITE_VAPID_PUBLIC_KEY` du build |
 | `VAPID_PRIVATE_KEY` | — | pour le navigateur | **secret** : la valeur écrite par `generer-vapid.mjs` dans `C:Secrets-Chayapid.txt` ; le sidecar vérifie qu'elle correspond à la clé publique |
 | `VAPID_SUBJECT` | `mailto:no-reply@chay.fr` | non (c'est le défaut) | contact transmis aux services push |
+| `NOTIFICATIONS_MODE` | même valeur que PocketBase | **oui** (défaut `off` : rien ne part) | `off` refuse tout envoi ; `test` / `on` envoient (le filtrage du mode `test` est fait par les hooks) |
 | `FCM_API_BASE`, `PUSH_LOCAL_ONLY` | — | **jamais en production** | tests locaux seulement |
 
 ## Build de l'app (Vite)

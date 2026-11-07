@@ -3,7 +3,8 @@
 //  - collection users : pocketbase/config/users-auth.json (OTP, modèles d'e-mail en français, authRule…) ;
 //  - réglages : pocketbase/config/settings-bac-a-sable.json (faux SMTP 127.0.0.1, limites de tentatives).
 // Par défaut : SIMULATION (affiche les changements). Écriture réelle avec --appliquer.
-// Refuse toute machine autre que 127.0.0.1 / localhost, et tout SMTP autre que 127.0.0.1.
+// Refuse toute adresse autre que 127.0.0.1:8090 / localhost:8090 (donc le tunnel de production sur 8091),
+// et tout SMTP autre que 127.0.0.1.
 // Superuser : PB_EMAIL / PB_PASSWORD, sinon la ligne « superuser » de C:\PB-local\identifiants-test.txt (jamais affichés).
 
 import fs from 'node:fs';
@@ -13,8 +14,9 @@ import { fileURLToPath } from 'node:url';
 const APPLY = process.argv.includes('--appliquer');
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BASE = (process.env.PB_URL || 'http://127.0.0.1:8090').replace(/\/+$/, '');
-if (!['127.0.0.1', 'localhost'].includes(new URL(BASE).hostname)) {
-  console.error('Refusé : ce script ne configure que le bac à sable local.');
+// Port 8090 exigé : le tunnel SSH vers la production utilise 127.0.0.1:8091 (docs/DEPLOIEMENT.md, étape 3).
+if (!['127.0.0.1', 'localhost'].includes(new URL(BASE).hostname) || new URL(BASE).port !== '8090') {
+  console.error('Refusé : ce script ne configure que le bac à sable local (127.0.0.1:8090).');
   process.exit(2);
 }
 const usersCfg = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'config', 'users-auth.json'), 'utf8'));
