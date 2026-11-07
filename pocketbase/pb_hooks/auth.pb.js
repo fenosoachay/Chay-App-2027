@@ -14,14 +14,40 @@ onRecordAuthWithPasswordRequest((e) => {
   e.next();
 }, 'users');
 
-// ── Code à usage unique : l'e-mail est prouvé, le compte devient vérifié ──────
+// ── Code à usage unique (inscription) ────────────────────────────────────────
+// Constaté dans le bac à sable : quand un compte NON vérifié se connecte par code, PocketBase le marque
+// vérifié et remplace son mot de passe par un mot de passe aléatoire (protection contre un compte
+// pré-enregistré par un tiers avec l'adresse de la victime). On note alors, pour 10 minutes, que ce
+// compte peut définir son mot de passe une fois (route setSignupPassword) : seule la personne qui
+// vient de prouver l'adresse par le code peut le faire.
 onRecordAuthWithOTPRequest((e) => {
+  const wasVerified = e.record ? e.record.getBool('verified') : true;
   e.next();
-  if (e.record && !e.record.getBool('verified')) {
-    e.record.set('verified', true);
-    e.app.save(e.record);
+  if (!wasVerified && e.record) {
+    $app.store().set(`signup_pwd:${e.record.id}`, Date.now() + 10 * 60 * 1000);
   }
 }, 'users');
+
+routerAdd('POST', '/api/fn/setSignupPassword', (e) => {
+  const fn = require(`${__hooks}/lib/fn.js`);
+  return fn.run(e, 'setSignupPassword', 'Erreur interne', () => {
+    const me = fn.requireUser(e, 'Connexion requise');
+    const body = fn.readBody(e);
+    const password = typeof body.password === 'string' ? body.password : '';
+    if (password.length < 8 || password.length > 72) {
+      throw new fn.HttpError(400, 'Le mot de passe doit contenir entre 8 et 72 caractères.');
+    }
+    const key = `signup_pwd:${me.id}`;
+    const until = $app.store().get(key);
+    if (!until || Number(until) < Date.now()) throw new fn.HttpError(403, 'Mot de passe déjà défini ou délai dépassé : utilisez « Mot de passe oublié ».');
+    $app.store().remove(key); // usage unique
+    const record = $app.findRecordById('users', me.id);
+    record.setPassword(password);
+    $app.save(record);
+    // Le changement de mot de passe invalide les sessions : on renvoie une nouvelle session.
+    return { token: record.newAuthToken(), record: fn.plain(record) };
+  });
+});
 
 // ── deleteMyAccount : suppression de son propre compte ──────────────────────
 routerAdd('POST', '/api/fn/deleteMyAccount', (e) => {

@@ -344,6 +344,8 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
         const onlyEmailTaken = err?.status === 400 && fields.email && Object.keys(fields).length === 1;
         if (!onlyEmailTaken) throw authError(err, 'Inscription impossible. Vérifiez l’adresse et le mot de passe (8 caractères minimum).');
       }
+      // Mot de passe gardé en mémoire seulement (jamais stocké) pour le poser après la vérification du code.
+      signupPasswords.set(address.toLowerCase(), password);
       await sendOtp(address);
       return {};
     },
@@ -351,13 +353,27 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
       const address = String(email || '').trim();
       const otpId = readOtp(address);
       if (!otpId) throw new BackendError('Code expiré : demandez un nouveau code.', 400, 'otp_missing', null);
+      let res;
       try {
-        const res = await users().authWithOTP(otpId, String(otpCode || '').trim());
-        forgetOtp(address);
-        return { access_token: res.token, user: fromRecord('User', res.record) };
+        res = await users().authWithOTP(otpId, String(otpCode || '').trim());
       } catch (err) {
         throw authError(err, 'Code invalide ou expiré.');
       }
+      forgetOtp(address);
+      // Inscription : PocketBase remplace le mot de passe d'un compte qui se vérifie par code ;
+      // on pose celui choisi à l'écran d'inscription (route serveur, une seule fois, 10 minutes).
+      const password = signupPasswords.get(address.toLowerCase());
+      if (password) {
+        signupPasswords.delete(address.toLowerCase());
+        try {
+          const set = await invokeFn('setSignupPassword', { password });
+          pb.authStore.save(set.data.token, set.data.record);
+          return { access_token: set.data.token, user: fromRecord('User', set.data.record) };
+        } catch {
+          // Délai dépassé ou compte déjà vérifié : la session OTP reste valable ; « Mot de passe oublié » reste possible.
+        }
+      }
+      return { access_token: res.token, user: fromRecord('User', res.record) };
     },
     async resendOtp(email) {
       await sendOtp(String(email || '').trim());
@@ -395,6 +411,7 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
 
   // ── Codes à usage unique (OTP) : identifiant mémorisé par adresse ────────────
   const otpIds = new Map();
+  const signupPasswords = new Map(); // mémoire uniquement : perdu si la page est rechargée
   const otpKey = (email) => `pocketbase_otp:${email.toLowerCase()}`;
   function readOtp(email) {
     if (otpIds.has(email.toLowerCase())) return otpIds.get(email.toLowerCase());
