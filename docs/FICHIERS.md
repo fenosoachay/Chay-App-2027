@@ -74,7 +74,7 @@ Sans configuration R2, les routes vidéo répondent 500 « Stockage vidéo (R2) 
 
 - 125 références `base44.app` → 64 fichiers distincts. L'un d'eux est une page de l'app (lien dans un message), il reste donc 63 fichiers ; chacun est envoyé une seule fois (réutilisé s'il existe déjà, par son empreinte `sha256`).
 - `Fichier` (10) quand toutes les références viennent d'un même membre (profil, publication, message, playlist personnelle) et que le fichier fait 15 Mo au plus ; sinon `FichierAdmin` (52).
-- Photo HEIC : convertie en JPEG par les codecs Windows (« Extensions vidéo HEVC » requises). Sinon, déposer le JPEG converti dans `C:\Export-Base44\_outil\pb\heic-jpeg\<sha256>.jpg`, ou utiliser `--heic-tel-quel`.
+- Photo HEIC : convertie en JPEG hors ligne, par les codecs Windows (« Extensions vidéo HEVC ») ou, à défaut, par le paquet npm `heic-convert` installé **hors du dépôt** dans `C:\Export-Base44\_outil\heic-convert\` (`npm install heic-convert@2`). Le JPEG n'a pas d'EXIF (pas de position GPS). Dernier recours : déposer le JPEG dans `C:\Export-Base44\_outil\pb\heic-jpeg\<sha256>.jpg`, ou `--heic-tel-quel`. Bac à sable : la photo existante est convertie et ses 2 adresses vérifiées.
 - Vidéo de 1,87 Go : `--avec-video --r2-env <fichier>` (envoi multipart vers R2).
 - Réécriture : champs simples et listes `image_urls[i]`, seulement si la valeur est encore l'ancienne adresse. Les dates de mise à jour sont conservées.
 - Les 4 adresses R2 existantes ne sont pas réécrites : elles sont listées dans le rapport.

@@ -95,3 +95,17 @@ Voir `docs/VARIABLES-PRODUCTION.md`.
 ## Verset du jour
 
 Tâche planifiée `verset_du_jour` à 05:00 et 06:00 UTC ; elle ne travaille que s'il est entre 06:55 et 07:59 à Paris (heure d'été ou d'hiver), comme le « 07:00 Europe/Paris » de Base44. Le jour de la semaine de chaque membre est calculé dans son fuseau (`settings.tz`) ; le moteur JS de PocketBase n'ayant pas `Intl`, les règles de fuseau sont dans `lib/fuseaux.js` (Europe, Amérique du Nord, fuseaux fixes ; inconnu → Paris, comme Base44).
+
+## Différences avec Base44
+
+| Point | Base44 | PocketBase |
+|---|---|---|
+| Jeton / abonnement périmé | `is_active = false` | supprimé |
+| Push de `takePrayer`, `answerPrayer`, `createThemeRequest`, `handleThemeRequest` | appel sans `internal_secret` : refusé par `sendFcmPush` (push jamais parti) | envoyé, en respectant la coupure générale et le canal push du membre |
+| Appels internes | HTTP + `INTERNAL_INVOKE_SECRET` | appels JS dans PocketBase ; secret supprimé |
+| Échec temporaire | perdu (createMessage réessayait 3 fois tout l'envoi) | file `PushEnvoi`, 5 tentatives sur 6 h |
+| Comptes désactivés (`disabled`) | notifiés | jamais notifiés |
+| Limites | aucune | voir « Limites » (test push, j'aime, rafale de publications, demandes de thème) |
+| `createCommunityPost` | toute URL d'image | http(s), 10 images au plus |
+| Verset du jour | `Intl` (tous les fuseaux) | table de fuseaux (`lib/fuseaux.js`) ; fuseau inconnu -> Paris |
+| E-mails | `Core.SendEmail` de Base44 | SMTP de PocketBase ; liens vers « Application URL » au lieu de `chay.base44.app` |

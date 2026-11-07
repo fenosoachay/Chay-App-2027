@@ -43,6 +43,31 @@ Get-Content C:\PB-local\faux-s3.env | ForEach-Object { $k, $v = $_ -split '=', 2
 C:\PB-local\bin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
 ```
 
+### Avec le push (bloc 5)
+
+Faux FCM / Web Push et sidecar d'abord (voir plus bas), puis PocketBase avec, en plus, les deux variables du sidecar (seulement celles-là) :
+
+```powershell
+Get-Content C:\PB-local\faux-s3.env | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
+Get-Content C:\PB-local\faux-push.env | Where-Object { $_ -match '^PUSH_SIDECAR_(URL|SECRET)=' } | ForEach-Object { $k, $v = $_ -split '=', 2; Set-Item "env:$k" $v }
+C:\PB-local\bin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
+```
+
+## Faux FCM / Web Push et sidecar push (bloc 5)
+
+Deux terminaux, depuis le worktree :
+
+```powershell
+node pocketbase/tests/faux-push.mjs   # 127.0.0.1:9100 ; crée C:\PB-local\faux-push.env et faux-firebase-sa.json au premier lancement
+Get-Content C:\PB-local\faux-push.env | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
+node pocketbase/sidecar-push/serveur.mjs   # 127.0.0.1:8091
+```
+
+- `faux-push.env` contient un secret partagé, des clés VAPID **de test** et un faux compte de service (clé RSA générée localement) : ne pas partager, jamais en production.
+- `PUSH_LOCAL_ONLY=1` : le sidecar refuse toute adresse hors 127.0.0.1 (aucun envoi réel possible).
+- Le faux service vérifie les signatures (JWT RS256 OAuth, JWT VAPID ES256) et refuse les requêtes mal signées. Jetons spéciaux : `invalide-*` (UNREGISTERED / 410), `absent-*` (404), `surcharge-*` (503 permanent), `instable-*` (503 une fois).
+- Les e-mails de notification partent vers le faux SMTP (`C:\PB-local\mails`). Ils contiennent les adresses des membres : ne pas partager ce dossier.
+
 ## Faux S3 local (simule Cloudflare R2)
 
 Dans un autre terminal, depuis le worktree :
@@ -116,6 +141,11 @@ Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la 
 | `pocketbase/pb_hooks/fn_jeux.pb.js` | `quizLevels`, `quizStart`, `quizAnswer`, `quizFinish`, `quizAdminStats`, `wsLevels`, `wsStart`, `wsWord`, `wsAnswer`, `wsHint`, `wsFinish`, `wsAdminStats` |
 | `pocketbase/pb_hooks/fn_conversations_dons.pb.js` | `createConversation`, `updateConversationParticipants`, `listThemeRequests`, `createDonationRequest` |
 | `pocketbase/pb_hooks/fichiers.pb.js` | `Fichier` / `FichierAdmin` (propriétaire imposé, nom aléatoire) ; `upload_chunk`, `initMultipartUpload`, `getPresignedUrl`, `completeMultipartUpload`, `cleanupIncompleteUploads`, `cleanupOrphanFiles` ; tâches planifiées `televersements_incomplets` (horaire) et `fichiers_orphelins` (hebdomadaire) |
+| `pocketbase/pb_hooks/fn_notifications.pb.js` | `sendFcmPush`, `sendWebPush`, `sendMessagePush`, `notifyCommunityPost`, `notifySocialInteraction`, `notifyNewContent`, `notifyDailyVerse`, `sendTestNotification`, `createCommunityPost`, `createThemeRequest`, `handleThemeRequest` ; tâches planifiées `push_reessais` (chaque minute) et `verset_du_jour` (05:00 et 06:00 UTC) |
+| `pocketbase/pb_hooks/lib/notifications.js` | destinataires, préférences, in-app, e-mails, push de chaque fonction |
+| `pocketbase/pb_hooks/lib/push.js` | cibles (`DeviceToken`, `WebPushSubscription`), appel du sidecar, suppression des jetons invalides, file `PushEnvoi` |
+| `pocketbase/pb_hooks/lib/courriel.js` | e-mails en français (gabarit, échappement HTML, SMTP de PocketBase) |
+| `pocketbase/pb_hooks/lib/fuseaux.js` | fuseaux horaires sans `Intl` (verset du jour) |
 | `pocketbase/pb_hooks/lib/televersement.js` | R2 (requêtes S3 signées), sessions, morceaux sur disque, nettoyages |
 | `pocketbase/pb_hooks/lib/sigv4.js` | signature AWS SigV4 en JavaScript pur |
 | `pocketbase/pb_hooks/lib/conversations.js` | validation des participants, recherche de conversation directe existante |
@@ -135,11 +165,12 @@ npm run test:pb-local
 - `pocketbase/tests/fn-bloc3-collections.integration.mjs` : corrections de collections du bloc 3 (appareils, notifications, réactions, nom affiché, scores, listes d'identifiants).
 - `pocketbase/tests/fn-auth.integration.mjs` : inscription par code, mot de passe oublié, changement d'e-mail, règles de `users`, invitation, suppression de compte, dernier administrateur (**faux SMTP requis**).
 - `pocketbase/tests/fn-fichiers.integration.mjs` : fichiers (membre, admin, anonyme, taille / type, propriétaire falsifié, morceaux, multipart R2, abandon, nettoyages) (**faux S3 requis**).
+- `pocketbase/tests/fn-push.integration.mjs` : push et e-mails du bloc 5 (bon destinataire, charge utile chiffrée, jetons invalides supprimés, file et réessais, préférences, anonyme refusé, limites, échappement HTML, journaux) (**faux push, sidecar et faux SMTP requis**).
 - `pocketbase/tests/migration-fichiers.integration.mjs` : script de migration des fichiers (envoi R2 d'une vidéo générée).
 - `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations, authentification avec le faux SMTP, fichiers avec le vrai `upload.js` et le faux S3).
 - `pocketbase/tests/fn-limites.integration.mjs` : limites de tentatives ; **toujours en dernier** (il épuise les compteurs pendant 60 s).
 
-Sans bac à sable : `npm run test:pb-unit` (signature SigV4 avec les vecteurs AWS, écrans MFA / OAuthConsent absents).
+Sans bac à sable : `npm run test:pb-unit` (signature SigV4 avec les vecteurs AWS, chiffrement Web Push avec le vecteur de la RFC 8291, JWT RS256 / ES256, fuseaux horaires, échappement des e-mails, écrans MFA / OAuthConsent absents).
 
 Les connexions des tests patientent et réessaient si elles reçoivent un 429.
 
