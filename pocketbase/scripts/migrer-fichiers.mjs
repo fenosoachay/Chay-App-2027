@@ -106,7 +106,7 @@ class Ref {
   }
 }
 
-// ── HEIC -> JPEG (codecs Windows ; aucune dépendance réseau) ─────────────────
+// ── HEIC -> JPEG (codecs Windows, sinon heic-convert ; aucun accès réseau) ─────────────────
 export function convertHeic(src, sha) {
   fs.mkdirSync(HEIC_DIR, { recursive: true });
   const dst = path.join(HEIC_DIR, `${sha}.jpg`);
@@ -124,7 +124,19 @@ export function convertHeic(src, sha) {
     if (fs.existsSync(dst) && detectType(fs.readFileSync(dst)) === 'jpg') return { ok: true, chemin: dst, via: 'codecs Windows' };
   } catch { /* codec HEVC absent */ }
   fs.rmSync(dst, { force: true });
-  return { ok: false, chemin: null, via: `codec HEVC absent : déposer le JPEG converti dans ${HEIC_DIR}\\${sha}.jpg` };
+  // Repli : paquet npm heic-convert (libheif en WebAssembly, hors ligne), installé HORS du dépôt
+  // (npm install heic-convert@2 dans HEIC_CONVERT_DIR). Le JPEG produit ne contient pas d'EXIF (ni GPS).
+  const dir = process.env.HEIC_CONVERT_DIR || 'C:\\Export-Base44\\_outil\\heic-convert';
+  if (fs.existsSync(path.join(dir, 'node_modules', 'heic-convert'))) {
+    const js = "const fs=require('fs');require('heic-convert')({buffer:fs.readFileSync(process.argv[1]),format:'JPEG',quality:0.9})"
+      + '.then((o)=>fs.writeFileSync(process.argv[2],Buffer.from(o))).catch(()=>process.exit(1))';
+    try {
+      execFileSync(process.execPath, ['-e', js, src, dst], { cwd: dir, stdio: 'pipe', timeout: 120000 });
+      if (fs.existsSync(dst) && detectType(fs.readFileSync(dst)) === 'jpg') return { ok: true, chemin: dst, via: 'heic-convert (hors ligne)' };
+    } catch { /* conversion impossible */ }
+    fs.rmSync(dst, { force: true });
+  }
+  return { ok: false, chemin: null, via: `conversion impossible : installer heic-convert dans ${dir} ou déposer le JPEG dans ${HEIC_DIR}\\${sha}.jpg` };
 }
 
 // ── PocketBase (superuser) ───────────────────────────────────────────────────
