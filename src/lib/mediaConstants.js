@@ -14,10 +14,10 @@ import {
 export const RADIO_URL =
   "https://listen.radioking.com/radio/187180/stream/229321";
 export const RADIO_LOGO =
-  "https://media.base44.com/images/public/6aa138d0e963d9e5f59d838c/c26279d55_logo.png";
+  "/branding/logo-chay.png";
 
 export const OFFLINE_PATTERN =
-  "https://media.base44.com/images/public/6aa138d0e963d9e5f59d838c/b2868313e_LogograyChaycasdeproblme.png";
+  "/branding/logo-chay-gris-hors-ligne.png";
 
 export const CATEGORIES = [
   { id: "radio", label: "Radio", icon: Radio, tone: "from-[#FF4D2D] to-[#FF57B2]" },

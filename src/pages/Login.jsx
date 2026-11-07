@@ -11,7 +11,7 @@ import PasswordInput from "@/components/PasswordInput";
 import AuthPageBackground from "@/components/auth/AuthPageBackground";
 
 const LOGO_URL =
-  "https://media.base44.com/images/public/6aa138d0e963d9e5f59d838c/0a45870cf_Untitled_design__2_-removebg-preview.png";
+  "/branding/logo-connexion.png";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

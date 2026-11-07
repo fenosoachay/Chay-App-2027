@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { RADIO_URL, RADIO_LOGO } from "@/lib/mediaConstants";
+import { getPublicOrigin } from "@/lib/publicOrigin";
 import { isRadioMseSupported, startRadioStream } from "@/lib/radioMse";
 import { MEDIA_PLAYER_BUFFERING_POLICY, useMediaPlayerState } from "@/hooks/useMediaPlayerState";
 import { clearMediaControl, publishMediaControl } from "@/lib/mediaControl";
@@ -286,7 +287,9 @@ export function RadioPlayerProvider({ children }) {
           engine: "radio",
           title: "Radio Chay",
           subtitle: isLoading ? "Mise en mémoire tampon" : "Radio Chay",
-          artwork: RADIO_LOGO,
+          // Adresse absolue : la notification média Android télécharge l'image elle-même
+          // (https://localhost du WebView ne lui est pas accessible).
+          artwork: `${getPublicOrigin()}${RADIO_LOGO}`,
           source: RADIO_URL,
           isPlaying: isPlaying || isLoading || preparing,
           isBuffering: isLoading || preparing,
