@@ -86,9 +86,11 @@ scp -r pocketbase\sidecar-push "${SERVEUR}:/tmp/chay/sidecar-push"
 🐧 **SERVEUR** : installer les hooks. Au premier déploiement, `/opt/pocketbase/pb_hooks` **n'existe pas encore** : on le crée, sans copie de sauvegarde.
 ```bash
 ls -d /opt/pocketbase/pb_hooks 2>/dev/null && echo "EXISTE : voir l'encadré ci-dessous" || echo "absent : normal au premier déploiement"
+sudo chmod -R u=rwX,go=rX /tmp/chay
 sudo mkdir -p /opt/pocketbase/pb_hooks
 sudo cp -a /tmp/chay/pb_hooks/. /opt/pocketbase/pb_hooks/
 sudo chown -R root:root /opt/pocketbase/pb_hooks
+sudo chmod -R u=rwX,go=rX /opt/pocketbase/pb_hooks
 ls /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks/lib
 ```
 
@@ -96,6 +98,8 @@ ls /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks/lib
 > ```bash
 > sudo mv /opt/pocketbase/pb_hooks /opt/pocketbase/pb_hooks.avant-$(date +%Y%m%d-%H%M)
 > ```
+
+Les `chmod` sont nécessaires : `scp` garde des droits stricts (lecture par le seul propriétaire) et l'utilisateur du service PocketBase ne pourrait pas lire les hooks. `u=rwX,go=rX` : lecture pour tous, exécution seulement sur les dossiers.
 
 Les nouveaux hooks ne sont lus qu'au redémarrage (étape 6).
 
@@ -109,12 +113,12 @@ Les nouveaux hooks ne sont lus qu'au redémarrage (étape 6).
 
 L'import passe par le tableau d'administration, à travers un **tunnel SSH**. Le tableau `/_/` n'a pas à être exposé (voir § Durcissement). Il ne touche ni aux collections système (`_superusers`, `users`…) ni aux données.
 
-🪟 **PC** : ouvrir le tunnel dans une fenêtre PowerShell à part et la laisser ouverte. Le port **local 8091** mène au port 8090 du serveur : `127.0.0.1:8090` reste le bac à sable, `127.0.0.1:8091` est la **production** (aucune confusion possible). Sur le PC, le sidecar push du bac à sable écoute aussi sur 8091 : l'arrêter d'abord s'il tourne.
+🪟 **PC** : ouvrir le tunnel dans une fenêtre PowerShell à part et la laisser ouverte. Le port **local 8092** mène au port 8090 du serveur : `127.0.0.1:8090` reste le bac à sable, `127.0.0.1:8092` est la **production** (aucune confusion possible ; 8091 est pris sur le PC par le sidecar du bac à sable).
 ```powershell
-ssh -N -L 8091:127.0.0.1:8090 $SERVEUR
+ssh -N -L 8092:127.0.0.1:8090 $SERVEUR
 ```
 
-Puis, dans le navigateur du PC : `http://127.0.0.1:8091/_/` → connexion superuser.
+Puis, dans le navigateur du PC : `http://127.0.0.1:8092/_/` → connexion superuser.
 
 **3a. Collections**, dans le tableau d'administration :
 1. Settings → **Import collections** ;
@@ -130,7 +134,7 @@ Changements attendus depuis le premier import :
 **3b. Collection `users`** (champs et règles), 🪟 **PC**, dans une nouvelle fenêtre, le tunnel restant ouvert :
 ```powershell
 cd C:\Export-Base44\_outil\pb
-$env:PB_URL = "http://127.0.0.1:8091"
+$env:PB_URL = "http://127.0.0.1:8092"
 $env:PB_EMAIL = Read-Host "E-mail superuser"
 $s = Read-Host "Mot de passe superuser" -AsSecureString
 $b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
@@ -143,16 +147,41 @@ Remove-Item Env:PB_PASSWORD, Env:PB_EMAIL, Env:PB_URL
 
 Le mot de passe s'affiche en `*` pendant la saisie et n'est jamais écrit à l'écran. La première commande `node` est une simulation : la lire avant de lancer `--appliquer`.
 
-**3c. Réglages** (tableau d'administration, à la main ; le script du bac à sable n'accepte que le SMTP local) :
+**3c. Réglages**, par le script `pocketbase/scripts/configurer-production.mjs`, 🪟 **PC**, le tunnel restant ouvert. Il applique **seulement** :
 
 | Réglage | Valeur |
 |---|---|
-| Settings → Application → **Application URL** | `https://membres.chay.fr` |
-| Settings → Mail settings → expéditeur | adresse `no-reply@chay.fr`, nom **« Église Chay »** |
-| Settings → Mail settings → **Use SMTP mail server** | hôte `ssl0.ovh.net`, port `465`, **TLS activé** (TLS direct sur 465), utilisateur `no-reply@chay.fr`, mot de passe de la boîte tapé dans le champ (jamais dans un fichier ni une commande) ; puis « Send test email » vers une boîte de test |
-| Settings → Rate limits | règles de `pocketbase/config/settings-bac-a-sable.json` (section `rateLimits`) |
-| Settings → Application → **Trusted proxy** | en-tête `X-Forwarded-For` (voir § Durcissement) |
-| Collections → users → Options | OTP, modèles d'e-mail, durées : `pocketbase/config/users-auth.json` (fichier de référence), en remplaçant `%PB_URL%` par `https://api.chay.fr` dans les modèles. **À recopier à la main** : `configurer-auth.mjs` ne configure que le bac à sable (il refuse le port 8091 du tunnel) |
+| Application : nom, **Application URL** | « Église Chay », `https://membres.chay.fr` |
+| Mail settings : expéditeur | `no-reply@chay.fr`, nom « Église Chay » |
+| Mail settings : SMTP | `ssl0.ovh.net`, port `465`, **TLS activé** (TLS direct), utilisateur `no-reply@chay.fr`, mot de passe lu dans `SMTP_PASSWORD` (jamais affiché) |
+| Rate limits | section `rateLimits` de `pocketbase/config/settings-bac-a-sable.json` (pas son SMTP local) |
+| **Trusted proxy** | en-tête `X-Forwarded-For`, `useLeftmostIP` **désactivé** (voir ci-dessous) |
+| Collection `users` : options | `pocketbase/config/users-auth.json` (OTP, modèles d'e-mail, durées, règles d'authentification), `%PB_URL%` remplacé par `https://api.chay.fr` ; le script refuse s'il reste une adresse `127.0.0.1` ou de bac à sable |
+
+Garde-fous : simulation par défaut (comparatif avant / après des seuls champs modifiés, jamais les secrets) ; hôte `127.0.0.1` / `localhost` seulement, port 8090 refusé ; identité du serveur affichée (nombre de collections, présence de `Fichier`, nombre de comptes) puis **`OUI`** à taper avant d'écrire ; rien d'autre n'est touché (autres collections, collections système, données) ; relancé, il n'a plus rien à faire.
+
+```powershell
+cd "C:UsersCHAY VERSETDesktopChay-App-2027-migration"
+function Lire-Secret($invite) { $s = Read-Host $invite -AsSecureString; $b = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s); try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($b) } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($b) } }
+$env:PB_URL = "http://127.0.0.1:8092"
+$env:PB_EMAIL = Read-Host "E-mail superuser"
+$env:PB_PASSWORD = Lire-Secret "Mot de passe superuser"
+$env:SMTP_PASSWORD = Lire-Secret "Mot de passe de la boîte no-reply@chay.fr"
+node pocketbase/scripts/configurer-production.mjs
+node pocketbase/scripts/configurer-production.mjs --appliquer
+Remove-Item Env:SMTP_PASSWORD
+node pocketbase/scripts/configurer-production.mjs
+Remove-Item Env:PB_PASSWORD, Env:PB_EMAIL, Env:PB_URL
+```
+
+1. Première commande `node` : **simulation**. Vérifier l'identité (le vrai serveur a plus de comptes que le bac à sable, et `Fichier` présente) et la liste des changements.
+2. `--appliquer` : réaffiche tout, puis demande `OUI`. Toute autre réponse : rien n'est écrit.
+3. Dernière commande (sans `SMTP_PASSWORD`, qui garde le mot de passe déjà enregistré) : doit afficher **« aucun : le serveur est déjà conforme »**.
+4. Tableau d'administration → Settings → Mail settings → **Send test email** vers une boîte de test.
+
+**Trusted proxy avec Caddy sur le même hôte** (PocketBase 0.40) : PocketBase n'écoute que `127.0.0.1:8090`, donc seule Caddy peut lui parler. Caddy ne fait pas confiance à l'en-tête `X-Forwarded-For` envoyé par un client d'Internet : il le remplace par l'adresse réelle du client. Dans PocketBase : en-tête `X-Forwarded-For`, **`useLeftmostIP` désactivé** (adresse la plus à droite : celle écrite par Caddy, impossible à falsifier). Sans ce réglage, tous les membres auraient l'adresse `127.0.0.1` et partageraient les mêmes compteurs de limites. Ne jamais exposer le port 8090 directement : l'en-tête deviendrait falsifiable.
+
+`configurer-auth.mjs` reste réservé au bac à sable (il refuse tout port autre que 8090).
 
 **Retour arrière** : restaurer la sauvegarde de l'étape 1. Le schéma et les données reviennent ensemble ; c'est la seule méthode sûre.
 
@@ -259,6 +288,7 @@ PUSH_SIDECAR_URL=http://127.0.0.1:8091
 PUSH_SIDECAR_SECRET=
 NOTIFICATIONS_MODE=test
 NOTIFICATIONS_TEST_EMAILS=
+FICHIERS_NETTOYAGE=simulation
 ```
 
 **Interrupteur des envois** (`docs/VARIABLES-PRODUCTION.md`) : `NOTIFICATIONS_MODE=test` **au départ**. Seules les adresses de `NOTIFICATIONS_TEST_EMAILS` (séparées par des virgules : les deux comptes de test de l'étape 8) reçoivent push et e-mails de notification ; les membres ne reçoivent rien. Mettre la **même** valeur `NOTIFICATIONS_MODE=test` dans `/etc/chay/push.env` (étape 4). Passer à `on` **seulement le jour du basculement** (voir la fin de ce document). Les e-mails d'authentification (code de connexion, mot de passe oublié, vérification) ne dépendent pas de ce réglage.
@@ -417,7 +447,7 @@ Utiliser de vraies boîtes e-mail que tu consultes. Ne jamais utiliser le compte
    - leurs fichiers (`Fichier` / `FichierAdmin`, filtre `proprietaire = "<id du compte de test>"`) ;
    - la vidéo de test dans R2 (Cloudflare → bucket → `videos/…`).
 3. **File push** : Collections → `PushEnvoi` doit être vide (sinon tout supprimer).
-4. **Nettoyage des fichiers orphelins** : **attention**, lancer le cron `fichiers_orphelins` (Settings → Crons) **supprime réellement** les fichiers non référencés depuis plus de 7 jours. Pour une simulation, appeler d'abord la route `cleanupOrphanFiles` en superuser (simulation par défaut, `{"simulation": false}` pour appliquer).
+4. **Nettoyage des fichiers orphelins** : la tâche `fichiers_orphelins` (dimanche 03:30, ou Settings → Crons) est en **simulation** tant que `FICHIERS_NETTOYAGE` n'est pas `actif` : elle journalise seulement le nombre de fichiers concernés (`[fichiers] fichiers non référencés`, `mode`, `orphelins`). Lire ce nombre ; supprimer vraiment avec la route `cleanupOrphanFiles` en superuser (`{"simulation": false}`), ou passer `FICHIERS_NETTOYAGE=actif` une fois les chiffres jugés normaux.
 5. **Sauvegarde** « propre » juste avant le basculement (étape 1, avec un autre nom de fichier).
 
 ---

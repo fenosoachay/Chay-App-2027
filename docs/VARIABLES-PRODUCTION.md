@@ -22,6 +22,7 @@ Aucune de ces valeurs ne va dans le dépôt. Fichiers sur le serveur, droits `60
 
 | `NOTIFICATIONS_MODE` | `test` au départ, `on` au basculement | **oui** (défaut `off`) | interrupteur des envois sortants des hooks, voir ci-dessous |
 | `NOTIFICATIONS_TEST_EMAILS` | `test-admin@…,test-membre@…` | en mode `test` | adresses autorisées en mode `test`, séparées par des virgules (casse ignorée) |
+| `FICHIERS_NETTOYAGE` | `simulation` | non (défaut `simulation`, aussi si invalide) | tâche hebdomadaire `fichiers_orphelins` (dimanche 03:30) : `simulation` = journalise seulement le nombre de fichiers non référencés depuis plus de 7 jours ; `actif` = les supprime vraiment |
 
 ### Interrupteur `NOTIFICATIONS_MODE`
 
@@ -37,7 +38,7 @@ Le sidecar lit aussi `NOTIFICATIONS_MODE` (même valeur, dans `/etc/chay/push.en
 
 Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-mails partent, le push est signalé `push_not_configured`.
 
-### Réglages PocketBase (tableau de bord, pas des variables)
+### Réglages PocketBase (pas des variables ; appliqués par `pocketbase/scripts/configurer-production.mjs`, voir `docs/DEPLOIEMENT.md` étape 3c)
 - **Mail settings** : hôte, port, utilisateur, **mot de passe** SMTP, adresse et nom d'expéditeur (`senderAddress`, `senderName`). Les mêmes réglages servent aux e-mails d'authentification et aux notifications.
 - **Application URL** (`meta.appURL`) : **`https://membres.chay.fr`**, adresse publique de l'**app** (liens des e-mails : `/messages`, `/requests`, `/settings`, `/media`, réinitialisation du mot de passe).
 
@@ -48,7 +49,8 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 | `https://membres.chay.fr` | le site web de l'app (build Vite statique, servi par Caddy : `docs/CADDY-APP.md`) | `VITE_PUBLIC_APP_URL` (build) et « Application URL » de PocketBase (e-mails) |
 | `https://api.chay.fr` | PocketBase (API, fichiers) | `VITE_PB_URL` (build) et `CHAY_PUBLIC_URL` (adresses des fichiers) : **ce n'est pas l'adresse de l'app** |
 | `https://media.chay.fr` | vidéos R2 | `R2_PUBLIC_BASE_URL` |
-- **Trusted proxy** : en-tête `X-Forwarded-For` (Caddy), sinon tous les membres partagent les compteurs de limites.
+- **Trusted proxy** : en-tête `X-Forwarded-For`, `useLeftmostIP` désactivé (Caddy sur le même hôte, PocketBase sur 127.0.0.1 seulement), sinon tous les membres partagent les compteurs de limites.
+- **Mot de passe SMTP** : variable `SMTP_PASSWORD` **sur le PC**, seulement le temps de lancer `configurer-production.mjs` ; PocketBase le garde ensuite dans ses réglages (chiffrés avec `PB_ENCRYPTION_KEY`).
 
 ## Sidecar push (service `chay-push`)
 

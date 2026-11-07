@@ -333,8 +333,12 @@ cronAdd('televersements_incomplets', '17 * * * *', () => {
   }
 });
 
+// Fichiers non référencés depuis plus de 7 jours. FICHIERS_NETTOYAGE : "simulation" (défaut, aussi si absente
+// ou invalide) = compte seulement ; "actif" = supprime vraiment.
 cronAdd('fichiers_orphelins', '30 3 * * 0', () => {
   const lib = require(`${__hooks}/lib/televersement.js`);
-  const r = lib.cleanupOrphans(168, false); // fichiers non référencés depuis plus de 7 jours
-  $app.logger().info('[fichiers] fichiers non référencés', 'examines', r.examines, 'orphelins', r.orphelins, 'supprimes', r.supprimes, 'annule', r.annule);
+  const actif = String($os.getenv('FICHIERS_NETTOYAGE') || '').trim().toLowerCase() === 'actif';
+  const r = lib.cleanupOrphans(168, !actif);
+  $app.logger().info('[fichiers] fichiers non référencés', 'mode', actif ? 'actif' : 'simulation', 'examines', r.examines,
+    'orphelins', r.orphelins, 'supprimes', r.supprimes, 'annule', r.annule);
 });

@@ -12,7 +12,7 @@
     "test": "node --test src/lib/*.test.js",
     "test:adapter": "vitest run",
     "test:pb-unit": "node --test pocketbase/tests/*.test.mjs",
-    "test:pb-local": "node pocketbase/tests/fn-pilote.integration.mjs && node pocketbase/tests/fn-lot2.integration.mjs && node pocketbase/tests/fn-lot3.integration.mjs && node pocketbase/tests/fn-conversations-privees.integration.mjs && node pocketbase/tests/fn-bloc3-collections.integration.mjs && node pocketbase/tests/fn-auth.integration.mjs && node pocketbase/tests/fn-fichiers.integration.mjs && node pocketbase/tests/migration-fichiers.integration.mjs && node pocketbase/tests/fn-push.integration.mjs && node pocketbase/tests/fn-mode-notifications.integration.mjs on && vitest run --config vitest.pb-local.config.js && node pocketbase/tests/fn-limites.integration.mjs",
+    "test:pb-local": "node pocketbase/tests/fn-pilote.integration.mjs && node pocketbase/tests/fn-lot2.integration.mjs && node pocketbase/tests/fn-lot3.integration.mjs && node pocketbase/tests/fn-conversations-privees.integration.mjs && node pocketbase/tests/fn-bloc3-collections.integration.mjs && node pocketbase/tests/fn-auth.integration.mjs && node pocketbase/tests/fn-fichiers.integration.mjs && node pocketbase/tests/migration-fichiers.integration.mjs && node pocketbase/tests/fn-push.integration.mjs && node pocketbase/tests/fn-mode-notifications.integration.mjs on && node pocketbase/tests/fn-nettoyage-fichiers.integration.mjs simulation && vitest run --config vitest.pb-local.config.js && node pocketbase/tests/fn-limites.integration.mjs",
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android"
   },
