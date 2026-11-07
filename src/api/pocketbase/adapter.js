@@ -310,14 +310,18 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl, now = () => ne
       } catch {
         body = null;
       }
-      if (res.status === 404) {
+      // 404 sans { error } : réponse de PocketBase lui-même, la route n'existe pas.
+      // 404 avec { error } : réponse de la fonction (ex. « audio track not found »).
+      if (res.status === 404 && !(body && 'error' in body)) {
         throw new BackendError(
           `Fonction serveur « ${name} » pas encore migrée : la route POST /api/fn/${name} n'existe pas sur PocketBase.`,
           404, 'function_not_migrated', body,
         );
       }
       if (!res.ok) {
-        throw new BackendError(body?.message || `Fonction serveur « ${name} » : erreur HTTP ${res.status}`, res.status, body?.code ?? null, body);
+        // Même construction du message que le SDK Base44 (Base44Error) ; le client lit aussi error.data.error.
+        const message = body?.error?.message || body?.message || body?.detail || `Request failed with status code ${res.status}`;
+        throw new BackendError(message, res.status, body?.error?.code ?? body?.code ?? null, body);
       }
       return { data: body, status: res.status, headers: res.headers };
     },

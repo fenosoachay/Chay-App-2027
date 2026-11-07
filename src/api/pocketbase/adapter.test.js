@@ -246,6 +246,18 @@ describe('functions, intégrations, divers', () => {
     });
   });
 
+  it('functions.invoke : erreur de la fonction (même 404) -> message et data comme Base44', async () => {
+    const reply = (status, body) => vi.fn(async () => ({ ok: false, status, json: async () => body }));
+    const notFound = createPocketBaseAdapter(fakePb(), { baseUrl: 'https://pb.test', fetchImpl: reply(404, { error: 'audio track not found' }) });
+    await expect(notFound.functions.invoke('recordMediaListen', { playlist_track_id: 'x' })).rejects.toMatchObject({
+      status: 404, message: 'Request failed with status code 404', data: { error: 'audio track not found' },
+    });
+    const denied = createPocketBaseAdapter(fakePb(), { baseUrl: 'https://pb.test', fetchImpl: reply(401, { error: 'Connexion requise' }) });
+    await expect(denied.functions.invoke('listCommunityUsers', {})).rejects.toMatchObject({
+      status: 401, message: 'Request failed with status code 401', data: { error: 'Connexion requise' },
+    });
+  });
+
   it('functions.invoke : nom invalide refusé, sans appel', async () => {
     const fetchImpl = vi.fn();
     const api = createPocketBaseAdapter(fakePb(), { baseUrl: 'https://pb.test', fetchImpl });
