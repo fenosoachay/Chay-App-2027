@@ -74,6 +74,8 @@ Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la 
 | `pocketbase/pb_hooks/fn_pilote.pb.js` | `POST /api/fn/listCommunityUsers`, `getPrayerWall`, `recordMediaListen`, `recordVideoView` |
 | `pocketbase/pb_hooks/fn_messagerie_priere.pb.js` | `createMessage`, `createPrayerRequest`, `takePrayer`, `answerPrayer` |
 | `pocketbase/pb_hooks/fn_jeux.pb.js` | `quizLevels`, `quizStart`, `quizAnswer`, `quizFinish`, `quizAdminStats`, `wsLevels`, `wsStart`, `wsWord`, `wsAnswer`, `wsHint`, `wsFinish`, `wsAdminStats` |
+| `pocketbase/pb_hooks/fn_conversations_dons.pb.js` | `createConversation`, `updateConversationParticipants`, `listThemeRequests`, `createDonationRequest` |
+| `pocketbase/pb_hooks/lib/conversations.js` | validation des participants, recherche de conversation directe existante |
 | `pocketbase/pb_hooks/lib/fn.js` | module partagé (utilisateur via `e.auth`, connexion / admin exigés, validation, transactions, réponses et erreurs au format Base44) |
 | `pocketbase/pb_hooks/lib/games.js` | règles du quiz et de Mots Mélangés (reprises de `base44/shared`) |
 | `pocketbase/pb_hooks/lib/defaults.js` | valeurs par défaut (générées depuis `regles.md`) |
@@ -86,7 +88,10 @@ npm run test:pb-local
 
 - `pocketbase/tests/fn-pilote.integration.mjs` : refus anonymes, appels membre / admin, entrées invalides, hooks ; remet les données dans leur état initial.
 - `pocketbase/tests/fn-lot2.integration.mjs` : messagerie (isolement entre membres, temps réel), prière (limite quotidienne, concurrence), jeux (scores non falsifiables, crédits) ; supprime tout ce qu'il crée.
-- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK.
+- `pocketbase/tests/fn-lot3.integration.mjs` : règles corrigées (PrayerRequest, Message, Conversation : ce qui passait avant est refusé, l'usage légitime marche), routes de conversation, `listThemeRequests`, `createDonationRequest`.
+- `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK (Communauté, Requêtes, conversations).
+
+Les règles de collection du bac à sable se mettent à jour par un import avec fusion (`PUT /api/collections/import`, `deleteMissing: false`) des seules collections modifiées de `collections.json`, après avoir vérifié que les identifiants de collection et de champs sont identiques.
 
 Ces tests refusent toute adresse autre que `127.0.0.1` / `localhost` et lisent les identifiants dans `C:\PB-local\identifiants-test.txt` (variable `PB_TEST_CREDENTIALS` pour un autre chemin).
 

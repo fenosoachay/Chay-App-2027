@@ -35,8 +35,8 @@ La valeur est figée au build (variables Vite). Une valeur inconnue affiche un a
 | `list(options)` / `filter(query, options)` | une page ; `cursor` = numéro de page ; renvoie `{ items, has_more, next_cursor }` |
 | `get(id)` | `getOne(id)` |
 | `count(query)` | `getList(1, 1).totalItems` |
-| `create(data)` | `create` ; ajoute `created_by_id` = utilisateur connecté (s'il n'est pas fourni), `base44_created_date`, `base44_updated_date` |
-| `update(id, data)` | `update` ; met à jour `base44_updated_date` |
+| `create(data)` | `create` ; ajoute `created_by_id` = utilisateur connecté (s'il n'est pas fourni). Les dates `base44_*` sont posées par le hook serveur (`pocketbase/pb_hooks/base44_compat.pb.js`), jamais envoyées par le client. **Conversation** : route `POST /api/fn/createConversation` (création directe interdite par la règle). |
+| `update(id, data)` | `update` (dates posées par le hook). **Conversation** : un changement de `participant_ids` part vers `POST /api/fn/updateConversationParticipants`, les autres champs restent en mise à jour directe. |
 | `delete(id)` | `delete` |
 | `bulkCreate(rows)` / `bulkUpdate([{ id, ... }])` | créations / mises à jour individuelles, 4 en parallèle |
 | `updateMany(query, { $set })` | recherche des id puis mises à jour individuelles (seul `$set`) |
