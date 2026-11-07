@@ -50,10 +50,9 @@ routerAdd('POST', '/api/fn/upload_chunk', (e) => {
       if (!Number.isInteger(size) || size <= 0) throw new fn.HttpError(400, 'taille invalide');
       if (size > lib.MAX_CHUNKED_BYTES) throw new fn.HttpError(413, 'Fichier trop volumineux (max 100 Mo)');
       const name = String(field('name') || 'fichier').slice(0, 200);
+      // Session terminée : jamais réutilisée (le session_id du client, tronqué, peut désigner un autre
+      // fichier de même nom et même taille) -> nouvelle session ci-dessous.
       let session = lib.findSession(sessionId, user.id, 'chunk');
-      if (session && (session.getString('status') === 'done') && session.getString('final_file_url')) {
-        return { session_id: sessionId, uploaded: [], file_url: session.getString('final_file_url') };
-      }
       if (session && session.getInt('size') === size && session.getString('status') === 'open' && !lib.isExpired(session)) {
         return { session_id: sessionId, uploaded: lib.storedChunks(session) };
       }
@@ -157,11 +156,16 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     const cfg = lib.requireR2();
     const totalParts = Math.ceil(fileSize / lib.PART_SIZE);
 
+    // session_id du client = base64(nom:taille:date) TRONQUÉ à 48 caractères : deux fichiers de même nom
+    // et taille peuvent le partager. Empreinte complète (nom, taille, date de modification) gardée dans
+    // le champ « name » : reprise ou « déjà envoyé » seulement si elle est identique.
+    const fingerprint = `${fileName}|${fileSize}|${Number(body.lastModified) || 0}`.slice(0, 300);
     const existing = lib.findSession(sessionId, user.id, 's3-multipart');
-    if (existing && existing.getString('status') === 'done' && existing.getString('final_file_url')) {
+    const same = existing && existing.getString('name') === fingerprint;
+    if (same && existing.getString('status') === 'done' && existing.getString('final_file_url')) {
       return { session_id: sessionId, uploadId: '', key: existing.getString('s3_key'), file_url: existing.getString('final_file_url'), already_done: true };
     }
-    if (existing && existing.getString('status') === 'open' && !lib.isExpired(existing) && existing.getInt('size') === fileSize) {
+    if (same && existing.getString('status') === 'open' && !lib.isExpired(existing) && existing.getInt('size') === fileSize) {
       return {
         session_id: sessionId, uploadId: existing.getString('upload_id'), key: existing.getString('s3_key'),
         partSize: existing.getInt('part_size'), totalParts: existing.getInt('total_chunks'), resumed: true,
@@ -180,7 +184,7 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     const key = `${cfg.prefix}/${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
     const uploadId = lib.createMultipart(cfg, key, lib.VIDEO_TYPES[ext]);
     $app.save(fn.newRecord($app, lib.SESSIONS, {
-      session_id: sessionId, file_name: fileName, mime_type: lib.VIDEO_TYPES[ext], size: fileSize, total_chunks: totalParts,
+      session_id: sessionId, name: fingerprint, file_name: fileName, mime_type: lib.VIDEO_TYPES[ext], size: fileSize, total_chunks: totalParts,
       part_size: lib.PART_SIZE, upload_id: uploadId, s3_key: key, storage: 's3-multipart', status: 'open',
       created_by: user.id, expires_at: lib.pbDate(lib.SESSION_TTL_MS), uploaded_indices: [], parts_json: '[]', final_file_url: '',
     }));

@@ -121,6 +121,10 @@ try {
   const rec = recId ? (await http('GET', `/api/collections/FichierAdmin/records/${recId}`, asSu)).data : null;
   check('FichierAdmin créé, propriétaire = admin', rec?.proprietaire === ADM.id);
   check('dossier des morceaux supprimé après assemblage', !fs.existsSync(`C:\\PB-local\\pb_data\\.televersements\\${(await sessionsOf(s1))[0]?.id}`));
+  const reinit = await chunkCall(ADM.token, { action: 'init', session_id: s1, name: 'prédication.mp3', size: audio.length });
+  const reChunk = await chunkCall(ADM.token, { action: 'chunk', session_id: s1, index: 0 }, audio.subarray(0, 8 * MIO));
+  check('même session_id après un envoi terminé -> nouvelle session (jamais l’ancienne adresse)',
+    reinit.status === 200 && !reinit.data?.file_url && reinit.data?.uploaded?.length === 0 && reChunk.status === 200, `${JSON.stringify(reinit.data)} ${reChunk.status}`);
 
   const s2 = sid();
   created.sessions.push(s2);
@@ -173,6 +177,10 @@ try {
   check('assemblage rejoué -> même adresse', done2.data?.file_url === done1.data?.file_url);
   const again2 = await fn('initMultipartUpload', { token: ADM.token, body: initBody() });
   check('même fichier relancé -> déjà envoyé (already_done)', again2.data?.already_done === true && again2.data?.file_url === done1.data?.file_url);
+  const other = await fn('initMultipartUpload', { token: ADM.token, body: initBody({ lastModified: 2 }) });
+  check('même session_id mais autre fichier (date différente) -> nouvel envoi, pas l’ancienne adresse',
+    other.status === 200 && !other.data?.already_done && Boolean(other.data?.uploadId) && other.data?.key !== key, JSON.stringify(other.data));
+  if (other.data?.uploadId) await s3Fetch(s3env, 'DELETE', `/${s3env.R2_BUCKET}/${other.data.key}`, { query: [['uploadId', other.data.uploadId]] });
 
   const m2 = sid();
   created.sessions.push(m2);
