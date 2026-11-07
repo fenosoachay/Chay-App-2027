@@ -63,7 +63,8 @@ try {
     check('membre A participant -> 200 { id, created_date, notification_error }',
       r.status === 200 && sameKeys(r.data, ['id', 'created_date', 'notification_error']), `HTTP ${r.status} ${keysOf(r.data)}`);
     check('created_date ISO', /^\d{4}-\d{2}-\d{2}T/.test(r.data?.created_date || ''));
-    check('notification_error signale les notifications non migrées', r.data?.notification_error === 'notifications_not_migrated');
+    check('notification_error : notifications migrées (null ou motif Base44, plus « notifications_not_migrated »)',
+      r.data?.notification_error === null || (typeof r.data?.notification_error === 'string' && r.data.notification_error !== 'notifications_not_migrated'));
     msgId = r.data?.id;
     if (msgId) created.Message.push(msgId);
     const m = await get('Message', msgId);
@@ -327,6 +328,7 @@ try {
   const ids = TEST_USERS.map((id) => `user_id = "${id}"`).join(' || ');
   for (const id of created.Message) await http('DELETE', `/api/collections/Message/records/${id}`, asSu);
   for (const id of created.Conversation) {
+    await del('UserNotification', `(${ids}) && type = "message" && content_id = "${id}"`);
     await del('Message', `conversation_id = "${id}"`);
     await http('DELETE', `/api/collections/Conversation/records/${id}`, asSu);
   }
