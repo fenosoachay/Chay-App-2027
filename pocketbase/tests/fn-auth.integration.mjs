@@ -53,7 +53,7 @@ try {
     const otpUnknown = await http('POST', '/api/collections/users/request-otp', { body: { email: `inconnu-${rnd()}@chay.test` } });
     const otp = await http('POST', '/api/collections/users/request-otp', { body: { email } });
     check('demande de code : même réponse que l’adresse existe ou non', otpUnknown.status === 200 && otp.status === 200 && Boolean(otpUnknown.data?.otpId) && Boolean(otp.data?.otpId));
-    const mail = await waitForMail(email, since);
+    const mail = await waitForMail(email, since, 10000, /Voici votre code/);
     const code = otpFrom(mail.text);
     check('e-mail capturé par le faux SMTP : code à 6 chiffres, texte français, aucun lien Base44',
       /^\d{6}$/.test(code || '') && /Voici votre code/.test(mail.text) && !/base44/i.test(mail.text));
@@ -80,7 +80,7 @@ try {
     const since = Date.now() - 1000;
     const known = await http('POST', '/api/collections/users/request-password-reset', { body: { email: t.email } });
     check('demande : même réponse que l’adresse existe ou non', unknownReset.status === 204 && known.status === 204);
-    const mail = await waitForMail(t.email, since);
+    const mail = await waitForMail(t.email, since, 10000, /reset-password/);
     const token = tokenFrom(mail.text);
     check('e-mail : lien vers la page /reset-password de l’app, texte français, aucun lien Base44',
       Boolean(token) && mail.text.includes('http://127.0.0.1:5173/reset-password?token=') && /nouveau mot de passe/.test(mail.text) && !/base44/i.test(mail.text));
@@ -109,7 +109,7 @@ try {
     const since = Date.now() - 1000;
     const req = await http('POST', '/api/collections/users/request-email-change', { token: tok, body: { newEmail } });
     check('demande de changement acceptée', req.status === 204);
-    const mail = await waitForMail(newEmail, since);
+    const mail = await waitForMail(newEmail, since, 10000, /confirmer-email/);
     const token = tokenFrom(mail.text);
     check('e-mail envoyé à la NOUVELLE adresse, lien vers /confirmer-email', Boolean(token) && mail.text.includes('http://127.0.0.1:8090/confirmer-email?token='));
     const page = await fetch(`http://127.0.0.1:8090/confirmer-email?token=${token}`);
@@ -158,7 +158,7 @@ try {
     const u = (await http('GET', `/api/collections/users/records?filter=${q(`email = "${invited}"`)}`, su)).data.items[0];
     tempUsers.push(u.id);
     check('compte invité : rôle demandé, non vérifié', u.role === 'admin' && u.verified === false);
-    const token = tokenFrom((await waitForMail(invited, since)).text);
+    const token = tokenFrom((await waitForMail(invited, since, 10000, /token=/)).text);
     const pwd = pwdGen();
     const conf = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token, password: pwd, passwordConfirm: pwd } });
     check('l’invité définit son mot de passe par le lien reçu', conf.status === 204);

@@ -11,7 +11,7 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "test": "node --test src/lib/*.test.js",
     "test:adapter": "vitest run",
-    "test:pb-local": "node pocketbase/tests/fn-pilote.integration.mjs && node pocketbase/tests/fn-lot2.integration.mjs && node pocketbase/tests/fn-lot3.integration.mjs && vitest run --config vitest.pb-local.config.js",
+    "test:pb-local": "node pocketbase/tests/fn-pilote.integration.mjs && node pocketbase/tests/fn-lot2.integration.mjs && node pocketbase/tests/fn-lot3.integration.mjs && node pocketbase/tests/fn-bloc3-collections.integration.mjs && node pocketbase/tests/fn-auth.integration.mjs && vitest run --config vitest.pb-local.config.js && node pocketbase/tests/fn-limites.integration.mjs",
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android"
   },

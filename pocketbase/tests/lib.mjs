@@ -131,8 +131,11 @@ export function decodeMail(raw) {
   return [qp, ...b64].join('\n');
 }
 
-/** Attend le premier e-mail adressé à `to` reçu après `since` (ms). Renvoie { text, file }. */
-export async function waitForMail(to, since, timeoutMs = 10000) {
+/**
+ * Attend le premier e-mail adressé à `to` reçu après `since` (ms) et dont le texte correspond à
+ * `match` (expression régulière, facultative). Renvoie { text, file }.
+ */
+export async function waitForMail(to, since, timeoutMs = 10000, match = null) {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const end = Date.now() + timeoutMs;
@@ -142,7 +145,9 @@ export async function waitForMail(to, since, timeoutMs = 10000) {
       if (Number(f.split('-')[0]) < since) continue;
       const raw = fs.readFileSync(path.join(MAIL_DIR, f), 'utf8');
       const rcpt = (/^X-Faux-Smtp-Rcpt: ([^\r\n]*)/m.exec(raw) || [])[1] || '';
-      if (rcpt.split(', ').includes(to)) return { text: decodeMail(raw), file: f };
+      if (!rcpt.split(', ').includes(to)) continue;
+      const text = decodeMail(raw);
+      if (!match || match.test(text)) return { text, file: f };
     }
     await sleep(200);
   }
