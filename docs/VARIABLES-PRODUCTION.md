@@ -24,7 +24,15 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 
 ### Réglages PocketBase (tableau de bord, pas des variables)
 - **Mail settings** : hôte, port, utilisateur, **mot de passe** SMTP, adresse et nom d'expéditeur (`senderAddress`, `senderName`). Les mêmes réglages servent aux e-mails d'authentification et aux notifications.
-- **Application URL** (`meta.appURL`) : adresse publique de l'**app** (liens des e-mails : `/messages`, `/requests`, `/settings`, `/media`).
+- **Application URL** (`meta.appURL`) : **`https://app.chay.fr`**, adresse publique de l'**app** (liens des e-mails : `/messages`, `/requests`, `/settings`, `/media`, réinitialisation du mot de passe).
+
+### Les trois adresses publiques
+
+| Adresse | Sert | Où la régler |
+|---|---|---|
+| `https://app.chay.fr` | le site web de l'app (build Vite statique, servi par Caddy : `docs/CADDY-APP.md`) | `VITE_PUBLIC_APP_URL` (build) et « Application URL » de PocketBase (e-mails) |
+| `https://api.chay.fr` | PocketBase (API, fichiers) | `VITE_PB_URL` (build) et `CHAY_PUBLIC_URL` (adresses des fichiers) : **ce n'est pas l'adresse de l'app** |
+| `https://media.chay.fr` | vidéos R2 | `R2_PUBLIC_BASE_URL` |
 - **Trusted proxy** : en-tête `X-Forwarded-For` (Caddy), sinon tous les membres partagent les compteurs de limites.
 
 ## Sidecar push (service `chay-push`)
@@ -45,7 +53,7 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 |---|---|---|
 | `VITE_BACKEND` | `pocketbase` | choisit l'adaptateur PocketBase (défaut : Base44) |
 | `VITE_PB_URL` | `https://api.chay.fr` | adresse de PocketBase (valeur par défaut) |
-| `VITE_PUBLIC_APP_URL` | `https://chay.fr` (**à confirmer**) | adresse publique du site de l'app : liens partagés depuis l'APK (verset, radio) |
+| `VITE_PUBLIC_APP_URL` | `https://app.chay.fr` (valeur par défaut) | adresse publique du site de l'app : liens partagés depuis l'APK (verset, radio), image de la notification radio |
 
 Les variables `VITE_BASE44_*` ne servent plus qu'au mode Base44.
 

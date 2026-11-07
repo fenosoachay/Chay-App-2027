@@ -41,7 +41,7 @@ Les objets R2 non référencés ne sont **pas** supprimés automatiquement.
 ```json
 [
   {
-    "AllowedOrigins": ["https://chay.fr", "https://localhost", "capacitor://localhost"],
+    "AllowedOrigins": ["https://app.chay.fr", "https://localhost", "capacitor://localhost"],
     "AllowedMethods": ["PUT", "GET", "HEAD"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": ["ETag"],
