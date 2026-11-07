@@ -162,6 +162,7 @@ npm run test:pb-local
 - `pocketbase/tests/fn-pilote.integration.mjs` : refus anonymes, appels membre / admin, entrées invalides, hooks ; remet les données dans leur état initial.
 - `pocketbase/tests/fn-lot2.integration.mjs` : messagerie (isolement entre membres, temps réel), prière (limite quotidienne, concurrence), jeux (scores non falsifiables, crédits) ; supprime tout ce qu'il crée.
 - `pocketbase/tests/fn-lot3.integration.mjs` : règles corrigées (PrayerRequest, Message, Conversation : ce qui passait avant est refusé, l'usage légitime marche), routes de conversation, `listThemeRequests`, `createDonationRequest`.
+- `pocketbase/tests/fn-conversations-privees.integration.mjs` : conversations privées (admin non participant refusé, admin participant, membres, anonyme, superuser).
 - `pocketbase/tests/fn-bloc3-collections.integration.mjs` : corrections de collections du bloc 3 (appareils, notifications, réactions, nom affiché, scores, listes d'identifiants).
 - `pocketbase/tests/fn-auth.integration.mjs` : inscription par code, mot de passe oublié, changement d'e-mail, règles de `users`, invitation, suppression de compte, dernier administrateur (**faux SMTP requis**).
 - `pocketbase/tests/fn-fichiers.integration.mjs` : fichiers (membre, admin, anonyme, taille / type, propriétaire falsifié, morceaux, multipart R2, abandon, nettoyages) (**faux S3 requis**).

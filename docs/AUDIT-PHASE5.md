@@ -47,9 +47,7 @@ Test `pocketbase/tests/admin-entitycrud.local.test.js` (vrai adaptateur) : 12 se
 Rien d'autre n'est refusé : les règles donnent création, modification et suppression aux admins sur les 12 entités. `created_by_admin` et `cover_cropped` ne sont pas dans le schéma et sont ignorés.
 
 ### Conversations : ce que permettent les règles
-`Message` et `Conversation` : un admin peut **lister, lire, modifier et supprimer toutes** les conversations et tous les messages, y compris les conversations privées où il ne participe pas. C'est l'exception `role = admin` de Base44, reprise telle quelle. Il ne peut pas écrire dans une conversation dont il n'est pas membre (`createMessage` l'exige).
-
-Proposition, à décider : retirer l'exception admin de `listRule` / `viewRule` (confidentialité des échanges) et la garder pour `deleteRule` (modération). La correction #4 ne change que l'affichage.
+**Bloc 7 : corrigé.** `Message` et `Conversation` : seuls les participants lisent, modifient et suppriment (un admin participant peut supprimer les messages des autres dans **ses** conversations, pour la modération). Un admin non participant est refusé (404), comme un anonyme ; le superuser PocketBase garde l'accès. `Message.create` est fermé (route `createMessage`). Le hook d'intégrité de `read_by` / `pinned_by` / `muted_by` s'applique désormais aussi aux admins. Test : `pocketbase/tests/fn-conversations-privees.integration.mjs`.
 
 ### Politique de confidentialité
 Il n'y a pas de page dédiée dans l'app. Les conditions d'utilisation (dialogue de l'inscription, `Register.jsx`) parlent de « services techniques utilisés pour faire fonctionner l'application et ses notifications », sans nommer d'hébergeur ni de pays. Les réglages « Confidentialité et données » (`PrivacySection.jsx`) traitent de la localisation et renvoient vers Contact pour une copie des données. Avec PocketBase (`api.chay.fr`), Cloudflare R2, Firebase et le fournisseur SMTP, une vraie politique devrait les nommer : à rédiger côté église.
