@@ -5,6 +5,8 @@ import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginUnusedImports from "eslint-plugin-unused-imports";
 
 export default [
+  // Fichiers générés (build Gradle de l'APK : copies du site et du pont Capacitor) : jamais analysés.
+  { ignores: ["android/app/build/**", "android/build/**", "android/app/src/main/assets/public/**"] },
   {
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",

@@ -29,3 +29,6 @@ GoogleService-Info.plist
 *.jks
 local.properties
 keystore.properties
+
+# Éditeurs (Android Studio, IntelliJ)
+.idea/

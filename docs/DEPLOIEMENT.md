@@ -521,45 +521,14 @@ Puis `sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload
 
 **Limites de débit** : Settings → Rate limits activé, avec les règles de `pocketbase/config/settings-bac-a-sable.json`.
 
-**Trusted proxy** : Settings → Application → *User IP proxy headers* = `X-Forwarded-For`, *Use leftmost IP* activé. Sans ce réglage, tous les membres partagent le même compteur de limites (IP de Caddy).
+**Trusted proxy** : Settings → Application → *User IP proxy headers* = `X-Forwarded-For`, *Use leftmost IP* **désactivé** (Caddy sur la même machine : l'adresse fiable est la plus à droite ; réglé par `configurer-production.mjs`, étape 3c). Sans ce réglage, tous les membres partagent le même compteur de limites (IP de Caddy).
 
-**Sauvegardes chiffrées hors serveur (R2)** :
-1. Dans PocketBase : Settings → Backups → sauvegarde automatique quotidienne (`0 3 * * *`), en gardant les 7 dernières. Elles vont dans `pb_data/backups`.
-2. Copie chiffrée vers un **bucket R2 distinct** (par exemple `chay-sauvegardes`), avec un jeton R2 limité à ce bucket et `restic` (chiffrement de bout en bout) :
-```bash
-sudo apt-get install -y restic
-sudo install -m 600 -o root -g root /dev/null /etc/chay/restic.env
-sudo nano /etc/chay/restic.env
-```
-   Contenu (valeurs tapées dans l'éditeur) :
-```
-RESTIC_REPOSITORY=s3:https://<compte>.r2.cloudflarestorage.com/chay-sauvegardes
-RESTIC_PASSWORD=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-```
-   **`RESTIC_PASSWORD` est à conserver aussi hors du serveur** (gestionnaire de mots de passe) : sans lui, les sauvegardes sont illisibles.
-```bash
-sudo bash -c 'set -a; . /etc/chay/restic.env; restic init'
-sudo bash -c 'set -a; . /etc/chay/restic.env; restic backup /opt/pocketbase/pb_data/backups'
-sudo bash -c 'echo "30 4 * * * root bash -c '"'"'set -a; . /etc/chay/restic.env; restic backup -q /opt/pocketbase/pb_data/backups && restic forget -q --keep-daily 14 --keep-weekly 8 --prune'"'"'" > /etc/cron.d/chay-sauvegarde'
-```
+**Sauvegardes** : faites par **PocketBase lui-même** vers R2. Il n'y a pas d'autre outil : restic n'est **pas** en place.
+- Settings → Backups : sauvegarde automatique chaque nuit, cron `0 3 * * *` en **UTC** ; les **7** dernières `@auto_…` conservées.
+- *Storage* : S3, bucket R2 **`chay-sauvegardes`**, juridiction **UE**, point d'accès `https://<compte>.eu.r2.cloudflarestorage.com`, région `auto`, jeton R2 **limité à ce bucket**.
+- ⚠️ Une sauvegarde contient les réglages en clair : mot de passe SMTP, clés S3. Le bucket reste **privé**, et une sauvegarde ne se partage jamais.
 
-**Test de restauration** (à faire une fois, puis chaque trimestre), 🐧 **SERVEUR** :
-```bash
-sudo bash -c 'set -a; . /etc/chay/restic.env; restic snapshots'
-sudo bash -c 'set -a; . /etc/chay/restic.env; restic restore latest --target /tmp/test-restauration'
-sudo ls /tmp/test-restauration/opt/pocketbase/pb_data/backups/
-mkdir -p /tmp/pb-test && sudo unzip -q /tmp/test-restauration/opt/pocketbase/pb_data/backups/<dernier>.zip -d /tmp/pb-test
-sudo /opt/pocketbase/pocketbase serve --http=127.0.0.1:8099 --dir=/tmp/pb-test
-```
-
-Dans un second terminal SSH :
-```bash
-curl -s "http://127.0.0.1:8099/api/collections/BibleVerse/records?perPage=1&fields=id" | head -c 200
-```
-
-On doit obtenir une réponse avec `totalItems`. Ensuite, arrêter avec `Ctrl+C` et supprimer les copies : `sudo rm -rf /tmp/test-restauration /tmp/pb-test`.
+Restauration, test d'un zip sans risque, et reconstruction sur un VPS neuf : **voir `docs/RESTAURATION.md`**. La configuration du serveur (`/etc/chay`, Caddyfile, fichiers de service) n'est pas dans ces sauvegardes : une copie chiffrée est une amélioration à faire, décrite dans ce même document.
 
 ---
 
