@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { base44 } from "@/api/base44Client";
+import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
@@ -208,8 +209,10 @@ export function usePushNotifications(navigate) {
         setTimeout(() => {
           if (!settled && active) {
             emitStatus({
-              error:
+              error: backendText(
                 "Aucun token FCM reçu après 10 s. Le build Android n'inclut probablement pas google-services : régénérez l'AAB via Publish → Mobile app → Create Google Play files avec « Add push notifications » activé et google-services.json uploadé.",
+                "Aucun token FCM reçu après 10 s. Le build Android n'inclut probablement pas google-services : reconstruisez l'APK avec android/app/google-services.json du projet Firebase (le même que FIREBASE_SERVICE_ACCOUNT).",
+              ),
             });
           }
         }, 10000);

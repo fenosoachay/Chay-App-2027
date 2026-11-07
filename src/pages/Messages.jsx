@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
+import { IS_POCKETBASE } from "@/api/backendConfig";
 import { usePresenceHeartbeat, useProfiles } from "@/hooks/usePresence";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { setActiveChat } from "@/lib/activeChat";
@@ -31,6 +32,12 @@ export default function Messages() {
   const { prefs } = usePreferences();
   usePresenceHeartbeat(user, prefs.presence_visible !== false);
   const profiles = useProfiles();
+  // Mode PocketBase : les règles laissent un admin lire toutes les conversations ; la messagerie
+  // n'affiche que celles où l'on participe (boîte de réception d'un membre comme d'un admin).
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
+  const isMine = (item) =>
+    !IS_POCKETBASE || (Array.isArray(item?.participant_ids) && item.participant_ids.includes(userIdRef.current));
 
   const loadAll = async () => {
     const [convos, msgs] = await Promise.all([
@@ -40,8 +47,8 @@ export default function Messages() {
         return [];
       }),
     ]);
-    const cArr = Array.isArray(convos) ? convos : [];
-    const mArr = Array.isArray(msgs) ? msgs : [];
+    const cArr = (Array.isArray(convos) ? convos : []).filter(isMine);
+    const mArr = (Array.isArray(msgs) ? msgs : []).filter(isMine);
     setConversations(cArr);
     setMessagesByConv(groupMessagesByConversation(mArr));
     setLoading(false);
@@ -56,6 +63,7 @@ export default function Messages() {
   // Realtime updates
   useEffect(() => {
     const unsubC = base44.entities.Conversation.subscribe((event) => {
+      if (event.type !== "delete" && !isMine(event.data)) return;
       setConversations((prev) => {
         const map = new Map(prev.map((c) => [c.id, c]));
         if (event.type === "delete") map.delete(event.data.id);
@@ -70,6 +78,7 @@ export default function Messages() {
     const unsubM = base44.entities.Message.subscribe((event) => {
       const m = event.data;
       if (!m?.conversation_id) return;
+      if (event.type !== "delete" && !isMine(m)) return;
       if (event.type !== "delete" && !isRenderableMessage(m)) {
         setMessagesByConv((prev) => {
           const existing = prev[m.conversation_id] || [];
