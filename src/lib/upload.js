@@ -325,7 +325,17 @@ export async function uploadChunked(file, onProgress, opts = {}) {
   return url;
 }
 
+// Garde-fou : seul un vrai fichier (File / Blob) non vide part au serveur. Sans lui, un objet sans taille
+// (ex. l'événement d'un clic) tombait dans la branche « gros fichier » et le serveur répondait
+// « fileSize invalide » (photo de profil et de couverture recadrées).
+export function assertUploadable(file) {
+  const isBlob = Boolean(file) && typeof file === "object" && typeof file.size === "number" && typeof file.slice === "function";
+  if (!isBlob) throw new Error("Aucune image à envoyer : le fichier est invalide.");
+  if (!Number.isFinite(file.size) || file.size <= 0) throw new Error("Le fichier est vide.");
+}
+
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {
+  assertUploadable(file);
   // Mode PocketBase : choix par la taille seulement (forceChunked ignoré) :
   // <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ; > 100 Mo -> R2 (admin, vidéos).
   if (IS_POCKETBASE) {

@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createPocketBaseAdapter } from '@/api/pocketbase/adapter';
 import { retry429 } from './retry429.js';
 import { loadFauxS3Env, s3Fetch } from './sigv4-node.mjs';
+import { navigateur, recadrerDansNavigateur, tailleJpeg } from './navigateur-recadrage.mjs';
 
 const BASE = process.env.PB_TEST_URL || 'http://127.0.0.1:8090';
 const holder = vi.hoisted(() => ({ api: null }));
@@ -42,6 +43,7 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
   let membre;
   let admin;
   const cleanup = { Fichier: [], FichierAdmin: [], objects: [] };
+  const photosAvant = [];
 
   beforeAll(async () => {
     su = new PocketBase(BASE);
@@ -52,6 +54,7 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
   });
 
   afterAll(async () => {
+    for (const { id, avant } of photosAvant) await su.collection('users').update(id, avant).catch(() => {});
     for (const col of ['Fichier', 'FichierAdmin']) for (const id of cleanup[col]) await su.collection(col).delete(id).catch(() => {});
     for (const key of cleanup.objects) await s3Fetch(s3env, 'DELETE', `/${s3env.R2_BUCKET}/${key}`);
   });
@@ -117,5 +120,65 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
   it('admin : 101 Mo qui ne sont pas une vidéo -> refusé avant tout envoi (415)', async () => {
     holder.api = admin;
     await expect(uploadToBase44(fileOf(MP3(101 * MIO), 'concert.mp3', 'audio/mpeg'))).rejects.toThrow(/HTTP 415/);
+  });
+
+  // ── Bogue « HTTP 400: {"error":"fileSize invalide"} » (Paramètres > Mon compte) ──────────────────
+  // Le bouton « Rogner » transmettait l'événement du clic au lieu de l'image : objet sans taille,
+  // donc branche « gros fichier » d'upload.js, donc initMultipartUpload sans fileSize.
+  it('objet qui n\'est pas un fichier (événement de clic) -> erreur claire, aucune requête', async () => {
+    holder.api = admin;
+    const espion = vi.spyOn(globalThis, 'fetch');
+    try {
+      const clic = { type: 'click', target: {}, preventDefault() {} };
+      await expect(uploadToBase44(clic)).rejects.toThrow('Aucune image à envoyer : le fichier est invalide.');
+      await expect(uploadToBase44(new Blob([]))).rejects.toThrow('Le fichier est vide.');
+      expect(espion).not.toHaveBeenCalled();
+    } finally {
+      espion.mockRestore();
+    }
+  });
+
+  describe.skipIf(!navigateur())('photos recadrées par un vrai navigateur (JPEG de quelques centaines de Ko)', () => {
+    for (const qui of ['membre', 'admin']) {
+      it(`${qui} : profil (carré) puis couverture (2,5:1) -> adresses /api/files/ sur l'hôte PocketBase`, async () => {
+        const api = qui === 'membre' ? membre : admin;
+        holder.api = api;
+        const id = api.pb.authStore.record.id;
+        const u = await su.collection('users').getOne(id);
+        photosAvant.push({ id, avant: { profile_photo_url: u.profile_photo_url || '', cover_photo_url: u.cover_photo_url || '' } });
+        const col = qui === 'membre' ? 'Fichier' : 'FichierAdmin';
+        const colId = (await su.collections.getOne(col)).id;
+        const forme = new RegExp(`^${BASE}/api/files/${colId}/[a-z0-9]+/[^/]+\\.jpe?g$`);
+
+        // Profil : ImageCrop (aspect 1, « Rogner ») -> Blob JPEG sans nom -> AccountSection.uploadAvatar
+        const profil = recadrerDansNavigateur({ aspect: 1 });
+        expect(profil.source.length).toBeGreaterThan(200 * 1024);
+        expect(profil.source.length).toBeLessThan(1024 * 1024);
+        expect(tailleJpeg(profil.crop)).toEqual({ w: 640, h: 640 });
+        const urlProfil = await uploadToBase44(new Blob([profil.crop], { type: 'image/jpeg' }));
+        cleanup[col].push(recordIdOf(urlProfil));
+        expect(urlProfil).toMatch(forme);
+        await api.auth.updateMe({ profile_photo_url: urlProfil });
+
+        // Couverture : CroppableUploader (aspect 2,5) « Rogner », puis « Conserver l'original »
+        const couv = recadrerDansNavigateur({ aspect: 2.5 });
+        expect(tailleJpeg(couv.crop)).toEqual({ w: 640, h: 256 });
+        const urlCouv = await uploadToBase44(new Blob([couv.crop], { type: 'image/jpeg' }));
+        cleanup[col].push(recordIdOf(urlCouv));
+        expect(urlCouv).toMatch(forme);
+        await api.auth.updateMe({ cover_photo_url: urlCouv });
+        const urlOriginal = await uploadToBase44(fileOf(couv.source, 'IMG_2026.jpg', 'image/jpeg'));
+        cleanup[col].push(recordIdOf(urlOriginal));
+        expect(urlOriginal).toMatch(forme);
+
+        // Contenu servi identique, adresses enregistrées sur le compte
+        expect((await download(urlProfil)).equals(profil.crop)).toBe(true);
+        expect((await download(urlCouv)).equals(couv.crop)).toBe(true);
+        expect(sha(await download(urlOriginal))).toBe(sha(couv.source));
+        const apres = await su.collection('users').getOne(id);
+        expect(apres.profile_photo_url).toBe(urlProfil);
+        expect(apres.cover_photo_url).toBe(urlCouv);
+      });
+    }
   });
 });

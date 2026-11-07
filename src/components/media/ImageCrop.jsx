@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { cropGeometry, loadImage, renderCropToBlob } from "@/lib/imageCrop";
 
 export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allowOriginal = false }) {
   // Deuxième argument de onConfirm : true si l'image a été explicitement
   // rognée, false si l'original a été conservé (permet aux appelants de
   // mémoriser le recadrage — ex. cartes d'articles). Les appelants qui
   // ignorent ce second argument voient leur comportement inchangé.
-  const confirmCropped = (...args) => onConfirm?.(...args, true);
-  const confirmOriginal = (...args) => onConfirm?.(...args, false);
+  // Ne jamais brancher confirmCropped directement sur onClick : l'appelant recevrait l'événement
+  // du clic au lieu de l'image (bogue « fileSize invalide » de la photo de profil).
+  const confirmCropped = (blob) => onConfirm?.(blob, true);
+  const confirmOriginal = (original) => onConfirm?.(original, false);
+  const [busy, setBusy] = useState(false);
   const [img, setImg] = useState(null);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
@@ -31,15 +35,7 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const fitScale = natural.w
-    ? Math.max(VP_W / natural.w, VP_H / natural.h)
-    : 1;
-  const dispW = natural.w * fitScale * zoom;
-  const dispH = natural.h * fitScale * zoom;
-  const maxX = Math.max(0, (dispW - VP_W) / 2);
-  const maxY = Math.max(0, (dispH - VP_H) / 2);
-  const cx = Math.max(-maxX, Math.min(maxX, offset.x));
-  const cy = Math.max(-maxY, Math.min(maxY, offset.y));
+  const { dispW, dispH, cx, cy, left, top, source } = cropGeometry({ natural, vpW: VP_W, vpH: VP_H, zoom, offset });
 
   const onPointerDown = (e) => {
     dragging.current = { x: e.clientX, y: e.clientY, ox: cx, oy: cy };
@@ -54,35 +50,19 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
   };
   const onPointerUp = () => { dragging.current = null; };
 
-  const confirm = useCallback(() => {
-    if (!img || !natural.w) return;
-    const OUT_W = 640;
-    const OUT_H = Math.round(OUT_W / aspect);
-    const canvas = document.createElement("canvas");
-    canvas.width = OUT_W;
-    canvas.height = OUT_H;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, OUT_W, OUT_H);
-    const left0 = (VP_W - dispW) / 2 + cx;
-    const top0 = (VP_H - dispH) / 2 + cy;
-    const scale = fitScale * zoom;
-    let sx = -left0 / scale;
-    let sy = -top0 / scale;
-    let sW = VP_W / scale;
-    let sH = VP_H / scale;
-    sx = Math.max(0, Math.min(sx, natural.w - sW));
-    sy = Math.max(0, Math.min(sy, natural.h - sH));
-    sW = Math.min(sW, natural.w - sx);
-    sH = Math.min(sH, natural.h - sy);
-    if (sW <= 0 || sH <= 0) return;
-    const im = new Image();
-    im.onload = () => {
-      ctx.drawImage(im, sx, sy, sW, sH, 0, 0, OUT_W, OUT_H);
-      canvas.toBlob((blob) => { if (blob) onConfirm?.(blob); }, "image/jpeg", 0.9);
-    };
-    im.src = img;
-  }, [img, natural, fitScale, zoom, cx, cy, aspect, onConfirm]);
+  // Rogner : découpe réelle sur canvas, puis onConfirm(Blob JPEG, true).
+  const confirm = useCallback(async () => {
+    if (!img || !source || busy) return;
+    setBusy(true);
+    try {
+      const im = await loadImage(img);
+      confirmCropped(await renderCropToBlob(im, source, aspect));
+    } catch (e) {
+      console.error("[ImageCrop]", e);
+    } finally {
+      setBusy(false);
+    }
+  }, [img, source, aspect, busy, confirmCropped]);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -103,8 +83,8 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
             style={{
               width: dispW,
               height: dispH,
-              left: `${(VP_W - dispW) / 2 + cx}px`,
-              top: `${(VP_H - dispH) / 2 + cy}px`,
+              left: `${left}px`,
+              top: `${top}px`,
               maxWidth: "none",
             }}
           />
@@ -131,7 +111,7 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
             Conserver l'original
           </button>
         )}
-        <button onClick={confirmCropped} className="flex-1 rounded-full brand-gradient text-white py-2.5 text-sm font-bold">
+        <button type="button" onClick={() => confirm()} disabled={busy || !source} className="flex-1 rounded-full brand-gradient text-white py-2.5 text-sm font-bold disabled:opacity-60">
           Rogner
         </button>
       </div>
