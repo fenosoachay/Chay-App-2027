@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import PocketBase from 'pocketbase';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createPocketBaseAdapter } from '@/api/pocketbase/adapter';
+import { retry429 } from './retry429.js';
 
 const BASE = process.env.PB_TEST_URL || 'http://127.0.0.1:8090';
 const credFile = process.env.PB_TEST_CREDENTIALS || 'C:\\PB-local\\identifiants-test.txt';
@@ -45,7 +46,7 @@ describe('app en mode PocketBase (bac à sable)', () => {
 
   beforeAll(async () => {
     membre = newClient();
-    const login = await membre.auth.loginViaEmailPassword(creds.membre.email, creds.membre.password);
+    const login = await retry429(() => membre.auth.loginViaEmailPassword(creds.membre.email, creds.membre.password));
     expect(login.access_token).toBeTruthy();
     anonyme = newClient();
   });

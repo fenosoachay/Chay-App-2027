@@ -39,9 +39,13 @@ async function http(method, path, { token, body, raw } = {}) {
   return { status: res.status, data };
 }
 async function login(collection, c) {
-  const r = await http('POST', `/api/collections/${collection}/auth-with-password`, { body: { identity: c.email, password: c.password } });
-  if (r.status !== 200) throw new Error(`connexion ${collection} impossible (HTTP ${r.status})`);
-  return r.data.token;
+  // Limites de tentatives du bac à sable : on patiente et on réessaie sur 429.
+  for (let attempt = 0; ; attempt++) {
+    const r = await http('POST', `/api/collections/${collection}/auth-with-password`, { body: { identity: c.email, password: c.password } });
+    if (r.status === 200) return r.data.token;
+    if (r.status !== 429 || attempt >= 14) throw new Error(`connexion ${collection} impossible (HTTP ${r.status})`);
+    await new Promise((ok) => setTimeout(ok, 5000));
+  }
 }
 const fn = (name, opts) => http('POST', `/api/fn/${name}`, opts);
 

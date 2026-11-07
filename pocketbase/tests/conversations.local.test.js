@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import PocketBase from 'pocketbase';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createPocketBaseAdapter } from '@/api/pocketbase/adapter';
+import { retry429 } from './retry429.js';
 
 const BASE = process.env.PB_TEST_URL || 'http://127.0.0.1:8090';
 const credFile = process.env.PB_TEST_CREDENTIALS || 'C:\\PB-local\\identifiants-test.txt';
@@ -15,7 +16,7 @@ const client = async (who) => {
   const pb = new PocketBase(BASE);
   pb.autoCancellation(false);
   const api = createPocketBaseAdapter(pb, { baseUrl: BASE });
-  await api.auth.loginViaEmailPassword(creds[who].email, creds[who].password);
+  await retry429(() => api.auth.loginViaEmailPassword(creds[who].email, creds[who].password));
   return api;
 };
 

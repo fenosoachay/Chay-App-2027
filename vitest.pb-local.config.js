@@ -13,6 +13,7 @@ export default defineConfig({
     include: ['pocketbase/tests/**/*.local.test.js'],
     environment: 'node',
     setupFiles: ['pocketbase/tests/local-only-fetch.js'],
-    testTimeout: 30000,
+    testTimeout: 90000,
+    hookTimeout: 90000,
   },
 });

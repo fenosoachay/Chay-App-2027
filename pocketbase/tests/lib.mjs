@@ -32,9 +32,26 @@ export async function http(method, path, { token, body, raw } = {}) {
 }
 
 export async function login(collection, c) {
-  const r = await http('POST', `/api/collections/${collection}/auth-with-password`, { body: { identity: c.email, password: c.password } });
-  if (r.status !== 200) throw new Error(`connexion ${collection} impossible (HTTP ${r.status})`);
-  return { token: r.data.token, id: r.data.record.id };
+  // Les limites de tentatives du bac à sable (20 connexions / minute) peuvent répondre 429 quand
+  // plusieurs suites s'enchaînent : on patiente et on réessaie (jusqu'à ~70 s).
+  for (let attempt = 0; ; attempt++) {
+    const r = await http('POST', `/api/collections/${collection}/auth-with-password`, { body: { identity: c.email, password: c.password } });
+    if (r.status === 200) return { token: r.data.token, id: r.data.record.id };
+    if (r.status !== 429 || attempt >= 14) throw new Error(`connexion ${collection} impossible (HTTP ${r.status})`);
+    await sleep(5000);
+  }
+}
+
+/** Réessaie une opération qui peut recevoir un 429 (limite de tentatives). */
+export async function retry429(op) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await op();
+    } catch (err) {
+      if (err?.status !== 429 || attempt >= 14) throw err;
+      await sleep(5000);
+    }
+  }
 }
 
 export const fn = (name, opts) => http('POST', `/api/fn/${name}`, opts);
