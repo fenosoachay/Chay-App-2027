@@ -39,7 +39,7 @@ Dans l'app (mode PocketBase), `entities.User.delete(id)` appelle la première si
 | ThemeRequest | `user_id` = membre (ses demandes de thème) |
 | DonationRequest | `userId` = membre (contient son nom) |
 | ContactMessage | `created_by_id` = membre (contient nom et e-mail) |
-| Conversation | conversations qui n'ont plus **aucun** participant, avec leurs messages |
+| Conversation, Message | conversations (avec leurs messages) et messages dont le membre était le **seul** participant restant |
 | users | le compte lui-même (en dernier) |
 
 ### Anonymisé (contenu conservé, auteur « Ancien membre »)
@@ -56,7 +56,7 @@ Dans l'app (mode PocketBase), `entities.User.delete(id)` appelle la première si
 
 | Collection | Champ |
 |---|---|
-| PrayerRequest | `requester_id` et `taken_by` vidés (la prière reste, sans identité) |
+| PrayerRequest | `requester_id` (champ obligatoire) remplacé par `compte-supprime`, `taken_by` vidé (la prière reste, sans identité) |
 | ThemeRequest | `handled_by` vidé |
 | Conversation | membre retiré de `participant_ids`, `pinned_by`, `muted_by` ; `typing_user_id` vidé ; `admin_id` transmis au premier participant restant (ou vidé) |
 | Message | membre retiré de `participant_ids` et `read_by` |

@@ -8,7 +8,9 @@
 // PocketBase renvoie « Failed to authenticate. » (400) pour un mauvais identifiant ou mot de passe :
 // on renvoie EXACTEMENT la même réponse pour un compte non vérifié (pas d'énumération).
 onRecordAuthWithPasswordRequest((e) => {
-  if (e.record && !e.record.getBool('verified')) {
+  // Compte non vérifié ou désactivé : même réponse qu'un mauvais mot de passe (l'authRule
+  // « disabled != true » répondrait sinon un message différent, qui révélerait l'état du compte).
+  if (e.record && (!e.record.getBool('verified') || e.record.getBool('disabled'))) {
     throw new BadRequestError('Failed to authenticate.');
   }
   e.next();

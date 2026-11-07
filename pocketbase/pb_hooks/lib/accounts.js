@@ -42,6 +42,11 @@ const ARRAY_FIELDS = [
   ['Video', ['viewed_by']],
 ];
 
+// Valeur mise à la place d'un identifiant OBLIGATOIRE (ex. PrayerRequest.requester_id) :
+// elle ne correspond à aucun compte, donc à aucune règle d'accès.
+const DELETED_ID = 'compte-supprime';
+const REQUIRED_ID = { PrayerRequest: ['requester_id'] };
+
 // Champs texte d'identifiant vidés (le contenu est conservé).
 const CLEAR_FIELDS = [
   ['PrayerRequest', ['requester_id', 'taken_by']],
@@ -91,10 +96,20 @@ function deleteAccount(app, userId) {
     for (const field of fields) {
       each(app, collection, `${field} ~ {:q}`, p, (r) => {
         const list = JSON.parse(JSON.stringify(r))[field] || [];
-        r.set(field, list.filter((x) => x !== userId));
-        if (collection === 'Conversation' && field === 'participant_ids') {
-          const rest = list.filter((x) => x !== userId);
-          if (r.getString('admin_id') === userId) r.set('admin_id', rest[0] || '');
+        const rest = list.filter((x) => x !== userId);
+        // participant_ids est obligatoire : sans plus aucun participant, la conversation (et ses
+        // messages) ou le message est supprimé au lieu d'être enregistré vide.
+        if (field === 'participant_ids' && rest.length === 0) {
+          if (collection === 'Conversation') {
+            each(app, 'Message', 'conversation_id = {:c}', { c: r.id }, (m) => { app.delete(m); summary.supprimes++; return true; });
+          }
+          app.delete(r);
+          summary.supprimes++;
+          return true;
+        }
+        r.set(field, rest);
+        if (collection === 'Conversation' && field === 'participant_ids' && r.getString('admin_id') === userId) {
+          r.set('admin_id', rest[0] || '');
         }
         app.save(r);
         summary.anonymises++;
@@ -106,7 +121,7 @@ function deleteAccount(app, userId) {
   for (const [collection, fields] of CLEAR_FIELDS) {
     for (const field of fields) {
       each(app, collection, `${field} = {:u}`, p, (r) => {
-        r.set(field, '');
+        r.set(field, (REQUIRED_ID[collection] || []).indexOf(field) !== -1 ? DELETED_ID : '');
         if (collection === 'UserNotification') r.set('actor_name', ANCIEN);
         app.save(r);
         summary.anonymises++;
@@ -114,14 +129,6 @@ function deleteAccount(app, userId) {
       });
     }
   }
-
-  // Conversations sans plus aucun participant : supprimées avec leurs messages.
-  each(app, 'Conversation', "participant_ids = '[]' || participant_ids = ''", {}, (c) => {
-    each(app, 'Message', 'conversation_id = {:c}', { c: c.id }, (m) => { app.delete(m); summary.supprimes++; return true; });
-    app.delete(c);
-    summary.supprimes++;
-    return true;
-  });
 
   // Toute autre trace d'auteur (contenus publiés par un admin, etc.) : created_by_id vidé.
   for (const col of app.findAllCollections('base')) {
@@ -133,4 +140,4 @@ function deleteAccount(app, userId) {
   return summary;
 }
 
-module.exports = { ANCIEN, DELETE_ROWS, ANONYMIZE, ARRAY_FIELDS, CLEAR_FIELDS, remainingAdmins, deleteAccount };
+module.exports = { ANCIEN, DELETED_ID, DELETE_ROWS, ANONYMIZE, ARRAY_FIELDS, CLEAR_FIELDS, remainingAdmins, deleteAccount };
