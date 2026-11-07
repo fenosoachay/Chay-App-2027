@@ -160,6 +160,7 @@ Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la 
 npm run test:pb-local
 ```
 
+- `pocketbase/tests/demarrage.integration.mjs` : ligne de démarrage `[chay] hooks chargés` (4 tâches, mode des notifications) sur 5 PocketBase **jetables** (`pb-jetable.mjs`). Ces instances utilisent un dossier temporaire et un port libre (jamais 8090 ni 8092). Leur superuser est créé par `superuser upsert` **avant** le démarrage, avec un mot de passe aléatoire jamais affiché : PocketBase n'affiche pas de lien `pbinstall` et n'ouvre aucun onglet. Toute nouvelle instance jetable doit passer par `pb-jetable.mjs`.
 - `pocketbase/tests/fn-pilote.integration.mjs` : refus anonymes, appels membre / admin, entrées invalides, hooks ; remet les données dans leur état initial.
 - `pocketbase/tests/fn-lot2.integration.mjs` : messagerie (isolement entre membres, temps réel), prière (limite quotidienne, concurrence), jeux (scores non falsifiables, crédits) ; supprime tout ce qu'il crée.
 - `pocketbase/tests/fn-lot3.integration.mjs` : règles corrigées (PrayerRequest, Message, Conversation : ce qui passait avant est refusé, l'usage légitime marche), routes de conversation, `listThemeRequests`, `createDonationRequest`.
