@@ -36,11 +36,11 @@ C:\PB-local\bin\pocketbase.exe superuser upsert <e-mail> <mot-de-passe> --dir=C:
 
 ### Avec le faux R2 (fichiers, bloc 4)
 
-Les routes vidéo lisent la configuration R2 dans l'environnement du processus. Pour le bac à sable, elle vise le faux S3 local ; les clés sont dans `C:\PB-localaux-s3.env` (créé au premier lancement du faux S3, ne pas partager) :
+Les routes vidéo lisent la configuration R2 dans l'environnement du processus. Pour le bac à sable, elle vise le faux S3 local ; les clés sont dans `C:\PB-local\faux-s3.env` (créé au premier lancement du faux S3, ne pas partager) :
 
 ```powershell
-Get-Content C:\PB-localaux-s3.env | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
-C:\PB-localin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
+Get-Content C:\PB-local\faux-s3.env | ForEach-Object { $k, $v = $_ -split '=', 2; if ($k) { Set-Item "env:$k" $v } }
+C:\PB-local\bin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_data --hooksDir="$PWD\pocketbase\pb_hooks"
 ```
 
 ## Faux S3 local (simule Cloudflare R2)
@@ -48,7 +48,7 @@ C:\PB-localin\pocketbase.exe serve --http=127.0.0.1:8090 --dir=C:\PB-local\pb_d
 Dans un autre terminal, depuis le worktree :
 
 ```powershell
-node pocketbase/tests/faux-s3.mjs   # écoute 127.0.0.1:9000, stockage C:\PB-localaux-s3
+node pocketbase/tests/faux-s3.mjs   # écoute 127.0.0.1:9000, stockage C:\PB-local\faux-s3
 ```
 
 Il refuse toute requête mal signée (SigV4 recalculée avec `node:crypto`), simule le multipart, la lecture publique (`/public/<bucket>/<clé>`) et CORS (`ETag` exposé). Voir `docs/FICHIERS.md`.
