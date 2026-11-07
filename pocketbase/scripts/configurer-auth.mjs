@@ -59,7 +59,8 @@ for (const [k, v] of Object.entries(wanted)) {
 // ── Réglages ─────────────────────────────────────────────────────────────────
 const settings = await call('GET', '/api/settings', null, token);
 const s = strip(settingsCfg);
-const keepRules = (settings.rateLimits?.rules || []).filter((r) => !s.rateLimits.rules.some((n) => n.label === r.label));
+const removed = settingsCfg._removeRateLimitLabels || [];
+const keepRules = (settings.rateLimits?.rules || []).filter((r) => !removed.includes(r.label) && !s.rateLimits.rules.some((n) => n.label === r.label));
 const settingsPatch = {
   meta: { ...settings.meta, ...s.meta },
   smtp: { ...settings.smtp, ...s.smtp },

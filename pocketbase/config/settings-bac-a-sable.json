@@ -19,13 +19,64 @@
   "rateLimits": {
     "enabled": true,
     "rules": [
-      { "label": "POST /api/collections/users/auth-with-password", "audience": "", "duration": 60, "maxRequests": 20 },
-      { "label": "POST /api/collections/users/auth-with-otp", "audience": "", "duration": 60, "maxRequests": 10 },
-      { "label": "POST /api/collections/users/request-otp", "audience": "", "duration": 60, "maxRequests": 10 },
-      { "label": "POST /api/collections/users/request-password-reset", "audience": "", "duration": 60, "maxRequests": 10 },
-      { "label": "POST /api/collections/users/confirm-password-reset", "audience": "", "duration": 60, "maxRequests": 10 },
-      { "label": "POST /api/collections/users/request-email-change", "audience": "", "duration": 60, "maxRequests": 5 },
-      { "label": "POST /api/collections/users/records", "audience": "@guest", "duration": 60, "maxRequests": 10 }
+      {
+        "label": "POST /api/collections/users/auth-with-password",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 20
+      },
+      {
+        "label": "POST /api/collections/users/auth-with-otp",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 10
+      },
+      {
+        "label": "POST /api/collections/users/request-otp",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 10
+      },
+      {
+        "label": "POST /api/collections/users/request-password-reset",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 10
+      },
+      {
+        "label": "POST /api/collections/users/confirm-password-reset",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 10
+      },
+      {
+        "label": "POST /api/collections/users/request-email-change",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 5
+      },
+      {
+        "label": "POST /api/collections/users/records",
+        "audience": "@guest",
+        "duration": 60,
+        "maxRequests": 10
+      },
+      {
+        "label": "POST /api/collections/users/auth-refresh",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 60
+      },
+      {
+        "label": "POST /api/collections/_superusers/auth-with-password",
+        "audience": "",
+        "duration": 60,
+        "maxRequests": 10
+      }
     ]
-  }
+  },
+  "_removeRateLimitLabels": [
+    "*:auth"
+  ],
+  "_noteRateLimits": "La règle par défaut *:auth (2 requêtes / 3 s) est remplacée par des règles par route : elle couvrait aussi auth-refresh, que l’app appelle souvent (me())."
 }

@@ -99,3 +99,38 @@ export async function realtime(token, topic) {
   const sub = await http('POST', '/api/realtime', { token, body: { clientId, subscriptions: [topic] } });
   return { events, status: sub.status, close: () => ctrl.abort() };
 }
+
+// ── E-mails capturés par le faux SMTP (pocketbase/tests/faux-smtp.mjs) ───────
+const MAIL_DIR = process.env.FAUX_SMTP_DIR || 'C:\\PB-local\\mails';
+
+/** Décode un message brut (quoted-printable et blocs base64) en texte lisible. */
+export function decodeMail(raw) {
+  const qp = raw.replace(/=\r?\n/g, '').replace(/((?:=[0-9A-F]{2})+)/g, (m) => {
+    const bytes = m.split('=').filter(Boolean).map((h) => parseInt(h, 16));
+    return Buffer.from(bytes).toString('utf8');
+  });
+  const b64 = [...raw.matchAll(/Content-Transfer-Encoding:\s*base64\r?\n(?:[^\r\n]+\r?\n)*\r?\n([A-Za-z0-9+/=\r\n]+)/gi)]
+    .map((m) => Buffer.from(m[1].replace(/\s+/g, ''), 'base64').toString('utf8'));
+  return [qp, ...b64].join('\n');
+}
+
+/** Attend le premier e-mail adressé à `to` reçu après `since` (ms). Renvoie { text, file }. */
+export async function waitForMail(to, since, timeoutMs = 10000) {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    const files = fs.existsSync(MAIL_DIR) ? fs.readdirSync(MAIL_DIR).filter((f) => f.endsWith('.eml')).sort() : [];
+    for (const f of files) {
+      if (Number(f.split('-')[0]) < since) continue;
+      const raw = fs.readFileSync(path.join(MAIL_DIR, f), 'utf8');
+      const rcpt = (/^X-Faux-Smtp-Rcpt: ([^\r\n]*)/m.exec(raw) || [])[1] || '';
+      if (rcpt.split(', ').includes(to)) return { text: decodeMail(raw), file: f };
+    }
+    await sleep(200);
+  }
+  throw new Error('aucun e-mail reçu dans le délai');
+}
+
+export const otpFrom = (text) => (/>\s*(\d{6})\s*</.exec(text) || [])[1] || null;
+export const tokenFrom = (text) => (/token=([A-Za-z0-9._-]+)/.exec(text) || [])[1] || null;
