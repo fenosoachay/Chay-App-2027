@@ -75,6 +75,15 @@ onRecordUpdateRequest((e) => {
     }
     if (col.fields.getByName('base44_updated_date')) e.record.set('base44_updated_date', new DateTime());
   }
+  // Script de migration des fichiers (superuser) : la réécriture d'une adresse ne change pas la date
+  // de mise à jour visible (en-tête explicite X-Chay-Conserver-Dates: 1).
+  let keepDates = false;
+  if (!col.system && e.hasSuperuserAuth()) {
+    try { keepDates = e.requestInfo().headers.x_chay_conserver_dates === '1'; } catch (_) { keepDates = false; }
+  }
+  if (keepDates) {
+    $app.store().set(`conserver-dates:${col.name}:${e.record.id}`, true);
+  }
   e.next();
 });
 
@@ -83,7 +92,10 @@ onRecordUpdateRequest((e) => {
 // (import des données d'origine par un superuser, ou valeur déjà posée ci-dessus).
 onRecordUpdate((e) => {
   const col = e.record.collection();
-  if (!col.system && col.fields.getByName('base44_updated_date')) {
+  const keep = `conserver-dates:${col.name}:${e.record.id}`;
+  if ($app.store().has(keep)) {
+    $app.store().remove(keep);
+  } else if (!col.system && col.fields.getByName('base44_updated_date')) {
     const before = e.record.original().getString('base44_updated_date');
     if (before === e.record.getString('base44_updated_date')) {
       e.record.set('base44_updated_date', new DateTime());
