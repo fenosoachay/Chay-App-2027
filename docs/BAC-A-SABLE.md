@@ -62,6 +62,7 @@ Une erreur de syntaxe dans un hook apparaît au démarrage dans ce terminal.
 | `superuser` | superuser local (tableau de bord, scripts de test) |
 | `admin` | utilisateur de l'app avec `role = "admin"` |
 | `membre` | utilisateur de l'app avec `role = "user"` |
+| `membre2` | second membre (`role = "user"`), pour les tests d'isolement entre utilisateurs |
 
 Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la sauvegarde les efface (les recréer ensuite).
 
@@ -71,7 +72,10 @@ Ils n'existent que dans `C:\PB-local\pb_data` : une réinitialisation depuis la 
 |---|---|
 | `pocketbase/pb_hooks/base44_compat.pb.js` | `base44_created_date` / `base44_updated_date` tenues à jour ; valeurs par défaut à la création ; `role = "user"` par défaut |
 | `pocketbase/pb_hooks/fn_pilote.pb.js` | `POST /api/fn/listCommunityUsers`, `getPrayerWall`, `recordMediaListen`, `recordVideoView` |
-| `pocketbase/pb_hooks/lib/fn.js` | module partagé (utilisateur via `e.auth`, connexion / admin exigés, validation, réponses et erreurs au format Base44) |
+| `pocketbase/pb_hooks/fn_messagerie_priere.pb.js` | `createMessage`, `createPrayerRequest`, `takePrayer`, `answerPrayer` |
+| `pocketbase/pb_hooks/fn_jeux.pb.js` | `quizLevels`, `quizStart`, `quizAnswer`, `quizFinish`, `quizAdminStats`, `wsLevels`, `wsStart`, `wsWord`, `wsAnswer`, `wsHint`, `wsFinish`, `wsAdminStats` |
+| `pocketbase/pb_hooks/lib/fn.js` | module partagé (utilisateur via `e.auth`, connexion / admin exigés, validation, transactions, réponses et erreurs au format Base44) |
+| `pocketbase/pb_hooks/lib/games.js` | règles du quiz et de Mots Mélangés (reprises de `base44/shared`) |
 | `pocketbase/pb_hooks/lib/defaults.js` | valeurs par défaut (générées depuis `regles.md`) |
 
 ## Tests contre le bac à sable
@@ -81,6 +85,7 @@ npm run test:pb-local
 ```
 
 - `pocketbase/tests/fn-pilote.integration.mjs` : refus anonymes, appels membre / admin, entrées invalides, hooks ; remet les données dans leur état initial.
+- `pocketbase/tests/fn-lot2.integration.mjs` : messagerie (isolement entre membres, temps réel), prière (limite quotidienne, concurrence), jeux (scores non falsifiables, crédits) ; supprime tout ce qu'il crée.
 - `pocketbase/tests/*.local.test.js` (`vitest.pb-local.config.js`) : parcours de l'app avec le vrai adaptateur et le vrai SDK.
 
 Ces tests refusent toute adresse autre que `127.0.0.1` / `localhost` et lisent les identifiants dans `C:\PB-local\identifiants-test.txt` (variable `PB_TEST_CREDENTIALS` pour un autre chemin).
