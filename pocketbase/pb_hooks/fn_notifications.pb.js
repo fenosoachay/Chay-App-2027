@@ -268,11 +268,15 @@ routerAdd('POST', '/api/fn/createCommunityPost', (e) => {
     });
     $app.save(post);
 
+    // notification_error : vrais échecs seulement (l'app affiche alors « Les notifications aux autres utilisateurs
+    // n'ont pas pu être envoyées »). Au-delà de 3 publications par heure (membre), la publication est créée sans
+    // notification : c'est une limite VOULUE, pas un échec -> notification_info = 'rate_limited'.
     let notificationError = null;
+    let notificationInfo = null;
     const recent = $app.findRecordsByFilter('CommunityPost', 'created_by_id = {:u} && created >= {:since}', '', 10, 0,
       { u: caller.id, since: notif.pbDate(Date.now() - 3600 * 1000) }).length;
     if (caller.getString('role') !== 'admin' && recent > 3) {
-      notificationError = 'rate_limited';
+      notificationInfo = 'rate_limited';
     } else {
       try {
         notif.communityPostNotify(post);
@@ -280,7 +284,7 @@ routerAdd('POST', '/api/fn/createCommunityPost', (e) => {
         notificationError = 'notification_dispatch_failed';
       }
     }
-    return { id: post.id, notification_error: notificationError };
+    return { id: post.id, notification_error: notificationError, notification_info: notificationInfo };
   });
 });
 

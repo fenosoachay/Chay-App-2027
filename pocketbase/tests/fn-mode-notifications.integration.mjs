@@ -113,6 +113,47 @@ try {
     else check('admin non listé : aucun e-mail (test ni demande de thème), raison indiquée', t.data.email.sent === false && /NOTIFICATIONS_MODE/.test(t.data.email.error || '') && admMails === 0);
   }
 
+  console.log('\n■ Message privé (createMessage) : destinataire dans la liste, hors liste, sans appareil');
+  {
+    // Bogue « La notification du destinataire n'a pas pu être envoyée » : un envoi retenu volontairement par
+    // NOTIFICATIONS_MODE, ou un destinataire sans appareil abonné, était renvoyé comme notification_error.
+    const N = await tempUser(`mode-sans-appareil-${rnd()}@chay.test`); // jamais listé, aucun abonnement push
+    const direct = async (a, b) => {
+      const c = await http('POST', '/api/collections/Conversation/records', { ...su, body: { type: 'direct', participant_ids: [a.id, b.id], created_by_id: a.id } });
+      if (c.status !== 200) throw new Error(`préparation : Conversation HTTP ${c.status}`);
+      created.push(['Conversation', c.data.id]);
+      return c.data.id;
+    };
+    const send = async (from, conversationId, body) => {
+      const r = await fn('createMessage', { token: from.token, body: { conversation_id: conversationId, ...body } });
+      if (r.data?.id) created.push(['Message', r.data.id]);
+      return r;
+    };
+    const notifFor = async (msgId, uid) => (await list('UserNotification', `notification_id = "message_${msgId}_${uid}"`)).length;
+    const cLH = await direct(L, H);
+    const cLN = await direct(L, N);
+
+    await fetch(`${ORIGIN}/_faux/captures`, { method: 'DELETE' });
+    const cas = [
+      // [libellé, expéditeur, conversation, destinataire, corps envoyé par ConversationView, notification_info attendue]
+      ['texte, destinataire DANS la liste (abonné)', H, cLH, L, { text: 'Bonjour', reply_to_id: null }, MODE === 'off' ? 'notifications_off' : null],
+      ['texte, destinataire HORS liste (abonné)', L, cLH, H, { text: 'Bonsoir', reply_to_id: null }, MODE === 'on' ? null : `notifications_${MODE}`],
+      ['photo, destinataire HORS liste (abonné)', L, cLH, H, { text: '', image_url: `${ORIGIN}/photo.jpg` }, MODE === 'on' ? null : `notifications_${MODE}`],
+      ['texte, destinataire sans appareil', L, cLN, N, { text: 'Salut', reply_to_id: null }, MODE === 'on' ? 'no_push_subscription' : `notifications_${MODE}`],
+    ];
+    for (const [label, from, conversationId, to, body, info] of cas) {
+      const r = await send(from, conversationId, body);
+      check(`${label} : 200, notification_error = null, notification_info = ${info}`,
+        r.status === 200 && r.data.notification_error === null && r.data.notification_info === info,
+        `${r.status} error=${r.data?.notification_error} info=${r.data?.notification_info}`);
+      check(`${label} : notification in-app créée`, (await notifFor(r.data.id, to.id)) === 1);
+    }
+    await sleep(300);
+    const caps = await captures();
+    const [pl, ph] = expect(1, 2);
+    check(`push Android : destinataire listé ${pl}, hors liste ${ph}`, fcmCount(caps, tl.token) === pl && fcmCount(caps, th.token) === ph, `${fcmCount(caps, tl.token)}/${fcmCount(caps, th.token)}`);
+  }
+
   console.log('\n■ File PushEnvoi et tâche push_reessais');
   {
     await fetch(`${ORIGIN}/_faux/captures`, { method: 'DELETE' });

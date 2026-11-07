@@ -71,8 +71,14 @@ Base44 passait ces enregistrements à `is_active = false` ; ici on les supprime 
 | Sidecar | 500 cibles par appel ; PocketBase découpe |
 | `sendFcmPush` en mode test (membre, vers lui-même) | 5 par 10 min |
 | `notifySocialInteraction` | un push « j'aime » par (membre, publication) et par 24 h ; 30 push de commentaire par heure et par membre |
-| `createCommunityPost` (membre non admin) | notification à toute la communauté pour 3 publications par heure au plus ; au-delà, la publication est créée sans notification (`notification_error: "rate_limited"`) |
+| `createCommunityPost` (membre non admin) | notification à toute la communauté pour 3 publications par heure au plus ; au-delà, la publication est créée sans notification (`notification_error: null`, `notification_info: "rate_limited"` : limite voulue, pas un échec) |
 | `createThemeRequest` | 10 demandes par 24 h et par membre (429) |
+
+**`createMessage`** renvoie deux champs :
+- `notification_error` : seulement les **vrais échecs** (`notification_dispatch_failed`, `notification_creation_failed`, `push_delivery_failed`, `push_not_configured`…). L'app affiche alors « La notification du destinataire n'a pas pu être envoyée ».
+- `notification_info` : un cas **normal**, sans message d'erreur. Il vaut `notifications_off` ou `notifications_test` (push retenu par `NOTIFICATIONS_MODE`), ou `no_push_subscription` (destinataire sans appareil abonné). La notification in-app est créée dans tous ces cas.
+
+C'est une différence voulue avec Base44, qui renvoyait aussi ces deux cas dans `notification_error`.
 | Longueurs | titre 100 caractères, texte push 100 (FCM) / 300 (Web Push), extraits comme Base44 |
 
 Les compteurs en mémoire (`$app.store()`) repartent de zéro au redémarrage de PocketBase ; les autres sont calculés depuis la base.

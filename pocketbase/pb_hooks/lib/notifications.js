@@ -219,8 +219,12 @@ function messagePush(messageRecord) {
   let webPushSkipped = null;
   let fcmError = null;
   let pushNoSubscriptions = 0;
+  let pushBlocked = 0;
+  let pushMode = 'on';
   if (pushTargets.length) {
     const r = push.sendToUsers(pushTargets, { title, body: preview || notifBody, target_type: 'message', target_id: m.conversation_id }, 'sendMessagePush');
+    pushBlocked = r.blocked || 0;
+    pushMode = r.mode || pushMode;
     webPushSent = r.webPush.sent;
     webPushSkipped = r.webPush.skipped;
     fcmError = r.fcmError;
@@ -233,18 +237,37 @@ function messagePush(messageRecord) {
   }
   return {
     notifCreated, notifFailed, emailsSent, emailsSkipped, pushSent, pushFailed, android, web,
-    pushNoSubscriptions, webPushSent, webPushSkipped, fcmError, openSkipped, total: pending.length,
+    pushNoSubscriptions, pushBlocked, pushMode, webPushSent, webPushSkipped, fcmError, openSkipped, total: pending.length,
   };
 }
 
-/** Erreur de notification renvoyée par createMessage (même logique que Base44). */
+// Envoi retenu volontairement par l'interrupteur NOTIFICATIONS_MODE (lib/sortie.js) : pas un échec.
+const MODE_BLOCK = /^notifications_(off|test)$/;
+const realReason = (v) => (v && !MODE_BLOCK.test(String(v)) ? String(v) : null);
+
+/**
+ * Erreur de notification renvoyée par createMessage : seulement les VRAIS échecs (l'app affiche alors
+ * « La notification du destinataire n'a pas pu être envoyée »).
+ * Différence voulue avec Base44 : un destinataire sans appareil abonné (no_push_subscription) ou un envoi
+ * retenu par NOTIFICATIONS_MODE (notifications_off / notifications_test) n'est PAS un échec : la notification
+ * in-app est créée. Ces cas sont décrits par messageNotificationInfo (champ notification_info).
+ */
 function messageNotificationError(d) {
   if (!d) return 'notification_dispatch_failed';
   if (d.notifFailed > 0) return 'notification_creation_failed';
   if (d.pushFailed > 0) return 'push_delivery_failed';
+  const skipped = realReason(d.webPushSkipped);
+  const fcmError = realReason(d.fcmError);
+  if (skipped && !(d.pushSent > 0)) return skipped;
+  if (fcmError && !(d.webPushSent > 0)) return fcmError;
+  return null;
+}
+
+/** Information (non bloquante) sur le push d'un message : envoi retenu par le mode, ou destinataire sans appareil. */
+function messageNotificationInfo(d) {
+  if (!d) return null;
+  if (d.pushBlocked > 0) return `notifications_${d.pushMode === 'test' ? 'test' : 'off'}`;
   if (d.pushNoSubscriptions > 0) return 'no_push_subscription';
-  if (d.webPushSkipped && !(d.pushSent > 0)) return String(d.webPushSkipped);
-  if (d.fcmError && !(d.webPushSent > 0)) return String(d.fcmError);
   return null;
 }
 
@@ -445,6 +468,6 @@ function hit(key, max, windowMs) {
 
 module.exports = {
   settingsOf, displayName, activeUser, pushAllowed, pushToAllowed, createNotifications, notificationExists, pushTotals,
-  designatedAdminIds, isDesignatedAdmin, messagePush, messageNotificationError, communityPostNotify, newContentNotify,
+  designatedAdminIds, isDesignatedAdmin, messagePush, messageNotificationError, messageNotificationInfo, communityPostNotify, newContentNotify,
   dailyVerse, themeRequestCreated, themeRequestHandled, hit, pbDate,
 };

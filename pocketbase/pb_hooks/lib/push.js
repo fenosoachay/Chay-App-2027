@@ -235,6 +235,7 @@ function sendToUsers(userIdsIn, notificationIn, label) {
     queued: r.fcm.queued + r.web.queued,
     recipients,
     blocked: blockedUsers,
+    mode,
   };
   if (blockedUsers && !targets.ids.length) {
     res.fcmError = `notifications_${mode}`;

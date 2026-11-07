@@ -355,9 +355,12 @@ try {
       const x = await fn('createCommunityPost', { token: C.token, body: { text: `rafale ${i}` } });
       created.push(['CommunityPost', x.data?.id]);
       for (const nn of await list('UserNotification', `notification_id = "community_${x.data?.id}"`)) created.push(['UserNotification', nn.id]);
-      results.push(x.data?.notification_error);
+      results.push([x.data?.notification_error, x.data?.notification_info, (await list('UserNotification', `notification_id = "community_${x.data?.id}"`)).length]);
     }
-    check('4e publication dans l\'heure (membre) : créée, mais sans notification (rate_limited)', results[0] === null && results[1] === null && results[2] === 'rate_limited', results.join(','));
+    // Limite voulue, pas un échec : aucune notification_error (l'app n'affiche pas « n'ont pas pu être envoyées »).
+    check('4e publication dans l\'heure (membre) : créée, sans notification, notification_error = null, notification_info = rate_limited',
+      results[0][0] === null && results[0][1] === null && results[1][0] === null && results[2][0] === null && results[2][1] === 'rate_limited' && results[2][2] === 0,
+      JSON.stringify(results));
   }
 
   // ═══════════════ Interactions sociales ═════════════════════════════════════

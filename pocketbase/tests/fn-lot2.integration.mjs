@@ -60,8 +60,8 @@ try {
       token: A.token,
       body: { conversation_id: convId, text: '  bonjour  ', sender_id: B.id, created_by_id: B.id, participant_ids: [B.id], read_by: [B.id] },
     });
-    check('membre A participant -> 200 { id, created_date, notification_error }',
-      r.status === 200 && sameKeys(r.data, ['id', 'created_date', 'notification_error']), `HTTP ${r.status} ${keysOf(r.data)}`);
+    check('membre A participant -> 200 { id, created_date, notification_error, notification_info }',
+      r.status === 200 && sameKeys(r.data, ['id', 'created_date', 'notification_error', 'notification_info']), `HTTP ${r.status} ${keysOf(r.data)}`);
     check('created_date ISO', /^\d{4}-\d{2}-\d{2}T/.test(r.data?.created_date || ''));
     check('notification_error : notifications migrées (null ou motif Base44, plus « notifications_not_migrated »)',
       r.data?.notification_error === null || (typeof r.data?.notification_error === 'string' && r.data.notification_error !== 'notifications_not_migrated'));

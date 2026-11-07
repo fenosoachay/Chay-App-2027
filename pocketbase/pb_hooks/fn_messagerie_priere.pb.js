@@ -43,10 +43,15 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
     $app.save(message);
 
     // sendMessagePush : in-app + e-mail + push (idempotent ; les push en échec temporaire sont remis en file).
+    // notification_error : vrais échecs seulement ; notification_info : envoi retenu par NOTIFICATIONS_MODE
+    // ou destinataire sans appareil abonné (la notification in-app est créée dans ces deux cas).
     let notificationError = null;
+    let notificationInfo = null;
     try {
       const notif = require(`${__hooks}/lib/notifications.js`);
-      notificationError = notif.messageNotificationError(notif.messagePush(message));
+      const dispatch = notif.messagePush(message);
+      notificationError = notif.messageNotificationError(dispatch);
+      notificationInfo = notif.messageNotificationInfo(dispatch);
     } catch (_) {
       notificationError = 'notification_dispatch_failed';
       $app.logger().error('[createMessage] message enregistré, notifications impossibles');
@@ -56,6 +61,7 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       id: message.id,
       created_date: fn.createdDate(fn.plain(message)),
       notification_error: notificationError,
+      notification_info: notificationInfo,
     };
   });
 });
