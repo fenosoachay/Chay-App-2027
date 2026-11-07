@@ -1,3 +1,11 @@
 dist/
 .env
+.env.local
+.env.*.local
 node_modules/
+
+# Bac à sable PocketBase : binaire, données et sauvegardes restent hors du dépôt
+pocketbase/pb_data/
+pocketbase/pocketbase
+pocketbase/pocketbase.exe
+pocketbase/*.zip
