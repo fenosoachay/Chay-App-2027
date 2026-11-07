@@ -188,8 +188,10 @@ PUSH_PORT=8091
 FIREBASE_SERVICE_ACCOUNT=/etc/chay/firebase-sa.json
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=mailto:
+VAPID_SUBJECT=mailto:no-reply@chay.fr
 ```
+
+Clés VAPID : la **nouvelle** paire générée sur le 🪟 **PC** par `node pocketbase/scripts/generer-vapid.mjs C:Secrets-Chayapid.txt` (clé publique affichée, clé privée dans le fichier). `VAPID_PUBLIC_KEY` = la clé publique affichée (la même que `VITE_VAPID_PUBLIC_KEY` à l'étape du build) ; `VAPID_PRIVATE_KEY` = la valeur du fichier, à coller directement dans `nano` sans l'afficher ailleurs.
 
 Pour générer le secret partagé (il servira aussi à l'étape 5), sur le serveur :
 ```bash
@@ -323,9 +325,9 @@ Tâches planifiées, via le tunnel de l'étape 3 : tableau d'administration → 
 
 2. 🪟 **PC** : construire le site et l'envoyer.
 ```powershell
-$env:VITE_BACKEND = "pocketbase"; $env:VITE_PB_URL = "https://api.chay.fr"; $env:VITE_PUBLIC_APP_URL = "https://membres.chay.fr"
+$env:VITE_BACKEND = "pocketbase"; $env:VITE_PB_URL = "https://api.chay.fr"; $env:VITE_PUBLIC_APP_URL = "https://membres.chay.fr"; $env:VITE_VAPID_PUBLIC_KEY = "<clé publique affichée par generer-vapid.mjs>"
 npx vite build --outDir C:\Temp\chay-dist --emptyOutDir
-Remove-Item Env:VITE_BACKEND, Env:VITE_PB_URL, Env:VITE_PUBLIC_APP_URL
+Remove-Item Env:VITE_BACKEND, Env:VITE_PB_URL, Env:VITE_PUBLIC_APP_URL, Env:VITE_VAPID_PUBLIC_KEY
 ssh $SERVEUR "rm -rf /tmp/chay-dist && mkdir -p /tmp/chay-dist"
 scp -r C:\Temp\chay-dist\* "${SERVEUR}:/tmp/chay-dist/"
 ```

@@ -42,9 +42,9 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 | `PUSH_SIDECAR_SECRET` | même valeur que PocketBase | oui (≥ 32 caractères, sinon arrêt) | **secret** partagé |
 | `PUSH_PORT` | `8091` | non | port, écoute toujours 127.0.0.1 |
 | `FIREBASE_SERVICE_ACCOUNT` | `/etc/chay/firebase-sa.json` | pour Android | chemin du JSON du compte de service (ou le JSON lui-même) ; **secret** |
-| `VAPID_PUBLIC_KEY` | `BCWq_4_Qu_…` | pour le navigateur | **la clé publique déjà codée dans `src/lib/webPush.js`** |
-| `VAPID_PRIVATE_KEY` | — | pour le navigateur | **secret** : la valeur du secret Base44 `VAPID_PRIVATE_KEY` (sinon les abonnements existants cessent de fonctionner) ; le sidecar vérifie qu'elle correspond à la clé publique |
-| `VAPID_SUBJECT` | `mailto:contact@chay.fr` | conseillé | contact transmis aux services push |
+| `VAPID_PUBLIC_KEY` | clé affichée par `generer-vapid.mjs` | pour le navigateur | **nouvelle** clé publique, identique à `VITE_VAPID_PUBLIC_KEY` du build |
+| `VAPID_PRIVATE_KEY` | — | pour le navigateur | **secret** : la valeur écrite par `generer-vapid.mjs` dans `C:Secrets-Chayapid.txt` ; le sidecar vérifie qu'elle correspond à la clé publique |
+| `VAPID_SUBJECT` | `mailto:no-reply@chay.fr` | non (c'est le défaut) | contact transmis aux services push |
 | `FCM_API_BASE`, `PUSH_LOCAL_ONLY` | — | **jamais en production** | tests locaux seulement |
 
 ## Build de l'app (Vite)
@@ -53,6 +53,7 @@ Sans `PUSH_SIDECAR_*`, tout fonctionne sauf le push : notifications in-app et e-
 |---|---|---|
 | `VITE_BACKEND` | `pocketbase` | choisit l'adaptateur PocketBase (défaut : Base44) |
 | `VITE_PB_URL` | `https://api.chay.fr` | adresse de PocketBase (valeur par défaut) |
+| `VITE_VAPID_PUBLIC_KEY` | clé publique de `generer-vapid.mjs` | clé publique VAPID du push navigateur ; **même valeur** que `VAPID_PUBLIC_KEY` du sidecar (sinon les envois sont refusés et les abonnements supprimés). Absente : push navigateur indisponible |
 | `VITE_PUBLIC_APP_URL` | `https://membres.chay.fr` (valeur par défaut) | adresse publique du site de l'app : liens partagés depuis l'APK (verset, radio), image de la notification radio |
 
 Les variables `VITE_BASE44_*` ne servent plus qu'au mode Base44.
@@ -62,5 +63,5 @@ Les variables `VITE_BASE44_*` ne servent plus qu'au mode Base44.
 | Secret Base44 | Devient |
 |---|---|
 | `FIREBASE_SERVICE_ACCOUNT` | fichier `/etc/chay/firebase-sa.json` (ou nouveau compte de service du même projet Firebase) |
-| `VAPID_PRIVATE_KEY` | `VAPID_PRIVATE_KEY` du sidecar |
+| `VAPID_PRIVATE_KEY` | **abandonné** (irrécupérable) : nouvelle paire générée par `pocketbase/scripts/generer-vapid.mjs` ; les abonnements navigateur existants sont remplacés automatiquement (voir `docs/PUSH.md`) |
 | `INTERNAL_INVOKE_SECRET` | **supprimé** : plus d'appels internes par HTTP |

@@ -8,7 +8,7 @@
 // Vérifications : JWT RS256 du compte de service (signature, iss, scope, aud, durée), jeton d'accès,
 // JWT VAPID ES256 (signature, aud, exp, sub, clé k), en-têtes Web Push. Toute requête mal signée est refusée.
 // Jetons / points d'accès spéciaux : « invalide-* » -> UNREGISTERED / 410, « absent-* » -> 404,
-// « surcharge-* » -> 503 permanent, « instable-* » -> 503 une fois puis accepté.
+// « autre-cle-* » -> 403 (abonnement créé avec une autre clé VAPID), « surcharge-* » -> 503 permanent, « instable-* » -> 503 une fois puis accepté.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -146,6 +146,7 @@ function startServer() {
         if (req.headers['content-encoding'] !== 'aes128gcm' || !req.headers.ttl || raw.length < 86) { rejects.headers++; return reply(400, { error: 'bad headers' }); }
         if (id.startsWith('invalide-')) return reply(410);
         if (id.startsWith('absent-')) return reply(404);
+        if (id.startsWith('autre-cle-')) return reply(403);
         if (id.startsWith('surcharge-')) return reply(503);
         captures.push({ canal: 'web', id, body: raw.toString('base64'), ttl: Number(req.headers.ttl), at: Date.now() });
         return reply(201);

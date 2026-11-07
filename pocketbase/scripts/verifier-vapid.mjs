@@ -1,39 +1,54 @@
 #!/usr/bin/env node
-// Vérifie que la clé privée VAPID d'un fichier correspond à la clé publique codée dans l'app.
+// Vérifie que la clé privée VAPID d'un fichier correspond à la clé publique de l'app.
 //
-//   node pocketbase/scripts/verifier-vapid.mjs <fichier contenant VAPID_PRIVATE_KEY=...> [fichier JS de la clé publique]
+//   node pocketbase/scripts/verifier-vapid.mjs <fichier contenant VAPID_PRIVATE_KEY=...> [clé publique | fichier]
 //
-// - Le second argument est facultatif (par défaut : src/lib/webPush.js du dépôt) ; il sert aux tests.
+// Clé publique attendue, dans cet ordre :
+//   - le second argument : la clé publique elle-même (base64url), ou un fichier contenant
+//     VITE_VAPID_PUBLIC_KEY=..., VAPID_PUBLIC_KEY=... ou VAPID_PUBLIC_KEY = "..." ;
+//   - sinon la variable d'environnement VITE_VAPID_PUBLIC_KEY (nouvelle paire, mode PocketBase).
 // - N'affiche JAMAIS la clé privée, ni une partie, et ne l'écrit nulle part.
 // - Sans dépendance, aucun accès réseau.
 // Sortie : une seule ligne « OK : … » (code 0) ou « ERREUR : … » (code 1).
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const OK = "OK : la clé privée correspond à la clé publique de l'app";
 const fail = (msg) => { console.log(`ERREUR : ${msg}`); process.exit(1); };
 
 const B64URL = /^[A-Za-z0-9_-]+$/;
 function decodeB64url(text) {
-  const s = text.replace(/=+$/, '');
+  const s = String(text).trim().replace(/=+$/, '');
   if (!B64URL.test(s)) return null;
   return Buffer.from(s, 'base64url');
 }
 
-const [envPath, jsArg] = process.argv.slice(2);
+const [envPath, pubArg] = process.argv.slice(2);
 if (!envPath) fail('indiquez le chemin du fichier contenant la ligne VAPID_PRIVATE_KEY=...');
-const jsPath = jsArg || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src/lib/webPush.js');
 
 // 1. Clé publique de l'app.
-let jsText;
-try { jsText = fs.readFileSync(jsPath, 'utf8'); } catch { fail(`fichier de la clé publique illisible (${jsPath})`); }
-const pubMatch = jsText.match(/VAPID_PUBLIC_KEY\s*=\s*["'`]([^"'`]+)["'`]/);
-if (!pubMatch) fail(`clé publique VAPID_PUBLIC_KEY introuvable dans ${jsPath}`);
-const appPublic = decodeB64url(pubMatch[1].trim());
+let pubText = '';
+let pubSource = '';
+if (pubArg && /^[A-Za-z0-9_-]{80,100}=*$/.test(pubArg.trim())) {
+  pubText = pubArg.trim();
+  pubSource = 'clé publique donnée en argument';
+} else if (pubArg) {
+  let text;
+  try { text = fs.readFileSync(path.resolve(pubArg), 'utf8'); } catch { fail(`fichier de la clé publique illisible (${pubArg})`); }
+  const m = text.match(/VAPID_PUBLIC_KEY\s*=\s*["'`]?([A-Za-z0-9_=-]+)/);
+  if (!m) fail(`clé publique VAPID_PUBLIC_KEY introuvable dans ${pubArg}`);
+  pubText = m[1];
+  pubSource = pubArg;
+} else if (process.env.VITE_VAPID_PUBLIC_KEY) {
+  pubText = process.env.VITE_VAPID_PUBLIC_KEY;
+  pubSource = 'VITE_VAPID_PUBLIC_KEY';
+} else {
+  fail('clé publique absente : donnez-la en second argument ou dans la variable VITE_VAPID_PUBLIC_KEY');
+}
+const appPublic = decodeB64url(pubText);
 if (!appPublic || appPublic.length !== 65 || appPublic[0] !== 0x04) {
-  fail("la clé publique de l'app n'est pas une clé P-256 non compressée de 65 octets en base64url");
+  fail("la clé publique n'est pas une clé P-256 non compressée de 65 octets en base64url");
 }
 
 // 2. Clé privée du fichier (jamais affichée).
@@ -72,4 +87,4 @@ if (derived.length === appPublic.length && crypto.timingSafeEqual(derived, appPu
   console.log(OK);
   process.exit(0);
 }
-fail(`la clé privée ne correspond pas à la clé publique de l'app (${jsArg ? jsPath : 'src/lib/webPush.js'})`);
+fail(`la clé privée ne correspond pas à la clé publique de l'app (${pubSource})`);

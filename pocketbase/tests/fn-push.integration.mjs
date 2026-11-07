@@ -195,11 +195,13 @@ try {
     const badTok = await deviceToken(B, `invalide-${rnd()}`);
     const badSub = await webSub(B, 'invalide');
     const goneSub = await webSub(B, 'absent');
+    const keySub = await webSub(B, 'autre-cle');
     const r = await fn('sendFcmPush', { token: ADM.token, body: { user_ids: [B.id], title: 'x', body: 'y' } });
-    check('réponse : 1 jeton Android et 2 abonnements supprimés', r.data?.invalidDeactivated === 1 && r.data?.webPush?.deactivated === 2, JSON.stringify({ a: r.data?.invalidDeactivated, w: r.data?.webPush?.deactivated }));
+    check('réponse : 1 jeton Android et 3 abonnements supprimés', r.data?.invalidDeactivated === 1 && r.data?.webPush?.deactivated === 3, JSON.stringify({ a: r.data?.invalidDeactivated, w: r.data?.webPush?.deactivated }));
     check('DeviceToken UNREGISTERED supprimé', (await http('GET', `/api/collections/DeviceToken/records/${badTok}`, su)).status === 404);
-    check('WebPushSubscription 410 et 404 supprimés', (await http('GET', `/api/collections/WebPushSubscription/records/${badSub.recId}`, su)).status === 404
-      && (await http('GET', `/api/collections/WebPushSubscription/records/${goneSub.recId}`, su)).status === 404);
+    check('WebPushSubscription 410, 404 et 403 (autre clé VAPID) supprimés', (await http('GET', `/api/collections/WebPushSubscription/records/${badSub.recId}`, su)).status === 404
+      && (await http('GET', `/api/collections/WebPushSubscription/records/${goneSub.recId}`, su)).status === 404
+      && (await http('GET', `/api/collections/WebPushSubscription/records/${keySub.recId}`, su)).status === 404);
     check('le bon jeton et le bon abonnement sont conservés', (await list('DeviceToken', `token = "${tokB}"`)).length === 1 && (await http('GET', `/api/collections/WebPushSubscription/records/${subB.recId}`, su)).status === 200);
 
     const instable = await deviceToken(B, `instable-${rnd()}`);

@@ -16,7 +16,7 @@ const HOST = '127.0.0.1';
 const SECRET = env.PUSH_SIDECAR_SECRET || '';
 const FCM_API_BASE = (env.FCM_API_BASE || 'https://fcm.googleapis.com').replace(/\/+$/, '');
 const LOCAL_ONLY = env.PUSH_LOCAL_ONLY === '1';
-const VAPID_SUBJECT = env.VAPID_SUBJECT || 'mailto:contact@chay.fr';
+const VAPID_SUBJECT = env.VAPID_SUBJECT || 'mailto:no-reply@chay.fr';
 const MAX_TARGETS = 500;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const FCM_CONCURRENCY = 20;
@@ -160,6 +160,9 @@ async function deliverWeb(target, payload, ttl) {
       });
       if (res.status >= 200 && res.status < 300) r = { ok: true, classification: 'accepted' };
       else if (res.status === 404 || res.status === 410) r = { ok: false, invalid: true, classification: `expired_${res.status}` };
+      // 403 : abonnement créé avec une autre clé publique (ex. l'ancienne clé VAPID de Base44). La paire du sidecar
+      // étant vérifiée au démarrage (checkVapid), c'est l'abonnement qui est périmé : supprimé, l'app se réabonne.
+      else if (res.status === 403) r = { ok: false, invalid: true, classification: 'vapid_key_mismatch_403' };
       else r = { ok: false, transient: TRANSIENT.has(res.status), classification: `http_${res.status}` };
     } catch (err) {
       r = { ok: false, transient: !err.blocked, classification: err.blocked ? 'blocked_non_local' : 'transport_error' };

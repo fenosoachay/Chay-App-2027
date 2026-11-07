@@ -1,13 +1,23 @@
 import { base44 } from "@/api/base44Client";
+import { IS_POCKETBASE } from "@/api/backendConfig";
+import {
+  ensurePushSubscription,
+  resolveVapidPublicKey,
+  saveSubscriptionRecord,
+} from "@/lib/webPushCore";
 
 // Push navigateur (Web Push / VAPID).
-// - La clé publique est codée en dur (elle est publique par conception) ;
-//   la clé privée vit dans le secret Base44 VAPID_PRIVATE_KEY, jamais ici.
+// - Mode base44 : ancienne clé publique codée en dur (clé privée dans le secret Base44).
+// - Mode PocketBase : nouvelle paire ; clé publique lue dans VITE_VAPID_PUBLIC_KEY (build),
+//   clé privée dans le sidecar push (VAPID_PRIVATE_KEY). Un abonnement créé avec une autre
+//   clé (l'ancienne de Base44) est automatiquement remplacé.
 // - Les abonnements sont persistés dans l'entité WebPushSubscription,
 //   un row par appareil (endpoint unique).
 // - public/sw.js affiche la notification système et renvoie le clic ici.
-export const VAPID_PUBLIC_KEY =
-  "BCWq_4_Qu_DqSH3SR-s0xyCt8gE29xZ4LilwMf3Hp5DyekihEmRVGkt7fwsCoago_sXoD23roB20zW5sZNnC_LE";
+export const VAPID_PUBLIC_KEY = resolveVapidPublicKey(
+  IS_POCKETBASE,
+  (import.meta.env || {}).VITE_VAPID_PUBLIC_KEY
+);
 
 const SW_URL = "/sw.js";
 
@@ -20,38 +30,23 @@ export function isWebPushSupported() {
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
-    typeof Notification !== "undefined"
+    typeof Notification !== "undefined" &&
+    Boolean(VAPID_PUBLIC_KEY)
   );
 }
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const output = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
-  return output;
-}
-
-async function saveSubscription(userId, subscription) {
-  const keys = (subscription.toJSON() || {}).keys || {};
-  const payload = {
-    user_id: userId,
-    endpoint: subscription.endpoint,
-    p256dh: keys.p256dh || "",
-    auth: keys.auth || "",
-    user_agent: navigator.userAgent.slice(0, 300),
-    is_active: true,
-    last_seen: new Date().toISOString(),
-  };
-  const rows = await base44.entities.WebPushSubscription
-    .filter({ endpoint: payload.endpoint }, null, 1);
-  const existing = Array.isArray(rows) && rows[0];
-  if (existing) {
-    await base44.entities.WebPushSubscription.update(existing.id, payload);
-  } else {
-    await base44.entities.WebPushSubscription.create(payload);
-  }
+// Abonne cet appareil (ou réutilise l'abonnement) puis l'enregistre côté serveur.
+// Ré-abonnement automatique si la clé publique a changé : mode PocketBase seulement.
+async function subscribeAndSave(registration, userId) {
+  const { subscription, previousEndpoint } = await ensurePushSubscription(
+    registration.pushManager,
+    VAPID_PUBLIC_KEY,
+    { resubscribeOnKeyChange: IS_POCKETBASE }
+  );
+  await saveSubscriptionRecord(base44.entities.WebPushSubscription, userId, subscription, {
+    previousEndpoint,
+    userAgent: navigator.userAgent,
+  });
 }
 
 // Demande la permission puis (ré)abonne cet appareil. À appeler depuis un
@@ -69,13 +64,7 @@ export async function enableWebPush(userId) {
     throw new Error("Permission de notifications refusée dans le navigateur.");
   }
   const registration = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
-  const subscription =
-    (await registration.pushManager.getSubscription()) ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    }));
-  await saveSubscription(userId, subscription);
+  await subscribeAndSave(registration, userId);
   emitWebPushStateChange();
 }
 
@@ -112,13 +101,7 @@ export async function syncWebPush(userId) {
   if (Notification.permission !== "granted") return;
   try {
     const registration = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
-    const subscription =
-      (await registration.pushManager.getSubscription()) ||
-      (await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      }));
-    await saveSubscription(userId, subscription);
+    await subscribeAndSave(registration, userId);
     emitWebPushStateChange();
   } catch (error) {
     console.warn("[WebPush] Abonnement silencieux impossible.", error);

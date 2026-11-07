@@ -6,7 +6,7 @@ Configuration **proposée, installée nulle part**. Le build web statique (`dist
 
 ```sh
 # sur la machine de build
-VITE_BACKEND=pocketbase VITE_PB_URL=https://api.chay.fr VITE_PUBLIC_APP_URL=https://membres.chay.fr npm run build
+VITE_BACKEND=pocketbase VITE_PB_URL=https://api.chay.fr VITE_PUBLIC_APP_URL=https://membres.chay.fr VITE_VAPID_PUBLIC_KEY=<clé publique VAPID> npm run build
 # copie sur le serveur (dossier en lecture seule pour Caddy)
 rsync -a --delete dist/ chay@serveur:/srv/chay-app/dist/
 ```
