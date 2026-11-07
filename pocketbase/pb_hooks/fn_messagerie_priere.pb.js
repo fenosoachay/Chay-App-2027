@@ -1,6 +1,6 @@
 // Bloc 2, lot 2 : messagerie et prière.
 // Reproduit base44/functions/{createMessage, createPrayerRequest, takePrayer, answerPrayer}/entry.ts.
-// Appelant identifié uniquement par e.auth. Notifications push / e-mail : reportées (services externes).
+// Appelant identifié uniquement par e.auth. Notifications (in-app, e-mail, push) : lib/notifications.js (bloc 5).
 
 // ── createMessage ─────────────────────────────────────────────────────────────
 // Participants et expéditeur forcés côté serveur ; l'appelant doit être participant.
@@ -42,11 +42,20 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
     });
     $app.save(message);
 
+    // sendMessagePush : in-app + e-mail + push (idempotent ; les push en échec temporaire sont remis en file).
+    let notificationError = null;
+    try {
+      const notif = require(`${__hooks}/lib/notifications.js`);
+      notificationError = notif.messageNotificationError(notif.messagePush(message));
+    } catch (_) {
+      notificationError = 'notification_dispatch_failed';
+      $app.logger().error('[createMessage] message enregistré, notifications impossibles');
+    }
+
     return {
       id: message.id,
       created_date: fn.createdDate(fn.plain(message)),
-      // sendMessagePush (in-app + e-mail + push) n'est pas encore migré.
-      notification_error: 'notifications_not_migrated',
+      notification_error: notificationError,
     };
   });
 });
@@ -127,7 +136,19 @@ routerAdd('POST', '/api/fn/takePrayer', (e) => {
       }
       return fn.ok({ ok: true, id: prayerId, status: 'taken' });
     });
-    // Push (sendFcmPush) : reporté (service externe).
+    // Push au demandeur (best-effort, préférences respectées), comme Base44.
+    try {
+      const notif = require(`${__hooks}/lib/notifications.js`);
+      const prayer = $app.findRecordById('PrayerRequest', prayerId);
+      notif.pushToAllowed([prayer.getString('requester_id')], {
+        title: "Quelqu'un prie pour toi",
+        body: 'Une personne a pris ta demande de prière en charge. Son identité reste anonyme.',
+        target_type: 'prayer',
+        target_id: prayerId,
+      }, 'takePrayer');
+    } catch (_) {
+      $app.logger().warn('[takePrayer] push impossible');
+    }
     return result;
   });
 });
@@ -141,7 +162,7 @@ routerAdd('POST', '/api/fn/answerPrayer', (e) => {
     const prayerId = typeof body.prayer_id === 'string' && body.prayer_id.length <= 64 ? body.prayer_id : '';
     if (!prayerId) throw new fn.HttpError(400, 'Prière introuvable.');
 
-    return fn.tx((txApp) => {
+    const result = fn.tx((txApp) => {
       let prayer = null;
       try { prayer = txApp.findRecordById('PrayerRequest', prayerId); } catch (_) { prayer = null; }
       if (!prayer) return fn.fail(404, 'Prière introuvable.');
@@ -171,5 +192,21 @@ routerAdd('POST', '/api/fn/answerPrayer', (e) => {
       }
       return fn.ok({ ok: true, id: prayerId, status: 'answered' });
     });
+    // Push à l'intercesseur (best-effort, préférences respectées), comme Base44.
+    try {
+      const notif = require(`${__hooks}/lib/notifications.js`);
+      const intercessor = $app.findRecordById('PrayerRequest', prayerId).getString('taken_by');
+      if (intercessor) {
+        notif.pushToAllowed([intercessor], {
+          title: 'Une prière que tu as prise en charge est exaucée',
+          body: 'Le demandeur a marqué cette demande comme exaucée. Merci pour ta prière !',
+          target_type: 'prayer',
+          target_id: prayerId,
+        }, 'answerPrayer');
+      }
+    } catch (_) {
+      $app.logger().warn('[answerPrayer] push impossible');
+    }
+    return result;
   });
 });
