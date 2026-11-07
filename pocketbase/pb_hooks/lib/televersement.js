@@ -42,6 +42,10 @@ function extensionOf(name, fallback) {
   return m ? m[1].toLowerCase() : fallback;
 }
 
+/** Politique : toutes les vidéos vont sur R2 (initMultipartUpload), jamais dans le stockage de PocketBase. */
+const VIDEO_REFUSED = 'Les vidéos sont envoyées vers le stockage vidéo (R2), pas dans PocketBase';
+const isVideoName = (name) => VIDEO_EXT.indexOf(extensionOf(name, '')) >= 0;
+
 /** Nom de fichier imprévisible (le nom d'origine n'est pas conservé). */
 function randomFileName(originalName, fallbackExt) {
   return `f_${$security.randomStringWithAlphabet(20, ALPHABET)}.${extensionOf(originalName, fallbackExt || 'bin')}`;
@@ -345,49 +349,98 @@ function cleanupIncomplete() {
   return result;
 }
 
-/** Identifiants de Fichier / FichierAdmin référencés dans un champ texte, éditeur, url ou json de n'importe quelle collection. */
-function referencedFileIds() {
-  const ids = {};
-  const re = /\/api\/files\/[^/"'\s]+\/([a-f0-9]{24})\//g;
+/** Champs (collection, nom, type) où une référence à un fichier peut se trouver : texte, éditeur, url, json. */
+function referenceFields() {
+  const out = [];
   const skip = FILE_COLLECTIONS.concat([SESSIONS, 'UploadChunk']);
   for (const col of $app.findAllCollections()) {
     if (col.system || col.type === 'view' || skip.indexOf(col.name) >= 0) continue;
     for (const field of col.fields) {
       const t = field.type();
       if (['text', 'editor', 'url', 'json'].indexOf(t) < 0 || field.getName() === 'id') continue;
-      const rows = $app.findRecordsByFilter(col.name, `${field.getName()} ~ "/api/files/"`, '', 0, 0);
-      for (const r of rows) {
-        const v = t === 'json' ? JSON.stringify(r.get(field.getName())) : r.getString(field.getName());
-        let m;
-        re.lastIndex = 0;
-        while ((m = re.exec(v))) ids[m[1]] = true;
-      }
+      out.push({ col: col.name, name: field.getName(), type: t });
+    }
+  }
+  return out;
+}
+
+/** Valeur brute + versions décodées (adresse encodée dans une autre adresse : %2Fapi%2Ffiles%2F…). */
+function decodedForms(v) {
+  const forms = [v];
+  let cur = v;
+  for (let i = 0; i < 3 && /%[0-9a-f]{2}/i.test(cur); i++) {
+    try { cur = decodeURIComponent(cur); } catch (_) { cur = cur.replace(/%2f/gi, '/'); }
+    forms.push(cur);
+  }
+  return forms.join('\n');
+}
+
+/**
+ * Identifiants de Fichier / FichierAdmin référencés par une adresse /api/files/<collection>/<id>/… dans un champ
+ * texte, éditeur, url ou json de n'importe quelle collection. Formes reconnues : collection par identifiant ou par
+ * nom, avec ou sans hôte, et adresse ENCODÉE dans une autre adresse (%2Fapi%2Ffiles%2F). L'identifiant n'est pas
+ * limité à 24 caractères hexadécimaux : un identifiant trop large ne fait que protéger davantage.
+ */
+function referencedFileIds() {
+  const ids = {};
+  const re = /\/api\/files\/[^/"'\s?#]+\/([A-Za-z0-9_-]{5,40})\//g;
+  for (const f of referenceFields()) {
+    // « % » est un joker de LIKE : le motif encodé est passé avec des jokers explicites (sinon pas d'encadrement auto).
+    const rows = $app.findRecordsByFilter(f.col, `${f.name} ~ "api/files/" || ${f.name} ~ {:enc}`, '', 0, 0, { enc: '%api%2Ffiles%2F%' });
+    for (const r of rows) {
+      const v = decodedForms(f.type === 'json' ? JSON.stringify(r.get(f.name)) : r.getString(f.name));
+      let m;
+      re.lastIndex = 0;
+      while ((m = re.exec(v))) ids[m[1]] = true;
     }
   }
   return ids;
 }
 
+/** Le NOM du fichier (aléatoire, unique : f_… ou nom PocketBase) apparaît-il dans un champ de référence ? */
+function fileNameReferenced(fileName, fields) {
+  if (!fileName || fileName.length < 8) return true; // nom trop court pour être sûr : on garde
+  for (const f of fields) {
+    if ($app.findRecordsByFilter(f.col, `${f.name} ~ {:n}`, '', 1, 0, { n: fileName }).length) return true;
+  }
+  return false;
+}
+
+// Au-delà, le mode actif ne supprime rien et le signale : un nombre anormal de candidats indique plutôt une
+// forme de référence non reconnue qu'une vraie accumulation.
+const MAX_DELETIONS_PER_RUN = 50;
+
 /**
  * Fichiers non référencés, créés depuis plus de `graceHours` : supprimés (sauf simulation).
- * Prudence : si aucune référence n'est trouvée alors qu'il y a plus de 20 candidats, rien n'est supprimé.
+ * Un fichier n'est candidat que si ni son adresse (toutes formes) ni son nom de fichier n'apparaît nulle part.
+ * Prudence : rien n'est supprimé si aucune référence n'est trouvée alors qu'il y a plus de 20 candidats, ni si
+ * plus de MAX_DELETIONS_PER_RUN fichiers seraient supprimés d'un coup.
  */
 function cleanupOrphans(graceHours, simulation, onlyIds) {
   const refs = referencedFileIds();
   const refCount = Object.keys(refs).length;
   const cutoff = pbDate(-graceHours * 3600 * 1000);
-  const result = { simulation: Boolean(simulation), examines: 0, references: refCount, orphelins: 0, supprimes: 0, annule: false };
+  const result = { simulation: Boolean(simulation), examines: 0, references: refCount, orphelins: 0, supprimes: 0, proteges_par_nom: 0, annule: false };
   const orphans = [];
+  const fields = referenceFields();
   for (const name of FILE_COLLECTIONS) {
     for (const r of $app.findRecordsByFilter(name, 'created <= {:c}', '', 0, 0, { c: cutoff })) {
       if (onlyIds && onlyIds.indexOf(r.id) < 0) continue;
       result.examines++;
-      if (!refs[r.id]) orphans.push(r);
+      if (refs[r.id]) continue;
+      if (fileNameReferenced(r.getString('fichier'), fields)) { result.proteges_par_nom++; continue; }
+      orphans.push(r);
     }
   }
   result.orphelins = orphans.length;
   if (refCount === 0 && orphans.length > 20) {
     result.annule = true;
     $app.logger().warn('[fichiers] nettoyage annulé : aucune référence trouvée', 'orphelins', orphans.length);
+    return result;
+  }
+  if (!simulation && orphans.length > MAX_DELETIONS_PER_RUN) {
+    result.annule = true;
+    $app.logger().warn('[fichiers] nettoyage annulé : trop de fichiers à supprimer d’un coup', 'orphelins', orphans.length, 'maximum', MAX_DELETIONS_PER_RUN);
     return result;
   }
   if (!simulation) {
@@ -410,6 +463,8 @@ module.exports = {
   PRESIGN_TTL_SEC,
   VIDEO_EXT,
   VIDEO_TYPES,
+  VIDEO_REFUSED,
+  isVideoName,
   SESSIONS,
   FILE_COLLECTIONS,
   pbDate,

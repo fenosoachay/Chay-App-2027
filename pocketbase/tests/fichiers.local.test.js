@@ -122,6 +122,51 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
     await expect(uploadToBase44(fileOf(MP3(101 * MIO), 'concert.mp3', 'audio/mpeg'))).rejects.toThrow(/HTTP 415/);
   });
 
+  // ── Politique : TOUTES les vidéos sur R2, quelle que soit leur taille ─────────────────────────────
+  const r2Key = (url) => decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1));
+  const surR2 = new RegExp(`^${s3env.R2_PUBLIC_BASE_URL}/videos/\\d{4}/\\d{2}/[a-z0-9]{16}-`);
+
+  it('admin : petite vidéo (300 Ko) -> R2, jamais dans PocketBase', async () => {
+    holder.api = admin;
+    const buf = MP4(300 * 1024);
+    const url = await uploadToBase44(fileOf(buf, 'clip.mp4', 'video/mp4'));
+    cleanup.objects.push(r2Key(url));
+    expect(url).toMatch(surR2);
+    expect(url).not.toContain('/api/files/');
+    expect(sha(await download(url))).toBe(sha(buf));
+  });
+
+  it('admin : vidéo de 20 Mo au nom accentué, tiret long et emoji -> R2 (3 parts), contenu identique', async () => {
+    holder.api = admin;
+    const buf = MP4(20 * MIO + 4321);
+    const details = [];
+    const url = await uploadToBase44(fileOf(buf, 'Culte – Noël 🙏.mp4', 'video/mp4'), { onDetail: (d) => details.push(d.uploadedBytes) });
+    cleanup.objects.push(r2Key(url));
+    expect(url).toMatch(new RegExp(`${surR2.source}culte-noel\\.mp4$`));
+    expect(sha(await download(url))).toBe(sha(buf));
+    expect(details.at(-1)).toBe(buf.length);
+  });
+
+  it('admin : vidéo sans nom (Blob video/webm) -> R2 avec une extension vidéo', async () => {
+    holder.api = admin;
+    const buf = Buffer.concat([Buffer.from('1a45dfa3', 'hex'), Buffer.alloc(64 * 1024)]);
+    const url = await uploadToBase44(new Blob([buf], { type: 'video/webm' }));
+    cleanup.objects.push(r2Key(url));
+    expect(url).toMatch(new RegExp(`${surR2.source}video\\.webm$`));
+  });
+
+  it('membre : vidéo -> refusée (envoi de vidéos réservé aux admins), rien dans PocketBase', async () => {
+    holder.api = membre;
+    await expect(uploadToBase44(fileOf(MP4(200 * 1024), 'souvenir.mp4', 'video/mp4'))).rejects.toThrow(/HTTP 403/);
+  });
+
+  it('admin : audio de 2 Mo et image -> toujours dans PocketBase (FichierAdmin)', async () => {
+    holder.api = admin;
+    const url = await uploadToBase44(fileOf(MP3(2 * MIO), 'cantique.mp3', 'audio/mpeg'));
+    cleanup.FichierAdmin.push(recordIdOf(url));
+    expect(url).toMatch(new RegExp(`^${BASE}/api/files/`));
+  });
+
   // ── Bogue « HTTP 400: {"error":"fileSize invalide"} » (Paramètres > Mon compte) ──────────────────
   // Le bouton « Rogner » transmettait l'événement du clic au lieu de l'image : objet sans taille,
   // donc branche « gros fichier » d'upload.js, donc initMultipartUpload sans fileSize.

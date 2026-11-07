@@ -1,13 +1,15 @@
 // Fichiers (bloc 4). Rappel : sous Windows, redémarrer PocketBase après modification.
 //
-// Collections Fichier (membres : images et audio, 15 Mo) et FichierAdmin (admins : 100 Mo) :
+// Collections Fichier (membres : images et audio, 15 Mo) et FichierAdmin (admins : images, audio, PDF, 100 Mo) :
 //  - propriétaire imposé par le serveur (e.auth.id) ; la règle refuse un autre propriétaire ;
 //  - nom de fichier aléatoire (le nom d'origine n'est pas conservé) ;
-//  - taille et type réel vérifiés par PocketBase (maxSize / mimeTypes du champ « fichier »).
+//  - taille et type réel vérifiés par PocketBase (maxSize / mimeTypes du champ « fichier ») ;
+//  - AUCUNE vidéo (mp4, m4v, mov, webm, mkv) : toutes les vidéos vont sur R2, quelle que soit leur taille, pour
+//    que les sauvegardes de PocketBase restent petites (refus 415 ici et dans upload_chunk).
 //
 // Routes (même forme de réponse que les fonctions Base44 attendues par src/lib/upload.js) :
-//  POST /api/fn/upload_chunk              (admin) fichiers de 15 à 100 Mo, par morceaux de 8 Mo -> FichierAdmin
-//  POST /api/fn/initMultipartUpload       (admin) vidéo > 100 Mo vers R2, 5 Go max, vidéo seulement
+//  POST /api/fn/upload_chunk              (admin) fichiers de 15 à 100 Mo (sauf vidéos), morceaux de 8 Mo -> FichierAdmin
+//  POST /api/fn/initMultipartUpload       (admin) TOUTE vidéo vers R2 (de 1 octet à 5 Go), vidéo seulement
 //  POST /api/fn/getPresignedUrl           (admin) état de reprise / URL présignée d'une part (taille imposée)
 //  POST /api/fn/completeMultipartUpload   (admin) assemblage, contrôle de taille et du type réel (octets de tête)
 //  POST /api/fn/cleanupIncompleteUploads  (admin) nettoyage immédiat des sessions de plus de 24 h
@@ -23,7 +25,24 @@ onRecordCreateRequest((e) => {
   const value = e.record.get('fichier');
   const files = Array.isArray(value) ? value : [value];
   for (const f of files) {
-    if (f && typeof f === 'object' && 'originalName' in f) f.name = lib.randomFileName(f.originalName, 'bin');
+    if (f && typeof f === 'object' && 'originalName' in f) {
+      if (lib.isVideoName(f.originalName)) throw new ApiError(415, lib.VIDEO_REFUSED);
+      f.name = lib.randomFileName(f.originalName, 'bin');
+    }
+  }
+  e.next();
+}, 'Fichier', 'FichierAdmin');
+
+// Remplacement du fichier d'un enregistrement existant : même refus des vidéos.
+onRecordUpdateRequest((e) => {
+  const lib = require(`${__hooks}/lib/televersement.js`);
+  const value = e.record.get('fichier');
+  const files = Array.isArray(value) ? value : [value];
+  for (const f of files) {
+    if (f && typeof f === 'object' && 'originalName' in f) {
+      if (lib.isVideoName(f.originalName)) throw new ApiError(415, lib.VIDEO_REFUSED);
+      f.name = lib.randomFileName(f.originalName, 'bin');
+    }
   }
   e.next();
 }, 'Fichier', 'FichierAdmin');
@@ -50,6 +69,7 @@ routerAdd('POST', '/api/fn/upload_chunk', (e) => {
       if (!Number.isInteger(size) || size <= 0) throw new fn.HttpError(400, 'taille invalide');
       if (size > lib.MAX_CHUNKED_BYTES) throw new fn.HttpError(413, 'Fichier trop volumineux (max 100 Mo)');
       const name = String(field('name') || 'fichier').slice(0, 200);
+      if (lib.isVideoName(name)) throw new fn.HttpError(415, lib.VIDEO_REFUSED);
       // Session terminée : jamais réutilisée (le session_id du client, tronqué, peut désigner un autre
       // fichier de même nom et même taille) -> nouvelle session ci-dessous.
       let session = lib.findSession(sessionId, user.id, 'chunk');

@@ -17,6 +17,33 @@ const MAX_RETRIES = 6;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Identifiant de session (reprise) : base64 de « nom:taille:date ». btoa() seul échoue sur un nom hors Latin-1
+// (tiret long, emoji, malgache…) : on encode d'abord en UTF-8.
+export function sessionIdOf(file) {
+  const bytes = new TextEncoder().encode(`${file.name}:${file.size}:${file.lastModified}`);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48);
+}
+
+// Politique (mode PocketBase) : TOUTES les vidéos vont sur R2, quelle que soit leur taille ; PocketBase ne garde
+// que les images, l'audio et les petits documents (sauvegardes petites). Mêmes extensions que le serveur.
+export const VIDEO_EXT = ["mp4", "m4v", "mov", "webm", "mkv"];
+const VIDEO_EXT_BY_TYPE = { "video/mp4": "mp4", "video/x-m4v": "m4v", "video/quicktime": "mov", "video/webm": "webm", "video/x-matroska": "mkv" };
+export function isVideoFile(file) {
+  const type = String(file?.type || "").toLowerCase();
+  if (type.startsWith("video/")) return true;
+  const ext = (/\.([a-z0-9]{1,5})$/i.exec(String(file?.name || "")) || [])[1];
+  return Boolean(ext) && VIDEO_EXT.includes(ext.toLowerCase());
+}
+// Le serveur exige une extension vidéo dans le nom : un Blob sans nom (ou mal nommé) reçoit « video.<ext> ».
+function withVideoName(file) {
+  const ext = (/\.([a-z0-9]{1,5})$/i.exec(String(file?.name || "")) || [])[1]?.toLowerCase();
+  if (ext && VIDEO_EXT.includes(ext)) return file;
+  const fallback = VIDEO_EXT_BY_TYPE[String(file?.type || "").toLowerCase()] || "mp4";
+  return new File([file], `video.${fallback}`, { type: file.type || "video/mp4", lastModified: file.lastModified || Date.now() });
+}
+
 const pickUrl = (res) => {
   if (!res) return null;
   if (typeof res === "string") return /^https?:\/\//i.test(res) ? res : null;
@@ -163,9 +190,7 @@ export async function uploadMultipartS3(file, cb = {}) {
   const { onProgress, onDetail, signal } = cb;
   console.log("[S3] Démarrage de uploadMultipartS3 pour:", file.name, "Taille:", file.size);
 
-  const sessionId = btoa(`${file.name}:${file.size}:${file.lastModified}`)
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 48);
+  const sessionId = sessionIdOf(file);
 
   console.log("[S3] Étape 1: Appel à initMultipartUpload...");
   const init = await callFn("initMultipartUpload", {
@@ -279,7 +304,7 @@ export async function uploadChunked(file, onProgress, opts = {}) {
   const pctCb = typeof onProgress === "function" ? onProgress : (typeof onProgress === "object" ? onProgress.onProgress : undefined);
   const signal = (typeof onProgress === "object" ? onProgress.signal : undefined) ?? opts.signal;
 
-  const sessionId = btoa(`${file.name}:${file.size}:${file.lastModified}`).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48);
+  const sessionId = sessionIdOf(file);
   const chunkUrl = fnUrl("upload_chunk");
 
   const init = await postWithRetry(chunkUrl, JSON.stringify({ action: "init", session_id: sessionId, name: file.name, size: file.size }), { headers: { "Content-Type": "application/json" }, signal });
@@ -336,9 +361,12 @@ export function assertUploadable(file) {
 
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {
   assertUploadable(file);
-  // Mode PocketBase : choix par la taille seulement (forceChunked ignoré) :
-  // <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ; > 100 Mo -> R2 (admin, vidéos).
+  // Mode PocketBase (forceChunked ignoré) :
+  //  - vidéo (type video/* ou extension mp4, m4v, mov, webm, mkv), QUELLE QUE SOIT SA TAILLE -> R2 (admin) ;
+  //  - autres fichiers : <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ; au-delà : refusé
+  //    par le serveur (initMultipartUpload n'accepte que les vidéos).
   if (IS_POCKETBASE) {
+    if (isVideoFile(file)) return uploadMultipartS3(withVideoName(file), { onProgress, onDetail, signal });
     if (file.size <= SEUIL_UPLOAD_DIRECT) {
       const url = await directUpload(file);
       onProgress?.(100);

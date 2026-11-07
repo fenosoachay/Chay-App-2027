@@ -68,7 +68,8 @@ try {
   check('16 Mo -> refusé (max 15 Mo)', (await upload('Fichier', A.token, pad(PNG, 16 * MIO), 'gros.png')).status >= 400);
   const mp3 = await upload('Fichier', A.token, MP3(200 * 1024), 'chant.mp3');
   check('membre : audio mp3 accepté (playlist personnelle)', mp3.status === 200, `HTTP ${mp3.status}`);
-  check('membre : vidéo refusée dans Fichier', (await upload('Fichier', A.token, MP4(100 * 1024), 'v.mp4')).status === 400);
+  const vMembre = await upload('Fichier', A.token, MP4(100 * 1024), 'v.mp4');
+  check('membre : vidéo refusée dans Fichier (415, vidéos sur R2)', vMembre.status === 415 && /R2/.test(vMembre.data?.message || ''), `HTTP ${vMembre.status}`);
   check('membre : FichierAdmin refusé', (await upload('FichierAdmin', A.token, PNG, 'd.png')).status >= 400);
   const listB = await http('GET', '/api/collections/Fichier/records?perPage=200', { token: B.token });
   check('autre membre : ne voit pas le fichier dans la liste', listB.status === 200 && !listB.data.items.some((r) => r.id === img.data.id));
@@ -82,8 +83,13 @@ try {
   console.log('\n■ FichierAdmin (administrateurs)');
   const pdf = await upload('FichierAdmin', ADM.token, PDF, 'programme.pdf');
   check('admin : PDF accepté, propriétaire = admin', pdf.status === 200 && pdf.data?.proprietaire === ADM.id, `HTTP ${pdf.status}`);
-  const vid = await upload('FichierAdmin', ADM.token, MP4(300 * 1024), 'clip.mp4');
-  check('admin : petite vidéo acceptée', vid.status === 200, `HTTP ${vid.status}`);
+  // Politique : toutes les vidéos vont sur R2, quelle que soit leur taille (sauvegardes petites).
+  for (const nom of ['clip.mp4', 'clip.MOV', 'clip.webm', 'clip.mkv', 'clip.m4v']) {
+    const v = await upload('FichierAdmin', ADM.token, MP4(300 * 1024), nom);
+    check(`admin : petite vidéo ${nom} refusée dans FichierAdmin (415)`, v.status === 415, `HTTP ${v.status}`);
+  }
+  const m4a = await upload('FichierAdmin', ADM.token, pad(Buffer.concat([Buffer.from('0000001866747970', 'hex'), Buffer.from('M4A \0\0\0\0M4A mp42isom')]), 200 * 1024), 'chant.m4a');
+  check('admin : audio m4a (même signature « ftyp » que le MP4) toujours accepté', m4a.status === 200, `HTTP ${m4a.status}`);
   check('admin : texte refusé', (await upload('FichierAdmin', ADM.token, Buffer.from('texte'), 't.pdf')).status === 400);
 
   // Suppression par le propriétaire
@@ -100,6 +106,7 @@ try {
   check('anonyme -> 401', (await chunkCall(null, { action: 'init', session_id: s1, name: 'a.mp3', size: audio.length })).status === 401);
   check('membre -> 403', (await chunkCall(A.token, { action: 'init', session_id: s1, name: 'a.mp3', size: audio.length })).status === 403);
   check('plus de 100 Mo -> 413', (await chunkCall(ADM.token, { action: 'init', session_id: s1, name: 'a.mp3', size: 100 * MIO + 1 })).status === 413);
+  check('vidéo (20 Mo, .mp4) -> 415 : les vidéos vont sur R2', (await chunkCall(ADM.token, { action: 'init', session_id: s1, name: 'film.mp4', size: 20 * MIO })).status === 415);
   const init = await chunkCall(ADM.token, { action: 'init', session_id: s1, name: 'prédication.mp3', size: audio.length });
   check('init -> 200, aucun morceau', init.status === 200 && Array.isArray(init.data?.uploaded) && init.data.uploaded.length === 0, JSON.stringify(init.data));
   const c0 = await chunkCall(ADM.token, { action: 'chunk', session_id: s1, index: 0, total: 2, name: 'x' }, audio.subarray(0, 8 * MIO));
@@ -182,6 +189,20 @@ try {
     other.status === 200 && !other.data?.already_done && Boolean(other.data?.uploadId) && other.data?.key !== key, JSON.stringify(other.data));
   if (other.data?.uploadId) await s3Fetch(s3env, 'DELETE', `/${s3env.R2_BUCKET}/${other.data.key}`, { query: [['uploadId', other.data.uploadId]] });
 
+  // Petite vidéo (< 5 Mo, minimum S3 d'une part qui n'est pas la dernière) : une seule part, acceptée par S3.
+  const small = MP4(1 * MIO + 333);
+  const ms = sid();
+  created.sessions.push(ms);
+  const si = await fn('initMultipartUpload', { token: ADM.token, body: { session_id: ms, fileName: 'petit clip.mp4', fileSize: small.length, fileType: 'video/mp4', lastModified: 3 } });
+  check('petite vidéo (1 Mo) -> R2 accepté, 1 seule part', si.status === 200 && si.data?.totalParts === 1, JSON.stringify(si.data));
+  if (si.data?.key) created.objects.push(si.data.key);
+  const sp = await fn('getPresignedUrl', { token: ADM.token, body: { session_id: ms, uploadId: si.data?.uploadId, key: si.data?.key, partNumber: 1 } });
+  const sput = await fetch(sp.data?.presignedUrl, { method: 'PUT', body: small });
+  const sdone = await fn('completeMultipartUpload', { token: ADM.token, body: { session_id: ms, uploadId: si.data?.uploadId, key: si.data?.key, parts: [] } });
+  const spub = await download(sdone.data?.file_url || 'http://127.0.0.1:9000/x');
+  check('petite vidéo : part unique < 5 Mo acceptée, adresse publique R2, contenu identique',
+    sput.status === 200 && sdone.status === 200 && sdone.data?.file_url?.startsWith(s3env.R2_PUBLIC_BASE_URL) && sha(spub.buf) === sha(small), `PUT ${sput.status} / ${sdone.status}`);
+
   const m2 = sid();
   created.sessions.push(m2);
   const fake = crypto.randomBytes(8 * MIO + 10);
@@ -251,6 +272,35 @@ try {
     && (await http('GET', `/api/collections/Fichier/records/${used.data.id}`, asSu)).status === 200, JSON.stringify(real.data));
   const recent = await fn('cleanupOrphanFiles', { ...asSu, body: { simulation: false, limiterA: only } });
   check('délai de grâce (7 jours) : un fichier récent n’est jamais examiné', recent.data?.examines === 0, JSON.stringify(recent.data));
+
+  // Le nettoyage passera un jour en mode « actif » : un fichier réellement utilisé ne doit JAMAIS être supprimé,
+  // quelle que soit la forme de la référence.
+  console.log('\n■ Formes de référence (un fichier utilisé n’est jamais supprimé)');
+  const film = await upload('FichierAdmin', ADM.token, PNG, 'film-test.png');
+  const enc = await upload('Fichier', A.token, PNG, 'encode.png');
+  const parNom = await upload('Fichier', A.token, PNG, 'par-nom.png');
+  const parNomCol = await upload('Fichier', A.token, PNG, 'nom-collection.png');
+  const perdu = await upload('Fichier', A.token, PNG, 'perdu.png');
+  const filmVid = await http('POST', '/api/collections/Video/records', { ...asSu, body: { title: 'test fichiers', category: 'films', video_url: fileUrl(film.data) } });
+  if (filmVid.data?.id) created.records.push(['Video', filmVid.data.id]);
+  const note = async (description) => {
+    const r = await http('POST', '/api/collections/Content/records', { ...asSu, body: { type: 'autre', title: 'test fichiers', status: 'draft', description } });
+    if (r.data?.id) created.records.push(['Content', r.data.id]);
+    return r.status;
+  };
+  const prep = [filmVid.status,
+    await note(`https://membres.chay.fr/partage?image=${encodeURIComponent(fileUrl(enc.data))}`),
+    await note(`ancienne image : ${parNom.data.fichier}`),
+    await note(`${BASE}/api/files/Fichier/${parNomCol.data.id}/${parNomCol.data.fichier}`)];
+  check('références préparées (Video.video_url, 3 × Content.description)', prep.every((s) => s === 200), prep.join(','));
+  const formes = [film, enc, parNom, parNomCol, perdu].map((x) => x.data.id);
+  const actif = await fn('cleanupOrphanFiles', { ...asSu, body: { graceHours: 0, simulation: false, limiterA: formes } });
+  const existe = async (col, id) => (await http('GET', `/api/collections/${col}/records/${id}`, asSu)).status === 200;
+  check('film : FichierAdmin cité par Video.video_url (adresse normale) -> conservé', await existe('FichierAdmin', film.data.id));
+  check('adresse encodée dans une autre adresse (%2Fapi%2Ffiles%2F) -> conservé', await existe('Fichier', enc.data.id));
+  check('cité seulement par son nom de fichier -> conservé', await existe('Fichier', parNom.data.id));
+  check('adresse avec le nom de la collection au lieu de son identifiant -> conservé', await existe('Fichier', parNomCol.data.id));
+  check('seul le fichier vraiment inutilisé est supprimé', actif.data?.supprimes === 1 && !(await existe('Fichier', perdu.data.id)), JSON.stringify(actif.data));
 } finally {
   // ── Ménage ──────────────────────────────────────────────────────────────────
   for (const [col, id] of created.records) await http('DELETE', `/api/collections/${col}/records/${id}`, asSu);

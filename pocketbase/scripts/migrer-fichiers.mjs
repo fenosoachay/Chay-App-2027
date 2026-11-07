@@ -5,7 +5,7 @@
 //   node pocketbase/scripts/migrer-fichiers.mjs --appliquer             # envoi + réécriture des adresses
 //   options : --pb http://127.0.0.1:8090   serveur PocketBase (127.0.0.1 / localhost uniquement pour l'instant)
 //             --base <adresse>             adresse publique écrite dans les enregistrements (défaut : --pb)
-//             --avec-video --r2-env <fichier>   envoie aussi la vidéo > 100 Mo vers R2 (sinon : reportée)
+//             --avec-video --r2-env <fichier>   envoie aussi les vidéos MP4 (toutes tailles) vers R2 (sinon : reportées)
 //             --heic-tel-quel              envoie les HEIC sans conversion si la conversion est impossible
 //
 // Entrées (hors dépôt) : C:\Export-Base44\fichiers.csv (entite;id;champ;hote;url) et
@@ -14,7 +14,8 @@
 //           C:\Export-Base44\_outil\pb\migration-fichiers-rapport.md. La console n'affiche que des comptes.
 //
 // Règles : chaque fichier distinct (sha256) est envoyé UNE fois (réutilisé s'il existe déjà : champ sha256) ;
-// Fichier (membre propriétaire, <= 15 Mo, image / audio) sinon FichierAdmin ; HEIC converti en JPEG
+// TOUTE vidéo MP4 -> R2, quelle que soit sa taille (jamais dans PocketBase : sauvegardes petites) ;
+// sinon Fichier (membre propriétaire, <= 15 Mo, image / audio) ou FichierAdmin (<= 100 Mo) ; HEIC converti en JPEG
 // (codecs Windows) ; adresses R2 existantes NON réécrites (rapport) ; réécriture des champs simples et des
 // listes (image_urls[i]) seulement si la valeur actuelle est encore l'ancienne adresse ; dates de mise à jour
 // conservées (en-tête X-Chay-Conserver-Dates).
@@ -258,10 +259,10 @@ export async function plan(pb, exp, args) {
       if (c.ok) { item.source = c.chemin; item.type = 'jpg'; } else if (!args.heicTelQuel) item.statut = 'HEIC non converti (adresse non réécrite)';
     }
     const size = fs.statSync(item.source).size;
-    if (size > 100 * MIO) {
+    if (item.type === 'mp4' || size > 100 * MIO) {
       item.destination = 'R2';
       if (item.type !== 'mp4') item.statut = 'trop gros et pas une vidéo';
-      else if (!args.avecVideo) item.statut = 'reporté (vidéo > 100 Mo : --avec-video au basculement)';
+      else if (!args.avecVideo) item.statut = 'reporté (vidéo : --avec-video au basculement)';
     } else {
       const memberOnly = f.refs.every((r) => MEMBER_ENTITIES.has(r.entite));
       item.destination = memberOnly && owner && size <= 15 * MIO && MEMBER_TYPES.has(item.type) ? 'Fichier' : 'FichierAdmin';
@@ -356,7 +357,7 @@ function rapport({ args, exp, items, mapping, rw, verif }) {
     `| Fichiers distincts (sha256) | ${items.length} |`,
     `| → Fichier (membre propriétaire) | ${count((i) => i.destination === 'Fichier')} |`,
     `| → FichierAdmin | ${count((i) => i.destination === 'FichierAdmin')} |`,
-    `| → R2 (vidéo > 100 Mo) | ${count((i) => i.destination === 'R2')} |`,
+    `| → R2 (toutes les vidéos MP4) | ${count((i) => i.destination === 'R2')} |`,
     `| Non envoyés (voir statut) | ${count((i) => i.statut !== 'à envoyer' && i.statut !== 'envoyé' && i.statut !== 'réutilisé')} |`,
     `| Fichiers locaux absents | ${exp.problems.length} |`, ''];
   if (rw) {
@@ -413,11 +414,12 @@ export async function main(argv) {
       }
     }
     rw = await reecrire(pb, exp.refs, mapping, records);
-    // Vérification : chaque nouvelle adresse PocketBase se lit et a le contenu d'origine (ou le JPEG converti).
+    // Vérification : chaque nouvelle adresse (PocketBase ou R2 publique) se lit et a le contenu d'origine
+    // (ou le JPEG converti).
     verif = { ok: 0, total: 0 };
-    for (const item of items.filter((i) => i.nouvelle && i.destination !== 'R2')) {
+    for (const item of items.filter((i) => i.nouvelle)) {
       verif.total++;
-      const local = args.base === args.pb ? item.nouvelle : item.nouvelle.replace(args.base, args.pb);
+      const local = item.destination === 'R2' || args.base === args.pb ? item.nouvelle : item.nouvelle.replace(args.base, args.pb);
       const res = await fetch(local);
       const buf = Buffer.from(await res.arrayBuffer());
       if (res.status === 200 && crypto.createHash('sha256').update(buf).digest('hex') === crypto.createHash('sha256').update(fs.readFileSync(item.source)).digest('hex')) verif.ok++;

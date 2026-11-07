@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { makeChecker } from './lib.mjs';
 import { FAUX_S3_ENV, s3Fetch } from './sigv4-node.mjs';
-import { detectType, envoyerVersR2, parseArgs, parseField, readEnvFile } from '../scripts/migrer-fichiers.mjs';
+import { detectType, envoyerVersR2, parseArgs, parseField, plan, readEnvFile } from '../scripts/migrer-fichiers.mjs';
 
 const { check, done } = makeChecker();
 const env = readEnvFile(FAUX_S3_ENV);
@@ -33,6 +33,33 @@ check('adresse publique distincte du serveur', parseArgs(['--base', 'https://api
 let r2Refused = false;
 try { await envoyerVersR2({ ...env, R2_ENDPOINT: 'https://compte.r2.cloudflarestorage.com' }, 'x', 'y'); } catch (e) { r2Refused = /non autorisé/.test(e.message); }
 check('R2 réel -> refusé pour l’instant', r2Refused);
+
+// Politique : TOUTE vidéo MP4 va sur R2, même petite ; jamais dans Fichier / FichierAdmin (sauvegardes petites).
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'chay-plan-'));
+  try {
+    const mk = (nom, head, size) => {
+      const p = path.join(dir, nom);
+      fs.writeFileSync(p, Buffer.concat([head, Buffer.alloc(Math.max(0, size - head.length))]));
+      return p;
+    };
+    const ftypMp4 = Buffer.concat([Buffer.from('0000001866747970', 'hex'), Buffer.from('mp42')]);
+    const files = new Map([
+      ['v1', { chemin: mk('petite.mp4', ftypMp4, 2 * 1024 * 1024), sha: 'a'.repeat(64), refs: [{ entite: 'Video', id: 'x' }], urls: ['u1'] }],
+      ['v2', { chemin: mk('moyenne.mp4', ftypMp4, 30 * 1024 * 1024), sha: 'b'.repeat(64), refs: [{ entite: 'Video', id: 'y' }], urls: ['u2'] }],
+      ['a1', { chemin: mk('chant.mp3', Buffer.from('ID3\x03\x00\x00\x00\x00', 'latin1'), 1024 * 1024), sha: 'c'.repeat(64), refs: [{ entite: 'MusicTrack', id: 'z' }], urls: ['u3'] }],
+    ]);
+    const pbStub = async () => ({ status: 404, data: null });
+    const sans = await plan(pbStub, { files }, { avecVideo: false });
+    const avec = await plan(pbStub, { files }, { avecVideo: true });
+    const dest = (p, i) => `${p.items[i].destination}/${p.items[i].statut}`;
+    check('migration : MP4 de 2 Mo et de 30 Mo -> R2, reportés sans --avec-video', sans.items.slice(0, 2).every((x) => x.destination === 'R2' && /^reporté/.test(x.statut)), `${dest(sans, 0)} ; ${dest(sans, 1)}`);
+    check('migration : MP4 de 2 Mo et de 30 Mo -> R2, envoyés avec --avec-video', avec.items.slice(0, 2).every((x) => x.destination === 'R2' && x.statut === 'à envoyer'), `${dest(avec, 0)} ; ${dest(avec, 1)}`);
+    check('migration : l’audio reste dans PocketBase', avec.items[2].destination === 'FichierAdmin', dest(avec, 2));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 const tmp = path.join(os.tmpdir(), `chay-video-${crypto.randomBytes(4).toString('hex')}.mp4`);
 const video = Buffer.concat([Buffer.from('0000001866747970', 'hex'), Buffer.from('mp42'), crypto.randomBytes(20 * 1024 * 1024)]);

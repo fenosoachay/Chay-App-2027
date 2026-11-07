@@ -24,11 +24,13 @@ async function portLibre() {
 
 /**
  * Démarre une instance jetable et attend « Server started ».
- * @param {{ hooksDir?: string, env?: Record<string,string>, timeoutMs?: number }} o
- * @returns {Promise<{ url: string, sortie: () => string, superuser: { email: string, password: string }, stop: () => Promise<void> }>}
+ * dataDir : dossier de données EXISTANT (ex. sauvegarde décompressée dans un dossier temporaire) ; il est
+ * supprimé à l'arrêt comme le dossier créé ici. Sans dataDir : dossier vide neuf.
+ * @param {{ hooksDir?: string, dataDir?: string, env?: Record<string,string>, timeoutMs?: number }} o
+ * @returns {Promise<{ url: string, dir: string, sortie: () => string, superuser: { email: string, password: string }, stop: () => Promise<void> }>}
  */
-export async function demarrerJetable({ hooksDir, env = {}, timeoutMs = 20000 } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'chay-pb-jetable-'));
+export async function demarrerJetable({ hooksDir, dataDir, env = {}, timeoutMs = 20000 } = {}) {
+  const dir = dataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'chay-pb-jetable-'));
   const superuser = { email: `jetable-${crypto.randomBytes(4).toString('hex')}@chay.test`, password: crypto.randomBytes(24).toString('base64url') };
   const fullEnv = { ...process.env, ...env };
 
@@ -66,5 +68,5 @@ export async function demarrerJetable({ hooksDir, env = {}, timeoutMs = 20000 } 
     child.once('exit', (code) => { clearTimeout(timer); ko(new Error(`PocketBase jetable arrêté (code ${code})`)); });
   }).catch(async (err) => { await stop(); throw err; });
 
-  return { url: `http://127.0.0.1:${port}`, sortie: () => out, superuser, stop };
+  return { url: `http://127.0.0.1:${port}`, dir, sortie: () => out, superuser, stop };
 }
