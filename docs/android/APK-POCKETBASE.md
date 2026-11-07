@@ -1,6 +1,6 @@
 # APK et PocketBase (`https://api.chay.fr`)
 
-Examen de `capacitor.config.json` et de `android/` dans le dossier habituel (`Chay-App-2027`), **sans modification**. Le correctif proposé est `docs/android/apk-pocketbase.patch` (à appliquer au moment du basculement avec `git apply`).
+Examen de `capacitor.config.json` et de `android/` dans le dossier habituel (`Chay-App-2027`), **sans modification**. Le correctif `docs/android/apk-pocketbase.patch` est **appliqué dans le worktree** (bloc 7) ; le dossier habituel n'a pas été modifié. `npx cap update android` a été exécuté sans réseau externe : les fichiers gradle générés sont identiques au correctif. La compilation Gradle de l'APK n'a pas été lancée (elle télécharge ses dépendances).
 
 ## Ce qui est déjà bon
 
