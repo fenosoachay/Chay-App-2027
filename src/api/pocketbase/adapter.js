@@ -40,6 +40,17 @@ function wrapError(err) {
   return new BackendError(message, status, data?.code ?? null, data, err);
 }
 
+/**
+ * Erreur d'authentification avec un message neutre en français (ne révèle jamais si un compte existe).
+ * 429 -> message de limite de tentatives.
+ */
+function authError(err, message) {
+  const status = typeof err?.status === 'number' ? err.status : 0;
+  if (status === 429) return new BackendError('Trop de tentatives. Réessayez dans une minute.', 429, 'rate_limited', null, err);
+  if (status === 0) return new BackendError('Serveur injoignable. Vérifiez votre connexion.', 0, 'network_error', null, err);
+  return new BackendError(message, status, 'auth_failed', null, err);
+}
+
 /** Erreur reconnue par AuthContext comme « session absente ou expirée ». */
 function authRequiredError(original) {
   return new BackendError('Authentification requise', 403, 'auth_required',
@@ -183,6 +194,13 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
         return map(await guard(col().update(id, body)));
       },
       async delete(id) {
+        // Comptes : suppression par route (données personnelles supprimées, contenus anonymisés).
+        if (entity === 'User') {
+          const self = id === currentUserId();
+          const res = self ? await invokeFn('deleteMyAccount', {}) : await invokeFn('deleteUserAccount', { user_id: id });
+          if (self) pb.authStore.clear();
+          return { id, deleted: true, ...res.data };
+        }
         await guard(col().delete(id));
         return { id, deleted: true };
       },
@@ -279,8 +297,13 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
       }
     },
     async loginViaEmailPassword(email, password) {
-      const res = await guard(users().authWithPassword(email, password));
-      return { access_token: res.token, user: fromRecord('User', res.record) };
+      try {
+        const res = await users().authWithPassword(String(email || '').trim(), password);
+        return { access_token: res.token, user: fromRecord('User', res.record) };
+      } catch (err) {
+        // Même message que le compte existe ou non (et pour un compte non vérifié ou désactivé).
+        throw authError(err, 'E-mail ou mot de passe incorrect.');
+      }
     },
     setToken(token) {
       if (!token || token === pb.authStore.token) return;
@@ -289,7 +312,73 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
     async updateMe(data) {
       const id = currentUserId();
       if (!id) throw authRequiredError();
-      return fromRecord('User', await guard(users().update(id, toRecord('User', data))));
+      // Changement d'e-mail : par confirmation (lien envoyé à la nouvelle adresse), jamais direct.
+      const { email, ...rest } = data || {};
+      if (typeof email === 'string' && email.trim() && email.trim() !== pb.authStore.record?.email) {
+        try {
+          await users().requestEmailChange(email.trim());
+        } catch (err) {
+          throw authError(err, 'Impossible de demander le changement d’adresse e-mail.');
+        }
+      }
+      if (!Object.keys(rest).length) return this.me();
+      return fromRecord('User', await guard(users().update(id, toRecord('User', rest))));
+    },
+    async changePassword({ currentPassword, newPassword } = {}) {
+      const id = currentUserId();
+      if (!id) throw authRequiredError();
+      try {
+        await users().update(id, { oldPassword: currentPassword, password: newPassword, passwordConfirm: newPassword });
+      } catch (err) {
+        throw authError(err, 'Mot de passe actuel incorrect ou nouveau mot de passe invalide.');
+      }
+    },
+    // Inscription : le rôle n'est jamais envoyé (imposé à « user » par le serveur). Si l'adresse est déjà
+    // utilisée, on ne le révèle pas : le code est envoyé à son propriétaire et l'inscription s'arrête là.
+    async register({ email, password } = {}) {
+      const address = String(email || '').trim();
+      try {
+        await users().create({ email: address, password, passwordConfirm: password, emailVisibility: false });
+      } catch (err) {
+        const fields = err?.response?.data || {};
+        const onlyEmailTaken = err?.status === 400 && fields.email && Object.keys(fields).length === 1;
+        if (!onlyEmailTaken) throw authError(err, 'Inscription impossible. Vérifiez l’adresse et le mot de passe (8 caractères minimum).');
+      }
+      await sendOtp(address);
+      return {};
+    },
+    async verifyOtp({ email, otpCode } = {}) {
+      const address = String(email || '').trim();
+      const otpId = readOtp(address);
+      if (!otpId) throw new BackendError('Code expiré : demandez un nouveau code.', 400, 'otp_missing', null);
+      try {
+        const res = await users().authWithOTP(otpId, String(otpCode || '').trim());
+        forgetOtp(address);
+        return { access_token: res.token, user: fromRecord('User', res.record) };
+      } catch (err) {
+        throw authError(err, 'Code invalide ou expiré.');
+      }
+    },
+    async resendOtp(email) {
+      await sendOtp(String(email || '').trim());
+      return {};
+    },
+    async resetPasswordRequest(email) {
+      try {
+        await users().requestPasswordReset(String(email || '').trim());
+      } catch (err) {
+        // Réponse neutre : on ne signale que la limite de tentatives.
+        if (err?.status === 429) throw authError(err, '');
+      }
+      return {};
+    },
+    async resetPassword({ resetToken, newPassword } = {}) {
+      try {
+        await users().confirmPasswordReset(resetToken, newPassword, newPassword);
+      } catch (err) {
+        throw authError(err, 'Le lien est invalide ou expiré, ou le mot de passe est trop court (8 caractères minimum).');
+      }
+      return {};
     },
     logout(redirectUrl) {
       pb.authStore.clear();
@@ -297,10 +386,34 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
     },
     redirectToLogin(nextUrl) {
       if (typeof window === 'undefined') throw new Error('redirectToLogin : navigateur requis');
-      const from = nextUrl ? new URL(nextUrl, window.location.origin).toString() : window.location.href;
-      window.location.href = `/login?from_url=${encodeURIComponent(from)}`;
+      // La page /login lit ?returnTo= (chemin de la même origine) : voir src/lib/authReturnTo.js.
+      const target = new URL(nextUrl || window.location.href, window.location.origin);
+      const path = target.origin === window.location.origin ? `${target.pathname}${target.search}${target.hash}` : '/';
+      window.location.href = path && path !== '/' ? `/login?returnTo=${encodeURIComponent(path)}` : '/login';
     },
   });
+
+  // ── Codes à usage unique (OTP) : identifiant mémorisé par adresse ────────────
+  const otpIds = new Map();
+  const otpKey = (email) => `pocketbase_otp:${email.toLowerCase()}`;
+  function readOtp(email) {
+    if (otpIds.has(email.toLowerCase())) return otpIds.get(email.toLowerCase());
+    try { return globalThis.sessionStorage?.getItem(otpKey(email)) || null; } catch { return null; }
+  }
+  function forgetOtp(email) {
+    otpIds.delete(email.toLowerCase());
+    try { globalThis.sessionStorage?.removeItem(otpKey(email)); } catch { /* indisponible */ }
+  }
+  async function sendOtp(email) {
+    let res;
+    try {
+      res = await users().requestOTP(email);
+    } catch (err) {
+      throw authError(err, 'Impossible d’envoyer le code. Réessayez.');
+    }
+    otpIds.set(email.toLowerCase(), res.otpId);
+    try { globalThis.sessionStorage?.setItem(otpKey(email), res.otpId); } catch { /* indisponible */ }
+  }
 
   // ── functions ──────────────────────────────────────────────────────────────
   const functions = notMigratedProxy('functions', {
@@ -357,7 +470,12 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
         return notMigratedProxy(`integrations.${pkg}`);
       },
     }),
-    users: notMigratedProxy('users'),
+    users: notMigratedProxy('users', {
+      // Invitation (ou promotion) par un admin : route serveur inviteUser.
+      inviteUser(userEmail, role) {
+        return invokeFn('inviteUser', { user_email: userEmail, role });
+      },
+    }),
     app: notMigratedProxy('app', {
       // AuthContext l'appelle au démarrage : réglages neutres, aucune requête.
       async getPublicSettings() {

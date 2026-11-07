@@ -30,6 +30,11 @@ function fakePb({ pages = {}, token = 'tok', userId = 'u'.repeat(24) } = {}) {
     }),
     authWithPassword: vi.fn(async () => ({ token: 'newtok', record: { id: userId, name: 'Ana' } })),
     authRefresh: vi.fn(async () => ({ token, record: { id: userId, name: 'Ana', role: 'admin' } })),
+    requestOTP: vi.fn(async (email) => { calls.push({ name, op: 'requestOTP', email }); return { otpId: `otp-${email}` }; }),
+    authWithOTP: vi.fn(async (otpId, code) => { calls.push({ name, op: 'authWithOTP', otpId, code }); return { token: 'otptok', record: { id: userId, name: 'Ana' } }; }),
+    requestPasswordReset: vi.fn(async (email) => { calls.push({ name, op: 'requestPasswordReset', email }); return true; }),
+    confirmPasswordReset: vi.fn(async (t, p, c) => { calls.push({ name, op: 'confirmPasswordReset', t, p, c }); return true; }),
+    requestEmailChange: vi.fn(async (email) => { calls.push({ name, op: 'requestEmailChange', email }); return true; }),
   });
   const cache = {};
   return {
@@ -241,12 +246,77 @@ describe('auth', () => {
     expect(pb.calls[0].body).not.toHaveProperty('base44_updated_date');
   });
 
-  it('méthodes non migrées : erreur claire', () => {
+  it('méthodes non migrées (OAuth) : erreur claire', () => {
     const api = createPocketBaseAdapter(fakePb());
-    for (const m of ['register', 'verifyOtp', 'resendOtp', 'resetPasswordRequest', 'resetPassword', 'loginWithProvider']) {
-      expect(() => api.auth[m]({})).toThrow(NotMigratedError);
-      expect(() => api.auth[m]({})).toThrow(/pas encore migré/);
-    }
+    expect(() => api.auth.loginWithProvider('google', '/')).toThrow(NotMigratedError);
+    expect(() => api.auth.loginWithProvider('google', '/')).toThrow(/pas encore migré/);
+  });
+
+  it('connexion refusée : message identique, 429 -> limite de tentatives', async () => {
+    const pb = fakePb({ token: '' });
+    const api = createPocketBaseAdapter(pb);
+    pb.collection('users').authWithPassword.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 400 }));
+    await expect(api.auth.loginViaEmailPassword('a@b.c', 'x')).rejects.toMatchObject({ message: 'E-mail ou mot de passe incorrect.' });
+    pb.collection('users').authWithPassword.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 429 }));
+    await expect(api.auth.loginViaEmailPassword('a@b.c', 'x')).rejects.toMatchObject({ status: 429, message: /Trop de tentatives/ });
+  });
+
+  it('inscription : aucun rôle envoyé, puis code à usage unique ; vérification avec le bon otpId', async () => {
+    const pb = fakePb({ token: '' });
+    const api = createPocketBaseAdapter(pb);
+    await api.auth.register({ email: ' new@chay.test ', password: 'motdepasse1', role: 'admin' });
+    const create = pb.calls.find((c) => c.op === 'create');
+    expect(create.body).toEqual({ email: 'new@chay.test', password: 'motdepasse1', passwordConfirm: 'motdepasse1', emailVisibility: false });
+    expect(pb.calls.find((c) => c.op === 'requestOTP').email).toBe('new@chay.test');
+    const res = await api.auth.verifyOtp({ email: 'new@chay.test', otpCode: ' 123456 ' });
+    expect(res.access_token).toBe('otptok');
+    expect(pb.calls.find((c) => c.op === 'authWithOTP')).toMatchObject({ otpId: 'otp-new@chay.test', code: '123456' });
+    await expect(api.auth.verifyOtp({ email: 'new@chay.test', otpCode: '1' })).rejects.toMatchObject({ code: 'otp_missing' });
+  });
+
+  it('inscription avec une adresse déjà utilisée : aucune erreur révélée, le code part au propriétaire', async () => {
+    const pb = fakePb({ token: '' });
+    pb.collection('users').create.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 400, response: { data: { email: { code: 'validation_not_unique' } } } }));
+    const api = createPocketBaseAdapter(pb);
+    await expect(api.auth.register({ email: 'pris@chay.test', password: 'motdepasse1' })).resolves.toEqual({});
+    expect(pb.calls.some((c) => c.op === 'requestOTP')).toBe(true);
+    pb.collection('users').create.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 400, response: { data: { password: { code: 'validation_length_out_of_range' } } } }));
+    await expect(api.auth.register({ email: 'x@chay.test', password: 'court' })).rejects.toMatchObject({ message: /8 caractères/ });
+  });
+
+  it('mot de passe oublié : réponse neutre (sauf 429) ; nouveau mot de passe', async () => {
+    const pb = fakePb({ token: '' });
+    const api = createPocketBaseAdapter(pb);
+    pb.collection('users').requestPasswordReset.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 400 }));
+    await expect(api.auth.resetPasswordRequest('inconnu@chay.test')).resolves.toEqual({});
+    pb.collection('users').requestPasswordReset.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 429 }));
+    await expect(api.auth.resetPasswordRequest('a@chay.test')).rejects.toMatchObject({ status: 429 });
+    await api.auth.resetPassword({ resetToken: 'tok', newPassword: 'nouveau123' });
+    expect(pb.calls.find((c) => c.op === 'confirmPasswordReset')).toMatchObject({ t: 'tok', p: 'nouveau123', c: 'nouveau123' });
+  });
+
+  it('updateMe avec email : demande de changement par confirmation, e-mail jamais écrit directement', async () => {
+    const pb = fakePb();
+    const api = createPocketBaseAdapter(pb);
+    await api.auth.updateMe({ email: 'nouvelle@chay.test', city: 'Lyon' });
+    expect(pb.calls.find((c) => c.op === 'requestEmailChange').email).toBe('nouvelle@chay.test');
+    const upd = pb.calls.find((c) => c.op === 'update');
+    expect(upd.body).toEqual({ city: 'Lyon' });
+  });
+
+  it('redirectToLogin : ?returnTo=<chemin> (lu par la page /login)', () => {
+    const win = { location: { origin: 'https://app.test', href: 'https://app.test/media?x=1#a' } };
+    const previous = globalThis.window;
+    globalThis.window = win;
+    const api = createPocketBaseAdapter(fakePb());
+    api.auth.redirectToLogin(win.location.href);
+    expect(win.location.href).toBe(`/login?returnTo=${encodeURIComponent('/media?x=1#a')}`);
+    win.location.href = 'https://app.test/';
+    api.auth.redirectToLogin();
+    expect(win.location.href).toBe('/login');
+    api.auth.redirectToLogin('https://ailleurs.test/piege');
+    expect(win.location.href).toBe('/login');
+    globalThis.window = previous;
   });
 });
 
@@ -288,10 +358,25 @@ describe('functions, intégrations, divers', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('integrations.Core.UploadFile, users.inviteUser : pas encore migré', () => {
+  it('integrations.Core.UploadFile : pas encore migré', () => {
     const api = createPocketBaseAdapter(fakePb());
     expect(() => api.integrations.Core.UploadFile({})).toThrow(NotMigratedError);
-    expect(() => api.users.inviteUser('a@b.c', 'user')).toThrow(NotMigratedError);
+  });
+
+  it('users.inviteUser et User.delete -> routes serveur', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, headers: {}, json: async () => ({ ok: true }) }));
+    const pb = fakePb();
+    const api = createPocketBaseAdapter(pb, { baseUrl: 'https://pb.test', fetchImpl });
+    await api.users.inviteUser('a@b.c', 'admin');
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://pb.test/api/fn/inviteUser');
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toEqual({ user_email: 'a@b.c', role: 'admin' });
+    await api.entities.User.delete('autre');
+    expect(fetchImpl.mock.calls[1][0]).toBe('https://pb.test/api/fn/deleteUserAccount');
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ user_id: 'autre' });
+    await api.entities.User.delete('u'.repeat(24));
+    expect(fetchImpl.mock.calls[2][0]).toBe('https://pb.test/api/fn/deleteMyAccount');
+    expect(pb.authStore.clear).toHaveBeenCalled();
+    expect(pb.calls.filter((c) => c.op === 'delete')).toHaveLength(0);
   });
 
   it('app.getPublicSettings neutre ; config.token suit le authStore', async () => {
