@@ -6,11 +6,73 @@
 //   succès : HTTP 200 + objet JSON de la fonction (le client lit `res.data`) ;
 //   erreur : HTTP <code> + { error: "<message>" } (le client lit `error.data.error`).
 
-/** Erreur HTTP « métier » renvoyée telle quelle au client. */
-function HttpError(status, message) {
+/**
+ * Erreur HTTP « métier » renvoyée telle quelle au client : { error, ...extra }.
+ * `extra` reproduit les champs supplémentaires de certaines fonctions Base44
+ * (ex. limit_reached, creditsRemaining, requested / available).
+ */
+function HttpError(status, message, extra) {
   this.status = status;
   this.message = message;
+  this.extra = extra || null;
   this.isHttpError = true;
+}
+
+/**
+ * Résultat d'une transaction : on ne lance jamais d'exception JS à l'intérieur de
+ * runInTransaction (elle traverserait le code Go et perdrait ses propriétés).
+ * Le callback renvoie fail(...) ou ok(...) ; tx() relance l'erreur après la transaction.
+ */
+const fail = (status, message, extra) => ({ failed: true, status, message, extra });
+const ok = (value) => ({ failed: false, value });
+function tx(work) {
+  let outcome = null;
+  $app.runInTransaction((txApp) => {
+    outcome = work(txApp);
+  });
+  if (!outcome) throw new Error('transaction sans résultat');
+  if (outcome.failed) throw new HttpError(outcome.status, outcome.message, outcome.extra);
+  return outcome.value;
+}
+
+/** Premier enregistrement correspondant (filtre paramétré), ou null. */
+function findOne(app, collection, filter, sort, params) {
+  const rows = app.findRecordsByFilter(collection, filter, sort || '', 1, 0, params || {});
+  return rows.length ? rows[0] : null;
+}
+
+/** Nouvel enregistrement (non sauvegardé) avec les valeurs données. */
+function newRecord(app, collection, values) {
+  const rec = new Record(app.findCollectionByNameOrId(collection));
+  for (const k of Object.keys(values)) rec.set(k, values[k]);
+  return rec;
+}
+
+/** Identifiant de session au format UUID v4 (comme crypto.randomUUID côté Base44). */
+function uuid() {
+  const h = $security.randomStringWithAlphabet(32, '0123456789abcdef');
+  const v = '89ab'[parseInt(h[16], 16) % 4];
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${v}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/** Fisher-Yates (même algorithme que les règles partagées Base44). */
+function shuffle(items) {
+  const arr = items.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i];
+    arr[i] = arr[j];
+    arr[j] = t;
+  }
+  return arr;
+}
+
+/** Texte optionnel borné : '' si absent ; erreur 400 si type ou longueur invalides. */
+function optionalString(body, key, maxLength, message) {
+  const v = body[key];
+  if (v === undefined || v === null) return '';
+  if (typeof v !== 'string' || v.length > maxLength) throw new HttpError(400, message || `${key} invalide`);
+  return v;
 }
 
 /** Utilisateur de l'app authentifié (collection users) ou null. Jamais d'id fourni par le client. */
@@ -87,7 +149,11 @@ function run(e, name, fallback, handler) {
   try {
     return e.json(200, handler());
   } catch (err) {
-    if (err && err.isHttpError) return e.json(err.status, { error: err.message });
+    if (err && err.isHttpError) {
+      const body = { error: err.message };
+      if (err.extra) for (const k of Object.keys(err.extra)) body[k] = err.extra[k];
+      return e.json(err.status, body);
+    }
     $app.logger().error('[fn] échec', 'fonction', name);
     return e.json(500, { error: fallback });
   }
@@ -95,6 +161,14 @@ function run(e, name, fallback, handler) {
 
 module.exports = {
   HttpError,
+  fail,
+  ok,
+  tx,
+  findOne,
+  newRecord,
+  uuid,
+  shuffle,
+  optionalString,
   currentUser,
   requireUser,
   requireAdmin,
