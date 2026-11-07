@@ -1,0 +1,31 @@
+{
+  "_note": "Réglages du BAC À SABLE uniquement : e-mails vers le faux SMTP local (127.0.0.1), aucun envoi réel. Appliqués par pocketbase/scripts/configurer-auth.mjs.",
+  "meta": {
+    "appName": "Église Chay",
+    "appURL": "http://127.0.0.1:5173",
+    "senderName": "Église Chay",
+    "senderAddress": "no-reply@chay.test"
+  },
+  "smtp": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 2525,
+    "username": "",
+    "password": "",
+    "authMethod": "PLAIN",
+    "tls": false,
+    "localName": ""
+  },
+  "rateLimits": {
+    "enabled": true,
+    "rules": [
+      { "label": "POST /api/collections/users/auth-with-password", "audience": "", "duration": 60, "maxRequests": 20 },
+      { "label": "POST /api/collections/users/auth-with-otp", "audience": "", "duration": 60, "maxRequests": 10 },
+      { "label": "POST /api/collections/users/request-otp", "audience": "", "duration": 60, "maxRequests": 10 },
+      { "label": "POST /api/collections/users/request-password-reset", "audience": "", "duration": 60, "maxRequests": 10 },
+      { "label": "POST /api/collections/users/confirm-password-reset", "audience": "", "duration": 60, "maxRequests": 10 },
+      { "label": "POST /api/collections/users/request-email-change", "audience": "", "duration": 60, "maxRequests": 5 },
+      { "label": "POST /api/collections/users/records", "audience": "@guest", "duration": 60, "maxRequests": 10 }
+    ]
+  }
+}
