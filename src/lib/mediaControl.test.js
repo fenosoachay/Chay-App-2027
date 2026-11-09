@@ -8,6 +8,7 @@ import {
   stopActiveMediaControl,
   subscribeMediaControl,
   subscribeMediaPlaybackRequests,
+  surfaceHandlersMissing,
   updateMediaControl,
 } from "./mediaControl.js";
 
@@ -100,4 +101,30 @@ test("media requests reach the persistent player surface immediately", () => {
   unsubscribe();
   unsubscribeState();
   stopActiveMediaControl();
+});
+
+// Régression : la page Films republie le même contrôle vidéo (même propriétaire « video », même identifiant)
+// avec toggle: null / seek: null ; le bouton lecture/pause du lecteur plein écran ne faisait alors plus rien.
+test("republishing a video control erases the surface handlers, which must be re-attached", () => {
+  let latest;
+  const unsubscribe = subscribeMediaControl((control) => { latest = control; });
+  const publish = (source) => requestMediaPlayback({ type: "video", title: "Film", source, isPlaying: true, toggle: null, seek: null, stop() {} }, "video");
+  const id = publish("https://media.chay.fr/a.mp4");
+  assert.equal(surfaceHandlersMissing(latest), true);
+  updateMediaControl(id, { toggle() {}, seek() {} });
+  assert.equal(surfaceHandlersMissing(latest), false);
+  const again = publish("https://media.chay.fr/b.mp4");
+  assert.equal(again, id);
+  assert.equal(latest.toggle, null);
+  assert.equal(surfaceHandlersMissing(latest), true);
+  unsubscribe();
+  stopActiveMediaControl();
+});
+
+test("surfaceHandlersMissing: radio needs only toggle, video and youtube also need seek", () => {
+  assert.equal(surfaceHandlersMissing(null), false);
+  assert.equal(surfaceHandlersMissing({ type: "radio", toggle() {} }), false);
+  assert.equal(surfaceHandlersMissing({ type: "radio", toggle: null }), true);
+  assert.equal(surfaceHandlersMissing({ type: "video", toggle() {}, seek: null }), true);
+  assert.equal(surfaceHandlersMissing({ type: "youtube", toggle() {}, seek() {} }), false);
 });

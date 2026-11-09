@@ -18,6 +18,7 @@ import {
   clearMediaControl,
   subscribeMediaControl,
   subscribeMediaPlaybackRequests,
+  surfaceHandlersMissing,
   updateMediaControl,
 } from "@/lib/mediaControl";
 import {
@@ -30,6 +31,8 @@ import {
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
 } from "@/lib/androidExoPlayer";
+import { isActiveVideoEvent, videoQueueId } from "@/lib/videoPlaybackEvent";
+
 
 const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
 // Part du média déjà téléchargée (0 → 1), pour la barre de progression.
@@ -109,6 +112,8 @@ const playVideo = (source) => {
     playWithAndroidExoPlayer({
       url: source,
       mediaType: "video",
+      // Identifiant transmis par la session média même quand l'adresse ne l'est pas (événements à source vide).
+      queueId: videoQueueId(active.id),
       title: active.title || "Film",
       artist: active.subtitle || "Film",
     }).catch((error) => {
@@ -167,7 +172,8 @@ const playVideo = (source) => {
     let isSubscribed = true;
     subscribeAndroidExoPlayer((event) => {
       const activeControl = controlRef.current;
-      if (activeControl?.type !== "video" || event.mediaType !== "video" || event.source !== activeControl.source) return;
+      // Vidéo reconnue par son queueId (la source peut arriver vide via la session média) ou par sa source.
+      if (!isActiveVideoEvent(event, activeControl)) return;
       setVideoWaiting(Boolean(event.isBuffering));
       updateMediaControl(activeControl.id, {
         isPlaying: Boolean(event.isPlaying),
@@ -237,6 +243,7 @@ const playVideo = (source) => {
     previousControlRef.current = control;
   }, [control?.id, control?.source, control?.type, isNativeAndroidPlayer]);
 
+  const handlersMissing = surfaceHandlersMissing(control);
   useEffect(() => {
     if (!control || isAudioControl(control)) return undefined;
     const id = control.id;
@@ -308,7 +315,9 @@ const playVideo = (source) => {
       open: () => setExpanded(true),
       seek: currentControl.type === "video" || currentControl.type === "youtube" ? seek : null,
     });
-  }, [control?.id, control?.type, isNativeAndroidPlayer]);
+    // La page Films republie le même contrôle (même identifiant) avec toggle / seek à null : sans cette
+    // dépendance, les commandes ne seraient pas remises et le bouton lecture/pause ne ferait plus rien.
+  }, [control?.id, control?.type, isNativeAndroidPlayer, handlersMissing]);
 
   useEffect(() => {
     const onMessage = (event) => {
@@ -594,6 +603,7 @@ const playVideo = (source) => {
           }}
         />
       </div>
+      </div>
 
       {control && (
         <>
@@ -634,7 +644,6 @@ const playVideo = (source) => {
           </div>
         </>
       )}
-      </div>
     </motion.div>
   );
 }

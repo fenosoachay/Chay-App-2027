@@ -116,3 +116,14 @@ function stopPreviousControl(nextId) {
   if (typeof previous.stop === "function") previous.stop();
   if (activeId === previous.id) clearMediaControl(previous.id);
 }
+
+/**
+ * Le lecteur persistant (UniversalMediaSurface) doit-il (ré)attacher ses commandes au contrôle ?
+ * Une page qui republie le même contrôle (même propriétaire, donc même identifiant) avec `toggle: null` /
+ * `seek: null` efface les commandes déjà attachées : il faut alors les remettre.
+ */
+export function surfaceHandlersMissing(control) {
+  if (!control) return false;
+  if (typeof control.toggle !== "function") return true;
+  return (control.type === "video" || control.type === "youtube") && typeof control.seek !== "function";
+}
