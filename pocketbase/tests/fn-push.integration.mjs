@@ -302,6 +302,45 @@ try {
     }
   }
 
+  // ═══════════════ Jetons périmés du destinataire ════════════════════════════
+  // Constaté en production : fcm {cibles 2, ok 1, invalides 1}, web {cibles 1, ok 1} -> l'expéditeur voyait
+  // « La notification du destinataire n'a pas pu être envoyée ». Un vieux jeton ne doit jamais l'alarmer.
+  console.log('\n■ createMessage : jetons / abonnements périmés du destinataire');
+  {
+    const envoyer = async (dest, text) => {
+      const c = await fn('createConversation', { token: A.token, body: { type: 'direct', participant_ids: [A.id, dest.id] } });
+      if (!c.data?.id) throw new Error(`préparation : conversation HTTP ${c.status}`);
+      created.push(['Conversation', c.data.id]);
+      const m = await fn('createMessage', { token: A.token, body: { conversation_id: c.data.id, text } });
+      if (m.data?.id) created.push(['Message', m.data.id]);
+      for (const x of await list('UserNotification', `notification_id ~ "message_${m.data?.id}_"`)) created.push(['UserNotification', x.id]);
+      return m;
+    };
+
+    // 1 jeton FCM périmé (ancienne installation) + 1 jeton valide + 1 navigateur valide.
+    const D = await tempUser('push-mixte');
+    const vieux = await deviceToken(D, `invalide-${rnd()}`);
+    await deviceToken(D, `ok-${rnd()}`);
+    await webSub(D);
+    await resetCaptures();
+    const m1 = await envoyer(D, 'bonjour (un vieux jeton)');
+    check('1 jeton périmé + 1 accepté (et navigateur accepté) : 200, notification_error = null, notification_info = null',
+      m1.status === 200 && m1.data.notification_error === null && m1.data.notification_info === null,
+      `${m1.status} error=${m1.data?.notification_error} info=${m1.data?.notification_info}`);
+    check('le jeton périmé est toujours nettoyé (supprimé)', (await http('GET', `/api/collections/DeviceToken/records/${vieux}`, su)).status === 404);
+
+    // Uniquement des cibles périmées : jeton UNREGISTERED + abonnement navigateur 410.
+    const E = await tempUser('push-perimes');
+    const vieux2 = await deviceToken(E, `invalide-${rnd()}`);
+    const vieuxWeb = await webSub(E, 'invalide');
+    const m2 = await envoyer(E, 'bonjour (que des vieux jetons)');
+    check('toutes les cibles périmées : notification_error = null, notification_info = push_targets_invalid',
+      m2.status === 200 && m2.data.notification_error === null && m2.data.notification_info === 'push_targets_invalid',
+      `${m2.status} error=${m2.data?.notification_error} info=${m2.data?.notification_info}`);
+    check('jeton et abonnement périmés nettoyés', (await http('GET', `/api/collections/DeviceToken/records/${vieux2}`, su)).status === 404
+      && (await http('GET', `/api/collections/WebPushSubscription/records/${vieuxWeb.recId}`, su)).status === 404);
+  }
+
   // ═══════════════ Prière ════════════════════════════════════════════════════
   console.log('\n■ takePrayer / answerPrayer');
   {

@@ -7,6 +7,8 @@
 
 /** Chargé à l'usage (le fichier reste chargeable hors de PocketBase pour les tests unitaires). */
 const sortie = () => require(`${__hooks}/lib/sortie.js`);
+// Chargé à la demande (comme sortie) : push.js reste chargeable hors de PocketBase pour les tests.
+const bilan = () => require(`${__hooks}/lib/bilan-push.js`);
 
 const QUEUE = 'PushEnvoi';
 const BATCH = 500;
@@ -133,8 +135,9 @@ function deliverTargets(targetsIn, notification, attempts) {
     sortie().blocked('push', blockedTargets);
   }
   const out = {
-    fcm: { found: targets.fcm.length, sent: 0, failed: 0, removed: 0, queued: 0 },
-    web: { found: targets.web.length, sent: 0, failed: 0, removed: 0, queued: 0 },
+    // invalid : échecs dus au destinataire (jeton / abonnement périmé…), comptés AUSSI dans failed.
+    fcm: { found: targets.fcm.length, sent: 0, failed: 0, removed: 0, queued: 0, invalid: 0 },
+    web: { found: targets.web.length, sent: 0, failed: 0, removed: 0, queued: 0, invalid: 0 },
     fcmError: null,
     webSkipped: null,
     perRef: {},
@@ -177,6 +180,7 @@ function deliverTargets(targetsIn, notification, attempts) {
         out.perRef[res.ref] = { ok: Boolean(res.ok) };
         if (res.ok) { c.sent++; continue; }
         c.failed++;
+        if (bilan().isRecipientSideFailure(res)) c.invalid++;
         if (res.invalid) {
           if (removeTarget(collection, res.ref)) c.removed++;
         } else if (res.retry && attempts < MAX_ATTEMPTS) {
@@ -222,6 +226,7 @@ function sendToUsers(userIdsIn, notificationIn, label) {
     failed: r.fcm.failed,
     tokensFound: r.fcm.found,
     invalidDeactivated: r.fcm.removed,
+    invalid: r.fcm.invalid,
     fcmError: r.fcmError,
     firebaseResponses: [],
     webPush: {
@@ -229,6 +234,7 @@ function sendToUsers(userIdsIn, notificationIn, label) {
       failed: r.web.failed,
       subscriptions: r.web.found,
       deactivated: r.web.removed,
+      invalid: r.web.invalid,
       skipped: r.webSkipped,
       byUser: recipients.map((x) => ({ recipientIndex: x.recipientIndex, attempted: x.web.attempted, succeeded: x.web.succeeded, failed: x.web.failed })),
     },

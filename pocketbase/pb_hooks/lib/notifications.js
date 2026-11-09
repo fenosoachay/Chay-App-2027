@@ -5,6 +5,7 @@
 
 const fn = require(`${__hooks}/lib/fn.js`);
 const push = require(`${__hooks}/lib/push.js`);
+const bilan = require(`${__hooks}/lib/bilan-push.js`);
 const mail = require(`${__hooks}/lib/courriel.js`);
 const fuseaux = require(`${__hooks}/lib/fuseaux.js`);
 
@@ -221,6 +222,8 @@ function messagePush(messageRecord) {
   let pushNoSubscriptions = 0;
   let pushBlocked = 0;
   let pushMode = 'on';
+  let pushInvalid = 0;
+  let pushQueued = 0;
   if (pushTargets.length) {
     const r = push.sendToUsers(pushTargets, { title, body: preview || notifBody, target_type: 'message', target_id: m.conversation_id }, 'sendMessagePush');
     pushBlocked = r.blocked || 0;
@@ -232,44 +235,24 @@ function messagePush(messageRecord) {
     web = { attempted: r.webPush.subscriptions, succeeded: r.webPush.sent, failed: r.webPush.failed };
     pushSent = r.sent + r.webPush.sent;
     pushFailed = r.failed + r.webPush.failed;
+    // Échecs dus au destinataire (jeton / abonnement périmé, nettoyé par push.js) et envois remis en file :
+    // jamais une erreur pour l'expéditeur (lib/bilan-push.js).
+    pushInvalid = (r.invalid || 0) + (r.webPush.invalid || 0);
+    pushQueued = r.queued || 0;
     if (r.webPush.skipped && r.sent === 0 && r.webPush.subscriptions > 0) pushFailed = Math.max(pushFailed, 1);
     if (!r.blocked && r.tokensFound === 0 && r.webPush.subscriptions === 0) pushNoSubscriptions = pushTargets.length;
   }
   return {
     notifCreated, notifFailed, emailsSent, emailsSkipped, pushSent, pushFailed, android, web,
-    pushNoSubscriptions, pushBlocked, pushMode, webPushSent, webPushSkipped, fcmError, openSkipped, total: pending.length,
+    pushNoSubscriptions, pushBlocked, pushMode, pushInvalid, pushQueued, webPushSent, webPushSkipped, fcmError, openSkipped, total: pending.length,
   };
 }
 
-// Envoi retenu volontairement par l'interrupteur NOTIFICATIONS_MODE (lib/sortie.js) : pas un échec.
-const MODE_BLOCK = /^notifications_(off|test)$/;
-const realReason = (v) => (v && !MODE_BLOCK.test(String(v)) ? String(v) : null);
-
-/**
- * Erreur de notification renvoyée par createMessage : seulement les VRAIS échecs (l'app affiche alors
- * « La notification du destinataire n'a pas pu être envoyée »).
- * Différence voulue avec Base44 : un destinataire sans appareil abonné (no_push_subscription) ou un envoi
- * retenu par NOTIFICATIONS_MODE (notifications_off / notifications_test) n'est PAS un échec : la notification
- * in-app est créée. Ces cas sont décrits par messageNotificationInfo (champ notification_info).
- */
-function messageNotificationError(d) {
-  if (!d) return 'notification_dispatch_failed';
-  if (d.notifFailed > 0) return 'notification_creation_failed';
-  if (d.pushFailed > 0) return 'push_delivery_failed';
-  const skipped = realReason(d.webPushSkipped);
-  const fcmError = realReason(d.fcmError);
-  if (skipped && !(d.pushSent > 0)) return skipped;
-  if (fcmError && !(d.webPushSent > 0)) return fcmError;
-  return null;
-}
-
-/** Information (non bloquante) sur le push d'un message : envoi retenu par le mode, ou destinataire sans appareil. */
-function messageNotificationInfo(d) {
-  if (!d) return null;
-  if (d.pushBlocked > 0) return `notifications_${d.pushMode === 'test' ? 'test' : 'off'}`;
-  if (d.pushNoSubscriptions > 0) return 'no_push_subscription';
-  return null;
-}
+// Erreur / information de notification pour l'expéditeur d'un message : règles dans lib/bilan-push.js
+// (un jeton ou abonnement périmé du destinataire n'est jamais une erreur ; au moins une cible acceptée = pas
+// d'erreur ; NOTIFICATIONS_MODE = information).
+const messageNotificationError = (d) => bilan.messageNotificationError(d);
+const messageNotificationInfo = (d) => bilan.messageNotificationInfo(d);
 
 // ── notifyCommunityPost ──────────────────────────────────────────────────────
 function communityPostNotify(postRecord) {
