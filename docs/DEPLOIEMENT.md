@@ -465,6 +465,18 @@ Utiliser de vraies boîtes e-mail que tu consultes. Ne jamais utiliser le compte
 | 11 | Verset du jour | le lendemain à 07:00 (heure de Paris) | notification si un dévotionnel est planifié |
 | 12 | Liens partagés depuis l'APK | verset, radio | adresse en `https://membres.chay.fr/…` |
 
+**État au 9 novembre 2026** : les 12 vérifications sont **validées**.
+
+| # | Précision |
+|---|---|
+| 1, 2 | validées |
+| 3 | validée avec **Chrome** (push navigateur) |
+| 4, 5, 6 | validées |
+| 7 | validée avec un **audio de 40 Mo** |
+| 8 | validée : **vidéo envoyée depuis le web et depuis l'APK** (envoi vers R2, lecture OK). Depuis, toutes les vidéos vont sur R2 quelle que soit leur taille (`docs/FICHIERS.md`). |
+| 9 | validée : un admin **non participant** voit **0** conversation et **0** message des autres |
+| 10, 11, 12 | validées |
+
 ---
 
 ## 9. Remettre les données au propre avant le basculement
@@ -512,12 +524,10 @@ Conseillé aussi : connexion SSH **par clé seulement** (`PasswordAuthentication
 
 **MFA du superuser** : tableau d'administration → Collections → `_superusers` → Options → **MFA** activé, avec OTP par e-mail. Tester la connexion avec un second onglet avant de fermer le premier.
 
-**Restreindre `/_/`** (tableau d'administration) : ne plus l'exposer sur Internet et passer par le tunnel SSH de l'étape 3. Dans le bloc Caddy de `api.chay.fr` :
-```caddyfile
-@admin path /_/*
-respond @admin 404
-```
-Puis `sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy`.
+**Fermer l'administration de PocketBase depuis Internet** : voir **`docs/CADDY-APP.md`**, section « Bloc `api.chay.fr` ».
+- Le tableau `/_/`, la connexion superuser (`/api/collections/_*`), `/api/settings`, `/api/backups`, `/api/crons`, `/api/logs`, la liste et le schéma des collections répondent **404** depuis Internet.
+- Ils restent accessibles par le tunnel SSH de l'étape 3.
+- Les règles sont dans `/etc/caddy/chay-pb-admin.caddy`, incluses par une seule ligne `import` dans le bloc `api.chay.fr`. Elles remplacent l'ancienne règle `@admin path /_/*`.
 
 **Limites de débit** : Settings → Rate limits activé, avec les règles de `pocketbase/config/settings-bac-a-sable.json`.
 
@@ -529,6 +539,12 @@ Puis `sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload
 - ⚠️ Une sauvegarde contient les réglages en clair : mot de passe SMTP, clés S3. Le bucket reste **privé**, et une sauvegarde ne se partage jamais.
 
 Restauration, test d'un zip sans risque, et reconstruction sur un VPS neuf : **voir `docs/RESTAURATION.md`**. La configuration du serveur (`/etc/chay`, Caddyfile, fichiers de service) n'est pas dans ces sauvegardes : une copie chiffrée est une amélioration à faire, décrite dans ce même document.
+
+**Vérifié le 9 novembre 2026** :
+- le port **8091** (sidecar push) est **fermé** depuis l'extérieur ;
+- les services n'écoutent **qu'en local** : `sudo ss -tlnp` montre PocketBase sur `127.0.0.1:8090` et le sidecar sur `127.0.0.1:8091`, jamais `0.0.0.0` ni `*` ;
+- les **limites de débit** sont actives ;
+- **trusted proxy** : `X-Forwarded-For` avec l'adresse la plus à droite (*Use leftmost IP* désactivé). Le journal de PocketBase montre bien la **vraie adresse du visiteur**, et non celle de Caddy.
 
 ---
 
