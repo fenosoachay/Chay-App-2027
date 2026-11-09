@@ -36,6 +36,7 @@ function Lire-Secret($invite) { $s = Read-Host $invite -AsSecureString; $b = [Ru
 | `comparer-comptages.mjs` (étape 4) | `PB_URL` | `PB_EMAIL`, `PB_PASSWORD` |
 | `importer-baiboly.mjs` (étape 5) | option `--pb` | **`PB_SU_EMAIL`, `PB_SU_PASSWORD`** |
 | `migrer-fichiers.mjs` (étape 6) | option `--pb` | **`PB_SU_EMAIL`, `PB_SU_PASSWORD`** |
+| `envoyer-mots-de-passe.mjs` (étape 7 bis) | `PB_URL` | `PB_EMAIL`, `PB_PASSWORD` |
 
 ⚠️ Si `PB_SU_EMAIL` / `PB_SU_PASSWORD` manquent, `importer-baiboly.mjs` et `migrer-fichiers.mjs` prennent les identifiants **du bac à sable** (`C:\PB-local\identifiants-test.txt`) et les enverraient au vrai serveur par le tunnel. Définissez-les **toujours** avant ces deux scripts.
 
@@ -345,6 +346,14 @@ Remove-Item Env:PB_SU_PASSWORD, Env:PB_SU_EMAIL
 - **Risque** : moyen. Les réécritures sont annulées en restaurant la sauvegarde ; l'objet R2 de la vidéo reste dans le bucket et se supprime dans Cloudflare.
 - `FICHIERS_NETTOYAGE` reste à `simulation`.
 
+**6d. Après la migration des fichiers** (jour J, ou fin de répétition si le jeton n'est plus utile) :
+- supprimer le jeton Cloudflare **`MIGRATION-FICHIERS-2026-11`** (Cloudflare → R2 → Gérer les jetons API) ;
+- supprimer le fichier `C:\Secrets-Chay\r2-migration.env` :
+```powershell
+Remove-Item C:\Secrets-Chay\r2-migration.env
+```
+Les vidéos déjà envoyées restent lisibles : elles sont servies par l'adresse publique, pas par ce jeton.
+
 ## Étape 7. Vérifications après l'import
 
 - **Où** : site, APK, tableau de bord.
@@ -369,6 +378,54 @@ Remove-Item Env:PB_SU_PASSWORD, Env:PB_SU_EMAIL
 7. **Confidentialité** : l'extrait de console avec test-admin doit donner **0** conversation, **0** message et **0** notification hors de ses propres conversations. Le refaire avec test-membre.
 8. **Journal du serveur** : la ligne `[chay] hooks chargés` (4 tâches), aucun `failed to execute`, aucune erreur en rafale dans Logs.
 
+## Étape 7 bis. E-mails « choisir mon mot de passe »
+
+- **But** : chaque membre importé reçoit un lien pour choisir son mot de passe (Base44 n'exporte pas les mots de passe).
+- **Où** : PC, par le tunnel.
+- **Temps** : 5 min, plus 8 s par membre (environ 2 min pour 15 membres).
+- **Pendant la répétition : simulation seulement**, et au plus un envoi réel à votre propre compte avec `--un-seul`. Aucun envoi aux membres avant le jour J.
+
+**Qui reçoit l'e-mail** : les comptes dont l'identifiant figure dans `C:\Export-Base44\User.json`, non désactivés, à l'adresse valide, absents de la liste d'exclusion, et pas encore invités. Les comptes créés dans PocketBase (test1, test2, test-admin) ne sont jamais dans l'export.
+
+**Liste d'exclusion** `C:\Secrets-Chay\exclure.txt`, à créer soi-même, **hors du dépôt** : une adresse ou un nom par ligne (`#` pour un commentaire), pour les comptes de test venus de Base44. Obligatoire avec `--appliquer`.
+
+🪟 **PC** (`PB_URL`, `PB_EMAIL`, `PB_PASSWORD` comme à l'étape 4a) :
+```powershell
+cd "C:\Users\CHAY VERSET\Desktop\Chay-App-2027-migration"
+```
+Simulation (aucun envoi ; nombre de comptes et adresses masquées, `j***@gmail.com`) :
+```powershell
+node pocketbase/scripts/envoyer-mots-de-passe.mjs --exclure C:\Secrets-Chay\exclure.txt
+```
+Test sur un seul compte (le vôtre) :
+```powershell
+node pocketbase/scripts/envoyer-mots-de-passe.mjs --un-seul <votre adresse> --appliquer
+```
+
+**Jour J** :
+1. Porter la durée du lien à **72 h** (sinon le lien expire au bout de 30 min) :
+```powershell
+node pocketbase/scripts/envoyer-mots-de-passe.mjs --duree-lien 72h --appliquer
+```
+2. Envoyer (résumé, puis taper exactement `ENVOYER <nombre>`) :
+```powershell
+node pocketbase/scripts/envoyer-mots-de-passe.mjs --exclure C:\Secrets-Chay\exclure.txt --appliquer
+```
+3. **Une semaine après**, remettre la durée à 30 min (les liens déjà envoyés gardent leur échéance) :
+```powershell
+node pocketbase/scripts/envoyer-mots-de-passe.mjs --duree-lien 30min --appliquer
+```
+
+**Rythme et reprise** :
+- un envoi toutes les **8 secondes** (limite PocketBase : 10 demandes par minute) ; en cas de 429, le script attend puis réessaie ;
+- chaque envoi réussi est noté dans `C:\Export-Base44\_invitations\journal-invitations.jsonl` (identifiant et date de création du compte, aucune adresse) ; une relance saute les comptes déjà invités ; Ctrl+C arrête proprement après l'envoi en cours ;
+- `--limite N` : envoi par lots.
+
+⚠️ **Texte de l'e-mail encore à adapter** : le gabarit actuel (« Choisir un nouveau mot de passe — Église Chay ») dit « expire au bout de 30 minutes » et parle d'une demande faite par le membre. Le jour J, il faut le texte de `MIGRATION-COMPTES.md` §2 (« valable 72 heures », changement de serveur), puis revenir au gabarit habituel.
+
+- **Risque** : un e-mail envoyé ne se rattrape pas. D'où la simulation, la liste d'exclusion et la confirmation à taper.
+- **Annulation** : aucune pour un e-mail parti ; le lien peut être invalidé en changeant le mot de passe du compte dans le tableau de bord.
+
 ## Étape 8. Fin de la répétition
 
 - **Choix** : garder cet état jusqu'au jour J, ou restaurer `avant-repetition-….zip`.
@@ -389,17 +446,18 @@ Remove-Item Env:PB_SU_PASSWORD, Env:PB_SU_EMAIL
 **Propre au jour J** :
 1. **Geler Base44** : annonce aux membres, puis une période de maintenance. Ce qui serait saisi dans Base44 après l'export serait perdu.
 2. **Supprimer les comptes de test** et leurs contenus, comme dans `DEPLOIEMENT.md` §9. Vider `PushEnvoi`.
-3. **Mots de passe** :
-   - porter la durée du lien de réinitialisation à 72 h ;
-   - envoyer le lien de choix de mot de passe à chaque membre importé (environ 15 aujourd'hui), en un seul lot ;
-   - le script d'envoi reste **à écrire**, selon `MIGRATION-COMPTES.md` : simulation par défaut, reprise possible ;
-   - remettre la durée à 30 min une semaine après.
+3. **Mots de passe** (étape 7 bis) :
+   - adapter le texte de l'e-mail (72 h, changement de serveur) ;
+   - `--duree-lien 72h --appliquer` ;
+   - simulation, puis `--exclure C:\Secrets-Chay\exclure.txt --appliquer` (environ 15 membres aujourd'hui, un seul lot) ;
+   - une semaine après : `--duree-lien 30min --appliquer`, et revenir au gabarit habituel.
 4. **Envois réels** :
    - mettre `NOTIFICATIONS_MODE=on` dans `/etc/chay/pocketbase.env` **et** dans `/etc/chay/push.env` ;
    - puis `sudo systemctl restart pocketbase chay-push` ;
    - vérifier la ligne `mode notifications = on` dans le journal, et `"mode":"on"` dans l'état du sidecar.
 5. **`FICHIERS_NETTOYAGE`** : garder `simulation` une semaine, lire le nombre de fichiers concernés dans le journal, puis passer à `actif`.
 6. **Révocations** :
+   - le jeton Cloudflare `MIGRATION-FICHIERS-2026-11` et le fichier `C:\Secrets-Chay\r2-migration.env`, une fois les fichiers migrés (étape 6d) ;
    - l'ancien jeton R2 `CHAY-R2-2026-11` (Cloudflare → R2 → jetons API) ;
    - les anciennes clés du compte de service Firebase (Google Cloud → IAM → Comptes de service → Clés) ;
    - restreindre la clé d'API Firebase à `io.chay.app` ;
@@ -438,11 +496,12 @@ Remove-Item Env:PB_SU_PASSWORD, Env:PB_SU_EMAIL
 Déjà fait (9 novembre 2026) :
 - l'option `--r2-reel` de `migrer-fichiers.mjs`, testée sur le faux S3 (commit `8800dfab`) ;
 - le comparateur de comptages `comparer-comptages.mjs`, testé dans le bac à sable (même commit) ;
-- la tentative de téléchargement de Jaona 8 (HTTP 500 à la source).
+- la tentative de téléchargement de Jaona 8 (HTTP 500 à la source) ;
+- le script d'envoi des mots de passe `envoyer-mots-de-passe.mjs`, testé dans le bac à sable avec le faux SMTP (commit `f9175d9f`).
 
 Encore possible dès maintenant :
 - l'étape 0 en entier (disque, sauvegarde du jour, débit montant, état des fichiers d'environnement) ;
-- **écrire le script d'envoi des mots de passe** (simulation par défaut) et le tester dans le bac à sable avec le faux SMTP ;
+- **préparer le texte de l'e-mail du jour J** (72 h, changement de serveur) et la liste `C:\Secrets-Chay\exclure.txt` ;
 - **vérifier SPF / DKIM / DMARC** pour `chay.fr` ;
 - **faire une sauvegarde manuelle** de la production (étape 2a) ;
 - **répéter les étapes 4 à 7 dans le bac à sable** avec l'export actuel.
