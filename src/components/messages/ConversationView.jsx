@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { App as CapacitorApp } from "@capacitor/app";
+import { createActiveConversationSync } from "@/lib/activeConversationSync";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
 import { useToast } from "@/components/ui/use-toast";
@@ -116,53 +117,51 @@ export default function ConversationView({
     });
   }, [conversation?.id, messages.length, user?.id]);
 
-  // Signal "conversation ouverte" pour le système anti-notification (MemberProfile).
+  // Signal "conversation ouverte" pour le système anti-notification (MemberProfile.active_conversation_id) :
+  // le serveur ne notifie pas un destinataire en ligne qui a la conversation ouverte. Il faut donc la vider dès
+  // que l'utilisateur ne la regarde plus, et la remettre à son retour sur cet écran :
+  //  - web : onglet en arrière-plan / page masquée (visibilitychange, pagehide), retour (visibilitychange, pageshow) ;
+  //  - APK : app en arrière-plan / au premier plan (appStateChange de @capacitor/app) ;
+  //  - sortie de la conversation (démontage) : toujours vidée.
+  // Écritures dédupliquées et faites une par une (src/lib/activeConversationSync.js).
   useEffect(() => {
     if (!conversation?.id || !user?.id) return;
-    let alive = true;
 
-    // `guardAlive` protège uniquement l'écriture "conversation ouverte"
-    // (on ne veut pas la reposer après démontage/backgrounding) ; les
-    // écritures de nettoyage ("") s'exécutent toujours, comme avant.
-    const writeActiveConversationId = (value, guardAlive) => {
+    const writeActiveConversationId = (value) =>
       base44.entities.MemberProfile
         .filter({ created_by_id: user.id }, "-created_date", 1)
-        .then((rows) => {
-          if ((!guardAlive || alive) && rows && rows[0]) {
-            base44.entities.MemberProfile
-              .update(rows[0].id, { active_conversation_id: value })
-              .catch(() => {});
-          }
-        })
-        .catch(() => {});
-    };
+        .then((rows) => (rows && rows[0]
+          ? base44.entities.MemberProfile.update(rows[0].id, { active_conversation_id: value })
+          : null));
 
-    writeActiveConversationId(conversation.id, true);
+    const sync = createActiveConversationSync(conversation.id, writeActiveConversationId);
+    const isHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
+    if (isHidden()) sync.hidden();
+    else sync.visible();
 
-    // Android/iOS : l'app peut passer en arrière-plan (bouton Accueil,
-    // verrouillage, changement d'app) sans que ce composant soit démonté —
-    // le cleanup React ci-dessous ne s'exécute donc pas alors que
-    // l'utilisateur ne regarde plus réellement la conversation. On vide
-    // explicitement active_conversation_id dans ce cas pour ne pas bloquer
-    // les notifications de l'utilisateur. On ne le restaure PAS
-    // automatiquement au retour au premier plan : il faut que l'utilisateur
-    // soit réellement de retour sur cet écran (ce useEffect ne se relance
-    // que si conversation.id/user.id changent).
+    const onVisibilityChange = () => (isHidden() ? sync.hidden() : sync.visible());
+    const onPageHide = () => sync.hidden();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onVisibilityChange);
+
     let cancelled = false;
     let appStateHandle = null;
     CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) return;
-      writeActiveConversationId("", false);
+      if (isActive) sync.visible();
+      else sync.hidden();
     }).then((handle) => {
       if (cancelled) handle.remove();
       else appStateHandle = handle;
     }).catch(() => {});
 
     return () => {
-      alive = false;
       cancelled = true;
       appStateHandle?.remove();
-      writeActiveConversationId("", false);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onVisibilityChange);
+      sync.dispose();
     };
   }, [conversation?.id, user?.id]);
 

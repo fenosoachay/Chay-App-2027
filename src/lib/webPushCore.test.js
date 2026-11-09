@@ -45,12 +45,20 @@ function fakePushManager(existing) {
 }
 
 // ── Fausse entité WebPushSubscription ────────────────────────────────────────
+// Applique la règle de MISE À JOUR du serveur (collection WebPushSubscription) :
+// « @request.body.user_id:isset = false && @request.body.created_by_id:isset = false … » -> refus sinon.
 function fakeEntity(rows = []) {
   const ent = {
     rows: rows.map((r) => ({ ...r })),
     calls: [],
     async filter(q, _sort, limit) { ent.calls.push(["filter", q.endpoint]); return ent.rows.filter((r) => r.endpoint === q.endpoint).slice(0, limit); },
-    async update(id, data) { ent.calls.push(["update", id]); Object.assign(ent.rows.find((r) => r.id === id), data); },
+    async update(id, data) {
+      ent.calls.push(["update", id]);
+      if ("user_id" in data || "created_by_id" in data) {
+        throw Object.assign(new Error("mise à jour refusée par la règle (user_id / created_by_id interdits)"), { status: 404 });
+      }
+      Object.assign(ent.rows.find((r) => r.id === id), data);
+    },
     async create(data) { ent.calls.push(["create"]); ent.rows.push({ id: `rec${ent.rows.length + 1}`, ...data }); },
   };
   return ent;
@@ -173,4 +181,32 @@ test("parcours complet : ancien abonnement Base44 -> nouvel abonnement enregistr
   const again = await ensurePushSubscription(pm, NEW_KEY);
   assert.equal(again.renewed, false);
   assert.equal(pm.subscribeCalls.length, 1);
+});
+
+// Régression : chaque mise à jour renvoyait user_id, refusé par la règle du serveur. Un abonnement désactivé
+// (is_active = false) ne pouvait donc jamais être réactivé, et le serveur trouvait 0 cible web.
+test("réactivation : abonnement désactivé -> is_active repasse à true, sans user_id dans la mise à jour", async () => {
+  const sub = fakeSubscription(urlBase64ToUint8Array(NEW_KEY));
+  const ent = fakeEntity([{ id: "rec1", endpoint: sub.endpoint, user_id: "u1", is_active: false, p256dh: "vieux" }]);
+  await assert.doesNotReject(() => saveSubscriptionRecord(ent, "u1", sub));
+  assert.equal(ent.rows[0].is_active, true);
+  assert.equal(ent.rows[0].user_id, "u1", "user_id inchangé");
+  assert.equal(ent.rows[0].p256dh, sub.toJSON().keys.p256dh);
+  assert.deepEqual(ent.calls.filter(([c]) => c !== "filter"), [["update", "rec1"]]);
+});
+
+test("création : user_id envoyé (exigé par la règle de création)", async () => {
+  const ent = fakeEntity();
+  const sub = fakeSubscription(urlBase64ToUint8Array(NEW_KEY));
+  await saveSubscriptionRecord(ent, "u1", sub);
+  assert.equal(ent.rows[0].user_id, "u1");
+});
+
+test("changement de clé VAPID : l'ancienne ligne prend le nouvel endpoint, sans user_id dans la mise à jour", async () => {
+  const sub = fakeSubscription(urlBase64ToUint8Array(NEW_KEY));
+  const ent = fakeEntity([{ id: "rec1", endpoint: "https://push.exemple.fr/ancien", user_id: "u1", is_active: true }]);
+  await assert.doesNotReject(() => saveSubscriptionRecord(ent, "u1", sub, { previousEndpoint: "https://push.exemple.fr/ancien" }));
+  assert.equal(ent.rows[0].endpoint, sub.endpoint);
+  assert.equal(ent.rows[0].is_active, true);
+  assert.equal(ent.rows.length, 1);
 });

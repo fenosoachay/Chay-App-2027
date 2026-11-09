@@ -82,14 +82,18 @@ export async function saveSubscriptionRecord(entity, userId, subscription, { pre
     const rows = await entity.filter({ endpoint }, null, 1);
     return (Array.isArray(rows) && rows[0]) || null;
   };
+  // Mise à jour SANS user_id : la règle de mise à jour du serveur (WebPushSubscription) refuse ce champ.
+  // Le propriétaire ne change jamais (la liste ne renvoie que les lignes de l'utilisateur connecté).
+  // Sans cette précaution, aucune mise à jour ne passait : un abonnement désactivé ne se réactivait plus.
+  const { user_id: _owner, ...updatable } = payload;
   const current = await first(payload.endpoint);
   const previous = previousEndpoint && previousEndpoint !== payload.endpoint ? await first(previousEndpoint) : null;
   if (current) {
-    await entity.update(current.id, payload);
+    await entity.update(current.id, updatable);
     // Cas rare : les deux lignes existent ; l'ancienne ne doit plus recevoir d'envoi.
     if (previous) await entity.update(previous.id, { is_active: false, last_seen: payload.last_seen });
   } else if (previous) {
-    await entity.update(previous.id, payload);
+    await entity.update(previous.id, updatable);
   } else {
     await entity.create(payload);
   }
