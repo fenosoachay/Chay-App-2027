@@ -15,6 +15,9 @@ Améliorations et corrections repérées pendant les tests du 9 novembre 2026. E
 - **Abonnement Web Push** : ne pas renvoyer `user_id` lors de la mise à jour (`saveSubscriptionRecord` dans `src/lib/webPushCore.js`). La règle de mise à jour de `WebPushSubscription` le refuse : un abonnement désactivé ne peut donc plus être réactivé.
 - **Conversation ouverte** : vider `active_conversation_id` quand l'onglet passe en arrière-plan. Aujourd'hui, un onglet caché sur la conversation empêche toute notification du destinataire.
 
+## Bible
+- **Jaona (Jean) 8 en malgache** : le seul chapitre manquant (1 188 / 1 189). La source publique (`back.baiboly.antonionavira.mg`) répond HTTP 500 pour ce chapitre. Pistes : réessayer plus tard, l'interroger par petites plages de versets, ou saisir le chapitre depuis une autre édition du Baiboly 1865. Ensuite : `importer-baiboly.mjs --telecharger --autoriser-post`, puis `--appliquer` avec `PB_SU_EMAIL` / `PB_SU_PASSWORD` (voir `docs/REPETITION-GENERALE.md`, étape 5).
+
 ## Divers
 - Bouton **« Tester le push Android »** : aucune notification visible.
 - **Block Blast** : placement des blocs.
