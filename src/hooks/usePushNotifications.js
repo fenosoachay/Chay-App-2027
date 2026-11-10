@@ -6,6 +6,7 @@ import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
+import { deactivateDeviceToken, upsertDeviceToken } from "@/lib/deviceTokenSync";
 
 const CHANNEL_ID = "chay-default";
 const CHANNEL_NAME = "Chay";
@@ -33,52 +34,6 @@ function isNative() {
 // suivants attendent son résultat au lieu de relancer un filter()+create().
 const upsertInFlight = new Map();
 
-async function upsertTokenInternal(token, platform, userId) {
-  const now = new Date().toISOString();
-  // On récupère toutes les lignes existantes pour ce token (pas seulement la
-  // première) afin de pouvoir corriger d'éventuels doublons déjà en base
-  // (ex. créés par une ancienne course entre deux appels concurrents).
-  let rows = [];
-  try {
-    rows = await base44.entities.DeviceToken.filter({ token }, null, 25);
-  } catch (e) {
-    throw new Error("Recherche du token existant échouée : " + (e?.message || JSON.stringify(e)));
-  }
-  rows = Array.isArray(rows) ? rows : [];
-  const [existing, ...duplicates] = rows;
-
-  if (existing) {
-    try {
-      await base44.entities.DeviceToken.update(existing.id, {
-        user_id: userId,
-        is_active: true,
-        last_seen: now,
-        platform,
-      });
-    } catch (e) {
-      throw new Error("Mise à jour du token échouée : " + (e?.message || JSON.stringify(e)));
-    }
-  } else {
-    try {
-      await base44.entities.DeviceToken.create({
-        user_id: userId,
-        token,
-        platform,
-        is_active: true,
-        last_seen: now,
-      });
-    } catch (e) {
-      throw new Error("Création du token échouée : " + (e?.message || JSON.stringify(e)));
-    }
-  }
-
-  // Auto-guérison : désactive les doublons restants pour ce même token afin
-  // qu'il ne reste qu'une seule ligne active (évite les notifications en double).
-  for (const dup of duplicates) {
-    await base44.entities.DeviceToken.update(dup.id, { is_active: false }).catch(() => {});
-  }
-}
-
 async function upsertToken(token, platform, userId) {
   if (!userId) {
     throw new Error("Utilisateur non connecté : impossible d'enregistrer le token.");
@@ -87,22 +42,15 @@ async function upsertToken(token, platform, userId) {
   if (upsertInFlight.has(key)) {
     return upsertInFlight.get(key);
   }
-  const promise = upsertTokenInternal(token, platform, userId).finally(() => {
+  // Mise à jour sans user_id (interdit par la règle PocketBase) ; ligne recréée si la mise à jour répond 404.
+  const promise = upsertDeviceToken(base44.entities, { token, platform, userId }).finally(() => {
     upsertInFlight.delete(key);
   });
   upsertInFlight.set(key, promise);
   return promise;
 }
 
-async function deactivateToken(token) {
-  const rows = await base44.entities.DeviceToken.filter({ token }, null, 1).catch(() => []);
-  const existing = Array.isArray(rows) && rows[0];
-  if (existing) {
-    await base44.entities.DeviceToken
-      .update(existing.id, { is_active: false })
-      .catch(() => {});
-  }
-}
+const deactivateToken = (token) => deactivateDeviceToken(base44.entities, token);
 
 // Enregistre le token FCM de l'appareil (uniquement sur build natif Android).
 // Au premier lancement, affiche un court message FR puis demande l'autorisation.
