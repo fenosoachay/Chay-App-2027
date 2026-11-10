@@ -26,6 +26,10 @@
 // (codecs Windows) ; adresses R2 existantes NON réécrites (rapport) ; réécriture des champs simples et des
 // listes (image_urls[i]) seulement si la valeur actuelle est encore l'ancienne adresse ; dates de mise à jour
 // conservées (en-tête X-Chay-Conserver-Dates).
+// R2 : clé déterministe videos/migration/<sha256 16>.mp4 ; Content-Type video/mp4 ; un envoi non finalisé laissé
+// sur cette clé par un essai précédent est abandonné avant de recommencer ; un échec de finalisation abandonne
+// l'envoi. Vérification des vidéos : contenu identique (téléchargement complet), lecture par plages (206) et
+// Content-Type video/* sur l'adresse publique. Un objet déjà présent avec un mauvais type : corriger-type-r2.mjs.
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -236,35 +240,90 @@ export function demanderConfirmation(attendu) {
   });
 }
 
-async function s3(env, method, key, query, body) {
+/**
+ * Requête S3 signée (SigV4, en-têtes). `key` vide : requête sur le bucket (ex. ListMultipartUploads).
+ * `extra` : en-têtes supplémentaires, tous SIGNÉS (content-type, x-amz-copy-source…). Aucune valeur secrète renvoyée.
+ */
+export async function s3(env, method, key, query, body, extra = {}) {
   const url = new URL(env.R2_ENDPOINT);
-  const p = `/${env.R2_BUCKET}/${key}`;
+  const p = key ? `/${env.R2_BUCKET}/${key}` : `/${env.R2_BUCKET}`;
   const amzDate = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const payloadHash = sha256Hex(body ?? '');
-  const h = { host: url.host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate };
+  const h = { ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k.toLowerCase(), v])), host: url.host, 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate };
   const signedHeaders = Object.keys(h).sort().join(';');
   const { signature: sig, scope } = signature({ method, path: p, queryPairs: query, headers: h, signedHeaders, payloadHash, amzDate, region: env.R2_REGION || 'auto', service: 's3', secret: env.R2_SECRET_ACCESS_KEY });
   const qs = canonicalQuery(query);
+  const { host: _host, ...sent } = h;
   const res = await fetch(`${url.origin}${uriEncode(p, true)}${qs ? `?${qs}` : ''}`, {
     method,
     // GET / HEAD : aucun corps (fetch le refuse, même vide) ; la signature porte sur le corps vide.
-    body: method === 'GET' || method === 'HEAD' ? undefined : body,
-    headers: { 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate, authorization: `AWS4-HMAC-SHA256 Credential=${env.R2_ACCESS_KEY_ID}/${scope}, SignedHeaders=${signedHeaders}, Signature=${sig}` },
+    // Corps vide : rien n'est envoyé (sinon fetch ajoute « Content-Type: text/plain;charset=UTF-8 », que R2
+    // enregistrerait comme type de l'objet à la création d'un envoi multipart).
+    body: method === 'GET' || method === 'HEAD' || body === '' ? undefined : body,
+    headers: { ...sent, authorization: `AWS4-HMAC-SHA256 Credential=${env.R2_ACCESS_KEY_ID}/${scope}, SignedHeaders=${signedHeaders}, Signature=${sig}` },
   });
-  return { status: res.status, text: await res.text(), etag: (res.headers.get('etag') || '').replace(/"/g, ''), length: Number(res.headers.get('content-length') || -1) };
+  return {
+    status: res.status,
+    text: await res.text(),
+    etag: (res.headers.get('etag') || '').replace(/"/g, ''),
+    length: Number(res.headers.get('content-length') || -1),
+    type: res.headers.get('content-type') || '',
+    headers: res.headers,
+  };
+}
+
+const xmlText = (s) => String(s).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+/**
+ * Envois multipart NON FINALISÉS sur exactement cette clé (essai interrompu, Ctrl+C, coupure) : abandonnés.
+ * Ne touche à aucune autre clé (le préfixe est la clé entière, et la clé est recomparée). Renvoie le nombre abandonné.
+ */
+export async function abandonnerEnvoisOuverts(env, key) {
+  const list = await s3(env, 'GET', '', [['prefix', key], ['uploads', '']], '');
+  if (list.status !== 200) throw new Error(`ListMultipartUploads : HTTP ${list.status}`);
+  let n = 0;
+  for (const m of list.text.matchAll(/<Upload>([\s\S]*?)<\/Upload>/g)) {
+    const k = xmlText(/<Key>([^<]*)<\/Key>/.exec(m[1])?.[1] || '');
+    const id = xmlText(/<UploadId>([^<]*)<\/UploadId>/.exec(m[1])?.[1] || '');
+    if (k !== key || !id) continue;
+    const r = await s3(env, 'DELETE', key, [['uploadId', id]], '');
+    if (r.status !== 204 && r.status !== 200) throw new Error(`AbortMultipartUpload (envoi non finalisé) : HTTP ${r.status}`);
+    n++;
+  }
+  return n;
 }
 
 /**
- * Envoie un fichier local vers R2 en multipart (parts de 16 Mo lues une à une). Renvoie l'adresse publique.
+ * Lecture comme le lecteur de l'app : requête Range « bytes=0-1 » sur l'adresse PUBLIQUE.
+ * OK si 206, Content-Type video/*, et taille totale (Content-Range) = `taille` (si donnée).
+ * @returns {Promise<{ ok: boolean, raison: string, status: number, type: string }>}
+ */
+export async function verifierLecture(url, taille = null) {
+  let res;
+  try { res = await fetch(url, { headers: { Range: 'bytes=0-1' } }); } catch { return { ok: false, raison: 'adresse publique injoignable', status: 0, type: '' }; }
+  await res.arrayBuffer().catch(() => null);
+  const type = res.headers.get('content-type') || '';
+  const total = Number((/\/(\d+)$/.exec(res.headers.get('content-range') || '') || [])[1]);
+  if (res.status !== 206) return { ok: false, raison: `lecture par plages refusée (HTTP ${res.status}, 206 attendu)`, status: res.status, type };
+  if (!/^video\//i.test(type)) return { ok: false, raison: `Content-Type « ${type || 'absent'} » (video/* attendu) : corriger avec corriger-type-r2.mjs`, status: res.status, type };
+  if (taille !== null && total !== taille) return { ok: false, raison: `taille annoncée ${Number.isFinite(total) ? total : '?'} différente de ${taille}`, status: res.status, type };
+  return { ok: true, raison: '', status: res.status, type };
+}
+
+/**
+ * Envoie un fichier local vers R2 en multipart (parts de 16 Mo lues une à une), avec Content-Type video/mp4.
+ * Renvoie l'adresse publique.
  * `reel` : autorise un point d'accès qui n'est pas local (vrai R2), seulement après verifierR2 + confirmation.
- * `apresPart` : appelé après chaque part (tests : simuler une interruption). En cas d'erreur, l'envoi multipart
- * est abandonné (aucune part orpheline) ; relancer le script reprend ce fichier depuis le début.
+ * `apresPart` : appelé après chaque part (tests : simuler une interruption).
+ * Avant de commencer : les envois non finalisés laissés sur CETTE clé par un essai précédent sont abandonnés.
+ * En cas d'erreur (part OU finalisation) : l'envoi en cours est abandonné ; relancer reprend ce fichier au début.
  */
 export async function envoyerVersR2(env, chemin, key, { reel = false, apresPart = null } = {}) {
   if (!reel && !isLocalHost(env.R2_ENDPOINT)) throw new Error('Refusé : R2 réel non autorisé sans --r2-reel (faux S3 local seulement).');
   const size = fs.statSync(chemin).size;
   const partSize = 16 * MIO;
-  const init = await s3(env, 'POST', key, [['uploads', '']], '');
+  await abandonnerEnvoisOuverts(env, key);
+  const init = await s3(env, 'POST', key, [['uploads', '']], '', { 'content-type': 'video/mp4' });
   const uploadId = /<UploadId>([^<]+)/.exec(init.text)?.[1];
   if (init.status !== 200 || !uploadId) throw new Error(`CreateMultipartUpload : HTTP ${init.status}`);
   const fd = fs.openSync(chemin, 'r');
@@ -285,8 +344,18 @@ export async function envoyerVersR2(env, chemin, key, { reel = false, apresPart 
     fs.closeSync(fd);
   }
   const xml = `<CompleteMultipartUpload>${parts.map((p) => `<Part><PartNumber>${p.n}</PartNumber><ETag>"${p.etag}"</ETag></Part>`).join('')}</CompleteMultipartUpload>`;
-  const done = await s3(env, 'POST', key, [['uploadId', uploadId]], xml);
-  if (done.status !== 200 || /<Error>/.test(done.text)) throw new Error(`CompleteMultipartUpload : HTTP ${done.status}`);
+  let done;
+  try {
+    done = await s3(env, 'POST', key, [['uploadId', uploadId]], xml);
+  } catch (err) {
+    await s3(env, 'DELETE', key, [['uploadId', uploadId]], '').catch(() => {});
+    throw new Error(`CompleteMultipartUpload : ${err.message}`);
+  }
+  // S3 peut répondre 200 avec une erreur dans le corps : les deux cas sont des échecs.
+  if (done.status !== 200 || /<Error>/.test(done.text)) {
+    await s3(env, 'DELETE', key, [['uploadId', uploadId]], '').catch(() => {});
+    throw new Error(`CompleteMultipartUpload : HTTP ${done.status}`);
+  }
   return `${env.R2_PUBLIC_BASE_URL.replace(/\/+$/, '')}/${key.split('/').map(encodeURIComponent).join('/')}`;
 }
 
@@ -436,7 +505,11 @@ function rapport({ args, exp, items, mapping, rw, verif }) {
       `| Déjà à la nouvelle adresse | ${rw.deja} |`, `| Valeur actuelle différente (non touchée) | ${rw.differents} |`,
       `| Enregistrement absent de PocketBase | ${rw.absents} |`, '');
   }
-  if (verif) L.push('## Vérification', '', `Nouvelles adresses lisibles et identiques à l’original (sha256) : **${verif.ok} / ${verif.total}**`, '');
+  if (verif) {
+    L.push('## Vérification', '', `Nouvelles adresses lisibles et identiques à l’original (sha256) ; vidéos R2 : lecture par plages (206) et Content-Type video/* : **${verif.ok} / ${verif.total}**`, '');
+    for (const e of verif.echecs || []) L.push(`- ✗ \`${e.sha}\` : ${e.raison}`);
+    if (verif.echecs?.length) L.push('');
+  }
   L.push('## Fichiers', '', '| sha256 (début) | Type | Taille | Références | Destination | Statut |', '|---|---|---|---|---|---|');
   for (const i of items) L.push(`| ${i.sha.slice(0, 12)} | ${i.type} | ${(i.tailleEnvoyee / MIO).toFixed(1)} Mo | ${i.refs.length} | ${i.destination}${i.raison ? ` (${i.raison})` : ''} | ${i.statut}${i.heic ? ` — HEIC : ${i.heic}` : ''} |`);
   L.push('', '## Adresses R2 existantes (non réécrites)', '',
@@ -500,17 +573,27 @@ export async function main(argv, opts = {}) {
     rw = await reecrire(pb, exp.refs, mapping, records);
     // Vérification : chaque nouvelle adresse (PocketBase ou R2 publique) se lit et a le contenu d'origine
     // (ou le JPEG converti).
-    verif = { ok: 0, total: 0 };
+    // Vidéos R2 : en plus, lecture par plages (206) et Content-Type video/* sur l'adresse publique, comme l'app.
+    verif = { ok: 0, total: 0, echecs: [] };
     for (const item of items.filter((i) => i.nouvelle)) {
       verif.total++;
       const local = item.destination === 'R2' || args.base === args.pb ? item.nouvelle : item.nouvelle.replace(args.base, args.pb);
       const res = await fetch(local);
       const buf = Buffer.from(await res.arrayBuffer());
-      if (res.status === 200 && crypto.createHash('sha256').update(buf).digest('hex') === crypto.createHash('sha256').update(fs.readFileSync(item.source)).digest('hex')) verif.ok++;
+      const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
+      let raison = '';
+      if (res.status !== 200) raison = `lecture complète : HTTP ${res.status}`;
+      else if (sha(buf) !== sha(fs.readFileSync(item.source))) raison = 'contenu différent de l’original';
+      else if (item.destination === 'R2') {
+        const l = await verifierLecture(item.nouvelle, fs.statSync(item.source).size);
+        if (!l.ok) raison = l.raison;
+      }
+      if (raison) { verif.echecs.push({ sha: item.sha.slice(0, 12), raison }); item.verification = raison; } else verif.ok++;
     }
     console.log(`Envoyés : ${items.filter((i) => i.statut === 'envoyé').length}, réutilisés : ${items.filter((i) => i.statut === 'réutilisé').length}, échecs : ${items.filter((i) => i.statut.startsWith('échec')).length}`);
     console.log(`Réécriture : ${rw.modifies} champs dans ${rw.enregistrements} enregistrements ; déjà faits ${rw.deja} ; différents ${rw.differents} ; absents ${rw.absents}`);
     console.log(`Vérification : ${verif.ok} / ${verif.total} adresses lisibles et identiques`);
+    for (const e of verif.echecs) console.log(`  ✗ ${e.sha} : ${e.raison}`);
   }
   rapport({ args, exp, items, mapping, rw, verif });
   console.log(`Rapport : ${path.join(OUT, 'migration-fichiers-rapport.md')}${mapping ? ` ; correspondances : ${path.join(OUT, 'fichiers-correspondance.csv')}` : ''}`);

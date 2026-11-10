@@ -13,7 +13,17 @@ import { FAUX_S3_ENV, s3Fetch } from './sigv4-node.mjs';
 const { check, done } = makeChecker();
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'chay-export-r2-'));
 process.env.EXPORT_BASE44 = DIR; // lu au chargement du module
-const { main, parseArgs, readEnvFile, verifierR2 } = await import('../scripts/migrer-fichiers.mjs');
+const { main: mainBrut, parseArgs, readEnvFile, verifierR2 } = await import('../scripts/migrer-fichiers.mjs');
+// Les suites enchaînées peuvent épuiser la limite de connexions superuser (10 / min) : la connexion (au tout début
+// de main, avant tout envoi) est alors retentée après une pause.
+const main = async (argv, opts) => {
+  for (let essai = 0; ; essai++) {
+    try { return await mainBrut(argv, opts); } catch (e) {
+      if (!/connexion superuser impossible \(HTTP 429\)/.test(e.message) || essai >= 8) throw e;
+      await new Promise((ok) => setTimeout(ok, 10000));
+    }
+  }
+};
 
 const env = readEnvFile(FAUX_S3_ENV);
 const BUCKET = env.R2_BUCKET;
@@ -42,6 +52,7 @@ const ARGS = ['--appliquer', '--avec-video', '--r2-reel', '--r2-env', FAUX_S3_EN
 const objet = async () => (await s3Fetch(env, 'HEAD', `/${BUCKET}/${KEY}`)).status;
 const ouverts = async () => (await s3Fetch(env, 'GET', `/${BUCKET}`, { query: [['uploads', ''], ['prefix', 'videos/migration/']] })).text.includes('<Upload>');
 const imagesEnBase = async () => (await http('GET', `/api/collections/FichierAdmin/records?perPage=5&filter=${q(`sha256 = "${sha(image)}"`)}`, su)).data?.items || [];
+const outil = (nom, query) => s3Fetch(env, 'POST', `/${BUCKET}/_faux/${nom}`, { query }); // pannes simulées du faux S3
 const silencieux = async (fn) => { const log = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = log; } };
 
 try {
@@ -87,17 +98,58 @@ try {
   check('interruption pendant la vidéo : vidéo en échec, image envoyée', /^échec/.test(st1.R2) && st1.FichierAdmin === 'envoyé', JSON.stringify(st1));
   check('interruption : envoi multipart abandonné, aucune part orpheline, pas d\'objet partiel', !(await ouverts()) && (await objet()) === 404);
 
+  console.log('\n■ (b) Échec de la finalisation (CompleteMultipartUpload)');
+  await outil('echec-complete', [['fois', '1']]);
+  const rb = await silencieux(() => main(ARGS, { confirmer: async () => true }));
+  const stb = Object.fromEntries(rb.items.map((i) => [i.destination, i.statut]));
+  check('finalisation refusée : vidéo comptée en échec (jamais « envoyé »)', /^échec : CompleteMultipartUpload/.test(stb.R2), JSON.stringify(stb));
+  check('finalisation refusée : envoi abandonné, aucun envoi ouvert, aucun objet', !(await ouverts()) && (await objet()) === 404);
+  check('finalisation refusée : vérification sans la vidéo (rien à vérifier pour elle)', rb.verif.total === 1 && rb.verif.ok === 1, JSON.stringify(rb.verif));
+
+  console.log('\n■ (c) Envoi non finalisé laissé par un essai précédent (Ctrl+C, coupure)');
+  const orphelin = await s3Fetch(env, 'POST', `/${BUCKET}/${KEY}`, { query: [['uploads', '']] });
+  const autreCle = `videos/autre/${hex24()}.mp4`;
+  const autre = await s3Fetch(env, 'POST', `/${BUCKET}/${autreCle}`, { query: [['uploads', '']] });
+  check('préparation : un envoi ouvert sur la clé de la vidéo, un autre sur une autre clé', orphelin.status === 200 && autre.status === 200 && (await ouverts()));
+
   const r2 = await silencieux(() => main(ARGS, { confirmer: async () => true }));
   const st2 = Object.fromEntries(r2.items.map((i) => [i.destination, i.statut]));
   check('reprise : la vidéo est envoyée, l\'image déjà présente est réutilisée', st2.R2 === 'envoyé' && st2.FichierAdmin === 'réutilisé', JSON.stringify(st2));
-  check('reprise : adresses relues identiques à l\'original', r2.verif.ok === r2.verif.total && r2.verif.total === 2, JSON.stringify(r2.verif));
+  check('reprise : l\'envoi orphelin de CETTE clé est abandonné', !(await ouverts()));
+  const autreId = /<UploadId>([^<]+)/.exec(autre.text)[1];
+  const autreListe = (await s3Fetch(env, 'GET', `/${BUCKET}`, { query: [['uploads', ''], ['prefix', autreCle]] })).text;
+  check('reprise : l\'envoi ouvert d\'une AUTRE clé n\'est pas touché', autreListe.includes(autreId));
+  await s3Fetch(env, 'DELETE', `/${BUCKET}/${autreCle}`, { query: [['uploadId', autreId]] });
+  check('reprise : adresses relues identiques à l\'original, vidéo lisible par plages', r2.verif.ok === r2.verif.total && r2.verif.total === 2, JSON.stringify(r2.verif));
   const pub = Buffer.from(await (await fetch(`${env.R2_PUBLIC_BASE_URL}/${KEY}`)).arrayBuffer());
   check('vidéo complète dans R2 (contenu identique)', sha(pub) === sha(video));
+
+  console.log('\n■ (a) Content-Type de l\'objet');
+  check('objet R2 en « video/mp4 » (ni octet-stream ni text/plain)', (await s3Fetch(env, 'HEAD', `/${BUCKET}/${KEY}`)).headers.get('content-type') === 'video/mp4');
+
+  console.log('\n■ Vérification : lecture par plages et type, comme le lecteur de l\'app');
+  await outil('sans-plages', [['actif', '1']]);
+  const rp = await silencieux(() => main(ARGS, { confirmer: async () => true }));
+  await outil('sans-plages', [['actif', '0']]);
+  check('serveur sans lecture par plages : vidéo NON vérifiée (raison donnée)',
+    rp.verif.ok === rp.verif.total - 1 && /lecture par plages refusée \(HTTP 200/.test(rp.verif.echecs[0]?.raison || ''), JSON.stringify(rp.verif));
+  const copie = (type) => s3Fetch(env, 'PUT', `/${BUCKET}/${KEY}`, { headers: { 'content-type': type, 'x-amz-copy-source': `/${BUCKET}/${KEY}`, 'x-amz-metadata-directive': 'REPLACE' } });
+  const mauvaisType = await copie('application/octet-stream');
+  const rt = await silencieux(() => main(ARGS, { confirmer: async () => true }));
+  check('objet en octet-stream : vidéo réutilisée mais NON vérifiée, avec le conseil corriger-type-r2.mjs',
+    mauvaisType.status === 200 && rt.items.find((i) => i.destination === 'R2')?.statut === 'réutilisé'
+      && /Content-Type « application\/octet-stream ».*corriger-type-r2\.mjs/.test(rt.verif.echecs[0]?.raison || ''), JSON.stringify(rt.verif));
+  const rapportMd = fs.readFileSync(path.join(DIR, '_outil', 'pb', 'migration-fichiers-rapport.md'), 'utf8');
+  check('rapport : la raison de l\'échec de vérification est écrite', /✗ `[0-9a-f]{12}` : Content-Type/.test(rapportMd));
+  await copie('video/mp4');
 
   const r3 = await silencieux(() => main(ARGS, { confirmer: async () => true }));
   check('relance : rien n\'est renvoyé (vidéo et image réutilisées), une seule image en base',
     r3.items.every((i) => i.statut === 'réutilisé') && (await imagesEnBase()).length === 1, JSON.stringify(r3.items.map((i) => i.statut)));
+  check('relance : tout est vérifié (2 / 2)', r3.verif.ok === 2 && r3.verif.total === 2, JSON.stringify(r3.verif));
 } finally {
+  await outil('sans-plages', [['actif', '0']]).catch(() => {});
+  await outil('echec-complete', [['fois', '0']]).catch(() => {});
   for (const r of await imagesEnBase()) await http('DELETE', `/api/collections/FichierAdmin/records/${r.id}`, su);
   await s3Fetch(env, 'DELETE', `/${BUCKET}/${KEY}`);
   fs.rmSync(DIR, { recursive: true, force: true });

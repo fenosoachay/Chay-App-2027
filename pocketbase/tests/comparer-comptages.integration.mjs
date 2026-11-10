@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { BASE, http, loadCreds, login, makeChecker } from './lib.mjs';
+import { BASE, http, loadCreds, login, makeChecker, sleep } from './lib.mjs';
 import { comparer, lireComptesExport, tableau } from '../scripts/comparer-comptages.mjs';
 
 const { check, done } = makeChecker();
@@ -23,7 +23,16 @@ const comptes = {
 console.log('\n■ Comparaison (bac à sable)');
 const appels = [];
 const espion = (url, init = {}) => { appels.push(String(init.method || 'GET').toUpperCase()); return fetch(url, init); };
-const { lignes, ecarts } = await comparer({ pbUrl: BASE, email: creds.email, password: creds.password, comptes, fetchImpl: espion });
+// Les suites précédentes peuvent avoir épuisé la limite de connexions superuser (10 / min) : attendre puis réessayer.
+let resultat;
+for (let essai = 0; ; essai++) {
+  appels.length = 0;
+  try { resultat = await comparer({ pbUrl: BASE, email: creds.email, password: creds.password, comptes, fetchImpl: espion }); break; } catch (e) {
+    if (!/HTTP 429/.test(e.message) || essai >= 8) throw e;
+    await sleep(10000);
+  }
+}
+const { lignes, ecarts } = resultat;
 const l = Object.fromEntries(lignes.map((x) => [x.entite, x]));
 check('User -> collection users : identique', l.User.collection === 'users' && l.User.etat === 'identique' && l.User.ecart === 0);
 check('Announcement : identique', l.Announcement.etat === 'identique');
@@ -50,11 +59,17 @@ try {
   check('lecture de counts.json (format de l\'export)', lireComptesExport(f).comptes.Faq === comptes.Faq);
   let sortie = '';
   let code = 0;
-  try {
-    sortie = execFileSync(process.execPath, ['pocketbase/scripts/comparer-comptages.mjs', '--counts', f], {
-      env: { ...process.env, PB_URL: BASE, PB_EMAIL: creds.email, PB_PASSWORD: creds.password }, encoding: 'utf8',
-    });
-  } catch (e) { sortie = e.stdout || ''; code = e.status; }
+  for (let essai = 0; essai < 8; essai++) {
+    let erreur = '';
+    try {
+      sortie = execFileSync(process.execPath, ['pocketbase/scripts/comparer-comptages.mjs', '--counts', f], {
+        env: { ...process.env, PB_URL: BASE, PB_EMAIL: creds.email, PB_PASSWORD: creds.password }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      code = 0;
+    } catch (e) { sortie = e.stdout || ''; code = e.status; erreur = String(e.stderr || ''); }
+    if (code !== 2 || !/HTTP 429/.test(erreur)) break; // limite de connexions : attendre puis réessayer
+    await sleep(10000);
+  }
   check('code de sortie 1 (écarts présents) et tableau affiché', code === 1 && /4 entités : 2 identiques, 2 avec un écart/.test(sortie), `code ${code}`);
   check('mot de passe jamais affiché', !sortie.includes(creds.password));
 } finally {

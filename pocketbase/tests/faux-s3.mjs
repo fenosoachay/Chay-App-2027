@@ -5,7 +5,16 @@
 // - REFUSE toute requête mal signée (SigV4 recalculée avec node:crypto : en-tête Authorization
 //   ou URL présignée, date, expiration, région, clé d'accès, empreinte du corps) ;
 // - opérations : CreateMultipartUpload, UploadPart, ListParts, CompleteMultipartUpload,
-//   AbortMultipartUpload, ListMultipartUploads, GetObject / HeadObject (Range), DeleteObject ;
+//   AbortMultipartUpload, ListMultipartUploads, GetObject / HeadObject (Range), DeleteObject,
+//   CopyObject (x-amz-copy-source, x-amz-metadata-directive COPY / REPLACE, 5 Gio au plus) ;
+// - comme R2 : objet créé sans Content-Type -> « application/octet-stream » ; en-têtes de copie à signer ;
+// - outils de TEST (requêtes signées) : POST /<bucket>/_faux/echec-complete?fois=N,
+//   /_faux/echec-copie?fois=N, /_faux/sans-plages?actif=1|0 (lecture sans Range ni Accept-Ranges),
+//   /_faux/compression?actif=1|0 (comme R2 : type texte + « Accept-Encoding: gzip » sans Range -> réponse
+//   compressée à la volée, « Content-Encoding: gzip », SANS Content-Length, y compris au HEAD),
+//   /_faux/sans-taille?actif=1|0 (aucune taille annoncée : ni Content-Length ni Content-Range, Range ignoré) ;
+// - CopyObject REPLACE conserve les en-têtes fournis : Cache-Control, Content-Disposition, Content-Language,
+//   Content-Encoding (STOCKÉ, renvoyé sur toutes les réponses, y compris 206) et x-amz-meta-* ;
 // - lecture publique non signée sous /public/<bucket>/<clé> (simule le domaine public R2) ;
 // - CORS avec ETag exposé (comme la configuration R2 à prévoir).
 // Lancement : node pocketbase/tests/faux-s3.mjs
@@ -14,6 +23,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import zlib from 'node:zlib';
 import { loadFauxS3Env, sha256Hex, signature } from './sigv4-node.mjs';
 
 const env = loadFauxS3Env();
@@ -29,6 +39,11 @@ fs.mkdirSync(OBJECTS, { recursive: true });
 fs.mkdirSync(UPLOADS, { recursive: true });
 
 const MIN_PART = 5 * 1024 * 1024;
+const MAX_COPY = 5 * 1024 * 1024 * 1024; // CopyObject : 5 Gio au plus (comme S3 / R2)
+// Pannes simulées (outils de test, en mémoire) : remises à zéro au redémarrage.
+const FAUX = { echecComplete: 0, echecCopie: 0, sansPlages: false, compression: false, sansTaille: false };
+const ENTETES_COPIE = ['cache-control', 'content-disposition', 'content-language', 'content-encoding'];
+const COMPRESSIBLE = /^(text\/|application\/(json|xml|javascript))/i;
 const MAX_SKEW_MS = 15 * 60 * 1000;
 const TYPES = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska' };
 
@@ -135,7 +150,21 @@ function serveObject(req, res, key) {
   if (!fs.existsSync(`${f}.json`)) return s3Error(res, 404, 'NoSuchKey', 'objet introuvable');
   const meta = readJson(`${f}.json`);
   const headers = { 'Content-Type': meta.contentType || TYPES[key.split('.').pop()] || 'application/octet-stream', ETag: `"${meta.etag}"`, 'Accept-Ranges': 'bytes', 'Last-Modified': new Date(meta.created).toUTCString() };
-  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  for (const [n, v] of Object.entries(meta.entetes || {})) headers[n] = v; // en-têtes stockés (copie REPLACE)
+  if (FAUX.sansPlages) delete headers['Accept-Ranges'];
+  // Comme R2 : compression à la volée d'un type texte si le client accepte gzip et ne demande pas de plage.
+  // La taille disparaît alors (réponse en flux), même au HEAD ; le Content-Encoding n'appartient pas à l'objet.
+  const compresser = FAUX.compression && !req.headers.range && /gzip/i.test(req.headers['accept-encoding'] || '')
+    && COMPRESSIBLE.test(headers['Content-Type']) && !(meta.entetes || {})['content-encoding'];
+  if (compresser || FAUX.sansTaille) {
+    if (compresser) headers['Content-Encoding'] = 'gzip';
+    delete headers['Accept-Ranges'];
+    res.writeHead(200, headers); // ni Content-Length ni Content-Range (envoi en flux)
+    if (req.method === 'HEAD' || meta.size === 0) return res.end();
+    const flux = fs.createReadStream(`${f}.bin`);
+    return compresser ? flux.pipe(zlib.createGzip()).pipe(res) : flux.pipe(res);
+  }
+  const range = FAUX.sansPlages ? null : /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
   let start = 0;
   let end = meta.size - 1;
   let status = 200;
@@ -187,6 +216,12 @@ async function handle(req, res) {
     fs.writeFileSync(`${d}/meta.json`, JSON.stringify(meta));
     return send(res, 200, '<Ok/>');
   }
+  // Outils de test : pannes simulées.
+  if (req.method === 'POST' && key === '_faux/echec-complete') { FAUX.echecComplete = Number(q.fois || 1); return send(res, 200, '<Ok/>'); }
+  if (req.method === 'POST' && key === '_faux/echec-copie') { FAUX.echecCopie = Number(q.fois || 1); return send(res, 200, '<Ok/>'); }
+  if (req.method === 'POST' && key === '_faux/sans-plages') { FAUX.sansPlages = q.actif === '1'; return send(res, 200, '<Ok/>'); }
+  if (req.method === 'POST' && key === '_faux/compression') { FAUX.compression = q.actif === '1'; return send(res, 200, '<Ok/>'); }
+  if (req.method === 'POST' && key === '_faux/sans-taille') { FAUX.sansTaille = q.actif === '1'; return send(res, 200, '<Ok/>'); }
 
   // ListMultipartUploads : GET /<bucket>?uploads
   if (req.method === 'GET' && !key && 'uploads' in q) {
@@ -244,6 +279,7 @@ async function handle(req, res) {
   if (req.method === 'POST' && q.uploadId) {
     const body = await readBody(req);
     if (!checkPayload(res, auth.payloadHash, body)) return undefined;
+    if (FAUX.echecComplete > 0) { FAUX.echecComplete--; return s3Error(res, 500, 'InternalError', 'échec de finalisation simulé'); }
     const wanted = [...body.toString('utf8').matchAll(/<Part>\s*<PartNumber>(\d+)<\/PartNumber>\s*<ETag>([^<]*)<\/ETag>\s*<\/Part>/g)]
       .map((m) => ({ n: Number(m[1]), etag: m[2].replace(/&quot;|"/g, '') }));
     if (!wanted.length) return s3Error(res, 400, 'MalformedXML', 'aucune part');
@@ -263,7 +299,8 @@ async function handle(req, res) {
     await new Promise((ok) => ws.end(ok));
     const etag = `${crypto.createHash('md5').update(Buffer.concat(metas.map((m) => Buffer.from(m.etag, 'hex')))).digest('hex')}-${metas.length}`;
     const size = metas.reduce((s, m) => s + m.size, 0);
-    fs.writeFileSync(`${out}.json`, JSON.stringify({ key, size, etag, contentType: uploadMeta.contentType || TYPES[key.split('.').pop()] || '', created: Date.now() }));
+    // Comme R2 : sans Content-Type à la création, l'objet est « application/octet-stream » (pas de déduction).
+    fs.writeFileSync(`${out}.json`, JSON.stringify({ key, size, etag, contentType: uploadMeta.contentType || 'application/octet-stream', created: Date.now() }));
     fs.rmSync(d, { recursive: true, force: true });
     return send(res, 200, `<CompleteMultipartUploadResult><Location>${xmlEsc(`${env.R2_ENDPOINT}/${env.R2_BUCKET}/${key}`)}</Location><Bucket>${env.R2_BUCKET}</Bucket><Key>${xmlEsc(key)}</Key><ETag>"${etag}"</ETag></CompleteMultipartUploadResult>`);
   }
@@ -273,6 +310,43 @@ async function handle(req, res) {
     fs.rmSync(d, { recursive: true, force: true });
     res.writeHead(204);
     return res.end();
+  }
+
+  // CopyObject : PUT /<bucket>/<clé> avec x-amz-copy-source (copie côté serveur, sans renvoyer le contenu).
+  if (req.method === 'PUT' && !q.uploadId && req.headers['x-amz-copy-source'] !== undefined) {
+    const signed = String((/SignedHeaders=([^,]+)/.exec(req.headers.authorization || '') || [])[1] || '').split(';');
+    for (const n of ['x-amz-copy-source', 'x-amz-metadata-directive', 'content-type']) {
+      if (req.headers[n] !== undefined && !signed.includes(n)) return s3Error(res, 403, 'AccessDenied', `en-tête ${n} non signé`);
+    }
+    const body = await readBody(req);
+    if (!checkPayload(res, auth.payloadHash, body)) return undefined;
+    if (FAUX.echecCopie > 0) { FAUX.echecCopie--; return s3Error(res, 500, 'InternalError', 'échec de copie simulé'); }
+    const src = decodeURIComponent(String(req.headers['x-amz-copy-source']).split('?')[0]).replace(/^\/+/, '');
+    const [srcBucket, ...rest] = src.split('/');
+    const srcKey = rest.join('/');
+    if (srcBucket !== env.R2_BUCKET) return s3Error(res, 404, 'NoSuchBucket', 'bucket source inconnu');
+    const sf = objFile(srcKey);
+    if (!fs.existsSync(`${sf}.json`)) return s3Error(res, 404, 'NoSuchKey', 'objet source introuvable');
+    const smeta = readJson(`${sf}.json`);
+    if (smeta.size > MAX_COPY) return s3Error(res, 400, 'InvalidRequest', 'copie limitée à 5 Gio');
+    const directive = String(req.headers['x-amz-metadata-directive'] || 'COPY').toUpperCase();
+    if (!['COPY', 'REPLACE'].includes(directive)) return s3Error(res, 400, 'InvalidArgument', 'x-amz-metadata-directive invalide');
+    if (srcKey === key && directive !== 'REPLACE') return s3Error(res, 400, 'InvalidRequest', 'copie d’un objet sur lui-même sans rien changer');
+    const out = objFile(key);
+    if (srcKey !== key) fs.copyFileSync(`${sf}.bin`, `${out}.bin`);
+    const md5 = crypto.createHash('md5');
+    for await (const c of fs.createReadStream(`${out}.bin`)) md5.update(c);
+    const etag = md5.digest('hex');
+    const contentType = directive === 'REPLACE' ? (req.headers['content-type'] || 'application/octet-stream') : smeta.contentType;
+    // REPLACE : seuls les en-têtes fournis sont gardés (comme S3) ; COPY : ceux de la source.
+    let entetes = smeta.entetes || {};
+    if (directive === 'REPLACE') {
+      entetes = {};
+      for (const [n, v] of Object.entries(req.headers)) if (ENTETES_COPIE.includes(n) || n.startsWith('x-amz-meta-')) entetes[n] = v;
+    }
+    const created = Date.now();
+    fs.writeFileSync(`${out}.json`, JSON.stringify({ key, size: smeta.size, etag, contentType, created, entetes }));
+    return send(res, 200, `<CopyObjectResult><LastModified>${new Date(created).toISOString()}</LastModified><ETag>"${etag}"</ETag></CopyObjectResult>`);
   }
 
   if (req.method === 'GET' || req.method === 'HEAD') return serveObject(req, res, key);
