@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// ── Signature release ─────────────────────────────────────────────────────────
+// Fichier HORS dépôt (jamais dans git) : C:\Secrets-Chay\keystore.properties, ou le chemin donné par la variable
+// d'environnement CHAY_KEYSTORE_PROPERTIES. Clés attendues : storeFile, storePassword, keyAlias, keyPassword.
+// Les valeurs ne sont lues que par Gradle au moment de la construction ; elles ne sont jamais affichées ici.
+def keystorePropertiesFile = file(System.getenv('CHAY_KEYSTORE_PROPERTIES') ?: 'C:/Secrets-Chay/keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+def releaseSigningReady = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].every { keystoreProperties.getProperty(it) }
+
 android {
     namespace "io.chay.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +18,8 @@ android {
         applicationId "io.chay.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.2"
+        versionCode 4
+        versionName "1.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +27,40 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile file(keystoreProperties.getProperty('storeFile'))
+                storePassword keystoreProperties.getProperty('storePassword')
+                keyAlias keystoreProperties.getProperty('keyAlias')
+                keyPassword keystoreProperties.getProperty('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            debuggable false
+            jniDebuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
         }
+    }
+}
+
+// Une construction release sans signature valide s'arrête (jamais d'APK release non signé ou signé en debug).
+gradle.taskGraph.whenReady { graph ->
+    def releaseDemandee = graph.allTasks.any { it.project == project && it.name.toLowerCase().contains('release') }
+    if (releaseDemandee && !releaseSigningReady) {
+        throw new GradleException(
+            "Signature release : fichier ${keystorePropertiesFile} absent ou incomplet " +
+            "(clés attendues : storeFile, storePassword, keyAlias, keyPassword). Voir docs/android/SIGNATURE-RELEASE.md."
+        )
+    }
+    if (releaseDemandee && !file(keystoreProperties.getProperty('storeFile')).exists()) {
+        throw new GradleException("Signature release : le fichier storeFile indiqué dans ${keystorePropertiesFile} est introuvable.")
     }
 }
 
