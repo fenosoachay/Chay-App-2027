@@ -32,3 +32,23 @@ keystore.properties
 
 # Éditeurs (Android Studio, IntelliJ)
 .idea/
+
+# Secrets, journaux et données de la migration : jamais dans git (normalement hors du dépôt : C:\Secrets-Chay,
+# C:\Export-Base44, C:\Sauvegardes-Chay) ; ces règles protègent d'une copie par erreur dans le dépôt.
+*.env
+!.env.example
+*-secret.txt
+secrets.txt
+id_rsa*
+id_ed25519*
+journal-invitations*
+_invitations/
+exclure*.txt
+*.zip
+*.tar.gz
+/counts.json
+/User.json
+fichiers-correspondance.csv
+fichiers-telecharges.csv
+migration-fichiers-rapport.md
+adresses-r2-rapport.md
