@@ -23,8 +23,10 @@
 //   --intervalle <s>         secondes entre deux envois (défaut 8 : sous la limite de 10 / min / IP de PocketBase)
 //   --export <dossier>       dossier de l'export Base44 (défaut : EXPORT_BASE44 ou C:\Export-Base44) ; lit User.json
 //   --journal <fichier>      journal des envois (défaut : <export>\_invitations\journal-invitations.jsonl) ; HORS du dépôt
-//   --duree-lien <72h|30min> AUTRE MODE : lit puis règle la durée de validité du lien (users → passwordResetToken),
-//                            sans rien envoyer ; simulation sans --appliquer. Le secret du jeton n'est jamais lu.
+//   --duree-lien <72h|30min> AUTRE MODE : lit puis règle la durée de validité du lien (users → passwordResetToken)
+//                            ET le texte de l'e-mail (resetPasswordTemplate : « 72 heures » / « 30 minutes », lien de
+//                            l'APK) ; affiche le texte ; sans rien envoyer ; simulation sans --appliquer.
+//                            Le secret du jeton n'est jamais lu. (configurer-production.mjs remet la version 30 minutes.)
 //
 // Reprise : chaque envoi réussi est écrit aussitôt dans le journal (id du compte + date de création du compte dans
 // PocketBase) ; une relance saute ces comptes. Un nouvel import (base restaurée) donne une autre date de création :
@@ -88,6 +90,33 @@ export function dureeEnSecondes(txt) {
   return s;
 }
 const lisible = (s) => (s % 3600 === 0 ? `${s / 3600} h` : `${Math.round(s / 60)} min`);
+
+/** Durée écrite dans l'e-mail : « 72 heures », « 1 heure », « 30 minutes ». */
+export function dureeEnTexte(s) {
+  if (s % 3600 === 0) { const h = s / 3600; return `${h} heure${h > 1 ? 's' : ''}`; }
+  const m = Math.round(s / 60);
+  return `${m} minute${m > 1 ? 's' : ''}`;
+}
+
+export const APK_URL = 'https://membres.chay.fr/telechargements/chay.apk';
+
+/**
+ * Gabarit PocketBase de l'e-mail « Choisir un nouveau mot de passe » ({APP_URL} et {TOKEN} : variables PocketBase).
+ * La durée annoncée suit celle du lien ; pocketbase/config/users-auth.json contient la version 30 minutes.
+ */
+export function gabaritReinitialisation(secondes) {
+  return {
+    subject: 'Choisir un nouveau mot de passe — Église Chay',
+    body: '<p>Bonjour,</p><p>Pour choisir un nouveau mot de passe, ouvrez ce lien :</p>'
+      + '<p><a href="{APP_URL}/reset-password?token={TOKEN}">Choisir mon mot de passe</a></p>'
+      + `<p>Ce lien ne fonctionne qu’une seule fois et expire au bout de ${dureeEnTexte(secondes)}. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message : votre mot de passe actuel reste valable.</p>`
+      + `<p>Application Android : <a href="${APK_URL}">${APK_URL}</a><br>Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.</p>`
+      + '<p>— L’équipe de l’Église Chay</p>',
+  };
+}
+
+/** Texte brut de l'e-mail (aperçu à l'écran ; aucun envoi). */
+export const texteBrut = (html) => html.replace(/<br>/g, '\n').replace(/<\/p><p>/g, '\n\n').replace(/<[^>]+>/g, '').trim();
 
 /** Liste d'exclusion : adresses ou noms, un par ligne, sans tenir compte des majuscules. */
 export function lireExclusions(fichier) {
@@ -184,19 +213,31 @@ async function lireUsers(call) {
   }
 }
 
-/** Mode --duree-lien : lit puis règle users.passwordResetToken.duration (le secret n'est ni lu ni modifié). */
+/**
+ * Mode --duree-lien : lit puis règle ENSEMBLE la durée du lien (users.passwordResetToken.duration) et le texte de
+ * l'e-mail (users.resetPasswordTemplate), qui annonce cette durée. Le secret du jeton n'est ni lu ni modifié.
+ */
 async function regleDuree(args, call, log) {
   const voulu = dureeEnSecondes(args.dureeLien);
-  const r = await call('GET', '/api/collections/users?fields=passwordResetToken.duration');
+  const gabarit = gabaritReinitialisation(voulu);
+  const r = await call('GET', '/api/collections/users?fields=passwordResetToken.duration,resetPasswordTemplate');
   if (r.status !== 200) throw new Error(`lecture de la collection users impossible (HTTP ${r.status})`);
   const actuel = r.data.passwordResetToken.duration;
+  const texteOk = r.data.resetPasswordTemplate?.subject === gabarit.subject && r.data.resetPasswordTemplate?.body === gabarit.body;
   log(`Durée du lien de réinitialisation : ${lisible(actuel)} (${actuel} s) -> voulue : ${lisible(voulu)} (${voulu} s)`);
-  if (actuel === voulu) { log('Rien à changer.'); return { actuel, voulu, change: false }; }
-  if (!args.appliquer) { log('SIMULATION : rien n\'est modifié (ajoutez --appliquer).'); return { actuel, voulu, change: false }; }
-  const p = await call('PATCH', '/api/collections/users?fields=passwordResetToken.duration', { passwordResetToken: { duration: voulu } });
-  if (p.status !== 200 || p.data?.passwordResetToken?.duration !== voulu) throw new Error(`modification refusée (HTTP ${p.status})`);
-  log(`Fait : ${lisible(voulu)}.`);
-  return { actuel, voulu, change: true };
+  log(`Texte de l'e-mail : ${texteOk ? 'déjà à jour' : `à mettre à jour (annonce « ${dureeEnTexte(voulu)} »)`}`);
+  log('');
+  log(`Objet : ${gabarit.subject}`);
+  log(texteBrut(gabarit.body));
+  log('');
+  if (actuel === voulu && texteOk) { log('Rien à changer.'); return { actuel, voulu, change: false, gabarit }; }
+  if (!args.appliquer) { log('SIMULATION : rien n\'est modifié (ajoutez --appliquer).'); return { actuel, voulu, change: false, gabarit }; }
+  const p = await call('PATCH', '/api/collections/users?fields=passwordResetToken.duration,resetPasswordTemplate', { passwordResetToken: { duration: voulu }, resetPasswordTemplate: gabarit });
+  if (p.status !== 200 || p.data?.passwordResetToken?.duration !== voulu || p.data?.resetPasswordTemplate?.body !== gabarit.body) {
+    throw new Error(`modification refusée (HTTP ${p.status})`);
+  }
+  log(`Fait : lien valable ${lisible(voulu)}, e-mail mis à jour (« ${dureeEnTexte(voulu)} »).`);
+  return { actuel, voulu, change: true, gabarit };
 }
 
 /**
@@ -229,7 +270,9 @@ export async function main(argv = process.argv.slice(2), opts = {}) {
 
   // Contexte non secret : serveur d'envoi et durée du lien (filtrés côté serveur : aucun mot de passe transmis).
   const smtp = (await call('GET', '/api/settings?fields=smtp.host,smtp.port,smtp.enabled')).data?.smtp || {};
-  const duree = (await call('GET', '/api/collections/users?fields=passwordResetToken.duration')).data?.passwordResetToken?.duration;
+  const usersCol = (await call('GET', '/api/collections/users?fields=passwordResetToken.duration,resetPasswordTemplate.body')).data || {};
+  const duree = usersCol.passwordResetToken?.duration;
+  const texteCoherent = duree ? String(usersCol.resetPasswordTemplate?.body || '').includes(`expire au bout de ${dureeEnTexte(duree)}`) : false;
 
   const compte = {};
   for (const l of lignes) compte[l.statut] = (compte[l.statut] || 0) + 1;
@@ -240,6 +283,7 @@ export async function main(argv = process.argv.slice(2), opts = {}) {
   log(`À inviter : ${aInviter.length}${cible.length < aInviter.length ? ` ; ce passage : ${cible.length} (--limite)` : ''}`);
   for (const l of cible) log(`  ${masquer(l.u.email)}`);
   if (args.appliquer && duree && duree < 86400) log(`  ⚠ le lien n'est valable que ${lisible(duree)} : le jour J, passez d'abord à 72 h (--duree-lien 72h).`);
+  if (duree && !texteCoherent) log(`  ⚠ le texte de l'e-mail n'annonce pas « ${dureeEnTexte(duree)} » : relancez --duree-lien ${duree % 3600 === 0 ? `${duree / 3600}h` : `${Math.round(duree / 60)}min`} --appliquer.`);
 
   const res = { lignes, envoyes: 0, echecs: 0, attentes429: 0, aInviter: aInviter.length };
   if (!args.appliquer) { log('SIMULATION : aucun e-mail envoyé (ajoutez --appliquer).'); return res; }

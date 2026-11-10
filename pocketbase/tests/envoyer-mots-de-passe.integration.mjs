@@ -45,6 +45,8 @@ const mails = (u, since) => (fs.existsSync(MAIL_DIR) ? fs.readdirSync(MAIL_DIR) 
   .filter((m) => ((/^X-Faux-Smtp-Rcpt: ([^\r\n]*)/m.exec(m.raw) || [])[1] || '').split(', ').includes(u.email));
 const attendreMails = async (u, since, n) => { for (let i = 0; i < 50 && mails(u, since).length < n; i++) await sleep(200); return mails(u, since); };
 const duree = async () => (await http('GET', '/api/collections/users?fields=passwordResetToken.duration', su)).data.passwordResetToken.duration;
+const gabarit = async () => (await http('GET', '/api/collections/users?fields=resetPasswordTemplate', su)).data.resetPasswordTemplate;
+let gabarit0 = null;
 
 const T0 = Date.now();
 try {
@@ -119,17 +121,31 @@ try {
   const lim = await run(['--export', DIR, '--journal', path.join(DIR, 'autre.jsonl'), '--exclure', EXCL, '--limite', '1']);
   check('--limite 1 : 3 à inviter, 1 pour ce passage (simulation)', lim.aInviter === 3 && sortie.some((l) => /ce passage : 1 \(--limite\)/.test(l)));
 
-  console.log('\n■ Durée de validité du lien (--duree-lien)');
+  console.log('\n■ Durée de validité du lien et texte de l\'e-mail (--duree-lien)');
   const d0 = await duree();
+  gabarit0 = await gabarit();
+  sortie.length = 0;
   await run(['--duree-lien', '72h']);
-  check('simulation : durée inchangée', (await duree()) === d0);
+  check('simulation : durée et texte inchangés, texte « 72 heures » affiché',
+    (await duree()) === d0 && JSON.stringify(await gabarit()) === JSON.stringify(gabarit0) && sortie.some((l) => /expire au bout de 72 heures/.test(l)));
   await run(['--duree-lien', '72h', '--appliquer']);
   check('--appliquer : 72 h (259 200 s)', (await duree()) === 259200);
+  const g72 = await gabarit();
+  check('--appliquer : l\'e-mail annonce « 72 heures », avec le lien de l\'APK et la consigne Android',
+    /expire au bout de 72 heures\./.test(g72.body) && g72.body.includes('https://membres.chay.fr/telechargements/chay.apk')
+      && g72.body.includes("Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.") && !/30 minutes/.test(g72.body));
+  const T3 = Date.now();
+  // Compte qui n'a encore reçu aucun lien : PocketBase ne renvoie pas d'e-mail à un compte qui vient d'en recevoir un.
+  const apercu = await run(['--journal', path.join(DIR, 'apercu.jsonl'), '--un-seul', C.exclMail.email, '--appliquer'], { confirmer: async () => true });
+  const recu = decodeMail((await attendreMails(C.exclMail, T3, 1))[0]?.raw || '');
+  check('e-mail réellement reçu (faux SMTP) : « 72 heures », lien de l\'APK, consigne Android',
+    apercu.envoyes === 1 && /72 heures/.test(recu) && recu.includes('https://membres.chay.fr/telechargements/chay.apk') && recu.includes('Si Android refuse'));
   const jeton = tokenFrom(texte);
   const conf = await http('POST', '/api/collections/users/confirm-password-reset', { body: { token: jeton, password: `${MDP}x`, passwordConfirm: `${MDP}x` } });
   check('secret du jeton conservé : un lien envoyé avant le changement reste valable', conf.status === 204, `HTTP ${conf.status}`);
   await run(['--duree-lien', '30min', '--appliquer']);
   check('retour à 30 min (1 800 s)', (await duree()) === 1800);
+  check('retour à 30 min : l\'e-mail annonce « 30 minutes »', /expire au bout de 30 minutes\./.test((await gabarit()).body));
   check('durée invalide : refusée', await echoue(run(['--duree-lien', '72']), /72h ou 30min/));
 
   console.log('\n■ Confidentialité de la sortie');
@@ -139,6 +155,7 @@ try {
   check('aucun mot de passe affiché', !tout.includes(suCreds.password) && !tout.includes(MDP));
 } finally {
   if ((await duree()) !== 1800) await http('PATCH', '/api/collections/users', { ...su, body: { passwordResetToken: { duration: 1800 } } });
+  if (gabarit0) await http('PATCH', '/api/collections/users', { ...su, body: { resetPasswordTemplate: gabarit0 } }); // texte d'origine du bac à sable
   for (const u of Object.values(C)) await http('DELETE', `/api/collections/users/records/${u.id}`, su);
   fs.rmSync(DIR, { recursive: true, force: true });
   console.log('\n(nettoyage effectué)');
