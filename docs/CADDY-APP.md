@@ -7,7 +7,7 @@ Configuration **proposée, installée nulle part**. Le build web statique (`dist
 ```sh
 # sur la machine de build
 VITE_BACKEND=pocketbase VITE_PB_URL=https://api.chay.fr VITE_PUBLIC_APP_URL=https://membres.chay.fr VITE_VAPID_PUBLIC_KEY=<clé publique VAPID> npm run build
-# copie sur le serveur (dossier en lecture seule pour Caddy)
+# copie sur le serveur (dossier en lecture seule pour Caddy) ; ne touche que dist/, jamais /srv/chay-app/telechargements
 rsync -a --delete dist/ chay@serveur:/srv/chay-app/dist/
 ```
 
@@ -33,9 +33,33 @@ membres.chay.fr {
 	@entry path / /index.html /sw.js /manifest.json
 	header @entry Cache-Control "no-cache"
 
+	# Téléchargements (APK Android) : servis depuis /srv/chay-app/telechargements, HORS de dist
+	# (un déploiement de l'app ne remplace que /srv/chay-app/dist). Voir « Téléchargements » plus bas.
+	handle /telechargements/* {
+		root * /srv/chay-app
+		@apk path *.apk
+		header @apk {
+			Content-Type "application/vnd.android.package-archive"
+			Content-Disposition "attachment; filename=\"chay.apk\""
+			Cache-Control "no-cache"
+			defer
+		}
+		@latest path /telechargements/latest.json
+		header @latest {
+			Content-Type "application/json; charset=utf-8"
+			Cache-Control "no-cache"
+			Access-Control-Allow-Origin "*"
+			defer
+		}
+		file_server
+	}
+
 	# Application monopage : toute adresse inconnue renvoie index.html (/messages, /requests…).
-	try_files {path} /index.html
-	file_server
+	# Dans un « handle » à part : /telechargements/* n'est jamais réécrit en index.html.
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -56,6 +80,67 @@ membres.chay.fr {
 	}
 }
 ```
+
+## Téléchargements : `https://membres.chay.fr/telechargements/`
+
+L'APK Android est servi à une **adresse stable**, `https://membres.chay.fr/telechargements/chay.apk` : on remplace le fichier à chaque version. `latest.json` décrit la version publiée (`{ versionName, versionCode, date, tailleMo, sha256 }`) ; la page « À propos » de l'app le lit, mais son bouton fonctionne aussi sans lui. Les deux fichiers sont écrits par `pocketbase/scripts/publier-apk.mjs`.
+
+| Règle | Pourquoi |
+|---|---|
+| dossier `/srv/chay-app/telechargements`, **hors de `dist`** | le déploiement de l'app (`DEPLOIEMENT.md` : `mv dist dist.precedent-…` puis `cp -a /tmp/chay-dist /srv/chay-app/dist` ; ou `rsync --delete dist/ …/dist/`) ne touche que `/srv/chay-app/dist` |
+| `handle /telechargements/*` séparé du `handle` de l'application | dans Caddy, `try_files` passe avant `file_server` : sans cette séparation, `/telechargements/chay.apk` serait réécrit en `/index.html` |
+| `Content-Type: application/vnd.android.package-archive`, `Content-Disposition: attachment` | Android propose l'installation au lieu d'afficher un fichier binaire ; `defer` fixe l'en-tête après `file_server` |
+| plages (`Range`) | `file_server` les accepte (réponse 206) : un téléchargement interrompu reprend |
+| `Cache-Control: no-cache` sur `latest.json` et l'APK | même adresse à chaque version : toujours revalidé (ETag / Last-Modified) |
+| `Access-Control-Allow-Origin: *` sur `latest.json` | l'APK (origine `https://localhost`) lit ce fichier public ; le site, lui, est sur la même origine |
+| `encode` | `latest.json` peut être compressé ; l'APK non (type absent de la liste par défaut de Caddy), donc les plages restent possibles |
+
+🐧 **Serveur**, une fois :
+```bash
+sudo mkdir -p /srv/chay-app/telechargements
+```
+```bash
+sudo chown root:root /srv/chay-app/telechargements
+```
+```bash
+sudo chmod 755 /srv/chay-app/telechargements
+```
+```bash
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.avant-telechargements
+```
+```bash
+sudo nano /etc/caddy/Caddyfile
+```
+Dans le bloc `membres.chay.fr`, remplacer les deux lignes `try_files {path} /index.html` et `file_server` par les deux blocs `handle` ci-dessus.
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+```
+```bash
+sudo systemctl reload caddy
+```
+En cas de problème : `sudo cp /etc/caddy/Caddyfile.avant-telechargements /etc/caddy/Caddyfile` puis `sudo systemctl reload caddy`.
+
+Vérifications (après la publication d'un APK) :
+```bash
+curl -sI https://membres.chay.fr/telechargements/chay.apk
+```
+Attendu : `200`, `content-type: application/vnd.android.package-archive`, `content-disposition: attachment; filename="chay.apk"`, `accept-ranges: bytes`, `content-length` = taille du fichier.
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -r 0-1 https://membres.chay.fr/telechargements/chay.apk
+```
+Attendu : `206`.
+```bash
+curl -sI https://membres.chay.fr/telechargements/latest.json
+```
+Attendu : `200`, `cache-control: no-cache`, `access-control-allow-origin: *`.
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://membres.chay.fr/telechargements/absent.apk
+```
+Attendu : `404` (et non la page de l'app).
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://membres.chay.fr/messages
+```
+Attendu : `200` (l'application monopage fonctionne toujours).
 
 ## Notes
 
