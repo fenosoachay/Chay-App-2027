@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { PUSH_TEST_TARGET } from "@/lib/pushForeground";
 
 export default function PushTestButton({ channel, disabled = false }) {
   const [busy, setBusy] = useState(false);
@@ -16,7 +17,8 @@ export default function PushTestButton({ channel, disabled = false }) {
         test: true,
         title: "Test de notification Chay",
         body: "Les notifications push fonctionnent sur cet appareil.",
-        target_type: "messages",
+        // « test » : reçu app ouverte, l'APK affiche un bandeau (Android n'affiche rien au premier plan).
+        target_type: PUSH_TEST_TARGET,
       });
       const data = response?.data || response;
       if (data?.error) throw new Error(data.error);
@@ -38,7 +40,10 @@ export default function PushTestButton({ channel, disabled = false }) {
         } else if (!data?.tokensFound) {
           setError("Aucun appareil Android n'est enregistré pour ce compte.");
         } else if (data?.sent) {
-          setResult(`Firebase a accepté l'envoi vers ${data.sent} appareil(s) Android.`);
+          setResult(
+            `Firebase a accepté l'envoi vers ${data.sent} appareil(s) Android. App ouverte, Android n'affiche pas de notification système : ` +
+            "un bandeau « Notification de test reçue » doit apparaître dans quelques secondes. S'il n'apparaît pas, ce téléphone n'a pas reçu le push.",
+          );
           if (data.failed) setError(`${data.failed} envoi(s) Android ont échoué.`);
         } else {
           setError("Firebase n'a confirmé aucun envoi. Consultez les journaux du serveur.");

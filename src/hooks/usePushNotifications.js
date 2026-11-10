@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { deactivateDeviceToken, upsertDeviceToken } from "@/lib/deviceTokenSync";
+import { foregroundPushToast } from "@/lib/pushForeground";
 
 const CHANNEL_ID = "chay-default";
 const CHANNEL_NAME = "Chay";
@@ -134,10 +135,12 @@ export function usePushNotifications(navigate) {
           })
         );
         handles.push(
-          await PushNotifications.addListener("pushNotificationReceived", () => {
-            // App ouverte : Capacitor n'affiche pas de notification système en
-            // foreground. Le bandeau in-app est déclenché par la UserNotification
-            // créée côté backend (abonnement temps réel) — pas de doublon.
+          await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+            // App ouverte : Android n'affiche pas de notification système au premier plan.
+            // Messages et contenus : le bandeau in-app vient de la UserNotification temps réel (pas de
+            // doublon). Push de TEST : bandeau ici, preuve que ce téléphone a bien reçu le push.
+            const bandeau = foregroundPushToast(notification);
+            if (bandeau) toast(bandeau);
           })
         );
         handles.push(
