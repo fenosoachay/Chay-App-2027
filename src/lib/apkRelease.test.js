@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { APK_URL, LATEST_URL, compareInstalled, describeLatest, fetchLatest, parseLatest } from "./apkRelease.js";
 
+// Garde-fou : aucun test de ce fichier ne doit toucher le réseau (la prod est sur membres.chay.fr).
+globalThis.fetch = async (url) => { throw new Error(`Réseau interdit dans les tests : ${url}`); };
+
 const ok = { versionName: "1.3", versionCode: 4, date: "2026-11-10T18:00:00.000Z", tailleMo: 25.4 };
 const reponse = (status, body, { jsonError = false } = {}) => ({
   ok: status >= 200 && status < 300,
@@ -42,7 +45,8 @@ test("fetchLatest : ne lève jamais d'erreur (404, réseau, JSON invalide, conte
   assert.equal(await fetchLatest({ fetchImpl: async () => { throw new TypeError("Failed to fetch"); } }), null);
   assert.equal(await fetchLatest({ fetchImpl: async () => reponse(200, null, { jsonError: true }) }), null);
   assert.equal(await fetchLatest({ fetchImpl: async () => reponse(200, { versionName: "x" }) }), null);
-  assert.equal(await fetchLatest({ fetchImpl: undefined }), null);
+  // fetchImpl null (et non undefined, qui donnerait le VRAI fetch vers membres.chay.fr) : aucune requête.
+  assert.equal(await fetchLatest({ fetchImpl: null }), null);
   const lent = (url, { signal }) => new Promise((_, reject) => signal.addEventListener("abort", () => reject(new Error("abort"))));
   const t0 = Date.now();
   assert.equal(await fetchLatest({ fetchImpl: lent, timeoutMs: 50 }), null);
