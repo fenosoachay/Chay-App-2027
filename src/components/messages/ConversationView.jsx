@@ -30,6 +30,7 @@ import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
 import { enqueue } from "@/lib/offlineQueue";
+import { envoyerMessageTexte } from "@/lib/messageSend";
 
 function fmtTime(d) {
   return formatTimestamp(d, { date: false });
@@ -213,33 +214,23 @@ export default function ConversationView({
     clearTimeout(typingTimer.current);
     isTypingSent.current = false;
     setTypingState(false);
-    if (!navigator.onLine) {
-      enqueue("message", { body: { conversation_id: conversation.id, text, reply_to_id: replyTo?.id || null } });
-      setReplyTo(null);
-      setSending(false);
-      toast({ title: "Message en attente", description: "Il sera envoyé dès que la connexion sera rétablie." });
-      return;
-    }
     try {
-      const result = await base44.functions.invoke("createMessage", {
-conversation_id: conversation.id,
-text,
-reply_to_id: replyTo?.id || null,
-});
-      if (result?.data?.notification_error) {
+      // Envoi toujours tenté (navigator.onLine n'est pas fiable dans la WebView Android) ;
+      // file d'attente seulement en cas d'échec réseau réel.
+      const envoi = await envoyerMessageTexte({
+        invoke: (name, data) => base44.functions.invoke(name, data),
+        updateConversation: (id, patch) => base44.entities.Conversation.update(id, patch),
+        enqueue,
+      }, { conversation_id: conversation.id, text, reply_to_id: replyTo?.id || null });
+      if (envoi.statut === "en-attente") {
+        toast({ title: "Message en attente", description: "Connexion indisponible : il sera envoyé dès qu'elle sera rétablie." });
+      } else if (envoi.result?.data?.notification_error) {
         toast({
           title: "Message envoyé",
           description: "La notification du destinataire n'a pas pu être envoyée.",
           variant: "destructive",
         });
       }
-
-      await base44.entities.Conversation.update(conversation.id, {
-        last_message_text: text,
-        last_message_at: result?.data?.created_date || new Date().toISOString(),
-        typing_user_id: null,
-        typing_at: null,
-      });
       setReplyTo(null);
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });

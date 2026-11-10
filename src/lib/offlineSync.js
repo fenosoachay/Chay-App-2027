@@ -32,18 +32,22 @@ async function replay(action) {
   }
   if (action.type === "message") {
     const result = await base44.functions.invoke("createMessage", p.body);
+    // Le message est créé : l'aperçu de la conversation est secondaire (sinon l'action resterait en file
+    // et serait renvoyée : doublon).
     await base44.entities.Conversation.update(p.body.conversation_id, {
       last_message_text: p.body.text,
       last_message_at: result?.data?.created_date || new Date().toISOString(),
-    });
+    }).catch(() => {});
   }
 }
 
 let running = false;
 
 // Envoie en arrière-plan tout ce qui attend. Retourne le nombre d'actions envoyées.
+// navigator.onLine n'est pas consulté (peu fiable dans la WebView Android) : on tente, et un échec
+// réseau arrête simplement le passage (l'action reste en file).
 export async function flushQueue() {
-  if (running || typeof navigator !== "undefined" && !navigator.onLine) return 0;
+  if (running) return 0;
   running = true;
   let sent = 0;
   try {

@@ -31,8 +31,12 @@ export function NetworkProvider({ children }) {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     if (!navigator.onLine) wasOffline.current = true;
-    else flushQueue();
+    flushQueue();
+    // Sans attendre l'évènement « online » (peu fiable dans la WebView Android) : nouvel essai toutes les
+    // 30 s tant que des actions attendent.
+    const t = setInterval(() => { if (queueSize() > 0) flushQueue(); }, 30000);
     return () => {
+      clearInterval(t);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
