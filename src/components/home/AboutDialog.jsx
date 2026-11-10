@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/lib/AuthContext";
+import { APK_URL, compareInstalled, describeLatest, fetchLatest } from "@/lib/apkRelease";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -16,6 +19,7 @@ import {
   CheckCircle,
   Loader2,
   ArrowDown,
+  Download,
 } from "lucide-react";
 
 export default function AboutDialog({ open, onOpenChange }) {
@@ -32,12 +36,10 @@ export default function AboutDialog({ open, onOpenChange }) {
   const [newText, setNewText] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // APK state
-  const [appVersion, setAppVersion] = useState("");
-  const [latestVersion, setLatestVersion] = useState("");
-  const [latestApkUrl, setLatestApkUrl] = useState("");
-  const [apkUrl, setApkUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
+  // Application Android : dernière version publiée (latest.json) et version installée (APK seulement).
+  // Le bouton de téléchargement est toujours affiché, même si latest.json est illisible.
+  const [latest, setLatest] = useState(null);
+  const [installed, setInstalled] = useState(null);
 
   const loadNotices = async () => {
     setLoading(true);
@@ -52,12 +54,15 @@ export default function AboutDialog({ open, onOpenChange }) {
   };
 
   const loadAppVersion = async () => {
-    try {
-      const list = await base44.entities.AppContent.list("-created_date", 1);
-      const rec = Array.isArray(list) && list[0] ? list[0] : null;
-      if (rec?.app_version) setLatestVersion(rec.app_version);
-      if (rec?.app_apk_url) setLatestApkUrl(rec.app_apk_url);
-    } catch {}
+    setLatest(await fetchLatest()); // null en cas d'échec : jamais d'erreur
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const info = await CapacitorApp.getInfo();
+        setInstalled({ version: info?.version || "", build: info?.build || "" });
+      } catch {
+        setInstalled(null);
+      }
+    }
   };
 
   useEffect(() => {
@@ -114,31 +119,8 @@ export default function AboutDialog({ open, onOpenChange }) {
     }
   };
 
-  const uploadApk = async () => {
-    if (!apkUrl.trim()) {
-      toast({ title: "URL requise", variant: "destructive" });
-      return;
-    }
-    setUploading(true);
-    try {
-      await base44.entities.AppContent.create({
-        about_text: "",
-        splash_text_mg: "",
-        splash_text_fr: "",
-        app_version: appVersion,
-        app_apk_url: apkUrl.trim(),
-      });
-      setApkUrl("");
-      setAppVersion("");
-      loadAppVersion();
-      toast({ title: "Version enregistrée" });
-    } catch (e) {
-      toast({ title: "Échec", description: e?.message });
-    }
-    setUploading(false);
-  };
-
-  const hasLatestVersion = latestVersion && appVersion && appVersion === latestVersion;
+  const versionInfo = describeLatest(latest);
+  const comparaison = compareInstalled(latest, installed);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -237,73 +219,37 @@ export default function AboutDialog({ open, onOpenChange }) {
             </div>
           )}
 
-          {/* Section APK / Version (admin) */}
-          {isAdmin && (
-            <div className="border-t border-border pt-4 space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-foreground/50">
-                Version de l'application
-              </p>
-              <div>
-                <label className="text-xs text-foreground/50 mb-1 block">Version</label>
-                <Input
-                  type="text"
-                  value={appVersion}
-                  onChange={(e) => setAppVersion(e.target.value)}
-                  placeholder="Ex: 2.1.0"
-                  className="h-9"
-                />
+          {/* Application Android, pour TOUS : adresse stable ; latest.json ne sert qu'à l'information */}
+          <div className="border-t border-border pt-4 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-foreground/50">
+              Application Android
+            </p>
+            {comparaison.etat === "a-jour" && (
+              <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                {comparaison.message}
               </div>
-              <div>
-                <label className="text-xs text-foreground/50 mb-1 block">
-                  URL du fichier APK (dernière version)
-                </label>
-                <input
-                  type="url"
-                  value={apkUrl}
-                  onChange={(e) => setApkUrl(e.target.value)}
-                  placeholder="https://exemple.com/app-v2.1.0.apk"
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
+            )}
+            {comparaison.etat === "nouvelle" && (
+              <div className="flex items-center gap-2 text-sm text-foreground/70">
+                <ArrowDown className="h-4 w-4 shrink-0" />
+                {comparaison.message}
               </div>
-              <Button
-                onClick={uploadApk}
-                disabled={uploading || !apkUrl.trim()}
-                className="w-full"
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                {uploading ? "Enregistrement…" : "Enregistrer la version"}
-              </Button>
-            </div>
-          )}
-
-          {/* Vérification de version pour TOUS les utilisateurs */}
-          {hasLatestVersion && (
-            <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 mt-2">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              Vous avez la dernière version de l'application
-            </div>
-          )}
-          {latestVersion && !hasLatestVersion && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/60 mt-2">
-              <ArrowDown className="h-4 w-4 shrink-0" />
-              <span className="whitespace-nowrap">Une nouvelle version disponible.</span>
-              <br />
-              <span>
-                Téléchargez{" "}
-                <ExternalLink
-                  href={latestApkUrl}
-                  className="text-primary underline hover:no-underline font-medium"
-                >
-                  ici
-                </ExternalLink>
-                .
-              </span>
-            </div>
-          )}
+            )}
+            <p className="text-xs text-foreground/50">
+              {versionInfo || "Information de version indisponible pour le moment."}
+            </p>
+            <ExternalLink
+              href={APK_URL}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition"
+            >
+              <Download className="h-4 w-4" />
+              Télécharger l'application Android
+            </ExternalLink>
+            <p className="text-xs text-foreground/50">
+              Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.
+            </p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
