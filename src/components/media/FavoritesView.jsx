@@ -1,60 +1,32 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { GripVertical, Lock, Unlock, Music, Play, Pause, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { ChevronDown, ChevronUp, GripVertical, Lock, Unlock, Music, Play, Pause, Trash2 } from "lucide-react";
 import { groupMusicFavorites } from "@/lib/favoritePlaylists";
+import { useDragSort } from "@/hooks/useDragSort";
+import { appliquerOrdre } from "@/lib/glisserOrdre";
 
-function useDragSort(items, onReorder) {
-  const listRef = useRef(null);
-  const dragIndex = useRef(null);
-
-  const finishDrag = useCallback((clientY) => {
-    const container = listRef.current;
-    const from = dragIndex.current;
-    if (!container || from === null) return;
-
-    const children = [...container.children];
-    let to = children.length - 1;
-    for (let i = 0; i < children.length; i += 1) {
-      const rect = children[i].getBoundingClientRect();
-      if (clientY < rect.top + rect.height / 2) {
-        to = i;
-        break;
-      }
-    }
-    children.forEach((child) => child.classList.remove("opacity-50", "scale-[0.98]"));
-    dragIndex.current = null;
-    if (from !== to && to >= 0 && to < items.length) {
-      const next = [...items];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      onReorder(next);
-    }
-  }, [items, onReorder]);
-
-  const onMouseDown = (index) => (event) => {
-    event.preventDefault();
-    dragIndex.current = index;
-    listRef.current?.children[index]?.classList.add("opacity-50", "scale-[0.98]");
-    const onUp = (upEvent) => {
-      window.removeEventListener("mouseup", onUp);
-      finishDrag(upEvent.clientY);
-    };
-    window.addEventListener("mouseup", onUp);
-  };
-
-  const onTouchStart = (index) => () => {
-    dragIndex.current = index;
-    listRef.current?.children[index]?.classList.add("opacity-50", "scale-[0.98]");
-    const onMove = (moveEvent) => moveEvent.preventDefault();
-    const onEnd = (endEvent) => {
-      listRef.current?.removeEventListener("touchmove", onMove);
-      listRef.current?.removeEventListener("touchend", onEnd);
-      finishDrag(endEvent.changedTouches[0].clientY);
-    };
-    listRef.current?.addEventListener("touchmove", onMove, { passive: false });
-    listRef.current?.addEventListener("touchend", onEnd, { once: true });
-  };
-
-  return { listRef, onMouseDown, onTouchStart };
+// Poignée ⋮⋮ (glisser) + boutons monter / descendre en secours, visibles en mode arranger.
+function Reorganiser({ label, index, total, drag, petite = false }) {
+  const bouton = "grid h-9 w-9 place-items-center rounded-full text-foreground/55 hover:bg-muted disabled:opacity-25";
+  return (
+    <div className="flex shrink-0 items-center">
+      <button
+        type="button"
+        aria-label={`Glisser pour réorganiser ${label}`}
+        className="grid h-11 w-11 cursor-grab select-none place-items-center rounded-full text-foreground/45 active:cursor-grabbing active:bg-muted"
+        {...drag.poignee(index)}
+      >
+        <GripVertical className={petite ? "h-4 w-4" : "h-5 w-5"} />
+      </button>
+      <div className="flex flex-col">
+        <button type="button" className={bouton} aria-label={`Monter ${label}`} disabled={index === 0} onClick={() => drag.monter(index)}>
+          <ChevronUp className="h-4 w-4" />
+        </button>
+        <button type="button" className={bouton} aria-label={`Descendre ${label}`} disabled={index >= total - 1} onClick={() => drag.descendre(index)}>
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function FavoriteGroup({
@@ -70,36 +42,26 @@ function FavoriteGroup({
   removeFromPlaylist,
 }) {
   const itemDrag = useDragSort(group.items, (next) => onReorderItems(group, next));
+  const items = itemDrag.ordre;
   return (
-    <section className="rounded-2xl border border-border bg-card p-4">
+    <section className={`rounded-2xl border bg-card p-4 ${groupDrag.idGlisse === group.id ? "border-primary shadow-lg" : "border-border"}`}>
       <div className="mb-3 flex items-center gap-2">
         {!locked && groupsCount > 1 && (
-          <button
-            type="button"
-            aria-label={`Réorganiser ${group.name}`}
-            className="cursor-grab touch-none text-foreground/45"
-            onMouseDown={groupDrag.onMouseDown(groupIndex)}
-            onTouchStart={groupDrag.onTouchStart(groupIndex)}
-          >
-            <GripVertical className="h-5 w-5" />
-          </button>
+          <Reorganiser label={group.name} index={groupIndex} total={groupsCount} drag={groupDrag} />
         )}
         <Music className="h-4 w-4 text-primary" />
         <h3 className="font-bold">{group.name}</h3>
       </div>
-      <div ref={locked ? null : itemDrag.listRef} className="space-y-2">
-        {group.items.map((item, index) => (
-          <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/70 p-3">
-            {!locked && group.items.length > 1 && (
-              <button
-                type="button"
-                aria-label={`Réorganiser ${item.title}`}
-                className="cursor-grab touch-none text-foreground/40"
-                onMouseDown={itemDrag.onMouseDown(index)}
-                onTouchStart={itemDrag.onTouchStart(index)}
-              >
-                <GripVertical className="h-4 w-4" />
-              </button>
+      <div ref={itemDrag.listRef} className="space-y-2">
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className={`flex items-center gap-2 rounded-xl border p-3 transition-shadow ${
+              itemDrag.idGlisse === item.id ? "border-primary bg-primary/5 shadow-lg" : "border-border/70"
+            }`}
+          >
+            {!locked && items.length > 1 && (
+              <Reorganiser label={item.title} index={index} total={items.length} drag={itemDrag} petite />
             )}
             <button
               type="button"
@@ -177,12 +139,8 @@ export default function FavoritesView({
   }, [onReorderPlaylists]);
 
   const handleReorderGroupItems = useCallback((group, nextItems) => {
-    setOrderedItems((items) => {
-      const orders = new Map(nextItems.map((item, index) => [item.id, index]));
-      return items.map((item) => (item.source_playlist_id || "legacy-favorites") === group.id
-        ? { ...item, order: orders.get(item.id) ?? item.order }
-        : item);
-    });
+    // Tous les titres du groupe (désormais un seul groupe « Favoris ») reçoivent leur nouveau rang.
+    setOrderedItems((items) => appliquerOrdre(items, nextItems, "order"));
     onReorderItems?.(group.id, nextItems);
   }, [onReorderItems]);
 
@@ -211,8 +169,8 @@ export default function FavoritesView({
       </div>
 
       {groups.length ? (
-        <div ref={locked ? null : groupDrag.listRef} className="space-y-5">
-          {groups.map((group, groupIndex) => (
+        <div ref={groupDrag.listRef} className="space-y-5">
+          {groupDrag.ordre.map((group, groupIndex) => (
             <FavoriteGroup
               key={group.id}
               group={group}

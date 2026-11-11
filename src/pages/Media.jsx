@@ -129,9 +129,8 @@ export default function Media() {
       const samePlaylistItems = playlist.filter(
         (p) => p.source_playlist_id === item.source_playlist_id
       );
-      const nextTrackOrder = samePlaylistItems.length
-        ? Math.max(...samePlaylistItems.map((p) => p.order ?? -1)) + 1
-        : 0;
+      // Un seul groupe « Favoris » : le nouveau titre va à la fin de toute la liste.
+      const nextTrackOrder = playlist.reduce((max, p) => Math.max(max, (p.order ?? -1) + 1), 0);
       const nextPlaylistOrder = samePlaylistItems.length
         ? Math.min(...samePlaylistItems.map((p) => p.playlist_order ?? 99999))
         : playlist.reduce((max, p) => Math.max(max, (p.playlist_order ?? -1) + 1), 0);
@@ -173,16 +172,14 @@ export default function Media() {
   const isPinned = (id, sourcePlaylistId) =>
     playlist.some((p) => p.track_id === id && p.source_playlist_id === sourcePlaylistId);
 
-  const reorderFavoriteItems = async (sourcePlaylistId, nextItems) => {
+  const reorderFavoriteItems = async (_groupId, nextItems) => {
     const orders = new Map(nextItems.map((item, index) => [item.id, index]));
     const updates = nextItems.map((item) => ({
       ...item,
       order: orders.get(item.id),
     }));
-    setPlaylist((current) => current.map((item) => {
-      const key = item.source_playlist_id || "legacy-favorites";
-      return key === sourcePlaylistId ? { ...item, order: orders.get(item.id) ?? item.order } : item;
-    }));
+    // Mise à jour par id : le groupe affiché (« Favoris ») réunit toutes les playlists d'origine.
+    setPlaylist((current) => current.map((item) => (orders.has(item.id) ? { ...item, order: orders.get(item.id) } : item)));
     const results = await Promise.all(updates.map((item) =>
       base44.entities.PlaylistItem.update(item.id, { order: item.order }).then(() => true, () => false)
     ));
