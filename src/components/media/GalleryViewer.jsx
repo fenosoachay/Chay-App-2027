@@ -94,6 +94,13 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
     transformSrc && failedTransform !== transformSrc ? transformSrc : sourceUrl;
   const isLoaded = Boolean(displaySrc && loadedSrc === displaySrc);
 
+  // Double tampon (plus de flash noir) : la photo AFFICHÉE reste la dernière entièrement chargée ;
+  // la suivante se charge dans une image cachée (imgRef) et ne la remplace qu'une fois prête.
+  const [shownSrc, setShownSrc] = useState(null);
+  useEffect(() => { if (isLoaded) setShownSrc(displaySrc); }, [isLoaded, displaySrc]);
+  useEffect(() => { if (!isOpen) setShownSrc(null); }, [isOpen]);
+  const visibleSrc = isLoaded ? displaySrc : shownSrc;
+
   // Une photo déjà en cache peut avoir fini de charger avant que React
   // n'ait pu capter onLoad : on vérifie l'état réel de l'élément.
   useEffect(() => {
@@ -380,38 +387,51 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
             </button>
           )}
 
-          {/* Indicateur tant que la photo n'est pas entièrement chargée */}
-          {!isLoaded && (
+          {/* Indicateur seulement tant qu'AUCUNE photo n'est affichée (première ouverture) */}
+          {!visibleSrc && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none z-10">
               <Loader2 className="h-8 w-8 animate-spin text-white/50" />
             </div>
           )}
 
-          <motion.img
-            ref={imgRef}
-            key={i}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={isLoaded ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.2 }}
-            src={displaySrc || undefined}
-            alt=""
-            draggable={false}
-            onClick={(e) => e.stopPropagation()}
-            onLoad={() => { if (displaySrc) setLoadedSrc(displaySrc); }}
-            onError={() => {
-              // 1re erreur = transform refusée → on retente l'original ;
-              // 2e erreur = fichier réellement cassé → on affiche quand même
-              // (image en erreur du navigateur) plutôt qu'une rotation infinie.
-              if (transformSrc && failedTransform !== transformSrc) {
-                setFailedTransform(transformSrc);
-              } else if (sourceUrl) {
-                setLoadedSrc(sourceUrl);
-              }
-            }}
-            className={`max-w-[92vw] object-contain select-none transition-[max-height] duration-200 ${
-              showComments ? "max-h-[52vh]" : "max-h-[88vh]"
-            }`}
-          />
+          {/* Chargement de la photo demandée, invisible : elle ne remplace l'affichée qu'une fois prête. */}
+          {displaySrc && !isLoaded && (
+            <img
+              ref={imgRef}
+              src={displaySrc}
+              alt=""
+              aria-hidden="true"
+              data-gallery-preload="true"
+              style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+              onLoad={() => setLoadedSrc(displaySrc)}
+              onError={() => {
+                // 1re erreur = transform refusée → on retente l'original ;
+                // 2e erreur = fichier réellement cassé → on affiche quand même
+                // (image en erreur du navigateur) plutôt qu'une rotation infinie.
+                if (transformSrc && failedTransform !== transformSrc) {
+                  setFailedTransform(transformSrc);
+                } else if (sourceUrl) {
+                  setLoadedSrc(sourceUrl);
+                }
+              }}
+            />
+          )}
+
+          {/* Photo affichée : pas de key (pas de remontage), fondu seulement à la toute première image. */}
+          {visibleSrc && (
+            <motion.img
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              src={visibleSrc}
+              alt=""
+              draggable={false}
+              onClick={(e) => e.stopPropagation()}
+              className={`max-w-[92vw] object-contain select-none transition-[max-height] duration-200 ${
+                showComments ? "max-h-[52vh]" : "max-h-[88vh]"
+              }`}
+            />
+          )}
 
           {/* Panneau de commentaires */}
           {showComments && (

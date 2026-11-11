@@ -13,6 +13,7 @@ import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { buildFavoriteAudioQueue } from "@/lib/favoriteAudioQueue";
 import { Loader2 } from "lucide-react";
 import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
+import { lireMemoireMedia, ecrireMemoireMedia } from "@/lib/mediaMemoire";
 
 export default function Media() {
   const { toast } = useToast();
@@ -27,18 +28,27 @@ export default function Media() {
   const targetVideoId = searchParams.get("video");
   const targetArticleId = searchParams.get("article");
   const targetImageId = searchParams.get("image");
-  const [loading, setLoading] = useState(true);
+  // Données de la visite précédente (en mémoire, pour CE compte) : la page s'affiche tout de suite,
+  // sans écran de chargement, pendant que loadAll() rafraîchit. Indicateur à la toute première visite.
+  const [memoire] = useState(() => lireMemoireMedia(user?.id));
+  const [loading, setLoading] = useState(() => !memoire);
   const [query, setQuery] = useState("");
 
-  const [tracks, setTracks] = useState([]);
-  const [sermons, setSermons] = useState([]);
-  const [videos, setVideos] = useState([]);
-  const [articles, setArticles] = useState([]);
-  const [youtube, setYoutube] = useState([]);
-  const [gallery, setGallery] = useState([]);
-  const [playlist, setPlaylist] = useState([]);
-  const [playlists, setPlaylists] = useState([]);
-  const [playlistTracks, setPlaylistTracks] = useState([]);
+  const [tracks, setTracks] = useState(() => memoire?.tracks || []);
+  const [sermons, setSermons] = useState(() => memoire?.sermons || []);
+  const [videos, setVideos] = useState(() => memoire?.videos || []);
+  const [articles, setArticles] = useState(() => memoire?.articles || []);
+  const [youtube, setYoutube] = useState(() => memoire?.youtube || []);
+  const [gallery, setGallery] = useState(() => memoire?.gallery || []);
+  const [playlist, setPlaylist] = useState(() => memoire?.playlist || []);
+  const [playlists, setPlaylists] = useState(() => memoire?.playlists || []);
+  const [playlistTracks, setPlaylistTracks] = useState(() => memoire?.playlistTracks || []);
+
+  // Mémoire tenue à jour (chargements ET modifications locales : photo modifiée, favori retiré…).
+  useEffect(() => {
+    if (loading) return;
+    ecrireMemoireMedia(user?.id, { tracks, sermons, videos, articles, youtube, gallery, playlist, playlists, playlistTracks });
+  }, [loading, user?.id, tracks, sermons, videos, articles, youtube, gallery, playlist, playlists, playlistTracks]);
 
 
   const loadAll = async () => {
