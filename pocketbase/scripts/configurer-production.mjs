@@ -29,7 +29,7 @@ const stop = (msg, code = 2) => { throw new Stop(msg, code); };
 
 // ── Valeurs de production (étape 3c) ─────────────────────────────────────────
 const PUBLIC_PB_URL = 'https://api.chay.fr';
-const META = { appName: 'Église Chay', appURL: 'https://membres.chay.fr', senderName: 'Église Chay', senderAddress: 'no-reply@chay.fr' };
+const META = { appName: 'Chay', appURL: 'https://membres.chay.fr', senderName: 'Chay', senderAddress: 'no-reply@chay.fr' };
 const SMTP = SANDBOX
   ? { enabled: true, host: '127.0.0.1', port: 2525, username: '', authMethod: 'PLAIN', tls: false }
   : { enabled: true, host: 'ssl0.ovh.net', port: 465, username: 'no-reply@chay.fr', authMethod: 'PLAIN', tls: true };

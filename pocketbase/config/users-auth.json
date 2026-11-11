@@ -19,20 +19,20 @@
     "duration": 600,
     "length": 6,
     "emailTemplate": {
-      "subject": "Votre code de connexion — Église Chay",
-      "body": "<p>Bonjour,</p><p>Voici votre code à usage unique pour l’application de l’Église Chay :</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px\">{OTP}</p><p>Ce code est valable 10 minutes. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.</p><p>— L’équipe de l’Église Chay</p>"
+      "subject": "Votre code de connexion — Chay",
+      "body": "<p>Bonjour,</p><p>Voici votre code à usage unique pour l’application Chay :</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px\">{OTP}</p><p>Ce code est valable 10 minutes. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message.</p><p>— L’équipe Chay</p>"
     }
   },
   "resetPasswordTemplate": {
-    "subject": "Choisir un nouveau mot de passe — Église Chay",
-    "body": "<p>Bonjour,</p><p>Pour choisir un nouveau mot de passe, ouvrez ce lien :</p><p><a href=\"{APP_URL}/reset-password?token={TOKEN}\">Choisir mon mot de passe</a></p><p>Ce lien ne fonctionne qu’une seule fois et expire au bout de 30 minutes. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message : votre mot de passe actuel reste valable.</p><p>Application Android : <a href=\"https://membres.chay.fr/telechargements/chay.apk\">https://membres.chay.fr/telechargements/chay.apk</a><br>Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.</p><p>— L’équipe de l’Église Chay</p>"
+    "subject": "Choisir un nouveau mot de passe — Chay",
+    "body": "<p>Bonjour,</p><p>Pour choisir un nouveau mot de passe, ouvrez ce lien :</p><p><a href=\"{APP_URL}/reset-password?token={TOKEN}\">Choisir mon mot de passe</a></p><p>Ce lien ne fonctionne qu’une seule fois et expire au bout de 30 minutes. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message : votre mot de passe actuel reste valable.</p><p>Application Android : <a href=\"https://membres.chay.fr/telechargements/chay.apk\">https://membres.chay.fr/telechargements/chay.apk</a><br>Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.</p><p>— L’équipe Chay</p>"
   },
   "confirmEmailChangeTemplate": {
-    "subject": "Confirmez votre nouvelle adresse e-mail — Église Chay",
-    "body": "<p>Bonjour,</p><p>Une demande de changement d’adresse e-mail a été faite pour votre compte. Pour la confirmer, ouvrez ce lien :</p><p><a href=\"%PB_URL%/confirmer-email?token={TOKEN}\">Confirmer ma nouvelle adresse</a></p><p>Si vous n’êtes pas à l’origine de cette demande, ignorez ce message : votre adresse actuelle reste inchangée.</p><p>— L’équipe de l’Église Chay</p>"
+    "subject": "Confirmez votre nouvelle adresse e-mail — Chay",
+    "body": "<p>Bonjour,</p><p>Une demande de changement d’adresse e-mail a été faite pour votre compte. Pour la confirmer, ouvrez ce lien :</p><p><a href=\"%PB_URL%/confirmer-email?token={TOKEN}\">Confirmer ma nouvelle adresse</a></p><p>Si vous n’êtes pas à l’origine de cette demande, ignorez ce message : votre adresse actuelle reste inchangée.</p><p>— L’équipe Chay</p>"
   },
   "verificationTemplate": {
-    "subject": "Vérifiez votre adresse e-mail — Église Chay",
-    "body": "<p>Bonjour,</p><p>Pour vérifier votre adresse e-mail, ouvrez ce lien :</p><p><a href=\"%PB_URL%/confirmer-verification?token={TOKEN}\">Vérifier mon adresse</a></p><p>— L’équipe de l’Église Chay</p>"
+    "subject": "Vérifiez votre adresse e-mail — Chay",
+    "body": "<p>Bonjour,</p><p>Pour vérifier votre adresse e-mail, ouvrez ce lien :</p><p><a href=\"%PB_URL%/confirmer-verification?token={TOKEN}\">Vérifier mon adresse</a></p><p>— L’équipe Chay</p>"
   }
 }

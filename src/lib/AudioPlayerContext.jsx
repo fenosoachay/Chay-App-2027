@@ -149,7 +149,7 @@ export function AudioPlayerProvider({ children }) {
         url: currentTrack.audio_url,
         mediaType: "audio",
         title: currentTrack.title || "Média",
-        artist: currentTrack.artist || currentTrack.speaker || currentTrack.subtitle || "CHAY",
+        artist: currentTrack.artist || currentTrack.speaker || currentTrack.subtitle || "Chay",
         artworkUrl: currentTrack.cover_url || currentTrack.artwork || "",
         initialPositionSeconds: Number(currentTrack.initialTime) || 0,
         queue: order.map((queueIndex) => {

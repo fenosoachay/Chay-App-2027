@@ -1,6 +1,6 @@
 {
   "appId": "io.chay.app",
-  "appName": "Église Chay",
+  "appName": "Chay",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

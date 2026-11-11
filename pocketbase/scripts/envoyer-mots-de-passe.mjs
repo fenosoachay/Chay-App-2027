@@ -106,12 +106,12 @@ export const APK_URL = 'https://membres.chay.fr/telechargements/chay.apk';
  */
 export function gabaritReinitialisation(secondes) {
   return {
-    subject: 'Choisir un nouveau mot de passe — Église Chay',
+    subject: 'Choisir un nouveau mot de passe — Chay',
     body: '<p>Bonjour,</p><p>Pour choisir un nouveau mot de passe, ouvrez ce lien :</p>'
       + '<p><a href="{APP_URL}/reset-password?token={TOKEN}">Choisir mon mot de passe</a></p>'
       + `<p>Ce lien ne fonctionne qu’une seule fois et expire au bout de ${dureeEnTexte(secondes)}. Si vous n’êtes pas à l’origine de cette demande, ignorez simplement ce message : votre mot de passe actuel reste valable.</p>`
       + `<p>Application Android : <a href="${APK_URL}">${APK_URL}</a><br>Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.</p>`
-      + '<p>— L’équipe de l’Église Chay</p>',
+      + '<p>— L’équipe Chay</p>',
   };
 }
 

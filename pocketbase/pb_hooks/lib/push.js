@@ -28,7 +28,7 @@ const pbDate = (ms) => new Date(ms).toISOString().replace('T', ' ');
 /** Notification normalisée : titre 100, texte 300 caractères. */
 function normalize(n) {
   return {
-    title: String(n.title || 'ÉGLISE CHAY').slice(0, 100),
+    title: String(n.title || 'Chay').slice(0, 100),
     body: String(n.body || '').slice(0, 300),
     target_type: String(n.target_type || '').slice(0, 64),
     target_id: String(n.target_id || '').slice(0, 64),

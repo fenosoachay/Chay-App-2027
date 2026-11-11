@@ -31,7 +31,7 @@ export default function Donate() {
 
   return (
     <div className="mx-auto max-w-md px-6 py-10 md:py-16">
-      <h1 className="text-center text-2xl font-bold">Soutenir l'Église Chay</h1>
+      <h1 className="text-center text-2xl font-bold">Soutenir Chay</h1>
       <p className="mt-4 text-center text-base text-foreground/60">
         Votre générosité permet de soutenir l'œuvre de Dieu et la diffusion de l'Évangile. Misaotra betsaka !
       </p>

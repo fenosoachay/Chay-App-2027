@@ -1,7 +1,7 @@
 {
-  "name": "ÉGLISE CHAY",
-  "short_name": "CHAY",
-  "description": "ÉGLISE CHAY — Communauté chrétienne : Bible, média, radio, jeux et dons.",
+  "name": "Chay",
+  "short_name": "Chay",
+  "description": "Chay — Communauté chrétienne : Bible, média, radio, jeux et dons.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FDFBF7",

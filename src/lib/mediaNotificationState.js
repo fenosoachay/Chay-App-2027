@@ -3,7 +3,7 @@ export function createMediaNotificationState(control) {
 
   return {
     title: control.title || "Média",
-    artist: control.subtitle || "CHAY",
+    artist: control.subtitle || "Chay",
     artworkUrl: control.artwork || "",
     isPlaying: Boolean(control.isPlaying),
     isBuffering: Boolean(control.isBuffering),

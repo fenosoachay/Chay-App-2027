@@ -134,7 +134,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 requestedUrl,
                 mediaType,
                 call.getString("title", "Média"),
-                call.getString("artist", "CHAY"),
+                call.getString("artist", "Chay"),
                 call.getString("artworkUrl", ""),
                 requestedQueueId
             );
@@ -351,7 +351,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                     url,
                     entry.optString("mediaType", fallbackType),
                     entry.optString("title", "Média"),
-                    entry.optString("artist", "CHAY"),
+                    entry.optString("artist", "Chay"),
                     entry.optString("cover_url", entry.optString("artworkUrl", "")),
                     entry.optString("queueId", entry.optString("id", url))
                 ));

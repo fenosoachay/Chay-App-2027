@@ -16,7 +16,7 @@ test('durée en toutes lettres', () => {
 
 test('gabarit 72 h : durée, lien de l\'APK, consigne Android, variables PocketBase', () => {
   const g = gabaritReinitialisation(72 * 3600);
-  assert.equal(g.subject, 'Choisir un nouveau mot de passe — Église Chay');
+  assert.equal(g.subject, 'Choisir un nouveau mot de passe — Chay');
   assert.match(g.body, /expire au bout de 72 heures\./);
   assert.doesNotMatch(g.body, /30 minutes/);
   assert.ok(g.body.includes(`<a href="${APK_URL}">${APK_URL}</a>`));
