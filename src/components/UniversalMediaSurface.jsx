@@ -32,9 +32,9 @@ import {
   subscribeAndroidExoPlayer,
 } from "@/lib/androidExoPlayer";
 import { isActiveVideoEvent, videoQueueId } from "@/lib/videoPlaybackEvent";
+import { allowsFullPlayer, isAudioControl, opensFullPlayerOnRequest } from "@/lib/mediaSurfaceRules";
 
 
-const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
 // Part du média déjà téléchargée (0 → 1), pour la barre de progression.
 const computeBufferedRatio = (el) => {
   try {
@@ -46,9 +46,6 @@ const computeBufferedRatio = (el) => {
     return 0;
   }
 };
-
-const isAudioControl = (control) =>
-  AUDIO_TYPES.has(control?.type) || control?.engine === "audio";
 
 const formatTime = (seconds) => {
   const total = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -161,9 +158,8 @@ const playVideo = (source) => {
   useEffect(() => subscribeMediaPlaybackRequests((requested) => {
     if (requested.type === "video") playVideo(requested.source);
     else if (requested.type === "youtube") playYouTube(requested.source);
-    if (requested.type === "video" || requested.type === "youtube" || requested.type === "radio") {
-      setExpanded(true);
-    }
+    // La radio se joue sur sa page : pas de plein écran (voir mediaSurfaceRules).
+    if (opensFullPlayerOnRequest(requested.type)) setExpanded(true);
   }), []);
 
   useEffect(() => {
@@ -238,7 +234,6 @@ const playVideo = (source) => {
         iframeRef.current.src = "about:blank";
         youtubePlayingRef.current = false;
       }
-      if (control.type === "radio") setExpanded(true);
     }
     previousControlRef.current = control;
   }, [control?.id, control?.source, control?.type, isNativeAndroidPlayer]);
@@ -353,7 +348,7 @@ const playVideo = (source) => {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
-  const isFullPlayer = expanded && control && !isAudioControl(control);
+  const isFullPlayer = expanded && allowsFullPlayer(control);
   const isVideo = control?.type === "video";
   const isYouTube = control?.type === "youtube";
   const isRadio = control?.type === "radio";
