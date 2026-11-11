@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond du lancement : même dégradé que l'animation de départ (CSS linear-gradient 135deg,
+     #4A6CFE -> #8A56E2 -> #FF57B2 ; angle Android 315 = du coin haut-gauche vers le bas-droite). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="#4A6CFE"
+        android:centerColor="#8A56E2"
+        android:endColor="#FF57B2" />
+</shape>

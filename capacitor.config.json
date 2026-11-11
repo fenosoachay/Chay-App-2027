@@ -2,6 +2,7 @@
   "appId": "io.chay.app",
   "appName": "Chay",
   "webDir": "dist",
+  "backgroundColor": "#00000000",
   "server": {
     "androidScheme": "https",
     "allowNavigation": []

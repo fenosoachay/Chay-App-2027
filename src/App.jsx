@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { AnimatePresence } from "framer-motion";
 import SplashScreen from "@/components/SplashScreen";
+import { SPLASH_DURATION_MS, removeBootSplash } from "@/lib/splash";
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -154,12 +155,15 @@ function App() {
     // Cache le splash natif Capacitor dès que React monte (double sécurité :
     // launchShowDuration est déjà à 0 dans capacitor.config.json).
     CapacitorSplashScreen.hide().catch(() => {});
-    if (!showSplash) return undefined;
+    if (!showSplash) {
+      // Pas d'animation (déjà vue dans cette session) : retirer tout de suite le fond de démarrage.
+      removeBootSplash();
+      return undefined;
+    }
     // Marqué immédiatement : un actualisation pendant l'animation ne la rejoue pas.
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
-    // Durée = fin de l'animation raccourcie du splash (citation à delay 0.7s
-    // + duration 0.4s), puis fondu de sortie 0.3s.
-    const t = setTimeout(() => setShowSplash(false), 1200);
+    // 4 s (apparitions lentes jusqu'à 3,4 s, puis pause), puis fondu de sortie ; un toucher la passe.
+    const t = setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
     return () => clearTimeout(t);
   }, [showSplash]);
 
@@ -178,7 +182,7 @@ function App() {
               <AuthenticatedApp />
             </ErrorBoundary>
             <AnimatePresence>
-              {showSplash && <SplashScreen key="splash" />}
+              {showSplash && <SplashScreen key="splash" onSkip={() => setShowSplash(false)} />}
             </AnimatePresence>
           </Router>
             <Toaster />

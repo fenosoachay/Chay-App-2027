@@ -41,6 +41,13 @@
     </script>
   </head>
   <body class="bg-black">
+    <!-- Fond de démarrage : même dégradé que le lancement natif Android et l'animation de départ,
+         affiché avant le chargement du code (sinon : écran noir entre les deux). Retiré par l'app. -->
+    <div id="chay-boot-splash" aria-hidden="true" style="position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg, #4A6CFE 0%, #8A56E2 50%, #FF57B2 100%)"></div>
+    <script>
+      // Animation déjà vue dans cette session (rechargement) : pas de fond de démarrage.
+      try { if (sessionStorage.getItem("chay_splash_shown") === "1") document.getElementById("chay-boot-splash").remove(); } catch (e) { /* ignore */ }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
