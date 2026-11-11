@@ -32,7 +32,16 @@ import {
   subscribeAndroidExoPlayer,
 } from "@/lib/androidExoPlayer";
 import { isActiveVideoEvent, videoQueueId } from "@/lib/videoPlaybackEvent";
-import { allowsFullPlayer, isAudioControl, opensFullPlayerOnRequest } from "@/lib/mediaSurfaceRules";
+import {
+  allowsFullPlayer,
+  doitArreterYoutubeReduit,
+  isAudioControl,
+  opensFullPlayerOnRequest,
+  youtubeEnApplicationExterne,
+  youtubeWatchUrl,
+} from "@/lib/mediaSurfaceRules";
+import { Capacitor } from "@capacitor/core";
+import { openExternal } from "@/lib/openExternal";
 
 
 // Part du média déjà téléchargée (0 → 1), pour la barre de progression.
@@ -156,6 +165,14 @@ const playVideo = (source) => {
 };
 
   useEffect(() => subscribeMediaPlaybackRequests((requested) => {
+    // Sécurité : dans l'APK Android, jamais de YouTube intégré (application YouTube à la place).
+    if (requested.type === "youtube" && youtubeEnApplicationExterne(Capacitor.getPlatform())) {
+      clearMediaControl(requested.id);
+      openExternal(youtubeWatchUrl(requested.source)).catch((error) => {
+        console.error("[MediaPlayer] Impossible d'ouvrir la vidéo dans YouTube.", error);
+      });
+      return;
+    }
     if (requested.type === "video") playVideo(requested.source);
     else if (requested.type === "youtube") playYouTube(requested.source);
     // La radio se joue sur sa page : pas de plein écran (voir mediaSurfaceRules).
@@ -349,6 +366,17 @@ const playVideo = (source) => {
   }, []);
 
   const isFullPlayer = expanded && allowsFullPlayer(control);
+
+  // YouTube réduit (croix, retour) : arrêt, au lieu d'un lecteur caché qui continue de jouer le son.
+  const youtubeAfficheRef = useRef(false);
+  useEffect(() => {
+    if (doitArreterYoutubeReduit(control, youtubeAfficheRef.current, isFullPlayer)) {
+      if (typeof control.stop === "function") control.stop();
+      else clearMediaControl(control.id);
+    }
+    youtubeAfficheRef.current = Boolean(isFullPlayer && control?.type === "youtube");
+  }, [isFullPlayer, control]);
+
   const isVideo = control?.type === "video";
   const isYouTube = control?.type === "youtube";
   const isRadio = control?.type === "radio";
