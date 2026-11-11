@@ -126,8 +126,13 @@ try {
   gabarit0 = await gabarit();
   sortie.length = 0;
   await run(['--duree-lien', '72h']);
-  check('simulation : durée et texte inchangés, texte « 72 heures » affiché',
-    (await duree()) === d0 && JSON.stringify(await gabarit()) === JSON.stringify(gabarit0) && sortie.some((l) => /expire au bout de 72 heures/.test(l)));
+  const simDuree = (await duree()) === d0;
+  const gabaritApres = await gabarit();
+  // Comparaison champ par champ (l'ordre des clés de la réponse n'est pas garanti).
+  const simTexte = gabaritApres?.subject === gabarit0?.subject && gabaritApres?.body === gabarit0?.body;
+  const simAffiche = sortie.some((l) => /expire au bout de 72 heures/.test(l));
+  check('simulation : durée et texte inchangés, texte « 72 heures » affiché', simDuree && simTexte && simAffiche,
+    JSON.stringify({ simDuree, simTexte, simAffiche, lignes: sortie.length }));
   await run(['--duree-lien', '72h', '--appliquer']);
   check('--appliquer : 72 h (259 200 s)', (await duree()) === 259200);
   const g72 = await gabarit();
