@@ -10,10 +10,13 @@ import { toast } from "@/components/ui/use-toast";
 import PlayerQueueList from "@/components/player/PlayerQueueList";
 import OfflinePlayerNotice from "@/components/player/OfflinePlayerNotice";
 import {
-  buildYouTubeEmbedUrl,
+  DELAI_RELAIS_MS,
+  lecteurYoutube,
+  messageErreurYoutube,
   YOUTUBE_ORIGIN,
   YOUTUBE_REFERRER_POLICY,
 } from "@/lib/youtubeEmbed";
+import { PB_PUBLIC_APP_URL } from "@/api/backendConfig";
 import {
   clearMediaControl,
   subscribeMediaControl,
@@ -37,11 +40,19 @@ import {
   doitArreterYoutubeReduit,
   isAudioControl,
   opensFullPlayerOnRequest,
-  youtubeEnApplicationExterne,
   youtubeWatchUrl,
 } from "@/lib/mediaSurfaceRules";
 import { Capacitor } from "@capacitor/core";
 import { openExternal } from "@/lib/openExternal";
+
+// YouTube : iframe directe sur le site ; dans l'APK Android, page relais sur membres.chay.fr (vrai domaine).
+const LECTEUR_YT = lecteurYoutube({
+  platform: Capacitor.getPlatform(),
+  pageOrigin: typeof window !== "undefined" ? window.location.origin : "",
+  relaisBase: PB_PUBLIC_APP_URL,
+});
+// Relais mal configuré : origine de repli (les messages vers une iframe vide sont simplement ignorés).
+const ORIGINE_YT = LECTEUR_YT.origin || YOUTUBE_ORIGIN;
 
 
 // Part du média déjà téléchargée (0 → 1), pour la barre de progression.
@@ -79,6 +90,10 @@ export default function UniversalMediaSurface() {
   const previousControlRef = useRef(null);
   controlRef.current = control;
   const youtubePlayingRef = useRef(false);
+  // Échec de lecture intégrée ({ source, code }) : message + « Ouvrir dans YouTube ».
+  const [erreurYoutube, setErreurYoutube] = useState(null);
+  const relaisDelaiRef = useRef(null);
+  useEffect(() => () => clearTimeout(relaisDelaiRef.current), []);
   // Source réellement chargée dans <video> : sert d'idempotence pour éviter
   // deux rechargements consécutifs de la même vidéo.
   const loadedSrcRef = useRef(null);
@@ -88,16 +103,27 @@ export default function UniversalMediaSurface() {
   const playYouTube = (source) => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-    const url = buildYouTubeEmbedUrl(source, window.location.origin);
+    const url = LECTEUR_YT.url(source);
+    clearTimeout(relaisDelaiRef.current);
     if (!url) {
       const active = controlRef.current;
       if (active?.type === "youtube") {
         updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+        if (LECTEUR_YT.relais && source) setErreurYoutube({ source, code: "relais" });
       }
       return;
     }
+    setErreurYoutube(null);
     if (iframe.src !== url) iframe.src = url;
     youtubePlayingRef.current = true;
+    // APK : si la page relais ne répond pas (hors ligne, page absente, en-têtes bloquants) -> repli.
+    if (LECTEUR_YT.relais) {
+      relaisDelaiRef.current = setTimeout(() => {
+        if (controlRef.current?.type !== "youtube") return;
+        setErreurYoutube({ source, code: "delai" });
+        updateMediaControl(controlRef.current.id, { isPlaying: false, isBuffering: false });
+      }, DELAI_RELAIS_MS);
+    }
   };
 
 // Charge et lit une vidéo dans l'élément <video> persistant.
@@ -165,14 +191,6 @@ const playVideo = (source) => {
 };
 
   useEffect(() => subscribeMediaPlaybackRequests((requested) => {
-    // Sécurité : dans l'APK Android, jamais de YouTube intégré (application YouTube à la place).
-    if (requested.type === "youtube" && youtubeEnApplicationExterne(Capacitor.getPlatform())) {
-      clearMediaControl(requested.id);
-      openExternal(youtubeWatchUrl(requested.source)).catch((error) => {
-        console.error("[MediaPlayer] Impossible d'ouvrir la vidéo dans YouTube.", error);
-      });
-      return;
-    }
     if (requested.type === "video") playVideo(requested.source);
     else if (requested.type === "youtube") playYouTube(requested.source);
     // La radio se joue sur sa page : pas de plein écran (voir mediaSurfaceRules).
@@ -277,7 +295,7 @@ const playVideo = (source) => {
         youtubePlayingRef.current = !youtubePlayingRef.current;
         iframeRef.current?.contentWindow?.postMessage(
           JSON.stringify({ event: "command", func: command, args: [] }),
-          YOUTUBE_ORIGIN
+          ORIGINE_YT
         );
         updateMediaControl(id, { isPlaying: youtubePlayingRef.current });
       } else {
@@ -299,7 +317,7 @@ const playVideo = (source) => {
       } else if (currentControl.type === "youtube") {
         iframeRef.current?.contentWindow?.postMessage(
           JSON.stringify({ event: "command", func: "stopVideo", args: [] }),
-          YOUTUBE_ORIGIN
+          ORIGINE_YT
         );
         if (iframeRef.current) iframeRef.current.src = "about:blank";
         youtubePlayingRef.current = false;
@@ -316,7 +334,7 @@ const playVideo = (source) => {
       } else if (currentControl.type === "youtube") {
         iframeRef.current?.contentWindow?.postMessage(
           JSON.stringify({ event: "command", func: "seekTo", args: [time, true] }),
-          YOUTUBE_ORIGIN
+          ORIGINE_YT
         );
       }
     };
@@ -333,14 +351,25 @@ const playVideo = (source) => {
 
   useEffect(() => {
     const onMessage = (event) => {
-      if (event.origin !== YOUTUBE_ORIGIN) return;
+      if (event.origin !== ORIGINE_YT) return;
       let data = event.data;
       if (typeof data === "string") {
         try { data = JSON.parse(data); } catch { return; }
       }
       const active = controlRef.current;
       if (active?.type !== "youtube") return;
+      if (data?.event === "ready") {
+        clearTimeout(relaisDelaiRef.current);
+        return;
+      }
+      if (data?.event === "onError") {
+        clearTimeout(relaisDelaiRef.current);
+        setErreurYoutube({ source: active.source, code: data.info });
+        updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
+        return;
+      }
       if (data?.event === "onStateChange") {
+        clearTimeout(relaisDelaiRef.current);
         const playerState = Number(data.info);
         updateMediaControl(active.id, {
           ...(playerState === 1 ? { isPlaying: true, isBuffering: false } : {}),
@@ -617,14 +646,41 @@ const playVideo = (source) => {
             updateMediaControl(active.id, { isPlaying: true, isBuffering: false });
             iframeRef.current?.contentWindow?.postMessage(
               JSON.stringify({ event: "listening", id: "chay-player", channel: "chay" }),
-              YOUTUBE_ORIGIN
+              ORIGINE_YT
             );
             iframeRef.current?.contentWindow?.postMessage(
               JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
-              YOUTUBE_ORIGIN
+              ORIGINE_YT
             );
           }}
         />
+
+        {/* Lecture intégrée impossible (intégration interdite par la chaîne, vidéo absente, relais injoignable). */}
+        {isYouTube && erreurYoutube && erreurYoutube.source === control?.source && (
+          <div role="alert" className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center text-white">
+            <p className="max-w-sm text-sm text-white/85">{messageErreurYoutube(erreurYoutube.code)}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => playYouTube(control.source)}
+                className="rounded-full border border-white/40 px-4 py-2 text-sm font-semibold"
+              >
+                Réessayer
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openExternal(youtubeWatchUrl(control.source)).catch((error) => {
+                    console.error("[MediaPlayer] Impossible d'ouvrir la vidéo dans YouTube.", error);
+                  });
+                }}
+                className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold"
+              >
+                Ouvrir dans YouTube
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       </div>
 

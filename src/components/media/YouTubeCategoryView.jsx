@@ -9,9 +9,6 @@ import YouTubeSortableList from "@/components/media/YouTubeSortableList";
 import YouTubeEditBar from "@/components/media/YouTubeEditBar";
 import YouTubeShuffleBanner from "@/components/media/YouTubeShuffleBanner";
 import { clearMediaControl, requestMediaPlayback } from "@/lib/mediaControl";
-import { Capacitor } from "@capacitor/core";
-import { openExternal } from "@/lib/openExternal";
-import { youtubeEnApplicationExterne, youtubeWatchUrl } from "@/lib/mediaSurfaceRules";
 import { useYoutubePrefs } from "@/hooks/useYoutubePrefs";
 import { applySavedOrder, shuffleArray } from "@/lib/youtubePrefs";
 
@@ -191,13 +188,6 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   const playQueue = useCallback((list, index) => {
     const item = list[index];
     if (!item?.youtube_id) return;
-    // APK Android : la vidéo s'ouvre dans l'application YouTube (l'intégration n'y fonctionne pas).
-    if (youtubeEnApplicationExterne(Capacitor.getPlatform())) {
-      openExternal(youtubeWatchUrl(item.youtube_id)).catch((error) => {
-        console.error("[YouTube] Impossible d'ouvrir la vidéo dans YouTube.", error);
-      });
-      return;
-    }
     setFinished(false);
     let id;
     const stop = () => {

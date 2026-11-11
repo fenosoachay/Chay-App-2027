@@ -33,6 +33,17 @@ membres.chay.fr {
 	@entry path / /index.html /sw.js /manifest.json
 	header @entry Cache-Control "no-cache"
 
+	# Lecteur YouTube de l'APK (docs/YOUTUBE-APK.md) : seule page affichable dans une iframe, et par l'APK seulement.
+	@ytrelais path /youtube-embed.html /youtube-embed.js
+	header @ytrelais {
+		-X-Frame-Options
+		-Content-Security-Policy-Report-Only
+		Content-Security-Policy "frame-ancestors https://localhost http://localhost capacitor://localhost"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Cache-Control "no-cache"
+		defer
+	}
+
 	# Téléchargements (APK Android) : servis depuis /srv/chay-app/telechargements, HORS de dist
 	# (un déploiement de l'app ne remplace que /srv/chay-app/dist). Voir « Téléchargements » plus bas.
 	handle /telechargements/* {

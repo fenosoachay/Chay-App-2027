@@ -31,11 +31,10 @@ test("UniversalMediaSurface applique la règle ; RadioContext garde la publicati
   assert.match(radio, /type: "radio"/);
 });
 
-test("YouTube : application externe dans l'APK Android, lecture intégrée sur le site", async () => {
-  const { youtubeEnApplicationExterne, youtubeWatchUrl } = await import("./mediaSurfaceRules.js");
-  assert.equal(youtubeEnApplicationExterne("android"), true);
-  assert.equal(youtubeEnApplicationExterne("web"), false);
-  assert.equal(youtubeEnApplicationExterne("ios"), false);
+test("YouTube : lien de repli « Ouvrir dans YouTube »", async () => {
+  const mod = await import("./mediaSurfaceRules.js");
+  const { youtubeWatchUrl } = mod;
+  assert.equal("youtubeEnApplicationExterne" in mod, false); // plus d'ouverture externe systématique
   assert.equal(youtubeWatchUrl("dQw4w9WgXcQ"), "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   assert.equal(youtubeWatchUrl("a&b"), "https://www.youtube.com/watch?v=a%26b");
 });
@@ -49,11 +48,17 @@ test("YouTube réduit : arrêté (plus de lecteur caché qui joue le son)", asyn
   assert.equal(doitArreterYoutubeReduit({ type: "video" }, true, false), false); // la vidéo mp4 continue en mini-lecteur
 });
 
-test("APK : YouTubeCategoryView et le lecteur commun ouvrent YouTube en externe ; le lecteur réduit s'arrête", () => {
-  const code = (f) => fs.readFileSync(new URL(f, import.meta.url), "utf8");
+test("APK : YouTube lu dans l'app (relais), repli « Ouvrir dans YouTube » seulement sur échec ; le lecteur réduit s'arrête", () => {
+  const code = (f) => fs.readFileSync(new URL(f, import.meta.url), "utf8").replace(/\/\/.*$/gm, "");
   const vue = code("../components/media/YouTubeCategoryView.jsx");
-  assert.match(vue, /youtubeEnApplicationExterne\(Capacitor\.getPlatform\(\)\)[\s\S]{0,40}openExternal\(youtubeWatchUrl\(item\.youtube_id\)\)/);
+  assert.doesNotMatch(vue, /openExternal|youtubeEnApplicationExterne/);
   const ums = code("../components/UniversalMediaSurface.jsx");
-  assert.match(ums, /requested\.type === "youtube" && youtubeEnApplicationExterne\(Capacitor\.getPlatform\(\)\)/);
+  assert.doesNotMatch(ums, /youtubeEnApplicationExterne/);
+  assert.match(ums, /lecteurYoutube\(\{/);
+  assert.match(ums, /const url = LECTEUR_YT\.url\(source\)/);
+  assert.equal((ums.match(/openExternal\(youtubeWatchUrl/g) || []).length, 1); // uniquement le bouton de repli
+  assert.match(ums, /isYouTube && erreurYoutube && erreurYoutube\.source === control\?\.source/);
+  assert.match(ums, /Ouvrir dans YouTube/);
+  assert.match(ums, /data\?\.event === "onError"/);
   assert.match(ums, /doitArreterYoutubeReduit\(control, youtubeAfficheRef\.current, isFullPlayer\)/);
 });
