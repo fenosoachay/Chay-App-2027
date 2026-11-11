@@ -29,3 +29,16 @@ test("plus aucun ancien nom dans l'interface, l'APK et les textes serveur", () =
   ];
   for (const f of fichiers) assert.doesNotMatch(lire(f), ANCIENS, f);
 });
+
+test("animation de départ : « Chay » seul, sans le sigle « EGC »", () => {
+  const splash = lire("src/components/SplashScreen.jsx").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+  assert.match(splash, />\s*Chay\s*</);
+  assert.doesNotMatch(splash, /\bEGC\b/);
+  assert.doesNotMatch(lire("src/lib/splash.js"), /sigle/);
+});
+
+test("Accueil : grand titre « Chay », phrase malgache « Fiangonana Chay » conservée", () => {
+  const home = lire("src/pages/Home.jsx");
+  assert.match(home, /<span className="brand-gradient-text">Chay<\/span>/);
+  assert.match(home, /Tongasoa eto amin'ny Fiangonana Chay/);
+});
