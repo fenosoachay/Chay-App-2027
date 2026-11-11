@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Image } from "@/components/ui/image";
+import FullImage from "@/components/ui/FullImage";
 import ReactMarkdown from "react-markdown";
 import DOMPurify from "dompurify";
 
@@ -86,22 +86,8 @@ export default function ArticleCard({ article }) {
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto sm:rounded-3xl">
           <div className="pr-7">
             {article.cover_url ? (
-              article.cover_cropped ? (
-                <Image
-                  src={article.cover_url}
-                  fittingType="fill"
-                  className="w-full h-44 md:h-56 rounded-2xl object-cover mb-5"
-                />
-              ) : (
-                // Non recadrée : image originale qui remplit tout le fond, sans déformation.
-                <div className="relative w-full min-h-44 md:min-h-56 rounded-2xl overflow-hidden mb-5">
-                  <img
-                    src={article.cover_url}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-              )
+              // Image entière (recadrée à l'envoi ou non) : jamais recoupée à l'affichage.
+              <FullImage src={article.cover_url} className="rounded-2xl mb-5 bg-muted/40" />
             ) : (
               <div className="w-full h-32 rounded-2xl brand-gradient mb-5" />
             )}

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Image } from "@/components/ui/image";
+import FullImage from "@/components/ui/FullImage";
 import VideoPlayer from "@/components/player/VideoPlayer";
 import ReactMarkdown from "react-markdown";
 
@@ -45,13 +45,8 @@ export default function ContentDetailDialog({ item, open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        {item.thumbnail_url && (
-          <Image
-            src={item.thumbnail_url}
-            fittingType="fill"
-            className="w-full h-48 rounded-xl mb-4"
-          />
-        )}
+        {/* Image entière, sans recadrage. */}
+        <FullImage src={item.thumbnail_url} className="rounded-xl mb-4 bg-muted/40" />
 
         <DialogHeader>
           <DialogTitle className="text-2xl">{item.title}</DialogTitle>
