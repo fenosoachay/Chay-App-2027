@@ -1,7 +1,15 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { base44 } from '@/api/base44Client';
+import { IS_POCKETBASE, readPocketBaseToken } from '@/api/backendConfig';
 import { appParams } from '@/lib/app-params';
 import { readLocalSession, saveLocalSession, clearLocalSession } from '@/lib/localSession';
+import { decisionApresEchec, decisionHorsLigne, doitVerifierAuRetour, etatInitial } from '@/lib/sessionPolicy';
+
+// Jeton lu au moment voulu (et non figé au chargement du module : après une connexion dans la même
+// session, appParams.token ne le connaît pas).
+const jetonActuel = () => (IS_POCKETBASE ? readPocketBaseToken() : appParams.token);
+const enLigne = () => typeof navigator === 'undefined' || navigator.onLine;
 
 const AuthContext = createContext();
 
@@ -18,23 +26,29 @@ const isNetworkFailure = (error) =>
   !error?.status || error.status >= 500;
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => readLocalSession(appParams.token));
-  // Jeton présent + en ligne : on démarre en chargement (et non en mode invité)
-  // pour ne jamais montrer l'accueil invité avant la page connectée.
-  const hasSessionAtStart = Boolean(appParams.token) && (typeof navigator === 'undefined' || navigator.onLine);
-  const [isLocalMode, setIsLocalMode] = useState(!hasSessionAtStart);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(hasSessionAtStart);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(hasSessionAtStart);
+  // Lancement : jeton + en ligne -> vérification ; jeton + hors ligne + profil mémorisé -> app complète
+  // (session gardée, vérifiée au retour du réseau) ; sinon accueil invité (mode local).
+  const [initial] = useState(() => {
+    const jeton = jetonActuel();
+    const profil = readLocalSession(jeton);
+    return { profil, ...etatInitial({ jeton, enLigne: enLigne(), profil }) };
+  });
+  const [user, setUser] = useState(initial.profil);
+  const [isLocalMode, setIsLocalMode] = useState(initial.modeLocal);
+  const [isAuthenticated, setIsAuthenticated] = useState(initial.connecte);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(initial.chargement);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(initial.chargement);
   const [authError, setAuthError] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [authChecked, setAuthChecked] = useState(true);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
+  const essaisRef = useRef(0);
+  const nouvelEssaiRef = useRef(null);
+  const derniereVerificationRef = useRef(Date.now());
 
-  // Aucun appel serveur au montage, même lorsque navigator.onLine vaut true.
-  // La connexion est une action volontaire ; un profil mémorisé reste local.
+  // Mode local (accueil invité) : seulement quand AUCUNE session n'est connue.
   const enterLocalMode = () => {
-    setUser(readLocalSession(appParams.token));
+    setUser(readLocalSession(jetonActuel()));
     setIsLocalMode(true);
     setIsAuthenticated(false);
     setAuthError(null);
@@ -43,44 +57,79 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
   };
 
-  // Démarrage : si un jeton est conservé (localStorage, géré par le SDK), on
-  // restaure la session tant que l'utilisateur ne s'est pas déconnecté lui-même.
+  // Session gardée malgré un échec temporaire (hors ligne, délai, 429, 5xx) : app complète avec le
+  // dernier profil connu ; le bandeau « hors ligne » de la mise en page signale la coupure.
+  const garderSession = (profil) => {
+    setUser((actuel) => actuel || profil);
+    setIsLocalMode(false);
+    setIsAuthenticated(true);
+    setAuthError(null);
+    setAuthChecked(true);
+    setIsLoadingPublicSettings(false);
+    setIsLoadingAuth(false);
+  };
+
+  // Hors ligne (évènement « offline » ou lancement hors ligne) : la session est gardée si elle est connue.
+  const passerHorsLigne = () => {
+    const jeton = jetonActuel();
+    const profil = readLocalSession(jeton);
+    if (decisionHorsLigne({ jeton, profil }) === 'garder') garderSession(profil);
+    else enterLocalMode();
+  };
+
+  const programmerNouvelEssai = (delai) => {
+    clearTimeout(nouvelEssaiRef.current);
+    if (delai) nouvelEssaiRef.current = setTimeout(() => { checkUserAuth({ enArrierePlan: true }); }, delai);
+  };
+
+  // Démarrage : jeton conservé (localStorage, géré par le SDK) et en ligne -> vérification.
   // Sans jeton : accueil en mode invité, aucun écran de connexion bloquant.
-  // Hors ligne : on reste en mode local avec le profil mémorisé.
   useEffect(() => {
     try { sessionStorage.removeItem('chay_just_logged_in'); } catch { /* stockage indisponible */ }
-    if (appParams.token && navigator.onLine) checkAppState();
+    if (initial.verifier) checkAppState();
+    return () => clearTimeout(nouvelEssaiRef.current);
   }, []);
 
+  // Coupure : session gardée. Retour du réseau : vérification (sans écran de chargement).
   useEffect(() => {
-    window.addEventListener('offline', enterLocalMode);
-    return () => window.removeEventListener('offline', enterLocalMode);
+    const onOffline = () => passerHorsLigne();
+    const onOnline = () => { if (jetonActuel()) checkUserAuth({ enArrierePlan: true }); };
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+    return () => {
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
+    };
   }, []);
 
-  // Session maintenue : revalidation toutes les 23 h pendant l'utilisation, et
-  // au retour sur l'application après une longue absence. Un échec réseau ne
-  // déconnecte jamais ; seul un refus explicite du serveur (401/403) le fait.
+  // Session maintenue : à chaque retour dans l'app (APK : appStateChange actif ; site : onglet visible),
+  // au plus une fois par minute, et toutes les 23 h pendant l'utilisation. Le rafraîchissement prolonge
+  // le jeton (authRefresh). Un échec réseau ne déconnecte jamais ; seule une révocation réelle le fait.
   useEffect(() => {
     const REFRESH_MS = 23 * 60 * 60 * 1000;
-    let last = Date.now();
-    const refresh = () => {
-      if (!appParams.token || !navigator.onLine) return;
-      last = Date.now();
-      checkUserAuth();
+    const verifier = () => {
+      if (!jetonActuel() || !enLigne()) return;
+      if (!doitVerifierAuRetour(derniereVerificationRef.current)) return;
+      checkUserAuth({ enArrierePlan: true });
     };
-    const interval = setInterval(refresh, REFRESH_MS);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && Date.now() - last > REFRESH_MS) refresh();
-    };
+    const interval = setInterval(() => { derniereVerificationRef.current = 0; verifier(); }, REFRESH_MS);
+    const onVisible = () => { if (document.visibilityState === 'visible') verifier(); };
     document.addEventListener('visibilitychange', onVisible);
+    let appHandle = null;
+    let annule = false;
+    CapacitorApp.addListener('appStateChange', ({ isActive }) => { if (isActive) verifier(); })
+      .then((h) => { if (annule) h.remove(); else appHandle = h; })
+      .catch(() => { /* web : pas d'évènement natif */ });
     return () => {
+      annule = true;
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
+      appHandle?.remove();
     };
   }, []);
 
   const checkAppState = async () => {
-    if (!navigator.onLine) { enterLocalMode(); return; }
+    if (!navigator.onLine) { passerHorsLigne(); return; }
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -89,7 +138,7 @@ export const AuthProvider = ({ children }) => {
         // Réglages publics et profil utilisateur demandés en parallèle (avant :
         // l'un après l'autre, ce qui doublait le temps d'attente au démarrage).
         const settingsPromise = withTimeout(base44.app.getPublicSettings());
-        const userPromise = appParams.token ? checkUserAuth() : null;
+        const userPromise = jetonActuel() ? checkUserAuth() : null;
         const publicSettings = await settingsPromise;
         setAppPublicSettings(publicSettings);
 
@@ -105,11 +154,10 @@ export const AuthProvider = ({ children }) => {
       } catch (appError) {
         console.error('App state check failed:', appError);
 
-        // Réseau absent / trop lent : si l'utilisateur s'est déjà connecté sur
-        // cet appareil (jeton enregistré), on ouvre l'application en mode hors
-        // ligne (Bible, dictionnaire, concordance sont embarqués).
-        if (isNetworkFailure(appError)) {
-          enterLocalMode();
+        // Réseau absent / trop lent / limite de requêtes : la session connue est gardée (app complète,
+        // bandeau « hors ligne ») ; sans session connue, accueil invité comme avant.
+        if (isNetworkFailure(appError) || appError?.status === 429 || appError?.status === 408) {
+          passerHorsLigne();
           return;
         }
         
@@ -151,11 +199,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkUserAuth = async () => {
-    if (!navigator.onLine) { enterLocalMode(); return; }
+  // enArrierePlan : vérification au retour du réseau ou de l'app, sans écran de chargement.
+  const checkUserAuth = async ({ enArrierePlan = false } = {}) => {
+    if (!navigator.onLine) { passerHorsLigne(); return; }
+    derniereVerificationRef.current = Date.now();
     try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
+      if (!enArrierePlan) setIsLoadingAuth(true);
       const currentUser = await withTimeout(base44.auth.me());
       saveLocalSession(currentUser);
       setUser(currentUser);
@@ -164,32 +213,36 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      essaisRef.current = 0;
+      clearTimeout(nouvelEssaiRef.current);
     } catch (error) {
       console.error('User auth check failed:', error);
+      const jeton = jetonActuel();
+      const decision = decisionApresEchec({ erreur: error, jeton, profil: readLocalSession(jeton), essai: essaisRef.current });
       setIsLoadingAuth(false);
       setAuthChecked(true);
-      // Hors ligne avec un jeton enregistré : on reste « connecté » localement.
-      if (isNetworkFailure(error)) {
-        enterLocalMode();
-        return;
-      }
-      setIsAuthenticated(false);
 
-      // Jeton expiré ou refusé par le serveur : on le retire et on revient en
-      // mode invité (accueil), sans écran de connexion bloquant.
-      if (error.status === 401 || error.status === 403) {
+      if (decision.action === 'deconnecter') {
+        // Révocation réelle (401/403/404 de authRefresh) : jeton retiré (l'adaptateur PocketBase vide déjà
+        // le sien), accueil invité, sans écran de connexion bloquant.
         try {
           window.localStorage.removeItem('base44_access_token');
           window.localStorage.removeItem('token');
         } catch { /* stockage indisponible */ }
         clearLocalSession();
+        clearTimeout(nouvelEssaiRef.current);
+        essaisRef.current = 0;
         setUser(null);
+        setIsAuthenticated(false);
         setIsLocalMode(true);
         setAuthError(null);
-      } else {
-        // Autre échec : jamais d'app « connectée » sans utilisateur vérifié.
-        setIsLocalMode(true);
+        return;
       }
+      // Échec temporaire (réseau, délai, 429, 5xx) : jamais de déconnexion ; nouvel essai plus tard.
+      essaisRef.current += 1;
+      programmerNouvelEssai(decision.reessayerDans);
+      if (decision.action === 'garder') garderSession(readLocalSession(jeton));
+      else enterLocalMode();
     }
   };
 

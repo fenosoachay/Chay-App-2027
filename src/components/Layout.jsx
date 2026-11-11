@@ -9,6 +9,7 @@ import AutoOpenAudioPlayer from "@/components/player/AutoOpenAudioPlayer";
 import PullDownMediaBar from "@/components/PullDownMediaBar";
 import UniversalMediaSurface from "@/components/UniversalMediaSurface";
 import BrandLogo from "@/components/BrandLogo";
+import OfflineBanner from "@/components/OfflineBanner";
 import { useAuth } from "@/lib/AuthContext";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresence";
@@ -232,6 +233,8 @@ export default function Layout() {
           </div>
         </div>
       </header>
+
+      <OfflineBanner />
 
       <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
         <AnimatedOutlet />
