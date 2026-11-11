@@ -7,7 +7,8 @@ import { usePresenceHeartbeat, useProfiles } from "@/hooks/usePresence";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { setActiveChat } from "@/lib/activeChat";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
-import { MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
+import { reprendreConversation } from "@/lib/conversationReprise";
 import ConversationList from "@/components/messages/ConversationList";
 import ConversationView from "@/components/messages/ConversationView";
 import NewChatSheet from "@/components/messages/NewChatSheet";
@@ -24,6 +25,9 @@ export default function Messages() {
   const [conversations, setConversations] = useState([]);
   const [messagesByConv, setMessagesByConv] = useState({});
   const [loading, setLoading] = useState(true);
+  // Reprise d'une conversation ?c= absente de la liste : { id, etat: chargement | ok | introuvable | erreur, conversation }.
+  const [reprise, setReprise] = useState({ id: null, etat: null, conversation: null });
+  const [essaiReprise, setEssaiReprise] = useState(0);
   const [newOpen, setNewOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(
     () => localStorage.getItem("chay_chat_banner") === "1"
@@ -41,16 +45,18 @@ export default function Messages() {
 
   const loadAll = async () => {
     const [convos, msgs] = await Promise.all([
-      base44.entities.Conversation.list("-updated_date", 100).catch(() => []),
+      base44.entities.Conversation.list("-updated_date", 100).catch((error) => {
+        console.warn("[Messages] Liste des conversations indisponible.", error);
+        return null;
+      }),
       base44.entities.Message.list("-created_date", 500).catch((error) => {
         console.error("[Messages] Impossible de charger les messages récents.", error);
-        return [];
+        return null;
       }),
     ]);
-    const cArr = (Array.isArray(convos) ? convos : []).filter(isMine);
-    const mArr = (Array.isArray(msgs) ? msgs : []).filter(isMine);
-    setConversations(cArr);
-    setMessagesByConv(groupMessagesByConversation(mArr));
+    // Échec (réseau, 429, 5xx) : on garde les dernières données au lieu de vider la liste.
+    if (Array.isArray(convos)) setConversations(convos.filter(isMine));
+    if (Array.isArray(msgs)) setMessagesByConv(groupMessagesByConversation(msgs.filter(isMine)));
     setLoading(false);
   };
 
@@ -111,7 +117,32 @@ export default function Messages() {
     };
   }, []);
 
-  const activeConv = conversations.find((c) => c.id === activeId) || null;
+  const activeConv =
+    conversations.find((c) => c.id === activeId) ||
+    (reprise.id === activeId ? reprise.conversation : null) ||
+    null;
+
+  const convVisible = Boolean(activeConv);
+  // ?c= absent de la liste (notification, liste en retard ou en erreur) : lecture directe avec nouveaux essais.
+  useEffect(() => {
+    if (!activeId || loading || convVisible) return undefined;
+    let annule = false;
+    setReprise({ id: activeId, etat: "chargement", conversation: null });
+    reprendreConversation({
+      id: activeId,
+      lire: (id) => base44.entities.Conversation.get(id),
+      estAMoi: isMine,
+      annule: () => annule,
+    }).then((r) => {
+      if (annule || r.etat === "annule") return;
+      setReprise({ id: activeId, etat: r.etat, conversation: r.etat === "ok" ? r.conversation : null });
+    });
+    return () => {
+      annule = true;
+    };
+  }, [activeId, loading, convVisible, essaiReprise]);
+
+  const etatReprise = !activeId || activeConv ? null : loading || reprise.id !== activeId ? "chargement" : reprise.etat;
 
   useEffect(() => {
     if (activeConv && user) {
@@ -156,7 +187,23 @@ export default function Messages() {
           </button>
         </div>
       )}
-      {activeId && !activeConv && !loading ? (
+      {etatReprise === "chargement" ? (
+        <div role="status" className="py-20 flex items-center justify-center gap-2 text-foreground/60">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Chargement…
+        </div>
+      ) : etatReprise === "erreur" ? (
+        <div role="alert" className="py-20 text-center text-foreground/70 space-y-4">
+          <p>Impossible de charger la conversation.</p>
+          <button
+            type="button"
+            onClick={() => setEssaiReprise((n) => n + 1)}
+            className="rounded-full brand-gradient text-white px-5 py-2 text-sm font-bold"
+          >
+            Réessayer
+          </button>
+        </div>
+      ) : etatReprise === "introuvable" ? (
         <div className="py-20 text-center text-foreground/50">
           Conversation introuvable.
         </div>
