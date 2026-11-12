@@ -2,9 +2,11 @@ package io.chay.app;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
@@ -37,6 +39,22 @@ public class MainActivity extends BridgeActivity {
             // Lecture sans geste utilisateur (enchaînement des vidéos/musiques).
             webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
         }
+        // Fond transparent (capacitor.config.json) seulement pendant le lancement : le dégradé de la fenêtre
+        // (styles.xml) apparaît à travers la WebView, sans éclair blanc. Dès que la page est chargée, son propre
+        // dégradé (#chay-boot-splash) couvre l'écran : la WebView redevient opaque, car une WebView transparente
+        // peut afficher les vidéos (iframe YouTube) en noir.
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override
+            public void onPageLoaded(WebView view) {
+                view.setBackgroundColor(couleurFondOpaque());
+            }
+        });
+    }
+
+    /** Fond de l'application (--background de src/index.css) : clair #FDFBF7, sombre noir. */
+    private int couleurFondOpaque() {
+        int nuit = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return nuit == Configuration.UI_MODE_NIGHT_YES ? Color.BLACK : Color.rgb(253, 251, 247);
     }
 
     // Capacitor met le WebView en pause avec l'activité (onPause puis onStop),
