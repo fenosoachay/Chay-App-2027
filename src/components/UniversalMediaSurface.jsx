@@ -37,6 +37,7 @@ import {
 import { isActiveVideoEvent, videoQueueId } from "@/lib/videoPlaybackEvent";
 import {
   allowsFullPlayer,
+  classeVideoLecteur,
   doitArreterYoutubeReduit,
   isAudioControl,
   opensFullPlayerOnRequest,
@@ -538,7 +539,7 @@ const playVideo = (source) => {
         <div className="relative h-full w-full">
         <video
   ref={videoRef}
-          className={`h-full w-full bg-black object-contain ${isNativeAndroidPlayer ? "opacity-0" : isVideo ? "block" : "hidden"}`}
+          className={`h-full w-full bg-black object-contain ${classeVideoLecteur({ isNativeAndroidPlayer, isVideo })}`}
   playsInline
           controls={showEmbeddedPlayer && isVideo && !isNativeAndroidPlayer}
   controlsList="nodownload"

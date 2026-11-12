@@ -21,3 +21,14 @@ export const youtubeWatchUrl = (videoId) => `https://www.youtube.com/watch?v=${e
 /** Lecteur YouTube réduit (passage plein écran -> réduit) : la vidéo doit s'arrêter, pas jouer en caché. */
 export const doitArreterYoutubeReduit = (control, etaitAffiche, estAffiche) =>
   control?.type === "youtube" && Boolean(etaitAffiche) && !estAffiche;
+
+/**
+ * Classes de la balise <video> du lecteur commun. Dans l'APK, l'image des vidéos vient de la vue native ExoPlayer
+ * (la balise ne sert qu'à mesurer l'emplacement) : invisible mais présente pour une vidéo, et RETIRÉE de la mise en
+ * page sinon. Sans cela, pour YouTube, la balise invisible occupait tout le cadre et poussait l'iframe sous le bord
+ * (overflow-hidden) : son présent, image noire.
+ */
+export function classeVideoLecteur({ isNativeAndroidPlayer, isVideo }) {
+  if (!isVideo) return "hidden";
+  return isNativeAndroidPlayer ? "block opacity-0" : "block";
+}

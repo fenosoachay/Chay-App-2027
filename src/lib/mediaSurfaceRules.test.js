@@ -62,3 +62,18 @@ test("APK : YouTube lu dans l'app (relais), repli « Ouvrir dans YouTube » seul
   assert.match(ums, /data\?\.event === "onError"/);
   assert.match(ums, /doitArreterYoutubeReduit\(control, youtubeAfficheRef\.current, isFullPlayer\)/);
 });
+
+test("APK : pendant YouTube, la balise <video> est retirée de la mise en page (sinon iframe poussée hors du cadre = image noire)", async () => {
+  const { classeVideoLecteur } = await import("./mediaSurfaceRules.js");
+  assert.equal(classeVideoLecteur({ isNativeAndroidPlayer: true, isVideo: false }), "hidden"); // YouTube dans l'APK
+  assert.equal(classeVideoLecteur({ isNativeAndroidPlayer: false, isVideo: false }), "hidden"); // YouTube sur le site
+  assert.equal(classeVideoLecteur({ isNativeAndroidPlayer: true, isVideo: true }), "block opacity-0"); // image par ExoPlayer
+  assert.equal(classeVideoLecteur({ isNativeAndroidPlayer: false, isVideo: true }), "block");
+  const ums = fs.readFileSync(new URL("../components/UniversalMediaSurface.jsx", import.meta.url), "utf8");
+  assert.match(ums, /object-contain \$\{classeVideoLecteur\(\{ isNativeAndroidPlayer, isVideo \}\)\}/);
+  assert.doesNotMatch(ums, /isNativeAndroidPlayer \? "opacity-0"/);
+  // Les seules couches au-dessus de l'iframe : poster/spinner (vidéo seulement) et le repli d'erreur YouTube.
+  assert.match(ums, /showVideoSpinner = Boolean\(isVideo && videoWaiting\)/);
+  // La vue native ExoPlayer n'est rendue visible que pour une vidéo.
+  assert.match(ums, /const visible = Boolean\(showEmbeddedPlayer && isVideo && rect/);
+});
