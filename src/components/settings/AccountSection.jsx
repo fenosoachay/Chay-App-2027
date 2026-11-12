@@ -10,7 +10,7 @@ import { Image } from "@/components/ui/image";
 import { useToast } from "@/components/ui/use-toast";
 import { Camera, Loader2, Save, BadgeCheck, Mail } from "lucide-react";
 import CroppableUploader from "@/components/media/CroppableUploader";
-import ImageCrop from "@/components/media/ImageCrop";
+import RognageCarre from "@/components/settings/RognageCarre";
 import {
   Dialog,
   DialogContent,
@@ -154,6 +154,7 @@ export default function AccountSection() {
           <input
             type="file"
             accept="image/*"
+            aria-label="Photo de profil"
             className="hidden"
             onChange={(e) => pickAvatar(e.target.files?.[0])}
           />
@@ -168,13 +169,12 @@ export default function AccountSection() {
           <DialogHeader>
             <DialogTitle>Recadrer la photo de profil</DialogTitle>
             <DialogDescription>
-              Ajustez le cadre carré, puis validez.
+              La photo de profil est toujours carrée.
             </DialogDescription>
           </DialogHeader>
           {avatarFile && (
-            <ImageCrop
+            <RognageCarre
               file={avatarFile}
-              aspect={1}
               onCancel={() => {
                 setAvatarCropOpen(false);
                 setAvatarFile(null);
