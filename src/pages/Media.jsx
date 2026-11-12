@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 
@@ -51,20 +51,16 @@ export default function Media() {
   }, [loading, user?.id, tracks, sermons, videos, articles, youtube, gallery, playlist, playlists, playlistTracks]);
 
 
-  const loadAll = async () => {
-    const [
-      t, s, v, a, y, g, p, pl, pt,
-      targetTracks, targetVideos, targetArticles, targetImages,
-    ] = await Promise.all([
-      base44.entities.MusicTrack.list("-created_date", 30).catch(() => []),
-      base44.entities.Sermon.list("-date", 30).catch(() => []),
-      base44.entities.Video.list("-created_date", 30).catch(() => []),
-      base44.entities.Article.list("order", 20).catch(() => []),
-      loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
-      base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
-      base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
-      base44.entities.Playlist.list("-created_date", 50).catch(() => []),
-      base44.entities.PlaylistTrack.list("-created_date", 200).catch(() => []),
+  const mergeById = (list, extras) => {
+    const merged = new Map((Array.isArray(list) ? list : []).map((item) => [item.id, item]));
+    (Array.isArray(extras) ? extras : []).forEach((item) => merged.set(item.id, item));
+    return [...merged.values()];
+  };
+
+  // Contenu visé par une notification (ou un lien) : chargé par son id, même s'il n'est pas dans les
+  // listes paginées ci-dessous, et rechargé quand la cible change alors que la page est déjà ouverte.
+  const chargerCibles = async (knownPlaylists = playlists) => {
+    const [targetTracks, targetVideos, targetArticles, targetImages] = await Promise.all([
       targetTrackId
         ? base44.entities.PlaylistTrack.filter({ track_id: targetTrackId }, "-created_date", 50).catch(() => [])
         : Promise.resolve([]),
@@ -78,28 +74,39 @@ export default function Media() {
         ? base44.entities.GalleryImage.filter({ id: targetImageId }, "-created_date", 1).catch(() => [])
         : Promise.resolve([]),
     ]);
-    const mergeById = (list, extras) => {
-      const merged = new Map((Array.isArray(list) ? list : []).map((item) => [item.id, item]));
-      (Array.isArray(extras) ? extras : []).forEach((item) => merged.set(item.id, item));
-      return [...merged.values()];
-    };
     const targetPlaylistIdForTrack =
       targetPlaylistId || (Array.isArray(targetTracks) ? targetTracks[0]?.playlist_id : null);
     const extraPlaylists =
-      targetPlaylistIdForTrack && !(Array.isArray(pl) ? pl : []).some((item) => item.id === targetPlaylistIdForTrack)
+      targetPlaylistIdForTrack && !(Array.isArray(knownPlaylists) ? knownPlaylists : []).some((item) => item.id === targetPlaylistIdForTrack)
         ? await base44.entities.Playlist.filter(
             { id: targetPlaylistIdForTrack },
             "-created_date",
             1
           ).catch(() => [])
         : [];
+    return { targetTracks, targetVideos, targetArticles, targetImages, extraPlaylists };
+  };
+
+  const trierArticles = (list) => list.sort((x, y) => (x.order ?? 99999) - (y.order ?? 99999)
+    || new Date(y.created_date || 0) - new Date(x.created_date || 0));
+
+  const loadAll = async () => {
+    const [t, s, v, a, y, g, p, pl, pt] = await Promise.all([
+      base44.entities.MusicTrack.list("-created_date", 30).catch(() => []),
+      base44.entities.Sermon.list("-date", 30).catch(() => []),
+      base44.entities.Video.list("-created_date", 30).catch(() => []),
+      base44.entities.Article.list("order", 20).catch(() => []),
+      loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
+      base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
+      base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
+      base44.entities.Playlist.list("-created_date", 50).catch(() => []),
+      base44.entities.PlaylistTrack.list("-created_date", 200).catch(() => []),
+    ]);
+    const { targetTracks, targetVideos, targetArticles, targetImages, extraPlaylists } = await chargerCibles(pl);
     setTracks(Array.isArray(t) ? t : []);
     setSermons(Array.isArray(s) ? s : []);
     setVideos(Array.isArray(v) ? v : []);
-    setArticles(
-      mergeById(a, targetArticles).sort((x, y) => (x.order ?? 99999) - (y.order ?? 99999)
-        || new Date(y.created_date || 0) - new Date(x.created_date || 0))
-    );
+    setArticles(trierArticles(mergeById(a, targetArticles)));
     setYoutube(mergeById(y, targetVideos));
     setGallery(mergeById(g, targetImages));
     setPlaylist(Array.isArray(p) ? p : []);
@@ -116,6 +123,26 @@ export default function Media() {
       }
     })();
   }, []);
+
+  // Nouvelle cible alors que Multimédia est déjà ouvert (clic sur une notification, app ouverte).
+  const premiereCible = useRef(true);
+  useEffect(() => {
+    if (premiereCible.current) {
+      premiereCible.current = false;
+      return;
+    }
+    if (!targetTrackId && !targetVideoId && !targetArticleId && !targetImageId) return;
+    let actif = true;
+    chargerCibles().then(({ targetTracks, targetVideos, targetArticles, targetImages, extraPlaylists }) => {
+      if (!actif) return;
+      if (targetArticles.length) setArticles((list) => trierArticles(mergeById(list, targetArticles)));
+      if (targetVideos.length) setYoutube((list) => mergeById(list, targetVideos));
+      if (targetImages.length) setGallery((list) => mergeById(list, targetImages));
+      if (extraPlaylists.length) setPlaylists((list) => mergeById(list, extraPlaylists));
+      if (targetTracks.length) setPlaylistTracks((list) => mergeById(list, targetTracks));
+    });
+    return () => { actif = false; };
+  }, [targetTrackId, targetPlaylistId, targetVideoId, targetArticleId, targetImageId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addToPlaylist = async (item, category) => {
     try {

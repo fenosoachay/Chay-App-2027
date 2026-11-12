@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { cibleCloche } from "@/lib/routesNotification";
+import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { useAuth } from "@/lib/AuthContext";
 import { X } from "lucide-react";
 
@@ -93,13 +95,7 @@ export default function NotificationBanner() {
     } catch {
       /* ignore */
     }
-    if (n.type === "message" || n.content_type === "message") {
-      navigate(n.content_id ? `/messages?c=${n.content_id}` : "/messages");
-    } else if (n.type === "new_content") {
-      navigate("/media");
-    } else if (n.type === "like" || n.type === "comment") {
-      navigate("/community");
-    }
+    ouvrirNotification(cibleCloche(n), navigate);
   };
 
   if (!banner) return null;

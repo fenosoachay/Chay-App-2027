@@ -11,6 +11,7 @@ import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import AnimatedBlobs from "@/components/home/AnimatedBlobs";
 import HomeSocialLinks from "@/components/home/HomeSocialLinks";
 import RequestsSection from "@/components/home/RequestsSection";
+import CibleNotificationAccueil from "@/components/home/CibleNotificationAccueil";
 
 export default function Home() {
   const { user, isLocalMode, isAuthenticated } = useAuth();
@@ -78,6 +79,9 @@ export default function Home() {
 
           {/* 9. Liens sociaux */}
           <HomeSocialLinks />
+
+          {/* Notification ouverte : verset, annonce, réunion ou contenu visé (?verset= / ?annonce= / ?contenu=) */}
+          {!isLocalMode && isAuthenticated && <CibleNotificationAccueil />}
 
         </div>
       </div>

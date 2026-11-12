@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { deactivateDeviceToken, upsertDeviceToken } from "@/lib/deviceTokenSync";
+import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { foregroundPushToast } from "@/lib/pushForeground";
 
 const CHANNEL_ID = "chay-default";
@@ -145,12 +146,8 @@ export function usePushNotifications(navigate) {
         );
         handles.push(
           await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-            const data = action?.notification?.data || {};
-            const t = data.target_type;
-            const id = data.target_id;
-            if (t === "message" && id) navigate(`/messages?c=${id}`);
-            else if (t === "content") navigate("/media");
-            else if (t === "community") navigate("/community");
+            // App ouverte ou fermée (Capacitor garde le clic jusqu'à ce listener) : écran précis du contenu.
+            ouvrirNotification(action?.notification?.data || {}, navigate);
           })
         );
 

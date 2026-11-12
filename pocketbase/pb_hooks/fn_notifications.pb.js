@@ -29,6 +29,7 @@ routerAdd('POST', '/api/fn/sendFcmPush', (e) => {
       body: String(body.body || '').slice(0, 100),
       target_type: body.target_type,
       target_id: body.target_id,
+      route: body.route,
     }, 'sendFcmPush');
   });
 });
@@ -48,6 +49,7 @@ routerAdd('POST', '/api/fn/sendWebPush', (e) => {
       body: String(body.body || '').slice(0, 300),
       target_type: body.target_type,
       target_id: body.target_id,
+      route: body.route,
     });
   });
 });

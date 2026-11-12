@@ -9,6 +9,7 @@
 const sortie = () => require(`${__hooks}/lib/sortie.js`);
 // Chargé à la demande (comme sortie) : push.js reste chargeable hors de PocketBase pour les tests.
 const bilan = () => require(`${__hooks}/lib/bilan-push.js`);
+const cibles = () => require(`${__hooks}/lib/cibles.js`);
 
 const QUEUE = 'PushEnvoi';
 const BATCH = 500;
@@ -25,14 +26,21 @@ function config() {
 
 const pbDate = (ms) => new Date(ms).toISOString().replace('T', ' ');
 
-/** Notification normalisée : titre 100, texte 300 caractères. */
+/**
+ * Notification normalisée : titre 100, texte 300 caractères ; `route` = écran précis à ouvrir au clic
+ * (lib/cibles.js), fournie par l'appelant ou déduite de target_type / target_id.
+ */
 function normalize(n) {
-  return {
+  const out = {
     title: String(n.title || 'ÉGLISE CHAY').slice(0, 100),
     body: String(n.body || '').slice(0, 300),
     target_type: String(n.target_type || '').slice(0, 64),
     target_id: String(n.target_id || '').slice(0, 64),
   };
+  const c = cibles();
+  const route = c.routeValide(n.route) ? n.route : c.routeCible(out.target_type, out.target_id);
+  if (route && c.routeValide(route)) out.route = route;
+  return out;
 }
 
 /** Filtre « user_id = u0 || user_id = u1 … » paramétré. */

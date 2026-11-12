@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { notifyAdminUpload } from "@/lib/adminNotify";
+import { annonceVisibleMaintenant } from "@/lib/cibleAccueil";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -60,6 +62,12 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
     entity: base44.entities.Announcement,
     dateField: "date",
     allowMultiplePerDate: true,
+    // Nouvelle réunion publiée pour aujourd'hui (ou avant) : notification qui ouvre l'annonce de réunion.
+    onCreated: (created, payload) => {
+      if (created?.id && annonceVisibleMaintenant(payload.date)) {
+        notifyAdminUpload({ kind: "reunion", title: payload.title, contentId: created.id });
+      }
+    },
     build: (p) => {
       const payload = {
         title: (p.title || "").trim(),

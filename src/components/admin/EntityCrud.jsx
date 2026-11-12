@@ -4,6 +4,7 @@ import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { notifyAdminUpload } from "@/lib/adminNotify";
+import { annonceVisibleMaintenant, genreAnnonce } from "@/lib/cibleAccueil";
 import { confirmFr } from "@/lib/confirmFr";
 import {
   Dialog,
@@ -309,7 +310,14 @@ export default function EntityCrud({
   };
 
   const notifyPlaylistUpload = (item, playlistId) => {
-    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film" };
+    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article" };
+    // Annonce / réunion : notification qui ouvre l'annonce, si elle est déjà visible (date passée ou du jour).
+    if (entity === "Announcement") {
+      if (item?.id && annonceVisibleMaintenant(item.date)) {
+        notifyAdminUpload({ kind: genreAnnonce(item), title: item.title, contentId: item.id });
+      }
+      return;
+    }
     const kind = kindMap[entity];
     if (!kind) return;
     notifyAdminUpload({

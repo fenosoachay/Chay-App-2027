@@ -93,7 +93,7 @@ function fcmMessage(token, n) {
       token,
       notification: { title: n.title, body: n.body },
       android: { notification: { channel_id: CHANNEL_ID, default_vibrate_timings: true, notification_count: 1 } },
-      data: { target_type: String(n.target_type || ''), target_id: String(n.target_id || '') },
+      data: { target_type: String(n.target_type || ''), target_id: String(n.target_id || ''), route: String(n.route || '') },
     },
   };
 }
@@ -184,6 +184,8 @@ const str = (v, max) => String(v ?? '').slice(0, max);
 function validate(body) {
   const n = body?.notification || {};
   const notification = { title: str(n.title || 'ÉGLISE CHAY', 100), body: str(n.body, 300), target_type: str(n.target_type, 64), target_id: str(n.target_id, 64) };
+  // Écran précis à ouvrir au clic (pb_hooks/lib/cibles.js) ; refusée si ce n'est pas un chemin interne.
+  if (typeof n.route === 'string' && n.route.length <= 200 && /^\/[A-Za-z0-9\-._~/?=&%]*$/.test(n.route) && !n.route.startsWith('//')) notification.route = n.route;
   const fcm = (Array.isArray(body?.fcm) ? body.fcm : []).filter((t) => t && typeof t.token === 'string' && t.token.length <= 4096);
   const web = (Array.isArray(body?.web) ? body.web : []).filter((t) => t && typeof t.endpoint === 'string' && /^https?:\/\//.test(t.endpoint) && t.endpoint.length <= 2048);
   const ttl = Number.isInteger(body?.ttl) && body.ttl >= 0 && body.ttl <= 2419200 ? body.ttl : 21600;

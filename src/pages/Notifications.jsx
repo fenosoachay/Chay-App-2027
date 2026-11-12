@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { cibleCloche } from "@/lib/routesNotification";
+import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -86,15 +88,7 @@ export default function Notifications() {
         /* ignore */
       }
     }
-    if (n.type === "daily_verse" || n.content_type === "devotional") {
-      navigate("/");
-    } else if (n.type === "new_content") {
-      navigate("/media");
-    } else if (n.type === "message" || n.content_type === "message") {
-      navigate(n.content_id ? `/messages?c=${n.content_id}` : "/messages");
-    } else if (n.type === "like" || n.type === "comment") {
-      navigate("/community");
-    }
+    ouvrirNotification(cibleCloche(n), navigate);
   };
 
   const markAll = async () => {

@@ -8,6 +8,7 @@ const push = require(`${__hooks}/lib/push.js`);
 const bilan = require(`${__hooks}/lib/bilan-push.js`);
 const mail = require(`${__hooks}/lib/courriel.js`);
 const fuseaux = require(`${__hooks}/lib/fuseaux.js`);
+const cibles = require(`${__hooks}/lib/cibles.js`);
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const EMAIL_DEDUP_MS = 30 * 60 * 1000;
@@ -325,7 +326,7 @@ function newContentNotify(contentRecord, sendEmail) {
     }
   }
   const t = pushIds.length
-    ? pushTotals(push.sendToUsers(pushIds, { title, body: String(c.description || c.title || '').slice(0, 60), target_type: 'content', target_id: c.id }, 'notifyNewContent'))
+    ? pushTotals(push.sendToUsers(pushIds, { title, body: String(c.description || c.title || '').slice(0, 60), target_type: 'content', target_id: c.id, route: cibles.routeContenu(c) }, 'notifyNewContent'))
     : { pushSent: 0, pushFailed: 0 };
   return { recipients: rows.length, created, emailsSent, emailsSkipped, pushSent: t.pushSent, pushFailed: t.pushFailed, sendEmail };
 }

@@ -16,6 +16,7 @@ import { useRef, useState } from "react";
  * @param resolveId  (draft, prev, server) => id de l'entrée à mettre à jour,
  *                   undefined pour en créer une, null pour refuser la date
  *                   (déjà occupée par une autre entrée)
+ * @param onCreated  (created, payload) => void, après chaque création réussie (facultatif)
  */
 export default function useStagedPublish({
   entity,
@@ -23,6 +24,7 @@ export default function useStagedPublish({
   build,
   resolveId,
   allowMultiplePerDate = false,
+  onCreated,
 }) {
   const [pending, setPending] = useState([]);
   const [publishing, setPublishing] = useState(false);
@@ -103,7 +105,11 @@ export default function useStagedPublish({
           }
           const payload = build(entry);
           if (id) await entity.update(id, payload);
-          else await entity.create(payload);
+          else {
+            const created = await entity.create(payload);
+            // Après une création réussie seulement (ex. notification de la nouvelle réunion) ; jamais bloquant.
+            try { onCreated?.(created, payload); } catch { /* best-effort */ }
+          }
         })
       );
       const failed = results

@@ -22,6 +22,10 @@ export default function Requests() {
   const urlTab = searchParams.get("tab");
   const defaultTab = ["theme", "prayer", "my-prayers"].includes(urlTab) ? urlTab : "theme";
   const [activeTab, setActiveTab] = useState(defaultTab);
+  // Notification cliquée alors que la page est déjà ouverte : l'onglet suit l'URL.
+  useEffect(() => {
+    if (["theme", "prayer", "my-prayers"].includes(urlTab)) setActiveTab(urlTab);
+  }, [urlTab]);
 
   // Met à jour l'URL quand on change d'onglet
   const handleTabChange = (value) => {

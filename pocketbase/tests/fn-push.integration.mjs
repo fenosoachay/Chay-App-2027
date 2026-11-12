@@ -163,6 +163,7 @@ try {
     check('Web Push : chiffré aes128gcm, déchiffrable par le navigateur, charge utile exacte',
       payload?.title === 'Titre test' && payload?.body === 'Corps test' && payload?.target_type === 'message' && payload?.target_id === 'conv1');
     check('Web Push : TTL 6 h', w[0]?.ttl === 21600);
+    check('route du message déduite (FCM data.route et Web Push route)', f[0]?.message?.data?.route === '/messages?c=conv1' && payload?.route === '/messages?c=conv1');
     check('signatures JWT RS256 (OAuth) et VAPID ES256 acceptées par les faux services', Object.values(caps.rejects).every((n) => n === 0), JSON.stringify(caps.rejects));
     const long = await fn('sendFcmPush', { token: ADM.token, body: { user_ids: [B.id], title: 'T'.repeat(500), body: 'B'.repeat(5000) } });
     const caps2 = await captures();
@@ -449,6 +450,16 @@ try {
     check('rejoué -> already_notified', again.data?.skipped === 'already_notified');
     const noId = await fn('notifyNewContent', { token: ADM.token, body: { message: 'x', link: '/x', send_email: false } });
     check('sans content_id (appel de adminNotify.js) -> 400 comme Base44', noId.status === 400);
+    for (const x of await list('UserNotification', `notification_id = "content_${content.data.id}"`)) created.push(['UserNotification', x.id]);
+  }
+  // Endroit exact : la notification d'un titre ouvre Multimédia > Musique > sa playlist > le titre.
+  {
+    const content = await http('POST', '/api/collections/Content/records', { ...su, body: { type: 'audio', title: 'Titre route', description: 'x', status: 'published', resource_type: 'MusicTrack', resource_id: 'piste123', playlist_id: 'charisma1' } });
+    created.push(['Content', content.data.id]);
+    await resetCaptures();
+    const r = await fn('notifyNewContent', { token: ADM.token, body: { content_id: content.data.id, send_email: false } });
+    const f = fcmFor(await captures(), tokB);
+    check('push contenu : data.route = écran précis du titre', r.status === 200 && f[0]?.message?.data?.route === '/media?cat=music&playlist=charisma1&track=piste123' && f[0]?.message?.data?.target_id === content.data.id, JSON.stringify(f[0]?.message?.data));
     for (const x of await list('UserNotification', `notification_id = "content_${content.data.id}"`)) created.push(['UserNotification', x.id]);
   }
 
