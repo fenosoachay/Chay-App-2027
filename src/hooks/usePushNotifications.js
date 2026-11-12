@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { base44 } from "@/api/base44Client";
 import { backendText } from "@/api/backendConfig";
@@ -11,9 +11,7 @@ import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { foregroundPushToast } from "@/lib/pushForeground";
 import { traiterReponseRapide } from "@/lib/reponseRapide";
 import { enqueue } from "@/lib/offlineQueue";
-
-// Notifications de conversation natives (bulles, réponse rapide) : android/…/ChayConversationPlugin.java.
-const ChayConversation = registerPlugin("ChayConversation");
+import { ChayConversation } from "@/lib/chayConversation";
 
 const CHANNEL_ID = "chay-default";
 const CHANNEL_NAME = "Chay";

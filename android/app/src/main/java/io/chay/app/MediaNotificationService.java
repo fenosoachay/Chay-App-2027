@@ -47,6 +47,7 @@ public class MediaNotificationService extends Service {
     static final String EXTRA_DURATION = "duration";
     static final String EXTRA_HAS_PREVIOUS = "hasPrevious";
     static final String EXTRA_HAS_NEXT = "hasNext";
+    static final String EXTRA_ROUTE = "route";
     private static final String EXTRA_SEEK_POSITION_MS = "seekPositionMs";
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -122,6 +123,8 @@ public class MediaNotificationService extends Service {
         return START_NOT_STICKY;
     }
 
+    private String route;
+
     private void applyUpdate(Intent intent) {
         String nextArtworkUrl = intent.getStringExtra(EXTRA_ARTWORK_URL);
         boolean artworkChanged = nextArtworkUrl != null && !nextArtworkUrl.equals(artworkUrl);
@@ -135,6 +138,7 @@ public class MediaNotificationService extends Service {
         duration = Math.max(0, intent.getDoubleExtra(EXTRA_DURATION, 0));
         hasPrevious = intent.getBooleanExtra(EXTRA_HAS_PREVIOUS, false);
         hasNext = intent.getBooleanExtra(EXTRA_HAS_NEXT, false);
+        route = intent.getStringExtra(EXTRA_ROUTE);
         if (artworkChanged) {
             artwork = null;
             loadArtwork(artworkUrl);
@@ -224,16 +228,8 @@ public class MediaNotificationService extends Service {
         }
         if (artwork != null) builder.setLargeIcon(artwork);
 
-        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
-        if (launchIntent != null) {
-            PendingIntent contentIntent = PendingIntent.getActivity(
-                this,
-                0,
-                launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | pendingIntentImmutableFlag()
-            );
-            builder.setContentIntent(contentIntent);
-        }
+        // Toucher : l'app s'ouvre sur le titre en cours, dans sa playlist (ou la radio).
+        builder.setContentIntent(RouteMedia.intention(this, route));
 
         java.util.ArrayList<Integer> compactActions = new java.util.ArrayList<>();
         int actionIndex = 0;

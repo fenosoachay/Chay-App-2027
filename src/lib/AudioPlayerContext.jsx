@@ -172,6 +172,7 @@ export function AudioPlayerProvider({ children }) {
         }),
         queueIndex: orderIndex,
         queueId: currentTrack.queueId || String(currentTrack.id),
+        route: currentTrack.route || "",
       }).catch((error) => {
         console.error("[AudioPlayer] Unable to start ExoPlayer playback.", error);
         if (stateRef.current.currentTrack?.audio_url !== currentTrack.audio_url) return;
@@ -411,6 +412,7 @@ export function AudioPlayerProvider({ children }) {
       subtitle: currentTrack.artist || currentTrack.speaker || currentTrack.subtitle || "",
       artwork: currentTrack.cover_url || currentTrack.artwork || null,
       source: currentTrack.audio_url,
+      route: currentTrack.route || "",
       isPlaying,
       currentTime,
       duration,

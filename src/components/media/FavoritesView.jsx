@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { GripVertical, Lock, Unlock, Music, Play, Pause, Trash2 } from "lucide-react";
 import { groupMusicFavorites } from "@/lib/favoritePlaylists";
@@ -8,6 +9,7 @@ import { appliquerOrdre, deplacer } from "@/lib/glisserOrdre";
 // (YouTubeSortableList, @hello-pangea/dnd), qui fonctionne au doigt sur Android.
 function FavoriteGroup({
   group,
+  cible,
   locked,
   onReorderItems,
   currentTrack,
@@ -20,6 +22,13 @@ function FavoriteGroup({
     onReorderItems(group, deplacer(group.items, result.source.index, result.destination.index));
   };
   const peutGlisser = !locked && group.items.length > 1;
+  // Titre visé (notification de lecture) : affiché à l'écran.
+  const cibleRef = useRef(null);
+  useEffect(() => {
+    if (!cible) return undefined;
+    const f = window.requestAnimationFrame(() => cibleRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
+    return () => window.cancelAnimationFrame(f);
+  }, [cible, group.items.length]);
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
@@ -35,11 +44,15 @@ function FavoriteGroup({
                 <Draggable key={item.id} draggableId={String(item.id)} index={index} isDragDisabled={!peutGlisser}>
                   {(drag, snap) => (
                     <div
-                      ref={drag.innerRef}
+                      ref={(node) => {
+                        drag.innerRef(node);
+                        if (node && cible === item.id) cibleRef.current = node;
+                      }}
                       {...drag.draggableProps}
+                      data-favori={item.id}
                       className={`flex items-center gap-3 rounded-xl border bg-card p-3 transition-shadow ${
                         snap.isDragging ? "border-primary shadow-2xl scale-105" : "border-border/70"
-                      }`}
+                      } ${cible === item.id ? "ring-2 ring-primary" : ""}`}
                     >
                       {peutGlisser && (
                         <span
@@ -109,6 +122,8 @@ export default function FavoritesView({
 }) {
   const [locked, setLocked] = useState(true);
   const [orderedItems, setOrderedItems] = useState([]);
+  const [searchParams] = useSearchParams();
+  const cible = searchParams.get("favori") || (currentTrack?.queueId ?? null);
 
   useEffect(() => {
     setOrderedItems(
@@ -156,6 +171,7 @@ export default function FavoritesView({
             <FavoriteGroup
               key={group.id}
               group={group}
+              cible={cible}
               locked={locked}
               onReorderItems={handleReorderGroupItems}
               currentTrack={currentTrack}

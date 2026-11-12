@@ -18,6 +18,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { syncWebPush, disableWebPush, onWebPushNotificationClick } from "@/lib/webPush";
 import NotificationBanner from "@/components/NotificationBanner";
+import { useOuvrirDepuisLecture } from "@/hooks/useOuvrirDepuisLecture";
 import { useMediaSessionSync } from "@/hooks/useMediaSessionSync";
 import {
   getBackAction,
@@ -90,6 +91,9 @@ export default function Layout() {
       disableWebPush();
     }
   }, [isAuthenticated, prefs.notifications_enabled, prefs.notif_push, user?.id]);
+
+  // Toucher la notification de lecture (APK) : titre en cours, dans sa playlist.
+  useOuvrirDepuisLecture(navigate);
 
   // Clic sur une notification push navigateur : ouvre la bonne page.
   useEffect(

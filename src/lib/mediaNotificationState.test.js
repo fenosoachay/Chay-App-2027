@@ -35,6 +35,7 @@ test("native notification state exposes artwork, metadata, progress, and queue c
     isLive: false,
     hasPrevious: true,
     hasNext: true,
+    route: "", // sans route : toucher la notification ouvre simplement l'app
   });
   assert.equal(createMediaNotificationState(null), null);
 });

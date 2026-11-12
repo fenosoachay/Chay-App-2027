@@ -127,8 +127,11 @@ public class AndroidExoPlayerPlugin extends Plugin {
         JSArray queue = call.getArray("queue");
         int requestedIndex = Math.max(0, call.getInt("queueIndex", 0));
         String requestedQueueId = call.getString("queueId");
+        String route = call.getString("route");
 
         withController(call, mediaController -> {
+            // Toucher la notification de lecture : écran du titre en cours.
+            ChayMediaSessionService.definirRoute(getContext(), route);
             List<MediaItem> mediaItems = buildMediaItems(
                 queue,
                 requestedUrl,

@@ -12,7 +12,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 /**
  * Pont entre les notifications de conversation (ConversationNotifier) et l'app :
  *  - « reponse » : texte saisi dans la réponse rapide (l'app envoie le message, puis ouvre la conversation) ;
- *  - effacer({ conversation }) : retire la notification de cette conversation.
+ *  - effacer({ conversation }) : retire la notification de cette conversation ;
+ *  - « ouvrir » : toucher la notification de lecture -> route du titre en cours (RouteMedia).
  */
 @CapacitorPlugin(name = "ChayConversation")
 public class ChayConversationPlugin extends Plugin {
@@ -20,6 +21,17 @@ public class ChayConversationPlugin extends Plugin {
     @Override
     protected void handleOnNewIntent(Intent intent) {
         super.handleOnNewIntent(intent);
+        // Toucher la notification de lecture (RouteMedia) : « ouvrir » avec la route du titre en cours.
+        if (intent != null && RouteMedia.ACTION.equals(intent.getAction())) {
+            String route = intent.getStringExtra(RouteMedia.EXTRA);
+            if (RouteMedia.valide(route)) {
+                JSObject data = new JSObject();
+                data.put("route", route);
+                notifyListeners("ouvrir", data, true); // gardé jusqu'à l'écoute de l'app (lancement à froid)
+            }
+            intent.setAction(Intent.ACTION_MAIN);
+            return;
+        }
         if (intent == null || !ConversationNotifier.ACTION_REPONDRE.equals(intent.getAction())) return;
         Bundle saisie = RemoteInput.getResultsFromIntent(intent);
         CharSequence texte = saisie != null ? saisie.getCharSequence(ConversationNotifier.CLE_REPONSE) : null;

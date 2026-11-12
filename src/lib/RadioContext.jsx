@@ -291,6 +291,7 @@ export function RadioPlayerProvider({ children }) {
           // (https://localhost du WebView ne lui est pas accessible).
           artwork: `${getPublicOrigin()}${RADIO_LOGO}`,
           source: RADIO_URL,
+          route: "/media?cat=radio",
           isPlaying: isPlaying || isLoading || preparing,
           isBuffering: isLoading || preparing,
           isLive: true,

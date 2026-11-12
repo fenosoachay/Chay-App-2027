@@ -91,7 +91,8 @@ public class AndroidMediaNotificationPlugin extends Plugin {
             .putExtra(MediaNotificationService.EXTRA_CURRENT_TIME, call.getDouble("currentTime", 0.0))
             .putExtra(MediaNotificationService.EXTRA_DURATION, call.getDouble("duration", 0.0))
             .putExtra(MediaNotificationService.EXTRA_HAS_PREVIOUS, call.getBoolean("hasPrevious", false))
-            .putExtra(MediaNotificationService.EXTRA_HAS_NEXT, call.getBoolean("hasNext", false));
+            .putExtra(MediaNotificationService.EXTRA_HAS_NEXT, call.getBoolean("hasNext", false))
+            .putExtra(MediaNotificationService.EXTRA_ROUTE, call.getString("route", ""));
         try {
             startService(intent);
             call.resolve();

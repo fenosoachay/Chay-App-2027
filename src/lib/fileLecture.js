@@ -41,5 +41,13 @@ export function filePlaylist(pistes, category) {
       audio_url: a.audio_url,
       cover_url: a.cover_url,
       mediaType: category === "sermons" ? "sermons" : "music",
+      // Toucher la notification de lecture : ce titre, dans sa playlist.
+      route: routeTitre(category === "sermons" ? "sermons" : "music", a.playlist_id, a.track_id),
     }));
+}
+
+/** Écran d'un titre dans sa playlist (Musique / Prédication). */
+export function routeTitre(cat, playlistId, trackId) {
+  const q = encodeURIComponent;
+  return `/media?cat=${cat}${playlistId ? `&playlist=${q(playlistId)}` : ""}${trackId ? `&track=${q(trackId)}` : ""}`;
 }

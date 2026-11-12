@@ -10,6 +10,17 @@ import androidx.media3.session.MediaSessionService;
 public class ChayMediaSessionService extends MediaSessionService {
     private ExoPlayer player;
     private MediaSession mediaSession;
+    // Écran du titre en cours (toucher la notification de lecture) ; fil principal seulement.
+    private static String routeCourante;
+    private static ChayMediaSessionService instance;
+
+    /** Nouvelle route du titre lancé (AndroidExoPlayerPlugin.playMedia), appliquée à la session. */
+    static void definirRoute(android.content.Context ctx, String route) {
+        routeCourante = route;
+        if (instance != null && instance.mediaSession != null) {
+            instance.mediaSession.setSessionActivity(RouteMedia.intention(ctx, route));
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -24,7 +35,10 @@ public class ChayMediaSessionService extends MediaSessionService {
                 .build(),
             true
         );
-        mediaSession = new MediaSession.Builder(this, player).build();
+        mediaSession = new MediaSession.Builder(this, player)
+            .setSessionActivity(RouteMedia.intention(this, routeCourante))
+            .build();
+        instance = this;
         DefaultMediaNotificationProvider notificationProvider =
             new DefaultMediaNotificationProvider.Builder(this)
                 .setChannelId(MediaNotificationService.CHANNEL_ID)
@@ -49,6 +63,7 @@ public class ChayMediaSessionService extends MediaSessionService {
 
     @Override
     public void onDestroy() {
+        instance = null;
         if (mediaSession != null) {
             mediaSession.release();
             mediaSession = null;

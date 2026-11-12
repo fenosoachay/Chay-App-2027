@@ -12,6 +12,8 @@ export function createMediaNotificationState(control) {
     isLive: Boolean(control.isLive),
     hasPrevious: Boolean(control.previous),
     hasNext: Boolean(control.next),
+    // Toucher la notification : écran du titre en cours (vide = l'app s'ouvre simplement).
+    route: typeof control.route === "string" ? control.route : "",
   };
 }
 
