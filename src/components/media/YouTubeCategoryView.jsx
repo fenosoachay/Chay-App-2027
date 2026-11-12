@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Lock, LockOpen, Trash2 } from "lucide-react";
+import { AlertTriangle, Lock, LockOpen, Settings2, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import YouTubeCard from "@/components/media/YouTubeCard";
@@ -86,6 +86,8 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   // (sans limite de pagination) + statut de suppression des vidéos.
   const [adminLinks, setAdminLinks] = useState([]);
   const [ytLocked, setYtLocked] = useState(true);
+  // Admin : même lecteur que les membres ; « Gérer » ouvre l'écran de réorganisation (toutes les sections).
+  const [gerer, setGerer] = useState(false);
   const [deadStatus, setDeadStatus] = useState({}); // id -> true/false ("vidéo supprimée")
 
   useEffect(() => {
@@ -276,7 +278,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   // YouTube. Un cadenas active le glisser-déposer pour réorganiser ; quand il
   // est verrouillé, l'ordre est figé. Les liens "vidéo supprimée" peuvent être
   // retirés définitivement de la base via le bouton Supprimer.
-  if (isAdmin) {
+  if (isAdmin && gerer) {
     const orderOf = (id) => (prefs.playlist_orders[id] || []);
     const bySection = Object.keys(SECTION_LABELS).map((sec) => {
       const items = adminLinks.filter((y) => (y.section || "culte") === sec);
@@ -290,6 +292,13 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     return (
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setGerer(false)}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-2 text-sm font-bold hover:bg-muted"
+          >
+            Retour au lecteur
+          </button>
           <p className="text-sm font-bold text-primary">Gestion admin — toutes les sections YouTube</p>
           <button
             type="button"
@@ -360,13 +369,22 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     );
   }
 
-  // ── Vue utilisateur normal : inchangée (liste de la section courante).
+  // ── Lecteur (membres ET admins) : liste de la section courante.
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-sm text-foreground/55">
           Vidéos YouTube — {SECTION_LABELS[section] || section}.
         </p>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setGerer(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/20"
+          >
+            <Settings2 className="h-4 w-4" aria-hidden="true" /> Gérer
+          </button>
+        )}
       </div>
 
       <YouTubeToolbar
