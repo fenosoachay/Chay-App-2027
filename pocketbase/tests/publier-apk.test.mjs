@@ -87,7 +87,7 @@ test('refus : adresses de bac à sable ou de développement, API absente, server
 test('version lue dans build.gradle', () => {
   assert.deepEqual(versionGradle('versionCode 4\n        versionName "1.3"'), { versionName: '1.3', versionCode: 4 });
   const reel = versionGradle(fs.readFileSync(new URL('../../android/app/build.gradle', import.meta.url), 'utf8'));
-  assert.deepEqual(reel, { versionName: '1.3.5', versionCode: 9 });
+  assert.deepEqual(reel, { versionName: '1.3.6', versionCode: 10 });
 });
 
 test('main : latest.json écrit, commandes avec clé SSH seulement, sans mot de passe', () => {
@@ -99,8 +99,8 @@ test('main : latest.json écrit, commandes avec clé SSH seulement, sans mot de 
     const lignes = [];
     const r = main([f, '--sortie', dir, '--cle-ssh', 'C:\\Users\\moi\\.ssh\\id_ed25519'], { log: (l) => lignes.push(l) });
     const lu = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
-    assert.equal(lu.versionName, '1.3.5');
-    assert.equal(lu.versionCode, 9);
+    assert.equal(lu.versionName, '1.3.6');
+    assert.equal(lu.versionCode, 10);
     assert.equal(lu.sha256, crypto.createHash('sha256').update(buf).digest('hex'));
     assert.ok(lu.tailleMo >= 0 && !Number.isNaN(Date.parse(lu.date)));
     assert.deepEqual(r.latest, lu);
