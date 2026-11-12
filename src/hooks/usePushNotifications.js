@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { base44 } from "@/api/base44Client";
 import { backendText } from "@/api/backendConfig";
@@ -9,6 +9,11 @@ import { usePreferences } from "@/lib/PreferencesContext";
 import { deactivateDeviceToken, upsertDeviceToken } from "@/lib/deviceTokenSync";
 import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { foregroundPushToast } from "@/lib/pushForeground";
+import { traiterReponseRapide } from "@/lib/reponseRapide";
+import { enqueue } from "@/lib/offlineQueue";
+
+// Notifications de conversation natives (bulles, réponse rapide) : android/…/ChayConversationPlugin.java.
+const ChayConversation = registerPlugin("ChayConversation");
 
 const CHANNEL_ID = "chay-default";
 const CHANNEL_NAME = "Chay";
@@ -148,6 +153,19 @@ export function usePushNotifications(navigate) {
           await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
             // App ouverte ou fermée (Capacitor garde le clic jusqu'à ce listener) : écran précis du contenu.
             ouvrirNotification(action?.notification?.data || {}, navigate);
+          })
+        );
+        handles.push(
+          await ChayConversation.addListener("reponse", (data) => {
+            // Réponse rapide saisie dans la notification (ou la bulle) d'un message privé.
+            traiterReponseRapide({
+              invoke: (name, body) => base44.functions.invoke(name, body),
+              updateConversation: (id, patch) => base44.entities.Conversation.update(id, patch),
+              enqueue,
+              effacer: (conversation) => ChayConversation.effacer({ conversation }),
+              navigate,
+              toast,
+            }, data);
           })
         );
 

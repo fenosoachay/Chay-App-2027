@@ -88,14 +88,15 @@ async function getAccessToken(force = false) {
 }
 
 function fcmMessage(token, n) {
-  return {
-    message: {
-      token,
-      notification: { title: n.title, body: n.body },
-      android: { notification: { channel_id: CHANNEL_ID, default_vibrate_timings: true, notification_count: 1 } },
-      data: { target_type: String(n.target_type || ''), target_id: String(n.target_id || ''), route: String(n.route || '') },
-    },
-  };
+  const data = { target_type: String(n.target_type || ''), target_id: String(n.target_id || ''), route: String(n.route || '') };
+  const android = { notification: { channel_id: CHANNEL_ID, default_vibrate_timings: true, notification_count: 1 } };
+  if (n.style === 'conversation') {
+    // Message privé : l'APK 1.3.5+ construit elle-même la notification (bulle / conversation) à partir de ces
+    // données ; les versions précédentes affichent la notification classique ci-dessus. Priorité haute.
+    Object.assign(data, { style: 'conversation', expediteur: String(n.expediteur || ''), avatar: String(n.avatar || '') });
+    android.priority = 'HIGH';
+  }
+  return { message: { token, notification: { title: n.title, body: n.body }, android, data } };
 }
 
 async function fcmOnce(target, n) {
@@ -186,6 +187,11 @@ function validate(body) {
   const notification = { title: str(n.title || 'ÉGLISE CHAY', 100), body: str(n.body, 300), target_type: str(n.target_type, 64), target_id: str(n.target_id, 64) };
   // Écran précis à ouvrir au clic (pb_hooks/lib/cibles.js) ; refusée si ce n'est pas un chemin interne.
   if (typeof n.route === 'string' && n.route.length <= 200 && /^\/[A-Za-z0-9\-._~/?=&%]*$/.test(n.route) && !n.route.startsWith('//')) notification.route = n.route;
+  if (notification.target_type === 'message' && n.style === 'conversation') {
+    notification.style = 'conversation';
+    notification.expediteur = str(n.expediteur, 80);
+    if (typeof n.avatar === 'string' && n.avatar.length <= 500 && /^https:\/\/\S+$/.test(n.avatar)) notification.avatar = n.avatar;
+  }
   const fcm = (Array.isArray(body?.fcm) ? body.fcm : []).filter((t) => t && typeof t.token === 'string' && t.token.length <= 4096);
   const web = (Array.isArray(body?.web) ? body.web : []).filter((t) => t && typeof t.endpoint === 'string' && /^https?:\/\//.test(t.endpoint) && t.endpoint.length <= 2048);
   const ttl = Number.isInteger(body?.ttl) && body.ttl >= 0 && body.ttl <= 2419200 ? body.ttl : 21600;

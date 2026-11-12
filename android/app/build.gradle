@@ -78,6 +78,8 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer:1.4.1"
     implementation "androidx.media3:media3-ui:1.4.1"
     implementation "androidx.media3:media3-session:1.4.1"
+    // ChayMessagingService (bulles) : même version que le plugin @capacitor/push-notifications.
+    implementation "com.google.firebase:firebase-messaging:23.3.1"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

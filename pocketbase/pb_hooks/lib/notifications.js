@@ -231,7 +231,12 @@ Ouvrir la conversation : ${mail.appUrl()}/messages?c=${encodeURIComponent(m.conv
   let pushInvalid = 0;
   let pushQueued = 0;
   if (pushTargets.length) {
-    const r = push.sendToUsers(pushTargets, { title, body: preview || notifBody, target_type: 'message', target_id: m.conversation_id }, 'sendMessagePush');
+    // Style conversation (bulles Android 11+, sinon notification de conversation) : nom et photo de l'expéditeur.
+    const senderProfile = fn.findOne($app, 'MemberProfile', 'created_by_id = {:u}', '-base44_created_date,-created', { u: senderId });
+    const r = push.sendToUsers(pushTargets, {
+      title, body: preview || notifBody, target_type: 'message', target_id: m.conversation_id,
+      style: 'conversation', expediteur: senderName, avatar: senderProfile ? senderProfile.getString('avatar_url') : '',
+    }, 'sendMessagePush');
     pushBlocked = r.blocked || 0;
     pushMode = r.mode || pushMode;
     webPushSent = r.webPush.sent;

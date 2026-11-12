@@ -33,6 +33,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ExternalLinkPlugin.class);
         registerPlugin(AndroidExoPlayerPlugin.class);
         registerPlugin(AndroidMediaNotificationPlugin.class);
+        registerPlugin(ChayConversationPlugin.class);
         super.onCreate(savedInstanceState);
         WebView webView = getBridge().getWebView();
         if (webView != null) {

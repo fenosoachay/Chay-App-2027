@@ -257,6 +257,10 @@ try {
     check('push au destinataire seulement (pas à l\'expéditeur)', f.length === 1 && fcmFor(caps, tokA).length === 0 && webFor(caps, subB.id).length === 1);
     check('push : titre « <expéditeur> vous a envoyé un message », aperçu 60 caractères, cible conversation',
       f[0]?.message?.notification?.title === `${nameA || 'Membre'} vous a envoyé un message` && f[0]?.message?.data?.target_id === convId);
+    check('push message en style conversation (bulles) : nom de l\'expéditeur, priorité haute, notification classique gardée',
+      f[0]?.message?.data?.style === 'conversation' && f[0]?.message?.data?.expediteur === (nameA || 'Membre')
+      && f[0]?.message?.android?.priority === 'HIGH' && Boolean(f[0]?.message?.notification?.title) && f[0]?.message?.data?.route === `/messages?c=${convId}`,
+      JSON.stringify(f[0]?.message?.data));
     // Message privé : plus de notification de cloche (seul le push reste).
     check('aucune notification de cloche pour un message (ni B, ni l\'expéditeur)',
       (await list('UserNotification', `notification_id ~ "message_${r.data.id}_"`)).length === 0);

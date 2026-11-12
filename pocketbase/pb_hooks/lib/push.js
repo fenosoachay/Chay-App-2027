@@ -40,6 +40,13 @@ function normalize(n) {
   const c = cibles();
   const route = c.routeValide(n.route) ? n.route : c.routeCible(out.target_type, out.target_id);
   if (route && c.routeValide(route)) out.route = route;
+  // Message privé en style conversation (bulles Android) : nom et photo (https seulement) de l'expéditeur.
+  if (out.target_type === 'message' && n.style === 'conversation') {
+    out.style = 'conversation';
+    out.expediteur = String(n.expediteur || '').slice(0, 80);
+    const avatar = String(n.avatar || '');
+    if (/^https:\/\/[^\s]+$/.test(avatar) && avatar.length <= 500) out.avatar = avatar;
+  }
   return out;
 }
 
