@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { SPLASH_EXIT_S, SPLASH_GRADIENT, SPLASH_STEPS, removeBootSplash } from "@/lib/splash";
 
-// Écran d'affichage au lancement : nom « Chay » et devise malgache (4 s, lent ; un toucher le passe).
+// Écran d'affichage au lancement : nom, sigle et devise malgache (4 s, lent ; un toucher le passe).
 // Pas de logo — le texte seul, en Montserrat Bold.
 const MONTBOLD = "'Gilroy', 'Helvetica Neue', sans-serif";
 const ease = "easeOut";
@@ -40,7 +40,7 @@ export default function SplashScreen({ onSkip }) {
 
         {/* 1. Nom */}
         <motion.h1
-          className="text-white text-5xl md:text-6xl tracking-tight"
+          className="text-white text-3xl md:text-4xl tracking-tight"
           style={{
             fontFamily: MONTBOLD,
             fontWeight: 700,
@@ -51,10 +51,26 @@ export default function SplashScreen({ onSkip }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...SPLASH_STEPS.nom, ease }}
         >
-          Chay
+          Église Chay
         </motion.h1>
 
-        {/* 2. Ligne Séparatrice MINIMALE */}
+        {/* 2. Sigle */}
+        <motion.h2
+          className="text-white text-5xl md:text-6xl tracking-tight"
+          style={{
+            fontFamily: MONTBOLD,
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            textShadow: "0 0 20px rgba(255,255,255,0.4)",
+          }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...SPLASH_STEPS.sigle, ease }}
+        >
+          EGC
+        </motion.h2>
+
+        {/* 3. Ligne Séparatrice MINIMALE */}
         <motion.div
           className="mt-3 h-[0.5px] bg-white/40"
           style={{ width: "60px" }}
@@ -63,7 +79,7 @@ export default function SplashScreen({ onSkip }) {
           transition={{ ...SPLASH_STEPS.ligne, ease: "easeInOut" }}
         />
 
-        {/* 3. Citation Malgache */}
+        {/* 4. Citation Malgache */}
         <motion.p
           className="mt-2 text-sm md:text-base text-white/90 italic leading-relaxed max-w-xs mx-auto"
           style={{

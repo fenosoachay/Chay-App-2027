@@ -6,7 +6,7 @@ export default function CallOverlay({ room, mode, label, onClose }) {
   useBackHandler(true, onClose);
   const audioOnly = mode === "audio";
   const src = `https://meet.jit.si/${room}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=${audioOnly}&config.subject=${encodeURIComponent(
-    "Chay"
+    "CHAY"
   )}&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`;
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[env(safe-area-inset-top)]">

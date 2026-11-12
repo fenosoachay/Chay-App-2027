@@ -99,7 +99,7 @@ export default function MediaUploader({ onClose, onSaved }) {
       let created = null;
       if (type === "music") {
         created = await base44.entities.MusicTrack.create({
-          title: form.title, artist: form.artist || "Chay", album: "", category: form.category || "Louange",
+          title: form.title, artist: form.artist || "CHAY", album: "", category: form.category || "Louange",
           cover_url: coverUrl, audio_url: mediaUrl,
           ...(durationSeconds ? { duration_seconds: durationSeconds } : {}),
           // Champs requis par le schéma de l'entité : sans eux la création est

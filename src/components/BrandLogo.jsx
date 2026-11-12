@@ -5,7 +5,7 @@ export default function BrandLogo({ className }) {
     <span
       className={`inline-flex shrink-0 items-center justify-center ${className || ""}`}
       role="img"
-      aria-label="Chay"
+      aria-label="Église Chay"
     >
       <img
         src={blueLogo}

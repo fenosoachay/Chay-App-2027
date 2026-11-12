@@ -99,7 +99,7 @@ export default function SpiritualSection() {
 
       <div>
         <Label className="text-xs">
-          Depuis quand connaissez-vous Chay ?
+          Depuis quand connaissez-vous l'Église Chay ?
         </Label>
         <Input
           value={form.known_chay_since || ""}

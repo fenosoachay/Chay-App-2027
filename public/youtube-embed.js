@@ -1,4 +1,4 @@
-// Relais du lecteur YouTube pour l'APK Chay (voir docs/YOUTUBE-APK.md).
+// Relais du lecteur YouTube pour l'APK Église Chay (voir docs/YOUTUBE-APK.md).
 // - ne répond qu'à la page parente autorisée (paramètre ?parent=, liste fermée) ;
 // - n'exécute que 4 commandes (lecture, pause, arrêt, avance) ;
 // - renvoie au parent les mêmes messages que l'iframe YouTube directe (onStateChange, infoDelivery)
@@ -21,7 +21,7 @@
   }
 
   if (PARENTS_AUTORISES.indexOf(parent) < 0 || win.parent === win) {
-    afficher("Lecteur réservé à l'application Chay.");
+    afficher("Lecteur réservé à l'application Église Chay.");
     return;
   }
   function envoyer(message) {

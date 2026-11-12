@@ -83,7 +83,7 @@ public class AndroidMediaNotificationPlugin extends Plugin {
         Intent intent = new Intent(getContext(), MediaNotificationService.class)
             .setAction(MediaNotificationService.ACTION_UPDATE)
             .putExtra(MediaNotificationService.EXTRA_TITLE, call.getString("title", "Média"))
-            .putExtra(MediaNotificationService.EXTRA_ARTIST, call.getString("artist", "Chay"))
+            .putExtra(MediaNotificationService.EXTRA_ARTIST, call.getString("artist", "CHAY"))
             .putExtra(MediaNotificationService.EXTRA_ARTWORK_URL, call.getString("artworkUrl", ""))
             .putExtra(MediaNotificationService.EXTRA_IS_PLAYING, call.getBoolean("isPlaying", false))
             .putExtra(MediaNotificationService.EXTRA_IS_BUFFERING, call.getBoolean("isBuffering", false))

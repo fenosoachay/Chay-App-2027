@@ -572,7 +572,7 @@ export default function Register() {
                     placeholder="Votre cheminement avec Dieu…"
                   />
                 </Field>
-                <Field label="Depuis quand connaissez-vous Chay ?" icon={CalendarDays}>
+                <Field label="Depuis quand connaissez-vous l'Église Chay ?" icon={CalendarDays}>
                   <Input
                     type="date"
                     value={knownChaySince}
@@ -691,7 +691,7 @@ export default function Register() {
             <p>
               Vous vous engagez à publier des commentaires respectueux, à ne
               pas diffuser de contenu injurieux, diffamatoire ou contraire à
-              l'esprit de la communauté chrétienne de Chay.
+              l'esprit de la communauté chrétienne de l'Église Chay.
             </p>
             <p>
               Les informations de profil et contenus que vous fournissez sont

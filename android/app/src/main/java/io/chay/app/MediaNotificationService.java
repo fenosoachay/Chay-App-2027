@@ -54,7 +54,7 @@ public class MediaNotificationService extends Service {
     private NotificationManager notificationManager;
     private MediaSession mediaSession;
     private String title = "Média";
-    private String artist = "Chay";
+    private String artist = "CHAY";
     private String artworkUrl = "";
     private Bitmap artwork;
     private boolean isPlaying;
@@ -126,7 +126,7 @@ public class MediaNotificationService extends Service {
         String nextArtworkUrl = intent.getStringExtra(EXTRA_ARTWORK_URL);
         boolean artworkChanged = nextArtworkUrl != null && !nextArtworkUrl.equals(artworkUrl);
         title = valueOr(intent.getStringExtra(EXTRA_TITLE), "Média");
-        artist = valueOr(intent.getStringExtra(EXTRA_ARTIST), "Chay");
+        artist = valueOr(intent.getStringExtra(EXTRA_ARTIST), "CHAY");
         artworkUrl = valueOr(nextArtworkUrl, "");
         isPlaying = intent.getBooleanExtra(EXTRA_IS_PLAYING, false);
         isBuffering = intent.getBooleanExtra(EXTRA_IS_BUFFERING, false);
@@ -145,7 +145,7 @@ public class MediaNotificationService extends Service {
         MediaMetadata.Builder metadata = new MediaMetadata.Builder()
             .putString(MediaMetadata.METADATA_KEY_TITLE, title)
             .putString(MediaMetadata.METADATA_KEY_ARTIST, artist)
-            .putString(MediaMetadata.METADATA_KEY_ALBUM, isLive ? "Radio" : "Chay")
+            .putString(MediaMetadata.METADATA_KEY_ALBUM, isLive ? "Radio" : "ÉGLISE CHAY")
             .putLong(MediaMetadata.METADATA_KEY_DURATION, (long) (duration * 1000));
         if (!artworkUrl.isEmpty()) {
             metadata.putString(MediaMetadata.METADATA_KEY_ART_URI, artworkUrl);
@@ -219,7 +219,7 @@ public class MediaNotificationService extends Service {
             builder.setSubText(
                 isLive
                     ? (isBuffering ? "Mise en mémoire tampon" : "Radio Chay")
-                    : "Chay"
+                    : "ÉGLISE CHAY"
             );
         }
         if (artwork != null) builder.setLargeIcon(artwork);

@@ -74,4 +74,4 @@ curl -sI https://membres.chay.fr/
 ```
 Attendu : `x-frame-options: DENY` toujours présent sur le reste du site.
 
-Dans un navigateur, ouvrir `https://membres.chay.fr/youtube-embed.html?v=dQw4w9WgXcQ&parent=https://localhost` hors iframe : le message « Lecteur réservé à l'application Chay. » s'affiche.
+Dans un navigateur, ouvrir `https://membres.chay.fr/youtube-embed.html?v=dQw4w9WgXcQ&parent=https://localhost` hors iframe : le message « Lecteur réservé à l'application Église Chay. » s'affiche.

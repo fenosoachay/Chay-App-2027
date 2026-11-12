@@ -40,9 +40,9 @@ function shell(title, bodyHtml) {
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
     + '<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;">'
     + '<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #e4e4e7;">'
-    + '<div style="background:linear-gradient(100deg,#4A6CFE 0%,#8A56E2 50%,#FF57B2 100%);padding:24px 32px;color:#fff;font-size:20px;font-weight:800;">Chay</div>'
+    + '<div style="background:linear-gradient(100deg,#4A6CFE 0%,#8A56E2 50%,#FF57B2 100%);padding:24px 32px;color:#fff;font-size:20px;font-weight:800;">Église Chay</div>'
     + `<div style="padding:28px 32px;"><h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#18181b;">${escapeHtml(title)}</h1>${bodyHtml}`
-    + '<p style="margin-top:24px;font-size:13px;color:#71717a;">— L\'équipe Chay</p></div>'
+    + '<p style="margin-top:24px;font-size:13px;color:#71717a;">— L\'équipe de l\'Église Chay</p></div>'
     + '<div style="padding:16px 32px;background:#fafafa;border-top:1px solid #e4e4e7;font-size:11px;color:#a1a1aa;text-align:center;">'
     + `<a href="${escapeHtml(`${appUrl()}/settings`)}" style="color:#71717a;text-decoration:underline;">Gérer mes préférences de notifications / Se désabonner</a></div>`
     + '</div></body></html>';
@@ -59,7 +59,7 @@ function send(to, subject, html, text) {
   }
   const meta = $app.settings().meta;
   const message = new MailerMessage({
-    from: { address: meta.senderAddress, name: meta.senderName || 'Chay' },
+    from: { address: meta.senderAddress, name: meta.senderName || 'Église Chay' },
     to: [{ address: to }],
     subject: cleanSubject(subject),
     html,

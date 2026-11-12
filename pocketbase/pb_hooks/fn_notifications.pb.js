@@ -44,7 +44,7 @@ routerAdd('POST', '/api/fn/sendWebPush', (e) => {
     if (userIds.length > 5000) throw new fn.HttpError(400, '5000 destinataires maximum');
     if (!userIds.length) return { sent: 0, failed: 0, subscriptions: 0, byUser: [] };
     return push.sendWebToUsers(userIds, {
-      title: String(body.title || 'Chay').slice(0, 100),
+      title: String(body.title || 'ÉGLISE CHAY').slice(0, 100),
       body: String(body.body || '').slice(0, 300),
       target_type: body.target_type,
       target_id: body.target_id,
@@ -221,11 +221,11 @@ routerAdd('POST', '/api/fn/sendTestNotification', (e) => {
       const name = notif.displayName(user);
       const html = mail.shell('Notification de test',
         mail.paragraph(`Bonjour ${mail.escapeHtml(name)},`)
-        + mail.paragraph('Ceci est un e-mail de test du système de notifications de Chay. Si vous le recevez, l\'envoi d\'e-mails fonctionne correctement.')
+        + mail.paragraph('Ceci est un e-mail de test du système de notifications de l\'Église Chay. Si vous le recevez, l\'envoi d\'e-mails fonctionne correctement.')
         + mail.button(mail.appUrl() || '/', 'Ouvrir l\'application'));
       try {
-        emailSent = mail.send(to, 'Notification de test — Chay', html,
-          `Bonjour ${name},\n\nCeci est un e-mail de test du système de notifications de Chay.`);
+        emailSent = mail.send(to, 'Notification de test — Église Chay', html,
+          `Bonjour ${name},\n\nCeci est un e-mail de test du système de notifications de l'Église Chay.`);
         if (!emailSent) emailError = `bloqué par NOTIFICATIONS_MODE (${require(`${__hooks}/lib/sortie.js`).mode()})`;
       } catch (_) {
         emailError = 'envoi impossible (voir les réglages SMTP)';

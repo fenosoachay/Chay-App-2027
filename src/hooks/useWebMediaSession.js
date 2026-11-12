@@ -53,8 +53,8 @@ export function useWebMediaSession(control, enabled) {
       try {
         session.metadata = new window.MediaMetadata({
           title: control.title || "Média",
-          artist: control.subtitle || "Chay",
-          album: control.isLive ? "En direct" : "Chay",
+          artist: control.subtitle || "CHAY",
+          album: control.isLive ? "En direct" : "ÉGLISE CHAY",
           artwork: control.artwork
             ? [96, 192, 256, 512].map((s) => ({ src: control.artwork, sizes: `${s}x${s}` }))
             : [],

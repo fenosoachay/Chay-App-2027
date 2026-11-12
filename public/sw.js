@@ -23,7 +23,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: raw };
   }
-  const title = data.title || "Chay";
+  const title = data.title || "ÉGLISE CHAY";
   const url = typeof data.url === "string" && data.url.charAt(0) === "/"
     ? data.url
     : routeFor(data);

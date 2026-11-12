@@ -1,9 +1,9 @@
 {
   "_note": "Réglages du BAC À SABLE uniquement : e-mails vers le faux SMTP local (127.0.0.1), aucun envoi réel. Appliqués par pocketbase/scripts/configurer-auth.mjs.",
   "meta": {
-    "appName": "Chay",
+    "appName": "Église Chay",
     "appURL": "http://127.0.0.1:5173",
-    "senderName": "Chay",
+    "senderName": "Église Chay",
     "senderAddress": "no-reply@chay.test"
   },
   "smtp": {

@@ -13,7 +13,7 @@ export default function Kids() {
   return (
     <div className="mx-auto max-w-6xl px-6 md:px-8 py-8 md:py-12">
       <header className="mb-8">
-        <h1 className="display-fluid"><span className="brand-gradient-text">Chay</span> Enfants</h1>
+        <h1 className="display-fluid"><span className="brand-gradient-text">CHAY</span> Enfants</h1>
         <p className="mt-3 text-lg text-foreground/60">Un espace sûr et joyeux pour apprendre à connaître Dieu.</p>
       </header>
 

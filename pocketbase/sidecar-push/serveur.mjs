@@ -183,7 +183,7 @@ const str = (v, max) => String(v ?? '').slice(0, max);
 
 function validate(body) {
   const n = body?.notification || {};
-  const notification = { title: str(n.title || 'Chay', 100), body: str(n.body, 300), target_type: str(n.target_type, 64), target_id: str(n.target_id, 64) };
+  const notification = { title: str(n.title || 'ÉGLISE CHAY', 100), body: str(n.body, 300), target_type: str(n.target_type, 64), target_id: str(n.target_id, 64) };
   const fcm = (Array.isArray(body?.fcm) ? body.fcm : []).filter((t) => t && typeof t.token === 'string' && t.token.length <= 4096);
   const web = (Array.isArray(body?.web) ? body.web : []).filter((t) => t && typeof t.endpoint === 'string' && /^https?:\/\//.test(t.endpoint) && t.endpoint.length <= 2048);
   const ttl = Number.isInteger(body?.ttl) && body.ttl >= 0 && body.ttl <= 2419200 ? body.ttl : 21600;

@@ -27,7 +27,7 @@ export default function Home() {
           <section className="animate-float-in flex items-center justify-center gap-4 text-center">
             <div>
               <h1 className="font-display font-extrabold text-4xl md:text-6xl text-foreground">
-                <span className="brand-gradient-text">Chay</span>
+                <span className="brand-gradient-text">ÉGLISE CHAY</span>
               </h1>
               <div className="mx-auto mt-2 h-[3px] w-16 rounded-full brand-gradient" />
               <p className="mt-3 text-lg md:text-2xl font-display font-bold text-foreground/80">
