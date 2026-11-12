@@ -257,6 +257,15 @@ export default function FieldInput({ field, value, onChange, onUploadingChange }
           className={cls}
         />
       );
+    case "time":
+      return (
+        <input
+          type="time"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          className={cls}
+        />
+      );
     case "date":
       return (
         <input

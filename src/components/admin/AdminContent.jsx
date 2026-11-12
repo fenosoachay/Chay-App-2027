@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useState } from "react";
 import { Loader2 } from "lucide-react";
 import EntityCrud from "@/components/admin/EntityCrud";
+import ReunionsArchivees from "@/components/admin/ReunionsArchivees";
 import DashboardHome from "@/components/admin/DashboardHome";
 import PublishContent from "@/components/admin/PublishContent";
 import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
@@ -62,6 +63,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
       {section.key === "Announcement" && (
         <ProchaineReunionSection adminOnly onChanged={() => setAnnouncementsKey((k) => k + 1)} />
       )}
+      {section.key === "Announcement" && <ReunionsArchivees refreshKey={announcementsKey} />}
       {section.key !== "Devotional" && (
         <EntityCrud
           key={section.key === "Announcement" ? `Announcement-${announcementsKey}` : section.key}

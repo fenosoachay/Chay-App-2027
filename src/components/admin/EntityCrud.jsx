@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { notifyAdminUpload } from "@/lib/adminNotify";
 import { annonceVisibleMaintenant, genreAnnonce } from "@/lib/cibleAccueil";
 import { confirmFr } from "@/lib/confirmFr";
+import { HEURE_RE } from "@/lib/upcomingEvents";
 import {
   Dialog,
   DialogContent,
@@ -293,6 +294,11 @@ export default function EntityCrud({
         submittedPlaylistId
       );
 
+      // Réunion (annonce de type Événement) : heure obligatoire à la création (affichage + archivage).
+      if (entity === "Announcement" && !editing && rest.type === "event" && !HEURE_RE.test(rest.event_time || "")) {
+        toast({ title: "Heure requise", description: "Indiquez l'heure de la réunion (HH:MM).", variant: "destructive" });
+        return;
+      }
       if (sousPlaylist && !idsSousPlaylists(arbre).has(playlist_id)) {
         toast({ title: "Sous-playlist obligatoire", description: MESSAGE_SOUS_PLAYLIST, variant: "destructive" });
         return;

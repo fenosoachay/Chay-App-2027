@@ -26,7 +26,7 @@ import {
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
 import { confirmFr } from "@/lib/confirmFr";
-import { meetingDateOf, upcomingEvents } from "@/lib/upcomingEvents";
+import { meetingDateOf, upcomingEvents, HEURE_RE, heureReunion, formatHeure } from "@/lib/upcomingEvents";
 
 // Les réunions sont espacées : 500 annonces de type « event » couvrent
 // plusieurs années d'historique.
@@ -52,6 +52,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
     body: "",
     date: toISODate(), // date de publication (clé du planning)
     event_date: "", // date de la réunion affichée sur la carte
+    event_time: "", // heure de la réunion (obligatoire à la création), affichée et utilisée pour l'archivage
     __legacy: false, // annonce d'avant les deux dates : comportement inchangé
   });
   const reunion = reunions[0] || null;
@@ -76,6 +77,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
         type: "event",
         language: "fr",
       };
+      if (HEURE_RE.test(p.event_time || "")) payload.event_time = p.event_time;
       if (p.event_date) {
         payload.event_date = p.event_date;
       } else if (!p.__legacy) {
@@ -140,6 +142,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       // inchangé. Nouvelle annonce : la réunion a lieu le même jour que la
       // publication tant que le champ n'est pas rempli.
       event_date: base?.event_date || "",
+      event_time: base?.event_time || "",
       __legacy: Boolean(base?.id) && !base?.event_date,
     });
     setEditing(true);
@@ -154,6 +157,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       body: entry?.body || "",
       date: day,
       event_date: entry?.event_date || "",
+      event_time: entry?.event_time || "",
       __legacy: Boolean(entry?.id) && !entry?.event_date,
       __pendingKey: entry?.__pendingKey,
     });
@@ -170,6 +174,15 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
     }
     if (!isISODate(day)) {
       toast({ title: "Date invalide", variant: "destructive" });
+      return;
+    }
+    // Heure obligatoire à la création (affichée, et la réunion est archivée une fois l'heure passée).
+    if (!draft.id && !HEURE_RE.test(draft.event_time || "")) {
+      toast({ title: "Heure requise", description: "Indiquez l'heure de la réunion (HH:MM).", variant: "destructive" });
+      return;
+    }
+    if (draft.event_time && !HEURE_RE.test(draft.event_time)) {
+      toast({ title: "Heure invalide", variant: "destructive" });
       return;
     }
     if (draft.event_date && !isISODate(draft.event_date)) {
@@ -195,6 +208,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
       body: "",
       date: day,
       event_date: "",
+      event_time: "",
       __legacy: false,
     });
   };
@@ -337,8 +351,9 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
                       </div>
                     )}
                     {date && (
-                      <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-primary">
+                      <div className="mt-1.5 inline-flex flex-wrap items-center gap-1.5 text-xs md:text-sm font-semibold text-primary">
                         <Clock className="h-3.5 w-3.5" /> {date}
+                        {heureReunion(event) && <span>à {formatHeure(heureReunion(event))}</span>}
                       </div>
                     )}
                   </div>
@@ -414,6 +429,20 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
                 className="selectable"
               />
               <p className="text-xs text-muted-foreground">{meetingHint}</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pr-event-time">Heure de la réunion *</Label>
+              <Input
+                id="pr-event-time"
+                type="time"
+                value={draft.event_time || ""}
+                onChange={(e) => setDraft((d) => ({ ...d, event_time: e.target.value }))}
+                className="selectable"
+                required={!draft.id}
+              />
+              <p className="text-xs text-muted-foreground">
+                Affichée sur l'annonce ; une fois l'heure passée, la réunion est archivée automatiquement.
+              </p>
             </div>
 
             <Button

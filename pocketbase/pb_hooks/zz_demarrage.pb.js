@@ -1,11 +1,11 @@
 /// <reference path="../pb_data/types.d.ts" />
 // Ligne unique au démarrage, visible dans journalctl (stdout) et dans les journaux du tableau d'administration :
 //   [chay] hooks chargés : N tâches planifiées (id, id, …), mode notifications = X
-// N = tâches de NOS hooks (attendu : 4). Les tâches internes __pb… ne sont pas comptées.
+// N = tâches de NOS hooks (attendu : 5). Les tâches internes __pb… ne sont pas comptées.
 // Aucune donnée personnelle : seulement des identifiants de tâches et le mode.
 //
 // PocketBase charge les fichiers pb_hooks dans un ordre NON déterminé (le préfixe « zz_ » ne garantit rien) :
-// compter au chargement donnait parfois 2 au lieu de 4. Le comptage est donc fait au démarrage du serveur
+// compter au chargement donnait parfois 2 au lieu de 4 (5 depuis 1.3.6). Le comptage est donc fait au démarrage du serveur
 // HTTP ($app.onServe()), quand tous les fichiers ont été exécutés. (Le JSVM n'a pas de fonction globale
 // onServe ; on passe par le hook de l'application.)
 // Si cette ligne manque, chercher « failed to execute » dans le journal : un fichier de hooks a échoué.

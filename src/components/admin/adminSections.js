@@ -51,6 +51,8 @@ export const SECTIONS = [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "body", label: "Texte", type: "textarea", required: true },
       { name: "date", label: "Date", type: "date", required: true },
+      { name: "event_date", label: "Date de la réunion", type: "date" },
+      { name: "event_time", label: "Heure de la réunion (réunion)", type: "time", help: "Obligatoire pour une réunion (type Événement) : affichée, puis archivage automatique." },
       {
         name: "type",
         label: "Type",
