@@ -34,7 +34,7 @@ function PrayerCard({ prayer, onTake, busy }) {
           <time>{timeAgo(prayer.created_date)}</time>
         </div>
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+          className={`rounded-full px-2 py-0.5 text-[0.625rem] font-bold ${
             CATEGORY_STYLES[prayer.category] || CATEGORY_STYLES["Autre"]
           }`}
         >
@@ -47,7 +47,7 @@ function PrayerCard({ prayer, onTake, busy }) {
       </p>
 
       <footer className="mt-4 flex items-center justify-between">
-        <span className={`text-[10px] font-bold uppercase tracking-wide ${
+        <span className={`text-[0.625rem] font-bold uppercase tracking-wide ${
           PRAYER_STATUS_STYLE[prayer.status] || PRAYER_STATUS_STYLE.open
         } rounded-full px-2 py-0.5`}>
           {PRAYER_STATUS_LABEL[prayer.status] || "Ouverte"}

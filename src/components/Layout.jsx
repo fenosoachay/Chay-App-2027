@@ -163,13 +163,13 @@ export default function Layout() {
             <Link to="/notifications" className="relative h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Notifications">
               <Bell className="h-4 w-4" />
               {notifUnread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.625rem] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
               )}
             </Link>
             <Link to={navTarget("/messages")} className="relative h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Messages">
               <MessageCircle className="h-4 w-4" />
               {unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold border-2 border-background">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.625rem] font-bold border-2 border-background">
                   {unread > 99 ? "99+" : unread}
                 </span>
               )}
@@ -190,8 +190,8 @@ export default function Layout() {
             : "max(1rem, env(safe-area-inset-top))",
         }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-1">
+          <div data-barre-icones className="flex items-center gap-2 shrink-0">
             {showBack ? (
               <>
                 <button
@@ -211,11 +211,12 @@ export default function Layout() {
               </Link>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          {/* Grande police : boutons plafonnés à la largeur de l'écran (src/index.css, data-barre-icones). */}
+          <div data-barre-icones className="flex items-center gap-1.5 min-w-0">
             <Link to={navTarget("/messages")} className="relative h-9 w-9 grid place-items-center rounded-full border border-border" aria-label="Messages">
               <MessageCircle className="h-[17px] w-[17px]" />
               {unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold border-2 border-background">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.5625rem] font-bold border-2 border-background">
                   {unread > 99 ? "99+" : unread}
                 </span>
               )}
@@ -223,7 +224,7 @@ export default function Layout() {
             <Link to="/notifications" className="relative h-9 w-9 grid place-items-center rounded-full border border-border" aria-label="Notifications">
               <Bell className="h-[17px] w-[17px]" />
               {notifUnread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
+                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.5625rem] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
               )}
             </Link>
             <ThemeToggle />
@@ -246,7 +247,7 @@ export default function Layout() {
 
       {/* Mobile bottom nav */}
       <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background px-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="mx-auto max-w-md flex items-center justify-around rounded-full border border-border bg-background/90 backdrop-blur-xl px-1.5 py-1.5 glow-soft">
+        <div data-barre-icones className="mx-auto max-w-md flex items-center justify-around rounded-full border border-border bg-background/90 backdrop-blur-xl px-1.5 py-1.5 glow-soft">
           {NAV.map((item) => {
             const Icon = item.icon;
             const active = item.end ? location.pathname === "/" : location.pathname.startsWith(item.to);

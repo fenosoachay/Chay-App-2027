@@ -461,7 +461,7 @@ export default function PlaylistCategoryView({
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{t.title}</div>
                       {/* Badge de vues - toujours affiché */}
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
+                      <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
                         👁️ {formatViewCount(viewCounts[t.track_id] ?? 0)} vue{viewCounts[t.track_id] !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -517,7 +517,7 @@ export default function PlaylistCategoryView({
                           const formatted = formatListenCount(count);
                           if (!formatted) return null;
                           return (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full">
                               <Headphones className="h-3 w-3" />
                               {formatted}
                             </span>

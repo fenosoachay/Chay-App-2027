@@ -73,7 +73,7 @@ export default function ConcordanceTab() {
               key={`${i.lang}-${i.word}`}
               className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
             >
-              <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+              <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[0.625rem] font-bold uppercase text-muted-foreground">
                 {i.lang}
               </span>
               <button

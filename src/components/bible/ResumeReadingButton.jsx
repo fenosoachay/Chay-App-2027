@@ -16,7 +16,7 @@ export default function ResumeReadingButton({ bookName, chapter, verse, onResume
         <span className="block text-sm font-bold text-foreground">
           Reprendre à {bookName} {chapter}
         </span>
-        {verse > 1 && <span className="block text-[11px] text-muted-foreground">Verset {verse}</span>}
+        {verse > 1 && <span className="block text-[0.6875rem] text-muted-foreground">Verset {verse}</span>}
       </span>
     </button>
   );

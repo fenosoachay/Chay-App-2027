@@ -62,7 +62,7 @@ export default function ThemeRequestForm({ onSubmitted }) {
             placeholder="Ex. Le pardon dans la Bible, comment prier pour ses ennemis, la résurrection…"
             className="selectable resize-none"
           />
-          <div className="flex justify-end text-[11px] text-muted-foreground">
+          <div className="flex justify-end text-[0.6875rem] text-muted-foreground">
             {theme.length} / 500
           </div>
         </div>

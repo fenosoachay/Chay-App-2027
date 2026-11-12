@@ -414,3 +414,57 @@ video::-webkit-media-controls {
 video {
   context-menu: none;
 }
+
+/* ── Grande police (Paramètres > Affichage, 150 % à 200 %, src/lib/taillePolice.js) ──────────────────────
+   Les textes ne sont jamais coupés : titres et libellés tronqués passent à la ligne, les mots longs se
+   coupent plutôt que de déborder ; les rangées d'icônes passent à la ligne au lieu de sortir de l'écran. */
+html[data-police-grande] h1,
+html[data-police-grande] h2,
+html[data-police-grande] h3,
+html[data-police-grande] h4,
+html[data-police-grande] .truncate,
+html[data-police-grande] .whitespace-nowrap {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+html[data-police-grande] .line-clamp-1,
+html[data-police-grande] .line-clamp-2 {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
+}
+html[data-police-grande] .display-fluid {
+  overflow-wrap: anywhere;
+}
+html[data-police-grande] [data-rangee-souple] {
+  flex-wrap: wrap;
+}
+/* Barres d'icônes (en-tête, navigation du bas) : à grande police, les boutons gardent une cible tactile
+   de 40 à 56 px et tiennent dans la largeur de l'écran ; les icônes suivent la taille du bouton. */
+html[data-police-grande] [data-barre-icones] > a,
+html[data-police-grande] [data-barre-icones] > button,
+html[data-police-grande] [data-barre-icones] > a > span {
+  width: clamp(40px, 11vw, 56px);
+  height: clamp(40px, 11vw, 56px);
+  padding: 0;
+  flex-shrink: 0;
+}
+html[data-police-grande] [data-barre-icones] svg {
+  width: 45%;
+  height: 45%;
+}
+html[data-police-grande] [data-barre-icones] svg[class*="h-8"],
+html[data-police-grande] [data-barre-icones] img {
+  width: clamp(32px, 10vw, 48px);
+  height: clamp(32px, 10vw, 48px);
+}
+/* Rangées (texte + boutons) : à grande police, les boutons passent à la ligne au lieu d'écraser le texte
+   (un bloc flex-1 garde au moins 60 % de la largeur de l'écran). */
+html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) {
+  flex-wrap: wrap;
+}
+html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1 {
+  min-width: min(60vw, 100%);
+}

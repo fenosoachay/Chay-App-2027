@@ -50,7 +50,7 @@ export default function SeekBar({ currentTime, duration, onSeek, bufferedRatio =
 
   return (
     <div className="flex items-center gap-2 w-full">
-      <span className="text-[10px] tabular-nums text-foreground/55 w-8 text-right">
+      <span className="text-[0.625rem] tabular-nums text-foreground/55 w-8 text-right">
         {formatTime(currentTime)}
       </span>
       <div
@@ -76,7 +76,7 @@ export default function SeekBar({ currentTime, duration, onSeek, bufferedRatio =
           style={{ left: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] tabular-nums text-foreground/55 w-8">
+      <span className="text-[0.625rem] tabular-nums text-foreground/55 w-8">
         {formatTime(duration)}
       </span>
     </div>

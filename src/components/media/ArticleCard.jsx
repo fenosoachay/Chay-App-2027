@@ -94,7 +94,7 @@ export default function ArticleCard({ article }) {
 
             <DialogHeader className="gap-0">
               {article.category && (
-                <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary/10 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-wider text-primary">
                   {article.category}
                 </span>
               )}

@@ -24,7 +24,7 @@ export default function PlaylistCover({ playlist, className = "" }) {
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <span className="px-2 text-center text-[10px] font-medium text-muted-foreground">
+        <span className="px-2 text-center text-[0.625rem] font-medium text-muted-foreground">
           Image indisponible
         </span>
       )}

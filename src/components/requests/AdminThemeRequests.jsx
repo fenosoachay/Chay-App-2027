@@ -58,7 +58,7 @@ function RequestCard({ request, onAction, busy }) {
           )}
         </div>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${
             THEME_STATUS_STYLE[request.status] || THEME_STATUS_STYLE.pending
           }`}
         >
@@ -75,7 +75,7 @@ function RequestCard({ request, onAction, busy }) {
 
       {request.admin_note && (
         <div className="mt-2 rounded-xl bg-muted/60 p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
             Ta note
           </p>
           <p className="selectable text-xs text-foreground/80">{request.admin_note}</p>
@@ -162,7 +162,7 @@ function RequestCard({ request, onAction, busy }) {
       )}
 
       {!isPending && request.handled_date && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 text-[0.6875rem] text-muted-foreground">
           Traité le {formatDate(request.handled_date)}
         </p>
       )}
@@ -278,7 +278,7 @@ export default function AdminThemeRequests() {
           {FILTERS.map((f) => (
             <TabsTrigger key={f.key} value={f.key} className="text-xs md:text-sm font-semibold">
               {f.label}
-              <span className="ml-1.5 text-[10px] text-muted-foreground">
+              <span className="ml-1.5 text-[0.625rem] text-muted-foreground">
                 ({counts[f.key] || 0})
               </span>
             </TabsTrigger>

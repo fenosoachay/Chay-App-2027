@@ -73,7 +73,7 @@ export default function NewContentCard({ item, unread, onOpen }) {
           <span className="flex items-center gap-2">
             <span className="font-bold text-sm truncate">{item.title}</span>
             {unread && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-primary shrink-0">
+              <span className="inline-flex items-center gap-1 text-[0.625rem] font-bold uppercase tracking-wide text-primary shrink-0">
                 <span className="h-2 w-2 rounded-full bg-primary" /> Nouveau
               </span>
             )}

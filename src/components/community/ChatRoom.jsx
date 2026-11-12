@@ -219,7 +219,7 @@ export default function ChatRoom({ user }) {
                       {m.text}
                     </div>
                     <div
-                      className={`text-[10px] mt-0.5 flex items-center gap-1 text-muted-foreground ${
+                      className={`text-[0.625rem] mt-0.5 flex items-center gap-1 text-muted-foreground ${
                         mine ? "justify-end" : ""
                       }`}
                     >

@@ -40,7 +40,7 @@ export default function MyThemeRequests({ requests, loading }) {
               )}
             </div>
             <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${
                 THEME_STATUS_STYLE[r.status] || THEME_STATUS_STYLE.pending
               }`}
             >
@@ -50,14 +50,14 @@ export default function MyThemeRequests({ requests, loading }) {
 
           {r.admin_note && (
             <div className="mt-3 rounded-xl bg-muted/60 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+              <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                 Note du responsable
               </p>
               <p className="selectable text-xs text-foreground/80">{r.admin_note}</p>
             </div>
           )}
 
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-[0.6875rem] text-muted-foreground">
             {r.created_date
               ? `Demandé le ${new Date(r.created_date).toLocaleDateString("fr-FR")}`
               : ""}

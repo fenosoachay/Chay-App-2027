@@ -566,7 +566,7 @@ export default function BibleReader({ onBack }) {
           )}
           {chapterStatus === "ready" && (
             <article className="mx-auto max-w-3xl">
-              <div className="selectable space-y-3 text-[20px] leading-[1.6] text-foreground/80">
+              <div className="selectable space-y-3 text-[1.25rem] leading-[1.6] text-foreground/80">
                 {verses.map((verse) => {
                   const ann = annotations[verse.number];
                   const hl = ann?.highlight_color ? HIGHLIGHT_COLORS.find((c) => c.id === ann.highlight_color) : null;
@@ -611,16 +611,16 @@ export default function BibleReader({ onBack }) {
         <div className="fixed left-0 right-0 z-30 px-4 bottom-[88px] md:bottom-6">
           <div className="mx-auto max-w-sm flex items-center justify-center gap-2 rounded-[1.5rem] border border-border bg-background/95 backdrop-blur-xl shadow-lg px-3 py-2.5">
             <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl brand-gradient text-white shadow-sm hover:scale-105 transition">
-              <Highlighter className="h-5 w-5" /><span className="text-[11px] font-bold">{isLocalMode ? 'Connexion requise' : 'Surligner'}</span>
+              <Highlighter className="h-5 w-5" /><span className="text-[0.6875rem] font-bold">{isLocalMode ? 'Connexion requise' : 'Surligner'}</span>
             </button>
             <button onClick={copySelected} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
-              <Copy className="h-5 w-5 text-primary" /><span className="text-[11px] font-bold">Copier</span>
+              <Copy className="h-5 w-5 text-primary" /><span className="text-[0.6875rem] font-bold">Copier</span>
             </button>
             <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
-              <StickyNote className="h-5 w-5 text-primary" /><span className="text-[11px] font-bold">{isLocalMode ? 'Connexion requise' : 'Notes'}</span>
+              <StickyNote className="h-5 w-5 text-primary" /><span className="text-[0.6875rem] font-bold">{isLocalMode ? 'Connexion requise' : 'Notes'}</span>
             </button>
             <button onClick={() => setSelected([])} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
-              <X className="h-5 w-5 text-foreground/60" /><span className="text-[11px] font-bold">Annuler</span>
+              <X className="h-5 w-5 text-foreground/60" /><span className="text-[0.6875rem] font-bold">Annuler</span>
             </button>
           </div>
         </div>

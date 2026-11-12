@@ -67,9 +67,9 @@ function Field({ label, icon: Icon, children, hint, required, error }) {
       </Label>
       {input}
       {error ? (
-        <p id={errorId} className="text-[11px] text-destructive" role="alert">{error}</p>
+        <p id={errorId} className="text-[0.6875rem] text-destructive" role="alert">{error}</p>
       ) : hint ? (
-        <p className="text-[11px] text-foreground/45">{hint}</p>
+        <p className="text-[0.6875rem] text-foreground/45">{hint}</p>
       ) : null}
     </div>
   );

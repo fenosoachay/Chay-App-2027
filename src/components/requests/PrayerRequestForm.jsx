@@ -112,10 +112,10 @@ export default function PrayerRequestForm({ onSubmitted }) {
             className="selectable resize-none"
           />
           <div className="flex justify-between items-center">
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-[0.6875rem] text-muted-foreground">
               Maximum 3 demandes par jour
             </div>
-            <div className={`text-[11px] ${content.length >= 280 ? "text-amber-500" : "text-muted-foreground"}`}>
+            <div className={`text-[0.6875rem] ${content.length >= 280 ? "text-amber-500" : "text-muted-foreground"}`}>
               {content.length} / 300
             </div>
           </div>

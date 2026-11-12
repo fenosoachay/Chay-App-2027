@@ -98,7 +98,7 @@ export default function RadioPlayer() {
               </button>
             )}
             {errorCode != null && (
-              <p className="text-[10px] text-foreground/30 mt-1">code {errorCode}</p>
+              <p className="text-[0.625rem] text-foreground/30 mt-1">code {errorCode}</p>
             )}
           </div>
         ) : (

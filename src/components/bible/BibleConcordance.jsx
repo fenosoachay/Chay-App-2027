@@ -168,7 +168,7 @@ export default function BibleConcordance({ onBack, onOpenVerse }) {
               key={l.id}
               onClick={() => changeLang(l.id)}
               aria-pressed={lang === l.id}
-              className={`px-2.5 py-1 text-[11px] font-bold ${
+              className={`px-2.5 py-1 text-[0.6875rem] font-bold ${
                 lang === l.id ? "brand-gradient text-white" : "text-slate-300 hover:bg-white/10"
               }`}
             >

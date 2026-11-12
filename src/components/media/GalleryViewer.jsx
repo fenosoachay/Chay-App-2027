@@ -483,7 +483,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                         <span className="whitespace-pre-wrap break-words">{c.text}</span>
                       )}
                       {formatTimestamp(c.created_date, { time: false }) && (
-                        <div className="mt-0.5 text-[11px] text-white/40">
+                        <div className="mt-0.5 text-[0.6875rem] text-white/40">
                           {formatTimestamp(c.created_date, { time: false })}
                         </div>
                       )}
@@ -492,13 +492,13 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                           <button
                             type="button"
                             onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.text || ""); }}
-                            className="text-[11px] text-white/50 hover:text-white"
+                            className="text-[0.6875rem] text-white/50 hover:text-white"
                           >Modifier</button>
                           <button
                             type="button"
                             disabled={busyCommentId === c.id}
                             onClick={() => deleteComment(c)}
-                            className="text-[11px] text-white/50 hover:text-red-300 disabled:opacity-50"
+                            className="text-[0.6875rem] text-white/50 hover:text-red-300 disabled:opacity-50"
                           >Supprimer</button>
                         </div>
                       )}

@@ -131,7 +131,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
           >
             <LoopIcon className="h-5 w-5" />
             {loop === "all" && (
-              <span className="absolute -bottom-0.5 text-[8px] font-extrabold leading-none">∞</span>
+              <span className="absolute -bottom-0.5 text-[0.5rem] font-extrabold leading-none">∞</span>
             )}
           </button>
         </div>

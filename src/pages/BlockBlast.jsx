@@ -335,11 +335,11 @@ export default function BlockBlast() {
           <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:mb-4 sm:px-2">
             <div className="flex gap-2 sm:gap-3">
               <div className="min-w-[5.5rem] rounded-xl border border-border bg-background px-3 py-2 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/50">Score</p>
+                <p className="text-[0.625rem] font-bold uppercase tracking-wider text-foreground/50">Score</p>
                 <p className="text-xl font-black tabular-nums">{score}</p>
               </div>
               <div className="min-w-[5.5rem] rounded-xl border border-border bg-background px-3 py-2 text-center">
-                <p className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-foreground/50"><Trophy className="h-3 w-3" /> Record</p>
+                <p className="flex items-center justify-center gap-1 text-[0.625rem] font-bold uppercase tracking-wider text-foreground/50"><Trophy className="h-3 w-3" /> Record</p>
                 <p className="text-xl font-black tabular-nums">{bestScore}</p>
               </div>
             </div>

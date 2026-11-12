@@ -54,7 +54,7 @@ function YouTubeAdminRow({ video, dead, onDelete }) {
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 text-sm font-bold">{video.title}</p>
         {dead && (
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600">
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.6875rem] font-bold text-amber-600">
             <AlertTriangle className="h-3 w-3" /> Vidéo supprimée
           </span>
         )}

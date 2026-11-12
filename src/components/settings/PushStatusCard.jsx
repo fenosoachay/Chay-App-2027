@@ -63,7 +63,7 @@ export default function PushStatusCard() {
               Appareil enregistré pour les notifications.
             </p>
             {status?.token && (
-              <p className="text-[10px] text-foreground/40 mt-0.5 break-all selectable">
+              <p className="text-[0.625rem] text-foreground/40 mt-0.5 break-all selectable">
                 Token : {String(status.token).slice(0, 24)}…
               </p>
             )}

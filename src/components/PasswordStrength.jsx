@@ -42,7 +42,7 @@ export default function PasswordStrength({ password }) {
           />
         ))}
       </div>
-      <span className={`text-[11px] font-bold ${labelColor}`}>{label}</span>
+      <span className={`text-[0.6875rem] font-bold ${labelColor}`}>{label}</span>
     </div>
   );
 }

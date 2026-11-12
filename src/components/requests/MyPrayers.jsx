@@ -40,14 +40,14 @@ function PrayerCardMine({ prayer, showAnswerButton, onAnswer, busy }) {
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            className={`rounded-full px-2 py-0.5 text-[0.625rem] font-bold ${
               CATEGORY_STYLES[prayer.category] || CATEGORY_STYLES["Autre"]
             }`}
           >
             {prayer.category}
           </span>
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+            className={`rounded-full px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide ${
               PRAYER_STATUS_STYLE[prayer.status] || PRAYER_STATUS_STYLE.open
             }`}
           >
@@ -61,12 +61,12 @@ function PrayerCardMine({ prayer, showAnswerButton, onAnswer, busy }) {
       </p>
 
       {prayer.taken_date && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 text-[0.6875rem] text-muted-foreground">
           🤝 Prise en charge {timeAgo(prayer.taken_date)}
         </p>
       )}
       {prayer.answered_date && (
-        <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+        <p className="mt-1 text-[0.6875rem] text-emerald-600 dark:text-emerald-400">
           ✨ Marquée comme exaucée {timeAgo(prayer.answered_date)}
         </p>
       )}

@@ -156,7 +156,7 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
                 <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary transition-all duration-300" style={{ width: `${prog.pct}%` }} />
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 text-[11px] font-medium text-foreground/70 tabular-nums">
+                <div className="flex flex-wrap items-center gap-x-3 text-[0.6875rem] font-medium text-foreground/70 tabular-nums">
                   <span>{prog.pct}% — {formatBytes(prog.uploadedBytes)} / {formatBytes(prog.totalBytes)}</span>
                   {prog.speedBps > 0 && <span>{formatBytes(prog.speedBps)}/s</span>}
                   {Number.isFinite(prog.etaSec) && prog.etaSec >= 0 && (

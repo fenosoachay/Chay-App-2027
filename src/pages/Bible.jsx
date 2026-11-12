@@ -89,7 +89,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Bible</h2>
-            <p className="text-[11px] text-muted-foreground">Français & Malagasy</p>
+            <p className="text-[0.6875rem] text-muted-foreground">Français & Malagasy</p>
           </div>
         </button>
 
@@ -102,7 +102,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Dictionnaire</h2>
-            <p className="text-[11px] text-muted-foreground">{dictionarySubtitle}</p>
+            <p className="text-[0.6875rem] text-muted-foreground">{dictionarySubtitle}</p>
           </div>
         </button>
 
@@ -115,7 +115,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Concordance</h2>
-            <p className="text-[11px] text-muted-foreground">Tous les mots de la Bible</p>
+            <p className="text-[0.6875rem] text-muted-foreground">Tous les mots de la Bible</p>
           </div>
         </button>
 
@@ -128,7 +128,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Mes notes</h2>
-            <p className="text-[11px] text-muted-foreground">Surlignages, notes & favoris</p>
+            <p className="text-[0.6875rem] text-muted-foreground">Surlignages, notes & favoris</p>
           </div>
         </button>
       </div>

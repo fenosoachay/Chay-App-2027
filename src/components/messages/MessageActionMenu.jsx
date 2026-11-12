@@ -76,7 +76,7 @@ export default function MessageActionMenu({
           </button>
         )}
         <div className="border-t border-border my-1" />
-        <div className="px-3 py-1 text-[10px] text-foreground/40">
+        <div className="px-3 py-1 text-[0.625rem] text-foreground/40">
           Long-appui / clic droit pour les actions
         </div>
       </div>

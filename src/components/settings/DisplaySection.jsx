@@ -1,19 +1,23 @@
 import React from "react";
 import { usePreferences } from "@/lib/PreferencesContext";
 import PrefSwitch from "@/components/settings/PrefSwitch";
+import { TAILLES_POLICE, enregistrerTaillePolice, lireTaillePolice } from "@/lib/taillePolice";
 
-function Segmented({ options, value, onChange, labels }) {
+function Segmented({ options, value, onChange, labels, ariaLabel }) {
   return (
     <div
-      className="grid gap-2"
-      style={{ gridTemplateColumns: `repeat(${options.length},1fr)` }}
+      role="group"
+      aria-label={ariaLabel}
+      // Grande police : les boutons passent à la ligne au lieu de rétrécir (aucun libellé coupé).
+      className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))]"
     >
       {options.map((o, i) => (
         <button
           key={o}
           type="button"
           onClick={() => onChange(o)}
-          className={`h-10 rounded-xl border text-sm font-semibold ${
+          aria-pressed={value === o}
+          className={`min-h-10 px-2 py-1 rounded-xl border text-sm font-semibold ${
             value === o
               ? "brand-gradient text-white border-transparent"
               : "border-border bg-card"
@@ -28,6 +32,7 @@ function Segmented({ options, value, onChange, labels }) {
 
 export default function DisplaySection() {
   const { prefs, setPref } = usePreferences();
+  const [taille, setTaille] = React.useState(() => lireTaillePolice());
 
   return (
     <div className="space-y-4">
@@ -39,6 +44,20 @@ export default function DisplaySection() {
           onChange={(v) => setPref("theme", v)}
           labels={["Clair", "Sombre", "Auto"]}
         />
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold mb-1.5">Taille du texte</p>
+        <Segmented
+          ariaLabel="Taille du texte"
+          options={TAILLES_POLICE}
+          value={taille}
+          onChange={(v) => setTaille(enregistrerTaillePolice(v))}
+          labels={TAILLES_POLICE.map((t) => `${t} %`)}
+        />
+        <p className="text-xs text-foreground/50 mt-1">
+          S'applique à toute l'application, sur cet appareil seulement.
+        </p>
       </div>
 
       <div>
