@@ -46,6 +46,57 @@ function PlaylistSelect({ field, value, onChange, cls }) {
   );
 }
 
+/** Plusieurs photos (tableau d'URL, ex. « Histoire de l'église ») : ajout multiple, retrait, ordre conservé. */
+function ImagesField({ value, onChange, onUploadingChange }) {
+  const liste = Array.isArray(value) ? value : [];
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const ajouter = async (fichiers) => {
+    const images = [...(fichiers || [])].filter((f) => f.type.startsWith("image/"));
+    if (!images.length) return;
+    setEnvoi(true);
+    setErreur("");
+    onUploadingChange?.(true);
+    try {
+      const urls = [];
+      for (const f of images) urls.push(await uploadToBase44(f));
+      onChange([...liste, ...urls]);
+    } catch (e) {
+      setErreur(`Envoi impossible : ${e?.message || e}`);
+    } finally {
+      setEnvoi(false);
+      onUploadingChange?.(false);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      {liste.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {liste.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+              <img src={url} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange(liste.filter((_, j) => j !== i))}
+                className="absolute right-1 top-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white"
+                aria-label={`Retirer la photo ${i + 1}`}
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-bold hover:bg-muted">
+        {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {envoi ? "Envoi…" : "Ajouter des photos"}
+        <input type="file" accept="image/*" multiple className="hidden" disabled={envoi} onChange={(e) => { ajouter(e.target.files); e.target.value = ""; }} />
+      </label>
+      {erreur && <p className="text-xs font-semibold text-destructive">{erreur}</p>}
+    </div>
+  );
+}
+
 function FileUploadField({ field, value, onChange, onUploadingChange }) {
   const [status, setStatus] = useState(() => value ? "done" : "idle");
   const [fileName, setFileName] = useState("");
@@ -302,6 +353,8 @@ export default function FieldInput({ field, value, onChange, onUploadingChange }
           cls={cls}
         />
       );
+    case "images":
+      return <ImagesField value={value} onChange={onChange} onUploadingChange={onUploadingChange} />;
     case "file":
       return (
         <FileUploadField

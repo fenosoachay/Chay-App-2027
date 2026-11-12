@@ -1,6 +1,6 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare,
 } from "lucide-react";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
@@ -154,6 +154,33 @@ export const SECTIONS = [
     ],
     showPlaylist: true,
     playlistField: "image_url",
+  },
+  {
+    // Menu ☰ > « Histoire de l'église » : la page affiche la fiche la plus récente.
+    key: "ChurchHistory",
+    label: "Histoire de l'église",
+    icon: Landmark,
+    sort: "-updated_date",
+    listColumns: ["title"],
+    fields: [
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "body", label: "Texte", type: "rich-text", required: true },
+      { name: "photos", label: "Photos", type: "images" },
+    ],
+  },
+  {
+    // Menu ☰ > « Personnel » : liste dans l'ordre choisi (cadenas puis glisser, champ `order`).
+    key: "StaffMember",
+    label: "Personnel",
+    icon: UserSquare,
+    sort: "order",
+    listColumns: ["name", "role"],
+    thumbField: "photo_url",
+    fields: [
+      { name: "name", label: "Nom", type: "text", required: true },
+      { name: "role", label: "Rôle", type: "text", required: true },
+      { name: "photo_url", label: "Photo", type: "file", accept: "image/*" },
+    ],
   },
   {
     key: "Faq",

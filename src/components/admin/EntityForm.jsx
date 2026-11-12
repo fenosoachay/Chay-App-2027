@@ -80,7 +80,7 @@ export default function EntityForm({
             field={f}
             value={data[f.name]}
             onChange={set(f.name)}
-            onUploadingChange={f.type === "file" ? setUploading : undefined}
+            onUploadingChange={f.type === "file" || f.type === "images" ? setUploading : undefined}
           />
           {f.help && <p className="mt-1 text-xs text-muted-foreground">{f.help}</p>}
         </div>

@@ -47,6 +47,8 @@ const Kids = lazy(() => import("@/pages/Kids"));
 const Community = lazy(() => import("@/pages/Community"));
 const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
 const Donate = lazy(() => import("@/pages/Donate"));
+const HistoireEglise = lazy(() => import("@/pages/HistoireEglise"));
+const Personnel = lazy(() => import("@/pages/Personnel"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Requests = lazy(() => import("@/pages/Requests"));
 const Admin = lazy(() => import("@/pages/Admin"));
@@ -129,6 +131,9 @@ const AuthenticatedApp = () => {
           <Route path="/donate" element={<Donate />} />
           <Route path="/don" element={<Navigate to="/donate" replace />} />
           <Route path="/contact" element={<Contact />} />
+          {/* Menu ☰ de l'en-tête */}
+          <Route path="/eglise/histoire" element={<HistoireEglise />} />
+          <Route path="/eglise/personnel" element={<Personnel />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />

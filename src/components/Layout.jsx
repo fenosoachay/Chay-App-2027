@@ -18,6 +18,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { syncWebPush, disableWebPush, onWebPushNotificationClick } from "@/lib/webPush";
 import NotificationBanner from "@/components/NotificationBanner";
+import MenuEglise from "@/components/MenuEglise";
 import { useOuvrirDepuisLecture } from "@/hooks/useOuvrirDepuisLecture";
 import { useMediaSessionSync } from "@/hooks/useMediaSessionSync";
 import {
@@ -174,6 +175,7 @@ export default function Layout() {
                 </span>
               )}
             </Link>
+            <MenuEglise className="h-11 w-11 hover:bg-muted transition" />
             <Link to="/settings" className="h-11 w-11 grid place-items-center rounded-full brand-gradient text-white shadow-sm" aria-label="Paramètres">
               <User className="h-4 w-4" />
             </Link>
@@ -235,6 +237,8 @@ export default function Layout() {
             >
               <Settings className="h-[17px] w-[17px]" />
             </Link>
+            {/* ☰ : Histoire de l'église, Personnel */}
+            <MenuEglise />
           </div>
         </div>
       </header>
