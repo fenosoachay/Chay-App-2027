@@ -2,6 +2,9 @@ import React from "react";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import ListeTriable from "@/components/media/ListeTriable";
 
+/** Arrondi des vignettes de playlists (environ 18 % du côté, proche des icônes Android). */
+export const COINS_VIGNETTE = "rounded-[18%] ring-1 ring-black/5";
+
 /**
  * Grille de playlists ou de sous-playlists, au style de Musique (couverture carrée + nom).
  * En réorganisation (admin, cadenas ouvert) : liste à glisser, même mécanisme que la réorganisation YouTube.
@@ -27,7 +30,8 @@ export default function GrillePlaylists({ id, items, reorganiser = false, onReor
       {items.map((p) => (
         <div key={p.id} className="relative group w-full p-1 text-center transition-transform duration-150 select-none hover:-translate-y-1">
           <button type="button" onClick={() => onOuvrir(p)} className="w-full text-center">
-            <PlaylistCover playlist={p} className="mx-auto aspect-square w-full rounded-none mb-1.5" />
+            {/* Carré à coins légèrement arrondis, comme une icône d'application Android. */}
+            <PlaylistCover playlist={p} className={`mx-auto aspect-square w-full mb-1.5 ${COINS_VIGNETTE}`} />
             <div className="font-bold text-xs line-clamp-2">{p.name}</div>
           </button>
         </div>
