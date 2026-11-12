@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, GripVertical, Lock, Search, Unlock } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, Lock, Search, Unlock } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Image } from "@/components/ui/image";
 import ArticleCard from "@/components/media/ArticleCard";
@@ -8,6 +8,9 @@ import PlaylistCategoryView from "@/components/media/PlaylistCategoryView";
 import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
 import GalleryViewer from "@/components/media/GalleryViewer";
+import ListeTriable from "@/components/media/ListeTriable";
+import NavigationPlaylists from "@/components/media/NavigationPlaylists";
+import { arbrePlaylists, contenusNonRanges } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
 import { YOUTUBE_SECTIONS, GALLERY_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
@@ -55,64 +58,6 @@ function SectionTile({ item, onClick }) {
   );
 }
 
-// Copie locale du hook de réorganisation par glisser-déposer (même comportement
-// que le cadenas des favoris musicaux de FavoritesView.jsx — fichier volontairement
-// non modifié). Utilisé uniquement par la grille des articles, pour les admins.
-function useDragSort(items, onReorder) {
-  const listRef = useRef(null);
-  const dragIndex = useRef(null);
-
-  const finishDrag = useCallback((clientY) => {
-    const container = listRef.current;
-    const from = dragIndex.current;
-    if (!container || from === null) return;
-
-    const children = [...container.children];
-    let to = children.length - 1;
-    for (let i = 0; i < children.length; i += 1) {
-      const rect = children[i].getBoundingClientRect();
-      if (clientY < rect.top + rect.height / 2) {
-        to = i;
-        break;
-      }
-    }
-    children.forEach((child) => child.classList.remove("opacity-50", "scale-[0.98]"));
-    dragIndex.current = null;
-    if (from !== to && to >= 0 && to < items.length) {
-      const next = [...items];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      onReorder(next);
-    }
-  }, [items, onReorder]);
-
-  const onMouseDown = (index) => (event) => {
-    event.preventDefault();
-    dragIndex.current = index;
-    listRef.current?.children[index]?.classList.add("opacity-50", "scale-[0.98]");
-    const onUp = (upEvent) => {
-      window.removeEventListener("mouseup", onUp);
-      finishDrag(upEvent.clientY);
-    };
-    window.addEventListener("mouseup", onUp);
-  };
-
-  const onTouchStart = (index) => () => {
-    dragIndex.current = index;
-    listRef.current?.children[index]?.classList.add("opacity-50", "scale-[0.98]");
-    const onMove = (moveEvent) => moveEvent.preventDefault();
-    const onEnd = (endEvent) => {
-      listRef.current?.removeEventListener("touchmove", onMove);
-      listRef.current?.removeEventListener("touchend", onEnd);
-      finishDrag(endEvent.changedTouches[0].clientY);
-    };
-    listRef.current?.addEventListener("touchmove", onMove, { passive: false });
-    listRef.current?.addEventListener("touchend", onEnd, { once: true });
-  };
-
-  return { listRef, onMouseDown, onTouchStart };
-}
-
 // Liste des articles avec cadenas de réorganisation réservé aux admins :
 // verrouillé = ordre figé ; déverrouillé = glisser-déposer via la poignée,
 // puis sauvegarde du nouvel ordre (champ `order` de l'entité Article).
@@ -124,6 +69,8 @@ function ArticlesGrid({
   setQuery,
   searchParams,
   onReorderArticles,
+  ordreFixe = false, // sous-playlist : ordre des liens, déjà appliqué
+  afficherIndisponible = true,
 }) {
   const [locked, setLocked] = useState(true);
   const [orderedArticles, setOrderedArticles] = useState([]);
@@ -139,9 +86,9 @@ function ArticlesGrid({
     () =>
       orderedArticles
         .filter((a) => match(a.title) || match(a.category))
-        .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999)
-          || new Date(b.created_date || 0) - new Date(a.created_date || 0)),
-    [orderedArticles, q]
+        .sort((a, b) => (ordreFixe ? 0 : (a.order ?? 99999) - (b.order ?? 99999)
+          || new Date(b.created_date || 0) - new Date(a.created_date || 0))),
+    [orderedArticles, q, ordreFixe] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const canDrag = isAdmin && !locked && fArticles.length > 1;
@@ -153,8 +100,6 @@ function ArticlesGrid({
     ));
     onReorderArticles?.(nextVisible);
   }, [onReorderArticles]);
-
-  const drag = useDragSort(fArticles, handleReorder);
 
   return (
     <>
@@ -182,22 +127,18 @@ function ArticlesGrid({
           </button>
         )}
       </div>
-      {fArticles.length ? (
-        <div ref={canDrag ? drag.listRef : null} className="space-y-2">
-          {fArticles.map((a, index) => (
+      {fArticles.length && canDrag ? (
+        // Même mécanisme que la réorganisation YouTube (@hello-pangea/dnd, poignée touch-none).
+        <ListeTriable
+          id="articles"
+          items={fArticles}
+          onReorder={handleReorder}
+          renderRow={(a) => <span className="min-w-0 flex-1 truncate text-sm font-bold">{a.title}</span>}
+        />
+      ) : fArticles.length ? (
+        <div className="space-y-2">
+          {fArticles.map((a) => (
             <div key={a.id} className="flex min-w-0 items-center gap-2">
-              {canDrag && (
-                <button
-                  type="button"
-                  aria-label={`Réorganiser ${a.title}`}
-                  title={`Réorganiser ${a.title}`}
-                  className="grid h-11 w-11 shrink-0 cursor-grab touch-none place-items-center rounded-full border border-border bg-card text-foreground/60 shadow-sm hover:text-foreground"
-                  onMouseDown={drag.onMouseDown(index)}
-                  onTouchStart={drag.onTouchStart(index)}
-                >
-                  <GripVertical className="h-5 w-5" />
-                </button>
-              )}
               <ArticleCard article={a} />
             </div>
           ))}
@@ -205,11 +146,44 @@ function ArticlesGrid({
       ) : (
         <p className="text-foreground/50 text-sm">Aucun article publié.</p>
       )}
-      {searchParams.get("article") && !articles.some((article) => article.id === searchParams.get("article")) && (
+      {afficherIndisponible && searchParams.get("article") && !articles.some((article) => article.id === searchParams.get("article")) && (
         <p role="status" className="mt-4 text-sm text-foreground/60">
           Cet article n'est plus disponible.
         </p>
       )}
+    </>
+  );
+}
+
+/** Photos d'une sous-playlist : même grille et même visionneuse que les sections de la galerie. */
+function GalerieSousPlaylist({ images, targetImageId, clearTarget, onItemUpdated, onItemDeleted }) {
+  const [idx, setIdx] = useState(null);
+  useEffect(() => {
+    if (!targetImageId) return;
+    const i = images.findIndex((g) => g.id === targetImageId);
+    if (i >= 0) setIdx(i);
+  }, [targetImageId, images]);
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {images.map((g, i) => (
+          <button
+            key={g.id}
+            onClick={() => { clearTarget("image"); setIdx(i); }}
+            className="block aspect-square overflow-hidden bg-muted group"
+            aria-label={g.title || "Photo"}
+          >
+            <Image src={g.image_url} fittingType="fill" className="w-full h-full object-cover md:group-hover:scale-105 transition-transform" />
+          </button>
+        ))}
+      </div>
+      <GalleryViewer
+        items={images}
+        index={idx}
+        onItemUpdated={onItemUpdated}
+        onItemDeleted={onItemDeleted}
+        onClose={() => { clearTarget("image"); setIdx(null); }}
+      />
     </>
   );
 }
@@ -222,11 +196,24 @@ export default function MediaCategory({
   onGalleryItemUpdated, onGalleryItemDeleted,
   onReorderFavoriteItems, onReorderFavoritePlaylists,
   onReorderArticles,
+  onChargerContenus,
+  onReorderLiens,
 }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = user?.role === "admin";
-  const { articles, youtube, gallery, playlist } = data;
+  const { articles: tousArticles, youtube: tousYoutube, gallery: touteGalerie, playlist } = data;
+  // Contenus rangés dans une sous-playlist : affichés dans leur sous-playlist ; l'affichage d'avant (sections
+  // YouTube et Galerie, liste des articles) ne garde que les contenus « Non classés », toujours visibles.
+  const nonRanges = (categorie, liste) => contenusNonRanges(liste, playlistTracks, arbrePlaylists(playlists, categorie));
+  const youtube = useMemo(() => nonRanges("youtube", tousYoutube), [tousYoutube, playlists, playlistTracks]); // eslint-disable-line react-hooks/exhaustive-deps
+  const articles = useMemo(() => nonRanges("articles", tousArticles), [tousArticles, playlists, playlistTracks]); // eslint-disable-line react-hooks/exhaustive-deps
+  const gallery = useMemo(() => nonRanges("gallery", touteGalerie), [touteGalerie, playlists, playlistTracks]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nav = (categorie, contenus, nbNonClasses, cibleId, entite) => ({
+    categorie, playlists, playlistTracks, contenus, nbNonClasses, cibleId, isAdmin,
+    onChargerManquants: (ids) => onChargerContenus?.(entite, ids),
+    onReorderLiens,
+  });
   const targetVideoId = searchParams.get("video");
   const targetImageId = searchParams.get("image");
   const [ytSection, setYtSection] = useState(null);
@@ -358,6 +345,20 @@ export default function MediaCategory({
       )}
 
       {cat === "youtube" && (
+        <NavigationPlaylists
+          {...nav("youtube", tousYoutube, youtube.length, targetVideoId, "YouTubeVideo")}
+          vignette={(v) => v.cover_url || v.thumbnail_url || `https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`}
+          renderContenus={(sp, videos) => (
+            // Même lecteur que les sections YouTube ; la sous-playlist sert de section (ordre, aléatoire).
+            <YouTubeCategoryView
+              section={`pl-${sp.id}`}
+              libelle={sp.name}
+              sansGestion
+              youtube={videos.map((v) => ({ ...v, section: `pl-${sp.id}` }))}
+              targetVideoId={targetVideoId}
+            />
+          )}
+        >
         <div>
           {!ytSection ? (
             <div className="grid grid-cols-3 gap-4 md:gap-6 max-w-sm">
@@ -388,9 +389,25 @@ export default function MediaCategory({
             </div>
           )}
         </div>
+        </NavigationPlaylists>
       )}
 
       {cat === "articles" && (
+        <NavigationPlaylists
+          {...nav("articles", tousArticles, articles.length, searchParams.get("article"), "Article")}
+          vignette={(a) => a.cover_url}
+          renderContenus={(sp, liste) => (
+            <ArticlesGrid
+              isAdmin={false}
+              articles={liste}
+              query={query}
+              setQuery={setQuery}
+              searchParams={searchParams}
+              ordreFixe
+              afficherIndisponible={false}
+            />
+          )}
+        >
         <ArticlesGrid
           isAdmin={isAdmin}
           articles={articles}
@@ -399,9 +416,23 @@ export default function MediaCategory({
           searchParams={searchParams}
           onReorderArticles={onReorderArticles}
         />
+        </NavigationPlaylists>
       )}
 
       {cat === "gallery" && (
+        <NavigationPlaylists
+          {...nav("gallery", touteGalerie, gallery.length, targetImageId, "GalleryImage")}
+          vignette={(g) => g.image_url}
+          renderContenus={(sp, images) => (
+            <GalerieSousPlaylist
+              images={images}
+              targetImageId={targetImageId}
+              clearTarget={clearTarget}
+              onItemUpdated={onGalleryItemUpdated}
+              onItemDeleted={onGalleryItemDeleted}
+            />
+          )}
+        >
         <div>
           {targetImageId && !gallery.some((image) => image.id === targetImageId) && (
             <p role="status" className="mb-4 text-sm text-foreground/60">
@@ -522,6 +553,7 @@ export default function MediaCategory({
             </>
           )}
         </div>
+        </NavigationPlaylists>
       )}
 
       {cat === "playlist" && (

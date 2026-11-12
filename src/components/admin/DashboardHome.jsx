@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import QuizStatCard from "@/components/admin/QuizStatCard";
+import AlerteRangement from "@/components/admin/AlerteRangement";
 import {
   Headphones,
   BookOpen,
@@ -61,6 +62,9 @@ export default function DashboardHome({ onNavigate }) {
           prédications, dévotionnels, annonces et plus encore.
         </p>
       </div>
+
+      {/* Contenus pas encore rangés dans une sous-playlist (Musique, Prédication, YouTube, Articles, Galerie). */}
+      <AlerteRangement onNavigate={onNavigate} />
 
       <h3 className="font-display font-extrabold text-xl mt-8 mb-4">
         Aperçu du contenu

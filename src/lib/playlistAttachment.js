@@ -17,14 +17,19 @@ export function buildPlaylistTrackRecord({
     title: item.title || submittedData.title,
     artist: item.artist || item.speaker || submittedData.artist || submittedData.speaker || null,
     audio_url: item.audio_url || submittedData.audio_url || null,
+    // Miniature : couverture, image (Galerie) ou miniature YouTube.
     video_url: item.video_url || submittedData.video_url || null,
     cover_url:
       item[coverField] ||
       submittedData[coverField] ||
       item.cover_url ||
       submittedData.cover_url ||
+      item.thumbnail_url ||
+      item.image_url ||
+      (item.youtube_id ? `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg` : null) ||
       null,
-    kind: entity === "Video" ? "video" : "audio",
+    // audio / video : pistes (Musique, Prédication, Films) ; vide pour YouTube, Articles, Galerie.
+    kind: entity === "Video" ? "video" : entity === "MusicTrack" || entity === "Sermon" ? "audio" : "",
     order: Date.now(),
   };
 }
@@ -60,7 +65,8 @@ export async function savePlaylistTrack(
   mediaField,
   { checkExisting = false } = {}
 ) {
-  const requiredFields = ["playlist_id", "track_id", "title", mediaField];
+  // mediaField null : contenu sans fichier audio / vidéo (YouTube, article, image).
+  const requiredFields = ["playlist_id", "track_id", "title", mediaField].filter(Boolean);
   const missingFields = (persisted) =>
     requiredFields.filter((field) => persisted?.[field] !== record[field]);
   const repair = async (persisted) => {

@@ -99,8 +99,9 @@ export default function Media() {
       loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
       base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
       base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
-      base44.entities.Playlist.list("-created_date", 50).catch(() => []),
-      base44.entities.PlaylistTrack.list("-created_date", 200).catch(() => []),
+      // Toutes les playlists et tous les liens : sections > playlists > sous-playlists (petits volumes).
+      base44.entities.Playlist.list("-created_date", 2000).catch(() => []),
+      base44.entities.PlaylistTrack.list("-created_date", 20000).catch(() => []),
     ]);
     const { targetTracks, targetVideos, targetArticles, targetImages, extraPlaylists } = await chargerCibles(pl);
     setTracks(Array.isArray(t) ? t : []);
@@ -258,6 +259,29 @@ export default function Media() {
     }
   };
 
+  // Contenus d'une sous-playlist absents des listes paginées : chargés par leur id.
+  const chargerContenus = async (entite, ids) => {
+    const setters = { YouTubeVideo: setYoutube, Article: setArticles, GalleryImage: setGallery };
+    const set = setters[entite];
+    if (!set || !ids?.length) return;
+    const rows = await base44.entities[entite].filter({ id: { $in: ids } }, "-created_date", ids.length).catch(() => []);
+    if (Array.isArray(rows) && rows.length) set((list) => mergeById(list, rows));
+  };
+
+  // Ordre des contenus d'une sous-playlist (admin) : champ `order` des liens PlaylistTrack.
+  const reorderLiens = async (playlistId, contenus) => {
+    const lienDe = new Map(playlistTracks.filter((t) => t.playlist_id === playlistId).map((t) => [t.track_id, t]));
+    const ordre = new Map(contenus.map((c, i) => [lienDe.get(c.id)?.id, i]).filter(([id]) => id));
+    setPlaylistTracks((list) => list.map((t) => (ordre.has(t.id) ? { ...t, order: ordre.get(t.id) } : t)));
+    const results = await Promise.all([...ordre].map(([id, order]) =>
+      base44.entities.PlaylistTrack.update(id, { order }).then(() => true, () => false)
+    ));
+    if (results.includes(false)) {
+      toast({ title: "Réorganisation non enregistrée", variant: "destructive" });
+      await loadAll();
+    }
+  };
+
   const openCat = (id) =>
     setSearchParams({ cat: id }, { state: { chayMediaCategory: true } });
   const back = () => {
@@ -304,6 +328,8 @@ export default function Media() {
           onReorderFavoriteItems={reorderFavoriteItems}
           onReorderFavoritePlaylists={reorderFavoritePlaylists}
           onReorderArticles={reorderArticles}
+          onChargerContenus={chargerContenus}
+          onReorderLiens={reorderLiens}
           playlists={playlists}
           playlistTracks={playlistTracks}
           onGalleryItemUpdated={(updated) =>

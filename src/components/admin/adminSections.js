@@ -113,6 +113,9 @@ export const SECTIONS = [
       { name: "category", label: "Catégorie", type: "text" },
       { name: "author", label: "Auteur", type: "text" },
     ],
+    // Rangé dans une sous-playlist (Articles > Playlist > Sous-playlist).
+    showPlaylist: true,
+    playlistField: "cover_url",
   },
   {
     key: "YouTubeVideo",
@@ -126,6 +129,8 @@ export const SECTIONS = [
       { name: "category", label: "Catégorie", type: "text" },
       { name: "thumbnail_url", label: "Miniature", type: "file", accept: "image/*" },
     ],
+    showPlaylist: true,
+    playlistField: "thumbnail_url",
   },
   {
     key: "GalleryImage",
@@ -145,6 +150,8 @@ export const SECTIONS = [
         options: GALLERY_SECTIONS.map((s) => ({ value: s.id, label: s.label })),
       },
     ],
+    showPlaylist: true,
+    playlistField: "image_url",
   },
   {
     key: "Faq",
@@ -221,7 +228,7 @@ export const SECTIONS = [
     fields: [
       { name: "name", label: "Nom", type: "text", required: true },
       { name: "description", label: "Description", type: "textarea" },
-      { name: "category", label: "Catégorie", type: "select", options: [{ value: "music", label: "Musique" }, { value: "sermons", label: "Prédications" }, { value: "films", label: "Films" }, { value: "other", label: "Autre" }] },
+      { name: "category", label: "Catégorie", type: "select", options: [{ value: "music", label: "Musique" }, { value: "sermons", label: "Prédications" }, { value: "films", label: "Films" }, { value: "youtube", label: "YouTube" }, { value: "articles", label: "Articles" }, { value: "gallery", label: "Galerie" }, { value: "other", label: "Autre" }] },
       { name: "cover_url", label: "Couverture", type: "file", accept: "image/*" },
     ],
     readOnly: false,

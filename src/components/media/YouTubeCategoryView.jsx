@@ -74,7 +74,9 @@ function YouTubeAdminRow({ video, dead, onDelete }) {
   );
 }
 
-export default function YouTubeCategoryView({ section, youtube = [], targetVideoId }) {
+// libelle : nom affiché (sous-playlist) ; sansGestion : pas de bouton « Gérer » (sous-playlist).
+export default function YouTubeCategoryView({ section, youtube = [], targetVideoId, libelle, sansGestion = false }) {
+  const nomSection = libelle || SECTION_LABELS[section] || section;
   const [playingId, setPlayingId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -202,7 +204,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       type: "youtube",
       engine: "youtube",
       title: item.title || "Vidéo YouTube",
-      subtitle: `${SECTION_LABELS[section] || section}${shuffleRef.current?.shuffleOn ? " · Aléatoire" : ""}`,
+      subtitle: `${nomSection}${shuffleRef.current?.shuffleOn ? " · Aléatoire" : ""}`,
       artwork: item.thumbnail_url || item.cover_url || `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg`,
       source: item.youtube_id,
       isPlaying: true,
@@ -227,7 +229,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       stop,
     }, "youtube");
     setPlayingId(item.id);
-  }, [section, stopUrlVideo]);
+  }, [section, nomSection, stopUrlVideo]);
 
   const startVideoAt = useCallback((index) => {
     playQueue(queueItems, index);
@@ -374,9 +376,9 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-sm text-foreground/55">
-          Vidéos YouTube — {SECTION_LABELS[section] || section}.
+          Vidéos YouTube — {nomSection}.
         </p>
-        {isAdmin && (
+        {isAdmin && !sansGestion && (
           <button
             type="button"
             onClick={() => setGerer(true)}

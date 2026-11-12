@@ -8,7 +8,7 @@ test("admin YouTube : même lecteur que les membres, « Gérer » ouvre l'écran
   assert.match(src, /const \[gerer, setGerer\] = useState\(false\);/); // lecteur par défaut
   assert.match(src, /if \(isAdmin && gerer\) \{/); // écran de gestion seulement sur demande
   assert.doesNotMatch(src, /if \(isAdmin\) \{\n\s+const orderOf/);
-  assert.match(src, /\{isAdmin && \([\s\S]{0,200}onClick=\{\(\) => setGerer\(true\)\}[\s\S]{0,300}Gérer/);
+  assert.match(src, /\{isAdmin && !sansGestion && \([\s\S]{0,200}onClick=\{\(\) => setGerer\(true\)\}[\s\S]{0,300}Gérer/);
   assert.match(src, /onClick=\{\(\) => setGerer\(false\)\}[\s\S]{0,300}Retour au lecteur/);
   // L'écran de gestion reste celui d'avant : cadenas, toutes les sections, glisser-déposer, suppression.
   const gestion = src.slice(src.indexOf("if (isAdmin && gerer) {"), src.indexOf("// ── Lecteur (membres ET admins)"));

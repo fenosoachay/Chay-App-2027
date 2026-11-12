@@ -65,7 +65,7 @@ test("lecteur : un changement de file ne relance pas le titre ; ExoPlayer réord
   assert.match(ctx, /\}, \[currentTrack, isNativeAndroidPlayer\]\);/); // plus de dépendance à queue / order
   assert.doesNotMatch(ctx, /\}, \[currentTrack, isNativeAndroidPlayer, order, orderIndex, queue\]\);/);
   assert.match(ctx, /reorderAndroidExoPlayerQueue\(order\.map\(\(i\) => cleFile\(queue\[i\]\)\)/);
-  assert.match(ctx, /reorderQueue,\n/);
+  assert.match(ctx, /reorderQueue,\r?\n/);
   assert.match(lire("src/pages/Media.jsx"), /reorderQueue\(buildFavoriteAudioQueue\(reordonnee, null\)\.tracks\)/);
   const java = fs.readFileSync(new URL("../../android/app/src/main/java/io/chay/app/AndroidExoPlayerPlugin.java", import.meta.url), "utf8");
   assert.match(java, /public void reorderQueue\(PluginCall call\)/);

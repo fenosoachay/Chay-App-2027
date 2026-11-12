@@ -8,7 +8,6 @@ import {
   Star,
   Lock,
   Unlock,
-  GripVertical,
   Headphones,
 } from "lucide-react";
 import VideoPlayer from "@/components/player/VideoPlayer";
@@ -18,6 +17,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { formatListenCount } from "@/lib/playlist";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { filePlaylist } from "@/lib/fileLecture";
+import ListeTriable from "@/components/media/ListeTriable";
+import GrillePlaylists from "@/components/media/GrillePlaylists";
+import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
 import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 import { subscribeMediaControl } from "@/lib/mediaControl";
@@ -31,125 +33,6 @@ function formatViewCount(count) {
   return count.toString();
 }
 
-/* ─── Hook drag & drop tactile + souris ─────────────────────────────────── */
-function useDragSort(items, onReorder) {
-  const dragIdx = useRef(null);
-  const listRef = useRef(null);
-
-  const getItemEls = () =>
-    listRef.current ? Array.from(listRef.current.children) : [];
-
-  const indexFromY = (clientY) => {
-    const els = getItemEls();
-    for (let i = 0; i < els.length; i++) {
-      const r = els[i].getBoundingClientRect();
-      if (clientY < r.top + r.height / 2) return i;
-    }
-    return els.length - 1;
-  };
-
-  /* ─ souris ── */
-  const onMouseDown = useCallback(
-    (idx) => (e) => {
-      e.preventDefault();
-      dragIdx.current = idx;
-      const els = getItemEls();
-      els[idx]?.classList.add("opacity-50", "scale-[0.98]");
-
-      const onMove = (me) => {
-        const target = indexFromY(me.clientY);
-        els.forEach((el, i) => {
-          el.style.transform = "";
-          if (i === dragIdx.current) return;
-          if (
-            dragIdx.current < target
-              ? i > dragIdx.current && i <= target
-              : i < dragIdx.current && i >= target
-          ) {
-            el.style.transform =
-              dragIdx.current < target ? "translateY(-56px)" : "translateY(56px)";
-          }
-        });
-      };
-
-      const onUp = (me) => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        const from = dragIdx.current;
-        dragIdx.current = null;
-        els.forEach((el) => {
-          el.classList.remove("opacity-50", "scale-[0.98]");
-          el.style.transform = "";
-        });
-        const to = indexFromY(me.clientY);
-        if (from !== null && from !== to && to >= 0 && to < items.length) {
-          const next = [...items];
-          const [moved] = next.splice(from, 1);
-          next.splice(to, 0, moved);
-          onReorder(next);
-        }
-      };
-
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-    },
-    [items, onReorder]
-  );
-
-  /* ─ tactile ── */
-  const onTouchStart = useCallback(
-    (idx) => () => {
-      dragIdx.current = idx;
-      const els = getItemEls();
-      els[idx]?.classList.add("opacity-50", "scale-[0.98]");
-
-      const onMove = (te) => {
-        te.preventDefault();
-        const touch = te.touches[0];
-        const target = indexFromY(touch.clientY);
-        els.forEach((el, i) => {
-          el.style.transform = "";
-          if (i === dragIdx.current) return;
-          if (
-            dragIdx.current < target
-              ? i > dragIdx.current && i <= target
-              : i < dragIdx.current && i >= target
-          ) {
-            el.style.transform =
-              dragIdx.current < target ? "translateY(-56px)" : "translateY(56px)";
-          }
-        });
-      };
-
-      const onEnd = (te) => {
-        listRef.current?.removeEventListener("touchmove", onMove);
-        listRef.current?.removeEventListener("touchend", onEnd);
-        const from = dragIdx.current;
-        dragIdx.current = null;
-        els.forEach((el) => {
-          el.classList.remove("opacity-50", "scale-[0.98]");
-          el.style.transform = "";
-        });
-        const touch = te.changedTouches[0];
-        const to = indexFromY(touch.clientY);
-        if (from !== null && from !== to && to >= 0 && to < items.length) {
-          const next = [...items];
-          const [moved] = next.splice(from, 1);
-          next.splice(to, 0, moved);
-          onReorder(next);
-        }
-      };
-
-      listRef.current?.addEventListener("touchmove", onMove, { passive: false });
-      listRef.current?.addEventListener("touchend", onEnd);
-    },
-    [items, onReorder]
-  );
-
-  return { listRef, onMouseDown, onTouchStart };
-}
-
-/* ─── Cadenas ──────────────────────────────────────────────────────────── */
 function LockToggle({ locked, onToggle }) {
   return (
     <button
@@ -185,6 +68,8 @@ export default function PlaylistCategoryView({
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(null);
+  // Section > Playlist (parent, grille de ses sous-playlists) > Sous-playlist (open, ses contenus).
+  const [parent, setParent] = useState(null);
   const [targetUnavailable, setTargetUnavailable] = useState(false);
   const trackNodes = useRef(new Map());
   const targetTrackId = searchParams.get("track");
@@ -210,10 +95,8 @@ export default function PlaylistCategoryView({
   const { reorderQueue } = useAudioPlayer();
 
   useEffect(() => {
-    const filtered = playlists
-      .filter((p) => (p.category || "music") === category)
-      .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999));
-    setOrderedPlaylists(filtered);
+    // Premier niveau seulement : les sous-playlists s'affichent dans leur playlist.
+    setOrderedPlaylists(arbrePlaylists(playlists, category));
   }, [playlists, category]);
 
   useEffect(() => {
@@ -229,6 +112,7 @@ export default function PlaylistCategoryView({
 
   const handleReorderPlaylists = useCallback(
     async (next) => {
+      // Premier niveau : les sous-playlists de chaque playlist sont gardées (champ `sous`).
       setOrderedPlaylists(next);
       const results = await Promise.all(
         next.map((p, i) =>
@@ -239,16 +123,27 @@ export default function PlaylistCategoryView({
         )
       );
       if (results.includes(false)) {
-        setOrderedPlaylists(
-          playlists
-            .filter((playlist) => (playlist.category || "music") === category)
-            .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999))
-        );
+        setOrderedPlaylists(arbrePlaylists(playlists, category));
         toast({
           title: "Réorganisation non enregistrée",
           description: "La mise à jour de l'ordre de certaines playlists a échoué.",
           variant: "destructive",
         });
+      }
+    },
+    [category, playlists, toast]
+  );
+
+  /** Ordre des sous-playlists d'une playlist (champ `order` de chaque sous-playlist). */
+  const handleReorderSous = useCallback(
+    async (parentId, next) => {
+      setOrderedPlaylists((list) => list.map((p) => (p.id === parentId ? { ...p, sous: next } : p)));
+      const results = await Promise.all(
+        next.map((p, i) => base44.entities.Playlist.update(p.id, { order: i }).then(() => true, () => false))
+      );
+      if (results.includes(false)) {
+        setOrderedPlaylists(arbrePlaylists(playlists, category));
+        toast({ title: "Réorganisation non enregistrée", variant: "destructive" });
       }
     },
     [category, playlists, toast]
@@ -283,8 +178,6 @@ export default function PlaylistCategoryView({
     [open, playlistTracks, toast, isVideo, reorderQueue, category]
   );
 
-  const playlistDrag = useDragSort(orderedPlaylists, handleReorderPlaylists);
-  const trackDrag = useDragSort(orderedTracks, handleReorderTracks);
 
   const recordListen = useCallback(
     async (track) => {
@@ -405,6 +298,7 @@ export default function PlaylistCategoryView({
     }
 
     setTargetUnavailable(false);
+    setParent(targetPlaylist.parent_id ? playlists.find((p) => p.id === targetPlaylist.parent_id) || null : null);
     setOpen(targetPlaylist);
   }, [category, targetTrackId, targetPlaylistId, playlistTracks, playlists]);
 
@@ -420,6 +314,8 @@ export default function PlaylistCategoryView({
   }, [targetTrackId, open, tracks]);
 
   const closePlaylist = () => {
+    // Retour d'une sous-playlist : grille des sous-playlists de sa playlist.
+    if (open?.parent_id && !parent) setParent(playlists.find((p) => p.id === open.parent_id) || null);
     setOpen(null);
     if (targetTrackId || targetPlaylistId) {
       const next = new URLSearchParams(searchParams);
@@ -427,6 +323,12 @@ export default function PlaylistCategoryView({
       next.delete("playlist");
       setSearchParams(next, { replace: true });
     }
+  };
+
+  /** Playlist avec sous-playlists : on affiche ses sous-playlists ; sinon directement ses contenus. */
+  const ouvrirPlaylist = (p) => {
+    if ((p.sous || []).length) setParent(p);
+    else setOpen(p);
   };
 
   const favItem = (t) => ({
@@ -440,6 +342,49 @@ export default function PlaylistCategoryView({
     source_playlist_id: open?.id,
     source_playlist_name: open?.name,
   });
+
+  // Playlist ouverte : ses sous-playlists (même style que la grille), et ses titres non classés s'il en reste.
+  if (parent && !open) {
+    const sous = orderedPlaylists.find((p) => p.id === parent.id)?.sous || [];
+    const directs = liensDe(parent.id, playlistTracks).length;
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => setParent(null)}
+            aria-label="Retour aux playlists"
+            className="h-9 w-9 grid place-items-center rounded-full border border-border hover:bg-muted"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h2 className="font-display font-extrabold text-2xl truncate flex-1">{parent.name}</h2>
+          {isAdmin && sous.length > 1 && (
+            <LockToggle locked={playlistsLocked} onToggle={() => setPlaylistsLocked((v) => !v)} />
+          )}
+        </div>
+        {sous.length ? (
+          <GrillePlaylists
+            id={`sous-${parent.id}`}
+            items={sous}
+            reorganiser={!playlistsLocked && isAdmin}
+            onReorder={(next) => handleReorderSous(parent.id, next)}
+            onOuvrir={(sp) => setOpen(sp)}
+          />
+        ) : (
+          <p className="text-foreground/50 text-sm">Aucune sous-playlist pour le moment.</p>
+        )}
+        {directs > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen(parent)}
+            className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted"
+          >
+            Non classés ({directs})
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (open) {
     const audioTracks = tracks.filter((t) => !isVideo && t.audio_url);
@@ -471,8 +416,20 @@ export default function PlaylistCategoryView({
           )}
         </div>
 
-        {tracks.length ? (
-          <div ref={trackDrag.listRef} className="space-y-3">
+        {tracks.length && !tracksLocked && isAdmin ? (
+          <ListeTriable
+            id={`pistes-${open.id}`}
+            items={tracks}
+            onReorder={handleReorderTracks}
+            renderRow={(t) => (
+              <>
+                <PlaylistCover playlist={{ cover_url: t.cover_url, name: t.title }} className="h-10 w-10 shrink-0 rounded-[10px]" />
+                <span className="min-w-0 flex-1 truncate text-sm font-bold">{t.title}</span>
+              </>
+            )}
+          />
+        ) : tracks.length ? (
+          <div className="space-y-3">
             {tracks.map((t, idx) =>
               isVideo ? (
                 <div
@@ -486,16 +443,6 @@ export default function PlaylistCategoryView({
                     targetTrackId === t.track_id ? "ring-2 ring-primary" : ""
                   }`}
                 >
-                  {!tracksLocked && isAdmin && (
-                    <div
-                      className="cursor-grab active:cursor-grabbing touch-none p-2 text-muted-foreground bg-muted/40 flex items-center gap-2 border-b border-border text-xs font-semibold"
-                      onMouseDown={trackDrag.onMouseDown(idx)}
-                      onTouchStart={trackDrag.onTouchStart(idx)}
-                    >
-                      <GripVertical className="h-4 w-4" />
-                      <span>Déplacer</span>
-                    </div>
-                  )}
                   {t.video_url ? (
                     <VideoPlayer
                       src={t.video_url}
@@ -542,15 +489,6 @@ export default function PlaylistCategoryView({
                     targetTrackId === t.track_id ? "ring-2 ring-primary" : ""
                   }`}
                 >
-                  {!tracksLocked && isAdmin && (
-                    <div
-                      className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground"
-                      onMouseDown={trackDrag.onMouseDown(idx)}
-                      onTouchStart={trackDrag.onTouchStart(idx)}
-                    >
-                      <GripVertical className="h-5 w-5" />
-                    </div>
-                  )}
                   <div
                     className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                     onClick={() => {
@@ -632,43 +570,13 @@ export default function PlaylistCategoryView({
       </div>
 
       {cats.length ? (
-        <div
-          ref={playlistsLocked ? null : playlistDrag.listRef}
-          className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3"
-        >
-          {cats.map((p, idx) => {
-            return (
-              <div
-                key={p.id}
-                className="relative group w-full p-1 text-center transition-transform duration-150 select-none hover:-translate-y-1"
-              >
-                {!playlistsLocked && isAdmin && (
-                  <div
-                    className="absolute top-1 right-1 z-10 cursor-grab active:cursor-grabbing touch-none p-1 rounded-full bg-background/80 backdrop-blur border border-border text-foreground hover:bg-muted"
-                    onMouseDown={playlistDrag.onMouseDown(idx)}
-                    onTouchStart={playlistDrag.onTouchStart(idx)}
-                    title="Glisser pour réorganiser"
-                  >
-                    <GripVertical className="h-3.5 w-3.5" />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (playlistsLocked) setOpen(p);
-                  }}
-                  className="w-full text-center"
-                >
-                  <PlaylistCover
-                    playlist={p}
-                    className="mx-auto aspect-square w-full rounded-none mb-1.5"
-                  />
-                  <div className="font-bold text-xs line-clamp-2">{p.name}</div>
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <GrillePlaylists
+          id={`playlists-${category}`}
+          items={cats}
+          reorganiser={!playlistsLocked && isAdmin}
+          onReorder={handleReorderPlaylists}
+          onOuvrir={ouvrirPlaylist}
+        />
       ) : (
         <p className="text-foreground/50 text-sm">
           Aucune playlist pour le moment

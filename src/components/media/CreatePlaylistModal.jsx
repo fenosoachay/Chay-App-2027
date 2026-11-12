@@ -25,6 +25,7 @@ export default function CreatePlaylistModal({
   onSaved,
   category = "music",
   playlist = null,
+  parent = null, // création d'une sous-playlist de cette playlist
 }) {
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -103,6 +104,8 @@ export default function CreatePlaylistModal({
         description: description.trim() || null,
         cover_url: coverUrl,
         category: playlist?.category || category,
+        // Sous-playlist : rattachée à sa playlist (la modification garde le rattachement existant).
+        parent_id: playlist ? playlist.parent_id || "" : parent?.id || "",
       };
       const playlistId = playlist?.id || pendingPlaylistIdRef.current;
       let savedPlaylist;
@@ -162,7 +165,9 @@ export default function CreatePlaylistModal({
       <DialogContent className="max-w-md rounded-[1.5rem]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display font-extrabold">
-            <Library className="h-5 w-5 text-primary" /> {playlist ? "Modifier la playlist" : "Créer une playlist"}
+            <Library className="h-5 w-5 text-primary" /> {playlist
+              ? playlist.parent_id ? "Modifier la sous-playlist" : "Modifier la playlist"
+              : parent ? `Nouvelle sous-playlist de « ${parent.name} »` : "Créer une playlist"}
           </DialogTitle>
           <DialogDescription>
             {playlist

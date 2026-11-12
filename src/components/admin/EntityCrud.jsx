@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,11 +12,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import EntityForm from "@/components/admin/EntityForm";
 import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
+import ListeTriable from "@/components/media/ListeTriable";
+import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
+import {
+  CATEGORIE_PLAYLIST,
+  MESSAGE_SOUS_PLAYLIST,
+  arbrePlaylists,
+  exigeSousPlaylist,
+  idsSousPlaylists,
+  optionsSousPlaylists,
+  sousPlaylistDe,
+} from "@/lib/playlistsArbre";
 import {
   buildPlaylistTrackRecord,
   deletePlaylistWithContents,
@@ -24,129 +35,8 @@ import {
   savePlaylistTrack,
 } from "@/lib/playlistAttachment";
 
-const PLAYLIST_CATEGORY = {
-  MusicTrack: "music",
-  Sermon: "sermons",
-  Video: "films",
-};
-
-/* ─── Hook drag & drop tactile + souris ─────────────────────────────────── */
-function useDragSort(items, onReorder) {
-  const dragIdx = useRef(null);
-  const listRef = useRef(null);
-
-  const getItemEls = () =>
-    listRef.current ? Array.from(listRef.current.children) : [];
-
-  const indexFromY = (clientY) => {
-    const els = getItemEls();
-    for (let i = 0; i < els.length; i++) {
-      const r = els[i].getBoundingClientRect();
-      if (clientY < r.top + r.height / 2) return i;
-    }
-    return els.length - 1;
-  };
-
-  /* ── souris ── */
-  const onMouseDown = useCallback(
-    (idx) => (e) => {
-      e.preventDefault();
-      dragIdx.current = idx;
-      const els = getItemEls();
-      els[idx]?.classList.add("opacity-50", "scale-[0.98]");
-
-      const onMove = (me) => {
-        const target = indexFromY(me.clientY);
-        els.forEach((el, i) => {
-          el.style.transform = "";
-          if (i === dragIdx.current) return;
-          if (
-            dragIdx.current < target
-              ? i > dragIdx.current && i <= target
-              : i < dragIdx.current && i >= target
-          ) {
-            el.style.transform =
-              dragIdx.current < target ? "translateY(-56px)" : "translateY(56px)";
-          }
-        });
-      };
-
-      const onUp = (me) => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        const from = dragIdx.current;
-        dragIdx.current = null;
-        els.forEach((el) => {
-          el.classList.remove("opacity-50", "scale-[0.98]");
-          el.style.transform = "";
-        });
-        const to = indexFromY(me.clientY);
-        if (from !== to) {
-          const next = [...items];
-          const [moved] = next.splice(from, 1);
-          next.splice(to, 0, moved);
-          onReorder(next);
-        }
-      };
-
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-    },
-    [items, onReorder]
-  );
-
-  /* ── tactile ── */
-  const onTouchStart = useCallback(
-    (idx) => (e) => {
-      dragIdx.current = idx;
-      const els = getItemEls();
-      els[idx]?.classList.add("opacity-50", "scale-[0.98]");
-
-      const onMove = (te) => {
-        te.preventDefault();
-        const touch = te.touches[0];
-        const target = indexFromY(touch.clientY);
-        els.forEach((el, i) => {
-          el.style.transform = "";
-          if (i === dragIdx.current) return;
-          if (
-            dragIdx.current < target
-              ? i > dragIdx.current && i <= target
-              : i < dragIdx.current && i >= target
-          ) {
-            el.style.transform =
-              dragIdx.current < target ? "translateY(-56px)" : "translateY(56px)";
-          }
-        });
-      };
-
-      const onEnd = (te) => {
-        listRef.current?.removeEventListener("touchmove", onMove);
-        listRef.current?.removeEventListener("touchend", onEnd);
-        const from = dragIdx.current;
-        dragIdx.current = null;
-        els.forEach((el) => {
-          el.classList.remove("opacity-50", "scale-[0.98]");
-          el.style.transform = "";
-        });
-        const touch = te.changedTouches[0];
-        const to = indexFromY(touch.clientY);
-        if (from !== to) {
-          const next = [...items];
-          const [moved] = next.splice(from, 1);
-          next.splice(to, 0, moved);
-          onReorder(next);
-        }
-      };
-
-      listRef.current?.addEventListener("touchmove", onMove, { passive: false });
-      listRef.current?.addEventListener("touchend", onEnd);
-    },
-    [items, onReorder]
-  );
-
-  return { listRef, onMouseDown, onTouchStart };
-}
+/** Champ PlaylistTrack qui porte le média (vérifié après l'ajout à la playlist), selon l'entité. */
+const CHAMP_MEDIA = { MusicTrack: "audio_url", Sermon: "audio_url", Video: "video_url" };
 
 /* ─── Cadenas ──────────────────────────────────────────────────────────── */
 function LockToggle({ locked, onToggle }) {
@@ -200,6 +90,14 @@ export default function EntityCrud({
   /* cadenas playlists / musiques */
   const [playlistsLocked, setPlaylistsLocked] = useState(true);
   const [tracksLocked, setTracksLocked] = useState(true);
+  // Sous-playlists : playlist parente de la sous-playlist en cours de création, playlists dépliées.
+  const [parentPourCreation, setParentPourCreation] = useState(null);
+  const [deplies, setDeplies] = useState(() => new Set());
+  const categorie = CATEGORIE_PLAYLIST[entity];
+  // Musique, Prédication, YouTube, Articles, Galerie : tout contenu est rangé dans une sous-playlist.
+  const sousPlaylist = showPlaylist && exigeSousPlaylist(entity);
+  const arbre = useMemo(() => (sousPlaylist ? arbrePlaylists(playlists, categorie) : []), [sousPlaylist, playlists, categorie]);
+  const racines = sousPlaylist ? arbre : playlists;
 
   const load = async () => {
     setLoading(true);
@@ -212,22 +110,44 @@ export default function EntityCrud({
 
   const loadPlaylists = async () => {
     try {
-      const list = await base44.entities.Playlist.list("-created_date", 100);
+      const list = await base44.entities.Playlist.list("-created_date", 1000);
       const arr = Array.isArray(list) ? list : [];
       arr.sort(
         (a, b) =>
           (a.order ?? 0) - (b.order ?? 0) ||
           new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
       );
-      const cat = PLAYLIST_CATEGORY[entity];
-      setPlaylists(cat ? arr.filter((p) => (p.category || "music") === cat) : arr);
+      const cat = CATEGORIE_PLAYLIST[entity];
+      // Sections à sous-playlists : toutes les playlists de la section (l'arbre est calculé à part) ;
+      // Films : playlists de premier niveau seulement, comme avant.
+      setPlaylists(
+        cat
+          ? arr.filter((p) => (p.category || "music") === cat && (exigeSousPlaylist(entity) || !p.parent_id))
+          : arr
+      );
     } catch {}
   };
 
   useEffect(() => { load(); }, []);
   useEffect(() => { if (showPlaylist) loadPlaylists(); }, [showPlaylist]);
 
-  const allFields = showPlaylist
+  const allFields = sousPlaylist
+    ? [
+        {
+          name: "playlist_id",
+          label: "Sous-playlist",
+          type: "select",
+          // Obligatoire, à la création comme en modification : tout contenu est rangé.
+          required: true,
+          options: optionsSousPlaylists(arbre),
+          missingMessage: MESSAGE_SOUS_PLAYLIST,
+          help: arbre.some((p) => p.sous.length)
+            ? "Playlist › Sous-playlist où ce contenu sera rangé."
+            : MESSAGE_SOUS_PLAYLIST,
+        },
+        ...fields,
+      ]
+    : showPlaylist
     ? [
         {
           name: "playlist_id",
@@ -245,7 +165,11 @@ export default function EntityCrud({
 
   /* ── Sauvegarde ordre playlists ── */
   const handleReorderPlaylists = useCallback(async (next) => {
-    setPlaylists(next);
+    // Avec sous-playlists : seul l'ordre des playlists de premier niveau change ici.
+    const ordre = new Map(next.map((p, i) => [p.id, i]));
+    setPlaylists((list) => (sousPlaylist
+      ? list.map((p) => (ordre.has(p.id) ? { ...p, order: ordre.get(p.id) } : p))
+      : next));
     // Ne plus avaler l'échec : Base44 rejette silencieusement l'écriture d'un
     // champ absent de l'entité déployée, et l'ordre réapparaissait à sa place.
     const results = await Promise.all(
@@ -268,7 +192,7 @@ export default function EntityCrud({
         variant: "destructive",
       });
     }
-  }, [loadPlaylists, toast]);
+  }, [loadPlaylists, toast, sousPlaylist]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Sauvegarde ordre musiques ── */
   const handleReorderItems = useCallback(async (next) => {
@@ -280,8 +204,25 @@ export default function EntityCrud({
     );
   }, [entity]);
 
-  const playlistDrag = useDragSort(playlists, handleReorderPlaylists);
-  const itemDrag = useDragSort(items, handleReorderItems);
+  /* ── Sauvegarde ordre des sous-playlists d'une playlist ── */
+  const handleReorderSous = useCallback(async (next) => {
+    const ordre = new Map(next.map((p, i) => [p.id, i]));
+    setPlaylists((list) => list.map((p) => (ordre.has(p.id) ? { ...p, order: ordre.get(p.id) } : p)));
+    const results = await Promise.all(
+      next.map((p, i) => base44.entities.Playlist.update(p.id, { order: i }).then(() => true, () => false))
+    );
+    if (results.includes(false)) {
+      await loadPlaylists();
+      toast({ title: "Réorganisation non enregistrée", variant: "destructive" });
+    }
+  }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const basculer = (id) => setDeplies((prev) => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
 
   /* ── Attach / detach playlist ── */
   const attachToPlaylist = async (
@@ -304,13 +245,13 @@ export default function EntityCrud({
     await savePlaylistTrack(
       base44.entities.PlaylistTrack,
       record,
-      entity === "Video" ? "video_url" : "audio_url",
+      CHAMP_MEDIA[entity] || null,
       { checkExisting: isRetry }
     );
   };
 
   const notifyPlaylistUpload = (item, playlistId) => {
-    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article" };
+    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article", YouTubeVideo: "youtube", GalleryImage: "gallery" };
     // Annonce / réunion : notification qui ouvre l'annonce, si elle est déjà visible (date passée ou du jour).
     if (entity === "Announcement") {
       if (item?.id && annonceVisibleMaintenant(item.date)) {
@@ -352,7 +293,11 @@ export default function EntityCrud({
         submittedPlaylistId
       );
 
-      if (showPlaylist && !editing && !playlist_id) {
+      if (sousPlaylist && !idsSousPlaylists(arbre).has(playlist_id)) {
+        toast({ title: "Sous-playlist obligatoire", description: MESSAGE_SOUS_PLAYLIST, variant: "destructive" });
+        return;
+      }
+      if (showPlaylist && !sousPlaylist && !editing && !playlist_id) {
         toast({
           title: "Playlist obligatoire",
           description: "Choisissez la playlist avant d'enregistrer le contenu.",
@@ -480,6 +425,14 @@ export default function EntityCrud({
   };
 
   const removePlaylist = async (playlist) => {
+    if (sousPlaylist && !playlist.parent_id && playlists.some((p) => p.parent_id === playlist.id)) {
+      toast({
+        title: "Playlist non vide",
+        description: "Supprimez d'abord ses sous-playlists.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!(await confirmFr({ title: "Supprimer la playlist ?", message: `« ${playlist.name} » et les contenus qu'elle contient seront supprimés.`, confirmLabel: "Supprimer" }))) return;
     try {
       await deletePlaylistWithContents(base44, entity, playlist.id);
@@ -489,6 +442,22 @@ export default function EntityCrud({
     } catch (err) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     }
+  };
+
+  /** Modification : la sous-playlist actuelle du contenu est pré-remplie (lue dans PlaylistTrack). */
+  const ouvrirModification = async (item) => {
+    let actuelle = null;
+    if (sousPlaylist) {
+      const liens = await base44.entities.PlaylistTrack.filter({ track_id: item.id }, "-created_date", 50).catch(() => []);
+      actuelle = sousPlaylistDe(item.id, Array.isArray(liens) ? liens : [], arbre) || null;
+    }
+    setEditing(item);
+    pendingSelectRef.current = actuelle;
+    selectedPlaylistRef.current = actuelle;
+    pendingPlaylistAttachmentRef.current = null;
+    setRetryingPlaylistAttachment(false);
+    setFormKey(`edit-${item.id}-${actuelle || ""}`);
+    setOpen(true);
   };
 
   const remove = async (item) => {
@@ -504,6 +473,34 @@ export default function EntityCrud({
     }
   };
 
+  /** Modifier / supprimer une playlist ou une sous-playlist. */
+  const BoutonsPlaylist = ({ p }) => (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setEditingPlaylist(p);
+          setParentPourCreation(null);
+          setShowCreatePlaylist(true);
+        }}
+        className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted shrink-0"
+        title={p.parent_id ? "Modifier la sous-playlist" : "Modifier la playlist"}
+        aria-label={`${p.parent_id ? "Modifier la sous-playlist" : "Modifier la playlist"} ${p.name}`}
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => removePlaylist(p)}
+        className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted text-destructive shrink-0"
+        title="Supprimer (et ses contenus)"
+        aria-label={`Supprimer ${p.parent_id ? "la sous-playlist" : "la playlist"} ${p.name}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </>
+  );
+
   /* ─── Rendu ─────────────────────────────────────────────────────────── */
   return (
     <div>
@@ -516,11 +513,12 @@ export default function EntityCrud({
               <button
                 onClick={() => {
                   setEditingPlaylist(null);
+                  setParentPourCreation(null);
                   setShowCreatePlaylist(true);
                 }}
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-bold hover:bg-muted transition"
               >
-                <Plus className="h-4 w-4" /> Créer une nouvelle playlist
+                <Plus className="h-4 w-4" /> {sousPlaylist ? "Nouvelle playlist" : "Créer une nouvelle playlist"}
               </button>
             )}
             <button
@@ -541,72 +539,95 @@ export default function EntityCrud({
         )}
       </div>
 
-      {/* ── Section playlists ── */}
+      {/* ── Section playlists (avec sous-playlists : Playlist > Sous-playlist) ── */}
       {showPlaylist && isAdmin && (
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Playlists ({playlists.length})
+              Playlists ({racines.length})
             </p>
-            {playlists.length > 1 && (
+            {(racines.length > 1 || racines.some((p) => (p.sous || []).length > 1)) && (
               <LockToggle locked={playlistsLocked} onToggle={() => setPlaylistsLocked((v) => !v)} />
             )}
           </div>
 
-          {playlists.length === 0 ? (
-            <p className="text-sm text-foreground/50">Aucune playlist. Utilisez « Créer une nouvelle playlist ».</p>
-          ) : (
-            <div ref={playlistDrag.listRef} className="space-y-2">
-              {playlists.map((p, idx) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-transform duration-150 select-none"
-                >
-                  {/* Poignée drag */}
-                  {!playlistsLocked && (
-                    <div
-                      className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground"
-                      onMouseDown={playlistDrag.onMouseDown(idx)}
-                      onTouchStart={playlistDrag.onTouchStart(idx)}
-                    >
-                      <GripVertical className="h-5 w-5" />
+          {racines.length === 0 ? (
+            <p className="text-sm text-foreground/50">
+              Aucune playlist. Utilisez « {sousPlaylist ? "Nouvelle playlist" : "Créer une nouvelle playlist"} »
+              {sousPlaylist ? ", puis ajoutez-y une sous-playlist." : "."}
+            </p>
+          ) : sousPlaylist ? (
+            <ArbrePlaylistsTriable
+              arbre={arbre}
+              actif={!playlistsLocked}
+              deplies={deplies}
+              onReorderRacines={handleReorderPlaylists}
+              onReorderSous={handleReorderSous}
+              renderVide={() => (
+                <p className="text-xs text-foreground/50 py-1">Aucune sous-playlist : utilisez le bouton « Nouvelle sous-playlist ».</p>
+              )}
+              renderPlaylist={(p) => (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => basculer(p.id)}
+                    className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted shrink-0"
+                    aria-label={deplies.has(p.id) ? `Replier ${p.name}` : `Déplier ${p.name}`}
+                    aria-expanded={deplies.has(p.id)}
+                  >
+                    {deplies.has(p.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+                  <PlaylistCover playlist={p} className="h-10 w-10 shrink-0 rounded-[10px] ring-1 ring-border" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm truncate">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.sous.length} sous-playlist{p.sous.length > 1 ? "s" : ""}
                     </div>
-                  )}
-
-                  <PlaylistCover
-                    playlist={p}
-                    className="h-10 w-10 shrink-0 rounded-[10px] ring-1 ring-border"
-                  />
-
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPlaylist(null);
+                      setParentPourCreation(p);
+                      setShowCreatePlaylist(true);
+                      setDeplies((prev) => new Set(prev).add(p.id));
+                    }}
+                    className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted shrink-0"
+                    title="Nouvelle sous-playlist"
+                    aria-label={`Nouvelle sous-playlist dans ${p.name}`}
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                  </button>
+                  <BoutonsPlaylist p={p} />
+                </>
+              )}
+              renderSous={(sp) => (
+                <>
+                  <PlaylistCover playlist={sp} className="h-8 w-8 shrink-0 rounded-[8px] ring-1 ring-border" />
+                  <div className="flex-1 min-w-0 font-semibold text-sm truncate">{sp.name}</div>
+                  <BoutonsPlaylist p={sp} />
+                </>
+              )}
+            />
+          ) : (
+            <ListeTriable
+              id={`playlists-${entity}`}
+              items={racines}
+              actif={!playlistsLocked}
+              onReorder={handleReorderPlaylists}
+              renderRow={(p) => (
+                <>
+                  <PlaylistCover playlist={p} className="h-10 w-10 shrink-0 rounded-[10px] ring-1 ring-border" />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm truncate">{p.name}</div>
                     <div className="text-xs text-muted-foreground">
                       {new Date(p.created_date || Date.now()).toLocaleDateString("fr-FR")}
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setEditingPlaylist(p);
-                      setShowCreatePlaylist(true);
-                    }}
-                    className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted shrink-0"
-                    title="Modifier la playlist"
-                    aria-label={`Modifier la playlist ${p.name}`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => removePlaylist(p)}
-                    className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted text-destructive shrink-0"
-                    title="Supprimer la playlist et ses contenus"
-                    aria-label={`Supprimer la playlist ${p.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+                  <BoutonsPlaylist p={p} />
+                </>
+              )}
+            />
           )}
         </div>
       )}
@@ -625,23 +646,13 @@ export default function EntityCrud({
               <LockToggle locked={tracksLocked} onToggle={() => setTracksLocked((v) => !v)} />
             </div>
           )}
-          <div ref={itemDrag.listRef} className="space-y-2">
-            {items.map((item, idx) => (
-              <div
-                key={item.id}
-                className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 transition-transform duration-150 select-none"
-              >
-                {/* Poignée drag musiques */}
-                {!tracksLocked && isAdmin && (
-                  <div
-                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground pt-1"
-                    onMouseDown={itemDrag.onMouseDown(idx)}
-                    onTouchStart={itemDrag.onTouchStart(idx)}
-                  >
-                    <GripVertical className="h-5 w-5" />
-                  </div>
-                )}
-
+          <ListeTriable
+            id={`elements-${entity}`}
+            items={items}
+            actif={!tracksLocked && isAdmin}
+            onReorder={handleReorderItems}
+            renderRow={(item) => (
+              <>
                 {thumbField && item[thumbField] && (
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] bg-muted ring-1 ring-border">
                     <Image src={item[thumbField]} fittingType="fill" className="h-full w-full" />
@@ -663,30 +674,26 @@ export default function EntityCrud({
                 {!readOnly && (
                   <>
                     <button
-                      onClick={() => {
-                        setEditing(item);
-                        pendingSelectRef.current = null;
-                        selectedPlaylistRef.current = null;
-                        pendingPlaylistAttachmentRef.current = null;
-                        setRetryingPlaylistAttachment(false);
-                        setFormKey(`edit-${item.id}`);
-                        setOpen(true);
-                      }}
+                      type="button"
+                      onClick={() => ouvrirModification(item)}
                       className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted shrink-0"
+                      aria-label="Modifier"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => remove(item)}
                       className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted text-destructive shrink-0"
+                      aria-label="Supprimer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </>
                 )}
-              </div>
-            ))}
-          </div>
+              </>
+            )}
+          />
         </>
       )}
 
@@ -731,8 +738,9 @@ export default function EntityCrud({
             handlePlaylistCreated(savedPlaylist);
           }
         }}
-        category={PLAYLIST_CATEGORY[entity] || "other"}
+        category={CATEGORIE_PLAYLIST[entity] || "other"}
         playlist={editingPlaylist}
+        parent={parentPourCreation}
       />
     </div>
   );

@@ -44,7 +44,7 @@ export default function EntityForm({
     const currentData = dataRef.current;
     const m = findMissingRequiredField(fields, currentData);
     if (m) {
-      setMissing(`Le champ « ${m.label} » est obligatoire.`);
+      setMissing(m.missingMessage || `Le champ « ${m.label} » est obligatoire.`);
       return;
     }
     onSubmit(currentData);
@@ -59,7 +59,7 @@ export default function EntityForm({
       setMissing(
         m.type === "file"
           ? `L'envoi de « ${m.label} » a échoué. Réessayez avant d'enregistrer.`
-          : `Le champ « ${m.label} » est obligatoire.`
+          : m.missingMessage || `Le champ « ${m.label} » est obligatoire.`
       );
       return;
     }
@@ -68,7 +68,8 @@ export default function EntityForm({
   }, [pending, uploading]);
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    // noValidate : nos propres messages (champ obligatoire, sous-playlist) remplacent la bulle du navigateur.
+    <form onSubmit={submit} noValidate className="space-y-4">
       {fields.map((f) => (
         <div key={f.name}>
           <label className="block text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
@@ -81,6 +82,7 @@ export default function EntityForm({
             onChange={set(f.name)}
             onUploadingChange={f.type === "file" ? setUploading : undefined}
           />
+          {f.help && <p className="mt-1 text-xs text-muted-foreground">{f.help}</p>}
         </div>
       ))}
       {missing && <p className="text-sm font-semibold text-destructive">{missing}</p>}
