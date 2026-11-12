@@ -257,13 +257,12 @@ try {
     check('push au destinataire seulement (pas à l\'expéditeur)', f.length === 1 && fcmFor(caps, tokA).length === 0 && webFor(caps, subB.id).length === 1);
     check('push : titre « <expéditeur> vous a envoyé un message », aperçu 60 caractères, cible conversation',
       f[0]?.message?.notification?.title === `${nameA || 'Membre'} vous a envoyé un message` && f[0]?.message?.data?.target_id === convId);
-    const n = await list('UserNotification', `notification_id = "message_${r.data.id}_${B.id}"`);
-    check('notification in-app créée pour B (non lue)', n.length === 1 && n[0].is_read === false && n[0].type === 'message');
-    check('aucune notification pour l\'expéditeur', (await list('UserNotification', `notification_id = "message_${r.data.id}_${A.id}"`)).length === 0);
+    // Message privé : plus de notification de cloche (seul le push reste).
+    check('aucune notification de cloche pour un message (ni B, ni l\'expéditeur)',
+      (await list('UserNotification', `notification_id ~ "message_${r.data.id}_"`)).length === 0);
     const mails = await waitMails(emailB, since);
     check('e-mail au destinataire (faux SMTP), en français', mails.length === 1 && /vous a envoy/.test(mails[0].text) && /Ouvrir la conversation/.test(mails[0].text));
     check('e-mail : HTML du message échappé (pas d\'injection)', mails.length === 1 && htmlOf(mails[0]) && !htmlOf(mails[0]).includes('<script>') && htmlOf(mails[0]).includes('&lt;script&gt;'));
-    check('e-mail : horodatage email_sent_at enregistré', Boolean(n[0]?.email_sent_at));
     const r2 = await fn('createMessage', { token: A.token, body: { conversation_id: convId, text: 'deuxième' } });
     created.push(['Message', r2.data?.id]);
     await sleep(800);
@@ -278,19 +277,19 @@ try {
     const r3 = await fn('createMessage', { token: A.token, body: { conversation_id: convId, text: 'sans push' } });
     created.push(['Message', r3.data?.id]);
     const caps3 = await captures();
-    check('notif_push = false : aucun push, notification in-app quand même', fcmFor(caps3, tokB).length === 0 && webFor(caps3, subB.id).length === 0
-      && (await list('UserNotification', `notification_id = "message_${r3.data.id}_${B.id}"`)).length === 1);
+    check('notif_push = false : aucun push (et aucune notification de cloche)', fcmFor(caps3, tokB).length === 0 && webFor(caps3, subB.id).length === 0
+      && (await list('UserNotification', `notification_id = "message_${r3.data.id}_${B.id}"`)).length === 0);
     await setPrefs(B.id, { notif_push: true }, { in_app_messages: false });
     const r4 = await fn('createMessage', { token: A.token, body: { conversation_id: convId, text: 'in-app coupé' } });
     created.push(['Message', r4.data?.id]);
     const n4 = await list('UserNotification', `notification_id = "message_${r4.data.id}_${B.id}"`);
-    check('in_app_messages = false : notification marquée lue (ni badge ni bandeau), push maintenu', n4.length === 1 && n4[0].is_read === true && fcmFor(await captures(), tokB).length === 1);
+    check('in_app_messages = false : push maintenu, aucune notification de cloche', n4.length === 0 && fcmFor(await captures(), tokB).length === 1);
     await setPrefs(B.id, { notifications_enabled: false }, { in_app_messages: true });
     await resetCaptures();
     const r5 = await fn('createMessage', { token: A.token, body: { conversation_id: convId, text: 'tout coupé' } });
     created.push(['Message', r5.data?.id]);
     await sleep(500);
-    check('notifications_enabled = false : ni push, ni e-mail (notification lue seulement)',
+    check('notifications_enabled = false : ni push, ni e-mail',
       fcmFor(await captures(), tokB).length === 0 && mailsTo(emailB, since).length === 1);
     await setPrefs(B.id, { notifications_enabled: true, notif_messages: false });
     await resetCaptures();

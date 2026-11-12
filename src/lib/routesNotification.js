@@ -71,3 +71,9 @@ export async function routeNotification(data, chargerContenu) {
     return "/media";
   }
 }
+
+/**
+ * Cloche : les messages privés n'y figurent plus (seul le push reste). Les anciennes notifications
+ * « X vous a envoyé un message » restent en base mais ne sont plus affichées ni comptées.
+ */
+export const visibleDansCloche = (n) => Boolean(n) && n.type !== "message" && n.content_type !== "message";

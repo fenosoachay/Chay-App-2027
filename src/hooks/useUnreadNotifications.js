@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { visibleDansCloche } from "@/lib/routesNotification";
 
 /**
- * Compte les notifications non lues du user connecté (tous types confondus).
+ * Compte les notifications non lues du user connecté (sauf les messages privés, hors cloche).
  * Se met à jour en temps réel via l'abonnement à UserNotification.
  */
 export function useUnreadNotifications(user) {
@@ -30,7 +31,7 @@ export function useUnreadNotifications(user) {
           if (!Array.isArray(rows)) {
             throw new Error("Réponse de notifications invalide.");
           }
-          total += rows.length;
+          total += rows.filter(visibleDansCloche).length;
           if (rows.length < 500) break;
           skip += rows.length;
         }

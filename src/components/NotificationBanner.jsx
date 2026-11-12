@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { cibleCloche } from "@/lib/routesNotification";
+import { cibleCloche, visibleDansCloche } from "@/lib/routesNotification";
 import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { useAuth } from "@/lib/AuthContext";
 import { X } from "lucide-react";
@@ -37,6 +37,7 @@ export default function NotificationBanner() {
       initialized = true;
       queued
         .filter((notification) =>
+          visibleDansCloche(notification) &&
           new Date(notification.created_date || 0) > new Date(initialFetchStartedAt)
         )
         .sort(
@@ -58,7 +59,7 @@ export default function NotificationBanner() {
     const unsub = base44.entities.UserNotification.subscribe((event) => {
       if (!event || event.type !== "create") return;
       const n = event.data;
-      if (!n || n.user_id !== user.id || n.is_read) return;
+      if (!n || n.user_id !== user.id || n.is_read || !visibleDansCloche(n)) return;
       if (!initialized) {
         queued.push(n);
         return;

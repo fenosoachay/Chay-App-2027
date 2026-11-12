@@ -146,7 +146,7 @@ try {
       check(`${label} : 200, notification_error = null, notification_info = ${info}`,
         r.status === 200 && r.data.notification_error === null && r.data.notification_info === info,
         `${r.status} error=${r.data?.notification_error} info=${r.data?.notification_info}`);
-      check(`${label} : notification in-app créée`, (await notifFor(r.data.id, to.id)) === 1);
+      check(`${label} : aucune notification de cloche (message privé : push seulement)`, (await notifFor(r.data.id, to.id)) === 0);
     }
     await sleep(300);
     const caps = await captures();

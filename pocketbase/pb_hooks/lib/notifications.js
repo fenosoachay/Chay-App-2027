@@ -117,6 +117,29 @@ function isDesignatedAdmin(user) {
 }
 
 // ── sendMessagePush ──────────────────────────────────────────────────────────
+// Mémo en mémoire ($app.store, vidé au redémarrage) : messages déjà notifiés, e-mails récents.
+const MEMO_MS = 24 * 3600 * 1000;
+function lireMemo(genre) {
+  try {
+    const raw = $app.store().get(`memo_message:${genre}`);
+    const o = raw ? JSON.parse(raw) : {};
+    return o && typeof o === 'object' ? o : {};
+  } catch (_) {
+    return {};
+  }
+}
+function memoMessage(genre, cle, dureeMs) {
+  const t = lireMemo(genre)[cle];
+  return Boolean(t) && Date.now() - t < (dureeMs || MEMO_MS);
+}
+function marquerMessage(genre, cle) {
+  const now = Date.now();
+  const o = lireMemo(genre);
+  for (const k of Object.keys(o)) if (now - o[k] >= MEMO_MS) delete o[k];
+  o[cle] = now;
+  $app.store().set(`memo_message:${genre}`, JSON.stringify(o));
+}
+
 function messageEmailHtml(senderName, preview, conversationId) {
   const cta = `${mail.appUrl()}/messages?c=${encodeURIComponent(conversationId || '')}`;
   return mail.shell('Nouveau message',
@@ -125,7 +148,7 @@ function messageEmailHtml(senderName, preview, conversationId) {
     + mail.button(cta, 'Ouvrir la conversation'));
 }
 
-/** Notifications d'un message : in-app, e-mail (30 min de déduplication), push. Idempotent. */
+/** Notifications d'un message : push et e-mail (30 min de déduplication), sans cloche. Idempotent. */
 function messagePush(messageRecord) {
   const m = fn.plain(messageRecord);
   const empty = { android: { attempted: 0, succeeded: 0, failed: 0 }, web: { attempted: 0, succeeded: 0, failed: 0 } };
@@ -133,8 +156,12 @@ function messagePush(messageRecord) {
   const participants = Array.isArray(m.participant_ids) ? m.participant_ids : [];
   const targets = participants.filter((id) => id && id !== senderId);
   if (!targets.length) return Object.assign({ sent: 0 }, empty);
+  // Plus de notification de cloche pour un message privé (seul le push reste) : l'idempotence passe par un
+  // mémo en mémoire (anciens messages : l'ancienne notification de cloche compte encore).
+  if (memoMessage('push', m.id)) return Object.assign({ sent: 0, skipped: 'already_notified' }, empty);
   const pending = targets.filter((uid) => !notificationExists(`message_${m.id}_${uid}`, uid));
   if (!pending.length) return Object.assign({ sent: 0, skipped: 'already_notified' }, empty);
+  marquerMessage('push', m.id);
 
   const senderName = m.sender_name || 'Quelqu\'un';
   const isImageOnly = !m.text && Boolean(m.image_url);
@@ -142,8 +169,9 @@ function messagePush(messageRecord) {
   const title = isImageOnly ? 'Vous avez reçu une photo' : `${senderName} vous a envoyé un message`;
   const notifBody = isImageOnly ? `${senderName} vous a envoyé une photo` : (m.text ? String(m.text).slice(0, 100) : '');
 
-  let notifCreated = 0;
-  let notifFailed = 0;
+  // Compteurs gardés pour le bilan (lib/bilan-push.js) : plus aucune notification de cloche pour un message.
+  const notifCreated = 0;
+  const notifFailed = 0;
   let emailsSent = 0;
   let emailsSkipped = 0;
   let openSkipped = 0;
@@ -154,7 +182,6 @@ function messagePush(messageRecord) {
     if (recipient && recipient.getBool('disabled')) continue;
     const prefs = settingsOf(recipient);
     const notificationsOn = prefs.notifications_enabled !== false && prefs.notif_messages !== false;
-    const inAppOn = notificationsOn && (!recipient || recipient.getBool('in_app_messages'));
     const pushOn = notificationsOn && prefs.notif_push !== false;
     const emailOn = notificationsOn && (!recipient || recipient.getBool('email_messages'));
 
@@ -163,38 +190,14 @@ function messagePush(messageRecord) {
     const isOnline = Boolean(lastSeen) && Date.now() - lastSeen < ONLINE_WINDOW_MS;
     if (prof && isOnline && prof.getString('active_conversation_id') === m.conversation_id) { openSkipped++; continue; }
 
-    // Toujours créer la notification (support de la déduplication e-mail) ; lue d'office si in-app coupé.
-    let notif = null;
-    try {
-      notif = fn.newRecord($app, 'UserNotification', {
-        user_id: uid,
-        notification_id: `message_${m.id}_${uid}`,
-        type: 'message',
-        content_id: m.conversation_id,
-        content_type: 'message',
-        post_id: '',
-        actor_id: senderId,
-        actor_name: senderName,
-        count: 1,
-        title,
-        message: notifBody,
-        is_read: !inAppOn,
-      });
-      $app.save(notif);
-      if (inAppOn) notifCreated++;
-    } catch (_) {
-      notif = null;
-      notifFailed++;
-    }
-
+    // Message privé : AUCUNE notification de cloche (UserNotification) ; seul le push reste (et l'e-mail).
     if (pushOn) pushTargets.push(uid);
 
     const email = recipient ? recipient.email() : '';
     if (emailOn && email) {
-      const recent = $app.findRecordsByFilter('UserNotification',
-        "user_id = {:u} && content_id = {:c} && type = 'message' && email_sent_at != ''", '-created', 10, 0,
-        { u: uid, c: m.conversation_id });
-      const recentlyEmailed = recent.some((n) => Date.now() - toMs(n.getString('email_sent_at')) < EMAIL_DEDUP_MS);
+      // Déduplication : un e-mail par (destinataire, conversation) toutes les 30 min, mémo en mémoire.
+      const cle = `${uid}:${m.conversation_id}`;
+      const recentlyEmailed = memoMessage('courriel', cle, EMAIL_DEDUP_MS);
       const fresh = fn.findById('Message', m.id);
       const readBy = fresh ? fn.plain(fresh).read_by : m.read_by;
       const alreadyRead = Array.isArray(readBy) && readBy.indexOf(uid) !== -1;
@@ -202,11 +205,13 @@ function messagePush(messageRecord) {
         emailsSkipped++;
       } else if (mail.trySend('sendMessagePush', email, `${senderName} vous a envoyé un message`,
         messageEmailHtml(senderName, preview || notifBody, m.conversation_id),
-        `${senderName} vous a envoyé un message.\n\n${preview || notifBody}\n\nOuvrir la conversation : ${mail.appUrl()}/messages?c=${encodeURIComponent(m.conversation_id || '')}`)) {
+        `${senderName} vous a envoyé un message.
+
+${preview || notifBody}
+
+Ouvrir la conversation : ${mail.appUrl()}/messages?c=${encodeURIComponent(m.conversation_id || '')}`)) {
         emailsSent++;
-        if (notif) {
-          try { notif.set('email_sent_at', pbDate(Date.now())); $app.save(notif); } catch (_) { /* horodatage best-effort */ }
-        }
+        marquerMessage('courriel', cle);
       } else {
         emailsSkipped++;
       }

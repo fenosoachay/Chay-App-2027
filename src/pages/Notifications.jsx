@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { cibleCloche } from "@/lib/routesNotification";
+import { cibleCloche, visibleDansCloche } from "@/lib/routesNotification";
 import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -58,7 +58,8 @@ export default function Notifications() {
         "-created_date",
         100
       );
-      setItems(Array.isArray(rows) ? rows : []);
+      // Messages privés : plus dans la cloche (filtre d'affichage, rien n'est supprimé en base).
+      setItems(Array.isArray(rows) ? rows.filter(visibleDansCloche) : []);
     } catch {
       setItems([]);
     } finally {
