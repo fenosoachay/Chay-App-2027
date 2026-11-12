@@ -39,19 +39,23 @@ test("régression Android : déplacer un titre d'une autre playlist d'origine ch
   assert.equal(apres[0].id, "x");
 });
 
-test("FavoritesView / Media : glisser par pointeur (touch-action none), boutons monter / descendre, mise à jour par id", () => {
+test("FavoritesView : même mécanisme que l'admin YouTube (@hello-pangea/dnd), sans ▲/▼ ; Media enregistre par id", () => {
   const src = (f) => fs.readFileSync(new URL(f, import.meta.url), "utf8").replace(/\/\/.*$/gm, "");
   const vue = src("../components/media/FavoritesView.jsx");
-  const hook = src("../hooks/useDragSort.js");
+  const admin = src("../components/media/YouTubeSortableList.jsx");
   const media = src("../pages/Media.jsx");
-  assert.doesNotMatch(vue, /onTouchStart|onMouseDown/);
-  assert.match(vue, /\{\.\.\.drag\.poignee\(index\)\}/);
-  assert.match(vue, /aria-label=\{`Monter \$\{label\}`\}/);
-  assert.match(vue, /aria-label=\{`Descendre \$\{label\}`\}/);
+  const imp = /import \{ DragDropContext, Draggable, Droppable \} from "@hello-pangea\/dnd";/;
+  assert.match(admin, imp);
+  assert.match(vue, imp);
+  for (const motif of [/\{\.\.\.drop\.droppableProps\}/, /\{\.\.\.drag\.draggableProps\}/, /\{\.\.\.drag\.dragHandleProps\}/, /\{drop\.placeholder\}/, /touch-none/]) {
+    assert.match(admin, motif);
+    assert.match(vue, motif);
+  }
+  assert.doesNotMatch(vue, /onTouchStart|onMouseDown|onPointerDown|ChevronUp|ChevronDown|Monter|Descendre/);
+  assert.match(vue, /isDragDisabled=\{!peutGlisser\}/);
+  assert.match(vue, /deplacer\(group\.items, result\.source\.index, result\.destination\.index\)/);
   assert.match(vue, /appliquerOrdre\(items, nextItems, "order"\)/);
-  assert.match(hook, /touchAction: "none"/);
-  assert.match(hook, /setPointerCapture/);
-  assert.match(hook, /onPointerCancel: terminer/);
+  assert.equal(fs.existsSync(new URL("../hooks/useDragSort.js", import.meta.url)), false);
   assert.doesNotMatch(media, /key === sourcePlaylistId/);
   assert.match(media, /orders\.has\(item\.id\)/);
   assert.match(media, /nextTrackOrder = playlist\.reduce/);
