@@ -201,6 +201,39 @@ public class AndroidExoPlayerPlugin extends Plugin {
         });
     }
 
+    /**
+     * Nouvel ordre de la file (identifiants queueId) SANS interrompre le titre en cours : les éléments sont
+     * déplacés un à un (moveMediaItem garde la lecture et la position). Les identifiants absents de la file
+     * du lecteur sont ignorés ; les éléments non cités restent à la fin, dans leur ordre.
+     */
+    @PluginMethod
+    public void reorderQueue(PluginCall call) {
+        JSArray ids = call.getArray("queueIds");
+        withController(call, mediaController -> {
+            if (ids == null) {
+                call.resolve();
+                return;
+            }
+            int cible = 0;
+            for (int i = 0; i < ids.length(); i++) {
+                String id = ids.optString(i, null);
+                if (id == null) continue;
+                int trouve = -1;
+                for (int j = cible; j < mediaController.getMediaItemCount(); j++) {
+                    if (id.equals(mediaController.getMediaItemAt(j).mediaId)) {
+                        trouve = j;
+                        break;
+                    }
+                }
+                if (trouve < 0) continue;
+                if (trouve != cible) mediaController.moveMediaItem(trouve, cible);
+                cible++;
+            }
+            emitPlaybackState(null);
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void setRepeatMode(PluginCall call) {
         String mode = call.getString("mode", "off");

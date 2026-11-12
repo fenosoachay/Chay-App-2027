@@ -11,7 +11,9 @@ import {
   setAndroidExoPlayerRepeatMode,
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
+  reorderAndroidExoPlayerQueue,
 } from "@/lib/androidExoPlayer";
+import { cleFile, reordonnerFile } from "@/lib/fileLecture";
 
 // Valeur par défaut : après une mise à jour de l'app, un composant peut être
 // évalué avant que le fournisseur soit monté (ou avec un module de contexte
@@ -25,6 +27,7 @@ const AudioPlayerFallback = {
   duration: 0,
   play: () => {},
   playQueue: () => {},
+  reorderQueue: () => false,
   toggle: () => {},
   seek: () => false,
   stop: () => {},
@@ -132,9 +135,15 @@ export function AudioPlayerProvider({ children }) {
     };
   }, [isNativeAndroidPlayer]);
 
+  // Titre réellement lancé : un simple changement de file (réorganisation, aléatoire) ne relance pas la lecture.
+  const pisteLanceeRef = useRef(null);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!currentTrack || (!isNativeAndroidPlayer && !audio)) return;
+    pisteLanceeRef.current = currentTrack;
+    // File lue au moment du lancement (stateRef est à jour : même rendu que currentTrack).
+    const { queue, order, orderIndex } = stateRef.current;
     if (!currentTrack.audio_url) {
       console.warn("[AudioPlayer] piste sans audio_url :", currentTrack?.title, currentTrack?.id);
       return;
@@ -180,7 +189,26 @@ export function AudioPlayerProvider({ children }) {
     audio.play().then(() => setIsPlaying(true)).catch((e) => {
       console.warn("[AudioPlayer] lecture impossible (URL media invalide ou bloquée) :", currentTrack.audio_url, e?.name, e?.message);
     });
-  }, [currentTrack, isNativeAndroidPlayer, order, orderIndex, queue]);
+    // Dépend du titre seulement : changer l'ordre de la file ne coupe pas le titre en cours.
+  }, [currentTrack, isNativeAndroidPlayer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // File réordonnée pendant la lecture (même titre) : ExoPlayer garde sa propre file (titre suivant
+  // automatique, boutons de la notification) ; elle est réordonnée sans interrompre le titre.
+  useEffect(() => {
+    if (!isNativeAndroidPlayer || !currentTrack || pisteLanceeRef.current !== currentTrack || !queue.length) return;
+    reorderAndroidExoPlayerQueue(order.map((i) => cleFile(queue[i])).filter(Boolean))
+      .catch((error) => console.error("[AudioPlayer] Unable to reorder ExoPlayer queue.", error));
+  }, [order, queue]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Nouvel ordre affiché (favoris, playlist) appliqué à la file en cours, sans couper le titre. */
+  const reorderQueue = useCallback((tracks) => {
+    const r = reordonnerFile(stateRef.current, tracks);
+    if (!r) return false;
+    setQueue(r.queue);
+    setOrder(r.order);
+    setOrderIndex(r.orderIndex);
+    return true;
+  }, []);
 
   useEffect(() => {
     if (!isNativeAndroidPlayer) return;
@@ -473,6 +501,7 @@ export function AudioPlayerProvider({ children }) {
         duration,
         play,
         playQueue,
+        reorderQueue,
         toggle,
         seek,
         stop,

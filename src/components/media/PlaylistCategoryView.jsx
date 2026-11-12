@@ -17,6 +17,7 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { formatListenCount } from "@/lib/playlist";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
+import { filePlaylist } from "@/lib/fileLecture";
 import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 import { subscribeMediaControl } from "@/lib/mediaControl";
@@ -206,6 +207,7 @@ export default function PlaylistCategoryView({
   const halfwayReachedRef = useRef(new Set()); // Pour tracker les vidéos ayant atteint 50%
 
   const isVideo = kind === "video";
+  const { reorderQueue } = useAudioPlayer();
 
   useEffect(() => {
     const filtered = playlists
@@ -255,6 +257,8 @@ export default function PlaylistCategoryView({
   const handleReorderTracks = useCallback(
     async (next) => {
       setOrderedTracks(next);
+      // Lecture en cours dans cette playlist : la file suit le nouvel ordre, sans couper le titre.
+      if (!isVideo) reorderQueue(filePlaylist(next, category));
       const results = await Promise.all(
         next.map((t, i) =>
           base44.entities.PlaylistTrack.update(t.id, { order: i }).then(
@@ -276,7 +280,7 @@ export default function PlaylistCategoryView({
         });
       }
     },
-    [open, playlistTracks, toast]
+    [open, playlistTracks, toast, isVideo, reorderQueue, category]
   );
 
   const playlistDrag = useDragSort(orderedPlaylists, handleReorderPlaylists);
@@ -555,17 +559,7 @@ export default function PlaylistCategoryView({
                         if (isPlaying) requestOpenAudioPlayer();
                         else toggle();
                       } else if (i >= 0) {
-                        playQueue(
-                          audioTracks.map((a) => ({
-                            id: a.track_id,
-                            title: a.title,
-                            artist: a.artist,
-                            audio_url: a.audio_url,
-                            cover_url: a.cover_url,
-                            mediaType: category === "sermons" ? "sermons" : "music",
-                          })),
-                          i
-                        );
+                        playQueue(filePlaylist(tracks, category), i);
                       }
                     }}
                   >

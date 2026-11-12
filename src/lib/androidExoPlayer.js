@@ -36,6 +36,11 @@ export function setAndroidExoPlayerVolume(volume) {
   return AndroidExoPlayer.setVolume({ volume });
 }
 
+/** Nouvel ordre de la file native (identifiants queueId) sans interrompre le titre en cours. */
+export function reorderAndroidExoPlayerQueue(queueIds) {
+  return AndroidExoPlayer.reorderQueue({ queueIds });
+}
+
 export function setAndroidExoPlayerRepeatMode(mode) {
   return AndroidExoPlayer.setRepeatMode({ mode });
 }

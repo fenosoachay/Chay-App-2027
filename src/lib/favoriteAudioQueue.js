@@ -1,14 +1,12 @@
+import { groupMusicFavorites } from "./favoritePlaylists.js";
+
+/**
+ * File de lecture de « Votre Playlist » : EXACTEMENT l'ordre affiché (groupMusicFavorites, champ `order`
+ * choisi par le membre), et non plus l'ancien regroupement par playlist d'origine (playlist_order).
+ */
 export function buildFavoriteAudioQueue(playlist, selectedFavoriteId) {
-  const tracks = (playlist || [])
-    .filter((favorite) =>
-      (favorite.category || "music") === "music" &&
-      favorite.kind !== "video" &&
-      favorite.audio_url
-    )
-    .sort((a, b) =>
-      (a.playlist_order ?? 99999) - (b.playlist_order ?? 99999) ||
-      (a.order ?? 99999) - (b.order ?? 99999)
-    )
+  const tracks = groupMusicFavorites(playlist)[0].items
+    .filter((favorite) => favorite.audio_url)
     .map((favorite) => ({
       id: favorite.track_id,
       queueId: favorite.id,

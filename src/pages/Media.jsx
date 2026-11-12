@@ -18,7 +18,7 @@ import { lireMemoireMedia, ecrireMemoireMedia } from "@/lib/mediaMemoire";
 export default function Media() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { currentTrack, isPlaying, play, playQueue, toggle } = useAudioPlayer();
+  const { currentTrack, isPlaying, play, playQueue, reorderQueue, toggle } = useAudioPlayer();
   const radio = useRadio();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -206,7 +206,10 @@ export default function Media() {
       order: orders.get(item.id),
     }));
     // Mise à jour par id : le groupe affiché (« Favoris ») réunit toutes les playlists d'origine.
-    setPlaylist((current) => current.map((item) => (orders.has(item.id) ? { ...item, order: orders.get(item.id) } : item)));
+    const reordonnee = playlist.map((item) => (orders.has(item.id) ? { ...item, order: orders.get(item.id) } : item));
+    setPlaylist(reordonnee);
+    // Lecture en cours dans les favoris : la file suit le nouvel ordre, sans couper le titre.
+    reorderQueue(buildFavoriteAudioQueue(reordonnee, null).tracks);
     const results = await Promise.all(updates.map((item) =>
       base44.entities.PlaylistItem.update(item.id, { order: item.order }).then(() => true, () => false)
     ));
