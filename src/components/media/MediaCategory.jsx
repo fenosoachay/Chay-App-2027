@@ -8,6 +8,7 @@ import PlaylistCategoryView from "@/components/media/PlaylistCategoryView";
 import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
 import ActualiteChretienne from "@/components/media/ActualiteChretienne";
+import FondsEcran from "@/components/media/FondsEcran";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
@@ -26,6 +27,7 @@ const TITLES = {
   gallery: "Galerie",
   playlist: "Votre Playlist",
   actualite: "Actualité chrétienne",
+  fonds: "Fond d'écran",
 };
 
 function SearchBar({ query, setQuery, placeholder, className = "mb-5" }) {
@@ -561,6 +563,8 @@ export default function MediaCategory({
       {cat === "actualite" && (
         <ActualiteChretienne cibleId={searchParams.get("news")} onFermerCible={() => clearTarget("news")} />
       )}
+
+      {cat === "fonds" && <FondsEcran />}
 
       {cat === "playlist" && (
         <FavoritesView

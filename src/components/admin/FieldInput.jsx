@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Loader2, Upload, CheckCircle2, AlertCircle, RefreshCw, Ban } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44, formatBytes } from "@/lib/upload";
+import { creerApercu } from "@/lib/fondsEcran";
 import RichTextEditor from "@/components/media/RichTextEditor";
 
 // Seuil au-delà duquel un fichier est envoyé en mode morcelé (chunked) avec
@@ -97,7 +98,7 @@ function ImagesField({ value, onChange, onUploadingChange }) {
   );
 }
 
-function FileUploadField({ field, value, onChange, onUploadingChange }) {
+function FileUploadField({ field, value, onChange, onUploadingChange, onChangeChamp }) {
   const [status, setStatus] = useState(() => value ? "done" : "idle");
   const [fileName, setFileName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -152,6 +153,11 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
         onDetail: handleDetail,
         signal: controller.signal,
       } : {});
+      // Champ d'aperçu (ex. fonds d'écran) : petite vignette JPEG envoyée à part ; vide si l'image ne se décode pas.
+      if (field.apercu) {
+        const apercu = await creerApercu(file);
+        onChangeChamp?.(field.apercu, apercu ? await uploadToBase44(new File([apercu], "apercu.jpg", { type: "image/jpeg" })) : "");
+      }
       onChange(url);
       setStatus("done");
       setFileToRetry(null);
@@ -264,7 +270,7 @@ function FileUploadField({ field, value, onChange, onUploadingChange }) {
   );
 }
 
-export default function FieldInput({ field, value, onChange, onUploadingChange }) {
+export default function FieldInput({ field, value, onChange, onUploadingChange, onChangeChamp }) {
   const cls =
     "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
@@ -361,6 +367,7 @@ export default function FieldInput({ field, value, onChange, onUploadingChange }
           field={field}
           value={value}
           onChange={onChange}
+          onChangeChamp={onChangeChamp}
           onUploadingChange={onUploadingChange}
         />
       );

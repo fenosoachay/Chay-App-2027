@@ -10,6 +10,7 @@ import {
   Home,
   Lightbulb,
   Newspaper,
+  Smartphone,
 } from "lucide-react";
 
 export const RADIO_URL =
@@ -30,6 +31,7 @@ export const CATEGORIES = [
   { id: "gallery", label: "Galerie", icon: ImageIcon, tone: "from-[#4A6CFE] to-[#2E6F40]" },
   { id: "playlist", label: "Votre Playlist", icon: ListMusic, tone: "from-[#8A56E2] to-[#4A6CFE]" },
   { id: "actualite", label: "Actualité chrétienne", icon: Newspaper, tone: "from-[#2E6F40] to-[#C18B33]" },
+  { id: "fonds", label: "Fond d'écran", icon: Smartphone, tone: "from-[#C18B33] to-[#FF57B2]" },
 ];
 
 export const YOUTUBE_SECTIONS = [

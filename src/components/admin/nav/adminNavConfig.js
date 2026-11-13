@@ -3,7 +3,7 @@ import {
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
-  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe,
+  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -27,6 +27,7 @@ export const ADMIN_NAV = [
       { key: "GalleryImage", label: "Galerie", icon: ImageIcon, path: "/admin/gallery" },
       { key: "Playlist", label: "Playlists", icon: Library, path: "/admin/playlists" },
       { key: "ChristianNews", label: "Actualité chrétienne", icon: Globe, path: "/admin/actualite" },
+      { key: "Wallpaper", label: "Fonds d'écran", icon: Smartphone, path: "/admin/fonds-ecran" },
     ],
   },
   {

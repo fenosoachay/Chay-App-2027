@@ -55,5 +55,11 @@ const n1 = garder('ChristianNews', await http('POST', '/api/collections/Christia
 check('admin : publication créée, lue par un membre', n1.status === 200 && (await http('GET', `/api/collections/ChristianNews/records/${n1.data?.id}`, { token: M.token })).status === 200);
 check('membre : publication refusée', (await http('POST', '/api/collections/ChristianNews/records', { token: M.token, body: { title: 'x' } })).status >= 400);
 
+console.log('\n■ (3) Fonds d’écran');
+const f1 = garder('Wallpaper', await http('POST', '/api/collections/Wallpaper/records', { token: ADM.token, body: { title: 'Test E fond', image_url: 'https://exemple.invalid/f.jpg', thumb_url: 'https://exemple.invalid/t.jpg', created_by_id: ADM.id } }));
+check('admin : fond d’écran publié, lu par un membre', f1.status === 200 && (await http('GET', `/api/collections/Wallpaper/records/${f1.data?.id}`, { token: M.token })).status === 200);
+check('photo obligatoire', (await http('POST', '/api/collections/Wallpaper/records', { token: ADM.token, body: { title: 'sans photo' } })).status === 400);
+check('membre : publication refusée', (await http('POST', '/api/collections/Wallpaper/records', { token: M.token, body: { title: 'x', image_url: 'https://x/y.jpg' } })).status >= 400);
+
 for (const [c, id] of crees.reverse()) await http('DELETE', `/api/collections/${c}/records/${id}`, su);
 done();

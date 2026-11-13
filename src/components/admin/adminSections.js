@@ -1,6 +1,6 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone,
 } from "lucide-react";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
@@ -154,6 +154,19 @@ export const SECTIONS = [
     ],
     showPlaylist: true,
     playlistField: "image_url",
+  },
+  {
+    // Multimédia › « Fond d'écran » : photos de 200 Mo au plus ; vignette (thumb_url) créée à l'envoi.
+    key: "Wallpaper",
+    label: "Fonds d'écran",
+    icon: Smartphone,
+    sort: "order",
+    listColumns: ["title"],
+    thumbField: "thumb_url",
+    fields: [
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "image_url", label: "Photo (200 Mo max)", type: "file", accept: "image/*", required: true, apercu: "thumb_url" },
+    ],
   },
   {
     // Multimédia › « Actualité chrétienne » : visible des membres dès maintenant, même vide.
