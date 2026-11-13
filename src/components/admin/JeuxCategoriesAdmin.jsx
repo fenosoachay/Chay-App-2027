@@ -119,12 +119,12 @@ export default function JeuxCategoriesAdmin() {
       </div>
 
       <h3 className="mb-2 font-bold">Noms des catégories</h3>
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {cats.map((c) => (
           <form
             key={c.slot}
             onSubmit={(e) => { e.preventDefault(); renommer(c); }}
-            className="flex items-center gap-2 rounded-2xl border border-border bg-card p-3"
+            className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3"
           >
             <input
               value={noms[c.slot] ?? ""}
@@ -132,12 +132,12 @@ export default function JeuxCategoriesAdmin() {
               maxLength={60}
               required
               aria-label={`Nom de la catégorie ${c.name}`}
-              className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2 font-semibold"
+              className="min-w-0 flex-1 basis-full sm:basis-40 rounded-xl border border-input bg-background px-3 py-2 font-semibold"
             />
             <button
               type="submit"
               disabled={occupe === `nom-${c.slot}` || !String(noms[c.slot] || "").trim() || String(noms[c.slot]).trim() === c.name}
-              className="inline-flex h-10 items-center gap-1 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-40"
             >
               <Check className="h-4 w-4" aria-hidden="true" /> Enregistrer
             </button>
@@ -161,7 +161,7 @@ export default function JeuxCategoriesAdmin() {
                 disabled={occupe === j.id}
                 onChange={(e) => classer(j, e.target.value)}
                 aria-label={`Catégorie du jeu ${j.name}`}
-                className="rounded-xl border border-input bg-background px-3 py-2 text-sm font-semibold"
+                className="min-w-0 max-w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-semibold"
               >
                 <option value="">Non classé</option>
                 {cats.map((c) => <option key={c.slot} value={c.slot}>{c.name}</option>)}

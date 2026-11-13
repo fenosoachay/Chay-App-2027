@@ -79,7 +79,7 @@ export default function AnnoncerVersion() {
         appareils (sauf s'il a coupé « Nouvelle version » dans ses réglages). Une version n'est annoncée qu'une fois.
       </p>
       <form onSubmit={annoncer} className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-sm font-bold">Version (ex. 1.3.7)</span>
             <input value={versionName} onChange={(e) => setVersionName(e.target.value)} required inputMode="decimal" className="w-full rounded-xl border border-input bg-background px-3 py-2.5" />
