@@ -15,7 +15,7 @@ const BASE = process.env.PB_TEST_URL || 'http://127.0.0.1:8090';
 const holder = vi.hoisted(() => ({ api: null }));
 vi.mock('@/api/backendConfig', async (orig) => ({ ...(await orig()), BACKEND: 'pocketbase', IS_POCKETBASE: true }));
 vi.mock('@/api/base44Client', () => ({ get base44() { return holder.api; } }));
-const { uploadToBase44 } = await import('@/lib/upload');
+const { uploadToBase44, envoyerAudioBible } = await import('@/lib/upload');
 
 const creds = Object.fromEntries(fs.readFileSync(process.env.PB_TEST_CREDENTIALS || 'C:\\PB-local\\identifiants-test.txt', 'utf8')
   .split(/\r?\n/).filter((l) => l && !l.startsWith('#')).map((l) => { const [k, email, password] = l.split('\t'); return [k, { email, password }]; }));
@@ -133,6 +133,17 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
     const url = await uploadToBase44(fileOf(buf, 'enregistrement.mp3', ''));
     cleanup.objects.push(decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1)));
     expect(url).toMatch(/\.mp3$/);
+  });
+
+  // 1.3.7 : Bible › Sagesse en audio — même un petit mp3 va sur R2, rangé par livre et chapitre.
+  it('admin : audio de chapitre (300 Ko) -> R2, rangé bible/psaumes/Psaumes-023-…, contenu identique', async () => {
+    holder.api = admin;
+    const buf = MP3(300 * 1024);
+    const url = await envoyerAudioBible(fileOf(buf, 'mon enregistrement.mp3', 'audio/mpeg'), { livre: 'psaumes', chapitre: 23 });
+    cleanup.objects.push(decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1)));
+    expect(url).toMatch(new RegExp(`^${s3env.R2_PUBLIC_BASE_URL}/videos/bible/psaumes/Psaumes-023-[a-z0-9]{8}\.mp3$`));
+    expect(sha(await download(url))).toBe(sha(buf));
+    await expect(envoyerAudioBible(fileOf(PNG, 'photo.png', 'image/png'), { livre: 'psaumes', chapitre: 1 })).rejects.toThrow(/audio/);
   });
 
   it('plafonds vérifiés AVANT tout envoi : audio > 1 Go, image > 200 Mo, autre type > 100 Mo', async () => {

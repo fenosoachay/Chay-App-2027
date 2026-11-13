@@ -173,13 +173,17 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     if (!famille) throw new fn.HttpError(415, 'Type de fichier non autorisé : vidéo, audio ou image seulement');
     if (fileSize > famille.max) throw new fn.HttpError(413, `Fichier trop volumineux (max ${famille.maxTexte})`);
     const ext = famille.ext;
+    // Bible › Sagesse en audio : audio rangé par livre et chapitre (facultatif).
+    const rangement = lib.rangementBible(body.rangement);
+    if (rangement && rangement.erreur) throw new fn.HttpError(400, rangement.erreur);
+    if (rangement && famille.famille !== 'audio') throw new fn.HttpError(415, 'Seul un fichier audio peut être rangé dans la Bible audio');
     const cfg = lib.requireR2();
     const totalParts = Math.ceil(fileSize / lib.PART_SIZE);
 
     // session_id du client = base64(nom:taille:date) TRONQUÉ à 48 caractères : deux fichiers de même nom
     // et taille peuvent le partager. Empreinte complète (nom, taille, date de modification) gardée dans
     // le champ « name » : reprise ou « déjà envoyé » seulement si elle est identique.
-    const fingerprint = `${fileName}|${fileSize}|${Number(body.lastModified) || 0}`.slice(0, 300);
+    const fingerprint = `${fileName}|${fileSize}|${Number(body.lastModified) || 0}${rangement ? `|${rangement.livre}-${rangement.chapitre}` : ''}`.slice(0, 300);
     const existing = lib.findSession(sessionId, user.id, 's3-multipart');
     const same = existing && existing.getString('name') === fingerprint;
     if (same && existing.getString('status') === 'done' && existing.getString('final_file_url')) {
@@ -201,7 +205,9 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     // Clé imposée par le serveur (le nom du client ne sert qu'au slug lisible).
     const now = new Date();
     const month = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-    const key = `${cfg.prefix}/${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
+    const key = rangement
+      ? lib.cleBible(cfg.prefix, rangement, $security.randomStringWithAlphabet(8, 'abcdefghijklmnopqrstuvwxyz0123456789'), ext)
+      : `${cfg.prefix}/${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
     const uploadId = lib.createMultipart(cfg, key, famille.mime);
     $app.save(fn.newRecord($app, lib.SESSIONS, {
       session_id: sessionId, name: fingerprint, file_name: fileName, mime_type: famille.mime, size: fileSize, total_chunks: totalParts,

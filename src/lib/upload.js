@@ -226,7 +226,7 @@ async function putPartToS3(presignedUrl, blob, { signal, partNumber }) {
 }
 
 export async function uploadMultipartS3(file, cb = {}) {
-  const { onProgress, onDetail, signal } = cb;
+  const { onProgress, onDetail, signal, initExtra } = cb;
   console.log("[S3] Démarrage de uploadMultipartS3 pour:", file.name, "Taille:", file.size);
 
   const sessionId = sessionIdOf(file);
@@ -238,6 +238,7 @@ export async function uploadMultipartS3(file, cb = {}) {
     fileSize: file.size,
     fileType: file.type || "",
     lastModified: file.lastModified || 0,
+    ...(initExtra || {}),
   }, { signal });
   
   console.log("[S3] Réponse de initMultipartUpload:", init);
@@ -396,6 +397,18 @@ export function assertUploadable(file) {
   const isBlob = Boolean(file) && typeof file === "object" && typeof file.size === "number" && typeof file.slice === "function";
   if (!isBlob) throw new Error("Aucune image à envoyer : le fichier est invalide.");
   if (!Number.isFinite(file.size) || file.size <= 0) throw new Error("Le fichier est vide.");
+}
+
+/**
+ * Bible › Sagesse en audio : audio d'un chapitre envoyé TOUJOURS sur R2 (quelle que soit sa taille), rangé par le
+ * serveur sous bible/<livre>/ (admin). Renvoie l'adresse publique.
+ */
+export async function envoyerAudioBible(file, { livre, chapitre, onProgress, onDetail, signal } = {}) {
+  assertUploadable(file);
+  if (familleFichier(file) !== "audio") throw new Error("Choisissez un fichier audio (mp3).");
+  const refus = refusTaille(file);
+  if (refus) throw new Error(refus);
+  return uploadMultipartS3(avecExtension(file, "audio"), { onProgress, onDetail, signal, initExtra: { rangement: { livre, chapitre } } });
 }
 
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {

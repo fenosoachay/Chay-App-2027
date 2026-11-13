@@ -1,10 +1,11 @@
 import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BookMarked, BookOpen, Search, StickyNote } from "lucide-react";
+import { BookMarked, BookOpen, Headphones, Search, StickyNote } from "lucide-react";
 import BibleReader from "@/components/bible/BibleReader";
 import BibleDictionary from "@/components/bible/BibleDictionary";
 import BibleConcordance from "@/components/bible/BibleConcordance";
 import BibleNotes from "@/components/bible/BibleNotes";
+import SagesseAudio from "@/components/bible/SagesseAudio";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { VERSIONS } from "@/lib/bibleConstants";
 import useDictionarySubtitle from "@/hooks/useDictionarySubtitle";
@@ -13,7 +14,7 @@ import useDictionarySubtitle from "@/hooks/useDictionarySubtitle";
 // et non dans un useState : chaque bloc pousse donc une entrée d'historique et
 // le bouton retour du téléphone revient au menu Bible, au lieu de sauter
 // directement à l'accueil.
-const VIEWS = ["reader", "dictionary", "concordance", "notes"];
+const VIEWS = ["reader", "dictionary", "concordance", "notes", "sagesse"];
 
 export default function Bible() {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ export default function Bible() {
   if (view === "dictionary") return <BibleDictionary onBack={goBack} />;
   if (view === "concordance") return <BibleConcordance onBack={goBack} onOpenVerse={openVerse} />;
   if (view === "notes") return <BibleNotes onBack={goBack} />;
+  if (view === "sagesse") return <SagesseAudio onBack={goBack} />;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-4 md:px-8 md:py-10">
@@ -79,7 +81,7 @@ export default function Bible() {
         </div>
       </header>
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <button
           onClick={() => openView("reader")}
           className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:shadow-md"
@@ -129,6 +131,19 @@ export default function Bible() {
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Mes notes</h2>
             <p className="text-[0.6875rem] text-muted-foreground">Surlignages, notes & favoris</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => openView("sagesse")}
+          className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:shadow-md"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl brand-gradient text-white shadow-sm transition group-hover:scale-105">
+            <Headphones className="h-5 w-5" />
+          </div>
+          <div className="text-left">
+            <h2 className="text-sm font-bold text-foreground">Sagesse en audio</h2>
+            <p className="text-[0.6875rem] text-muted-foreground">Proverbes & Psaumes à écouter</p>
           </div>
         </button>
       </div>

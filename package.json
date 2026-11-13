@@ -15,7 +15,8 @@
     "test:pb-local": "node pocketbase/tests/demarrage.integration.mjs && node pocketbase/tests/fn-pilote.integration.mjs && node pocketbase/tests/fn-lot2.integration.mjs && node pocketbase/tests/fn-lot3.integration.mjs && node pocketbase/tests/fn-conversations-privees.integration.mjs && node pocketbase/tests/fn-bloc3-collections.integration.mjs && node pocketbase/tests/fn-auth.integration.mjs && node pocketbase/tests/fn-fichiers.integration.mjs && node pocketbase/tests/migration-fichiers.integration.mjs && node pocketbase/tests/migration-fichiers-r2.integration.mjs && node pocketbase/tests/corriger-type-r2.integration.mjs && node pocketbase/tests/reecrire-adresses-r2.integration.mjs && node pocketbase/tests/comparer-comptages.integration.mjs && node pocketbase/tests/envoyer-mots-de-passe.integration.mjs && node pocketbase/tests/fn-push.integration.mjs && node pocketbase/tests/fn-mode-notifications.integration.mjs on && node pocketbase/tests/fn-nettoyage-fichiers.integration.mjs simulation && node pocketbase/tests/migrer-playlists.integration.mjs && node pocketbase/tests/migrer-lot-d.integration.mjs && vitest run --config vitest.pb-local.config.js && node pocketbase/tests/fn-limites.integration.mjs",
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android",
-    "test:lot-e": "node pocketbase/tests/migrer-lot-e.integration.mjs"
+    "test:lot-e": "node pocketbase/tests/migrer-lot-e.integration.mjs",
+    "test:1-3-7": "node pocketbase/tests/bible-audio.integration.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.59",

@@ -254,6 +254,30 @@ function contenuConforme(mime, bytes) {
   return Boolean(f) && f.controle(bytes);
 }
 
+// Bible › « Sagesse en audio » (1.3.7) : audio d'un chapitre rangé par livre et chapitre dans R2 :
+//   <préfixe>/bible/<livre>/<Livre>-<chapitre sur 2 ou 3 chiffres>-<aléatoire>.mp3
+// (partie aléatoire : un remplacement reçoit une nouvelle adresse, jamais servie depuis un cache périmé).
+const LIVRES_BIBLE_AUDIO = { proverbes: { nom: 'Proverbes', chapitres: 31 }, psaumes: { nom: 'Psaumes', chapitres: 150 } };
+
+/** Rangement demandé : null (aucun), { livre, chapitre } ou { erreur }. */
+function rangementBible(r) {
+  if (r === undefined || r === null || r === '') return null;
+  if (typeof r !== 'object') return { erreur: 'rangement invalide' };
+  const livre = typeof r.livre === 'string' ? r.livre : '';
+  const chapitre = Number(r.chapitre);
+  const l = LIVRES_BIBLE_AUDIO[livre];
+  if (!l) return { erreur: 'livre inconnu (proverbes ou psaumes)' };
+  if (!Number.isInteger(chapitre) || chapitre < 1 || chapitre > l.chapitres) return { erreur: `chapitre invalide (1 à ${l.chapitres})` };
+  return { livre, chapitre };
+}
+
+/** Clé R2 d'un chapitre (voir plus haut). */
+function cleBible(prefix, rangement, aleatoire, ext) {
+  const l = LIVRES_BIBLE_AUDIO[rangement.livre];
+  const num = String(rangement.chapitre).padStart(String(l.chapitres).length, '0');
+  return `${prefix}/bible/${rangement.livre}/${l.nom}-${num}-${aleatoire}.${ext || 'mp3'}`;
+}
+
 /** « une vidéo », « un fichier audio », « une image » (messages d'erreur). */
 const nomFamille = (mime) => (FAMILLES[String(mime || '').split('/')[0]] || { nom: 'un fichier autorisé' }).nom;
 
@@ -529,6 +553,8 @@ module.exports = {
   AUDIO_TYPES,
   IMAGE_TYPES,
   familleR2,
+  rangementBible,
+  cleBible,
   contenuConforme,
   nomFamille,
   looksLikeAudio,
