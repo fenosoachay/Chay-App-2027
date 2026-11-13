@@ -44,14 +44,22 @@ test("chaque type ouvre l'écran précis de son contenu", () => {
 
 test("parité : le serveur (pb_hooks/lib/cibles.js) applique exactement les mêmes règles", () => {
   for (const c of CONTENUS) assert.equal(serveur.routeContenu(c), routeContenu(c));
-  for (const t of ["message", "community", "daily_verse", "announcement", "theme_request", "theme_answer", "prayer", "content", "inconnu", ""]) {
+  for (const t of ["message", "community", "daily_verse", "announcement", "theme_request", "theme_answer", "prayer", "app_update", "content", "inconnu", ""]) {
     for (const id of ["x1", "", "a&b"]) assert.equal(serveur.routeCible(t, id), routeCible(t, id), `${t}/${id}`);
   }
   for (const r of ["/media?cat=music&track=1", "//evil.example", "https://x", "/a b", "/" + "x".repeat(250), null, "/messages?c=a%26b"]) {
     assert.equal(serveur.routeValide(r), routeValide(r), String(r));
   }
-  // Le service worker (sans modules) reprend les mêmes routes.
+  // Le service worker (sans modules) reprend les mêmes routes : sa fonction routeFor est EXÉCUTÉE et comparée.
   const sw = lire("public/sw.js");
+  const brut = fs.readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8"); // lire() retire les « // »
+  const debut = brut.indexOf("function routeFor(data)");
+  const suite = /\r?\n\}\r?\n/.exec(brut.slice(debut)); // fin de la fonction (fins de ligne LF ou CRLF)
+  const routeFor = new Function(`${brut.slice(debut, debut + suite.index + suite[0].length)}; return routeFor;`)();
+  for (const t of ["message", "community", "daily_verse", "announcement", "theme_request", "theme_answer", "prayer", "app_update", "inconnu", ""]) {
+    for (const id of ["x1", ""]) assert.equal(routeFor({ target_type: t, target_id: id }), routeCible(t, id), `service worker ${t}/${id}`);
+  }
+  assert.equal(routeFor({ target_type: "content", target_id: "c1" }), "/media");
   for (const motif of [/"\/messages\?c=" \+ id/, /"\/\?verset=" \+ id/, /"\/\?annonce=" \+ id/, /"\/requests\?tab=my-prayers"/, /var r = data\.route;/]) assert.match(sw, motif);
 });
 

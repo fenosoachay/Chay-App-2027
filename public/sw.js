@@ -18,6 +18,9 @@ function routeFor(data) {
     case "theme_request":
     case "theme_answer": return "/requests?tab=theme";
     case "prayer": return "/requests?tab=my-prayers";
+    // Nouvelle version de l'app : « À propos » (bouton de téléchargement). Indispensable pour les push renvoyés
+    // par la file de reprise, qui ne gardent pas `route` (avant la 1.3.9 : accueil seulement).
+    case "app_update": return "/?apropos=1";
     case "content": return "/media";
     default: return "/";
   }

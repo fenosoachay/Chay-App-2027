@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Radio, Baby, Gift, Info } from "lucide-react";
 import AboutDialog from "./AboutDialog";
 
@@ -13,15 +13,7 @@ const ITEMS = [
 export default function QuickAccess() {
   const navigate = useNavigate();
   const [aboutOpen, setAboutOpen] = useState(false);
-  // Notification « Nouvelle version » (route /?apropos=1) : « À propos » s'ouvre avec le bouton de téléchargement.
-  const [searchParams, setSearchParams] = useSearchParams();
-  useEffect(() => {
-    if (!searchParams.has("apropos")) return;
-    setAboutOpen(true);
-    const next = new URLSearchParams(searchParams);
-    next.delete("apropos");
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+  // (Notification « Nouvelle version » : voir AProposDepuisNotification, monté dans Layout.)
 
   return (
     <section className="mt-8">

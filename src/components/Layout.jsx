@@ -5,6 +5,7 @@ import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import AnimatedOutlet from "@/components/AnimatedOutlet";
+import AProposDepuisNotification from "@/components/home/AProposDepuisNotification";
 import AutoOpenAudioPlayer from "@/components/player/AutoOpenAudioPlayer";
 import PullDownMediaBar from "@/components/PullDownMediaBar";
 import UniversalMediaSurface from "@/components/UniversalMediaSurface";
@@ -251,6 +252,8 @@ export default function Layout() {
 
       <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
         <AnimatedOutlet />
+        {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
+        <AProposDepuisNotification />
       </main>
 
       {/* Mobile bottom nav */}
