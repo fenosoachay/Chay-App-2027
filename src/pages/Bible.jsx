@@ -82,6 +82,7 @@ export default function Bible() {
       </header>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Ordre (1.3.8) : Lire la Bible, Sagesse en audio, Dictionnaire, Concordance, Mes notes. */}
         <button
           onClick={() => openView("reader")}
           className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:shadow-md"
@@ -90,8 +91,21 @@ export default function Bible() {
             <BookOpen className="h-5 w-5" />
           </div>
           <div className="text-left">
-            <h2 className="text-sm font-bold text-foreground">Bible</h2>
+            <h2 className="text-sm font-bold text-foreground">Lire la Bible</h2>
             <p className="text-[0.6875rem] text-muted-foreground">Français & Malagasy</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => openView("sagesse")}
+          className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:shadow-md"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl brand-gradient text-white shadow-sm transition group-hover:scale-105">
+            <Headphones className="h-5 w-5" />
+          </div>
+          <div className="text-left">
+            <h2 className="text-sm font-bold text-foreground">Sagesse en audio</h2>
+            <p className="text-[0.6875rem] text-muted-foreground">Proverbes & Ecclésiaste à écouter</p>
           </div>
         </button>
 
@@ -131,19 +145,6 @@ export default function Bible() {
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Mes notes</h2>
             <p className="text-[0.6875rem] text-muted-foreground">Surlignages, notes & favoris</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => openView("sagesse")}
-          className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:shadow-md"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl brand-gradient text-white shadow-sm transition group-hover:scale-105">
-            <Headphones className="h-5 w-5" />
-          </div>
-          <div className="text-left">
-            <h2 className="text-sm font-bold text-foreground">Sagesse en audio</h2>
-            <p className="text-[0.6875rem] text-muted-foreground">Proverbes & Ecclésiaste à écouter</p>
           </div>
         </button>
       </div>
