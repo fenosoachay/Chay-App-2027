@@ -4,6 +4,9 @@ import GrillePlaylists from "@/components/media/GrillePlaylists";
 import ListeTriable from "@/components/media/ListeTriable";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
+import CadenasOrdre from "@/components/media/CadenasOrdre";
 import { arbrePlaylists, contenusDe, idsSousPlaylists, liensDe } from "@/lib/playlistsArbre";
 
 /**
@@ -18,10 +21,28 @@ export default function NavigationPlaylists({
   categorie, playlists, playlistTracks, contenus, nbNonClasses, isAdmin,
   renderContenus, onChargerManquants, cibleId, onReorderLiens, vignette, children,
 }) {
-  const arbre = useMemo(() => arbrePlaylists(playlists, categorie), [playlists, categorie]);
+  // Ordre des playlists et sous-playlists (admin, 1.3.9) : Playlist.order, appliqué tout de suite ici.
+  const [ordresLocaux, setOrdresLocaux] = useState(() => new Map());
+  const avecOrdres = useMemo(
+    () => (playlists || []).map((p) => (ordresLocaux.has(p.id) ? { ...p, order: ordresLocaux.get(p.id) } : p)),
+    [playlists, ordresLocaux]
+  );
+  const arbre = useMemo(() => arbrePlaylists(avecOrdres, categorie), [avecOrdres, categorie]);
   const [parent, setParent] = useState(null);
   const [sous, setSous] = useState(null);
   const [verrou, setVerrou] = useState(true);
+  const [verrouPl, setVerrouPl] = useState(true);
+  const { toast } = useToast();
+  const reordonnerPlaylists = async (next) => {
+    setOrdresLocaux((m) => { const n = new Map(m); next.forEach((p, i) => n.set(p.id, i)); return n; });
+    const res = await Promise.all(next.map((p, i) => (p.order === i ? true : base44.entities.Playlist.update(p.id, { order: i }).then(() => true, () => false))));
+    if (res.includes(false)) toast({ title: "Ordre non enregistré", description: "Réessayez.", variant: "destructive" });
+  };
+  const cadenasPl = (n, libelle) => (isAdmin && n > 1 ? (
+    <div className="mb-3 flex justify-end">
+      <CadenasOrdre verrouille={verrouPl} onBascule={() => setVerrouPl((v) => !v)} libelle={libelle} />
+    </div>
+  ) : null);
 
   // Contenu visé : on ouvre sa sous-playlist (et sa playlist).
   useEffect(() => {
@@ -112,8 +133,9 @@ export default function NavigationPlaylists({
     return (
       <div>
         {enTete(parent.name)}
+        {cadenasPl(sp.length, "les sous-playlists")}
         {sp.length ? (
-          <GrillePlaylists id={`sous-${parent.id}`} items={sp} onOuvrir={setSous} />
+          <GrillePlaylists id={`sous-${parent.id}`} items={sp} onOuvrir={setSous} reorganiser={isAdmin && !verrouPl} onReorder={reordonnerPlaylists} />
         ) : (
           <p className="text-foreground/50 text-sm">Aucune sous-playlist pour le moment.</p>
         )}
@@ -126,7 +148,8 @@ export default function NavigationPlaylists({
 
   return (
     <div>
-      <GrillePlaylists id={`playlists-${categorie}`} items={arbre} onOuvrir={setParent} />
+      {cadenasPl(arbre.length, "les playlists")}
+      <GrillePlaylists id={`playlists-${categorie}`} items={arbre} onOuvrir={setParent} reorganiser={isAdmin && !verrouPl} onReorder={reordonnerPlaylists} />
       {nbNonClasses > 0 && (
         <div className="mt-8">
           <h3 className="font-display font-extrabold text-lg mb-3">Non classés</h3>

@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { enregistrerFond, trierFonds, vignetteFond } from "@/lib/fondsEcran";
+import { useAuth } from "@/lib/AuthContext";
+import BlocOrdonnable from "@/components/media/BlocOrdonnable";
+import { enregistrerOrdreChamp } from "@/lib/ordreChamp";
 
 // Multimédia › « Fond d'écran » : grille de vignettes (format téléphone) ; un toucher ouvre l'aperçu et le bouton
 // « Enregistrer dans la galerie » (APK : dossier Images/Chay ; navigateur : téléchargement).
@@ -13,6 +16,17 @@ export default function FondsEcran() {
   const [liste, setListe] = useState(null);
   const [ouvert, setOuvert] = useState(null);
   const [envoi, setEnvoi] = useState(false);
+  const { user } = useAuth();
+  // Admin (1.3.9) : ordre au doigt, champ `order` (vu par les membres : trierFonds).
+  const reordonner = async (next) => {
+    setListe(next);
+    try {
+      setListe(await enregistrerOrdreChamp(next, (id, d) => base44.entities.Wallpaper.update(id, d)));
+    } catch (e) {
+      toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" });
+      base44.entities.Wallpaper.list("-created_date", 500).then((rows) => setListe(trierFonds(rows))).catch(() => {});
+    }
+  };
 
   useEffect(() => {
     let actif = true;
@@ -48,6 +62,15 @@ export default function FondsEcran() {
 
   return (
     <>
+      <BlocOrdonnable
+        id="fonds-ecran"
+        isAdmin={user?.role === "admin"}
+        items={liste}
+        onReorder={reordonner}
+        libelle="les fonds d'écran"
+        vignette={vignetteFond}
+        titre={(f) => f.title}
+      >
       <div className="grid grid-cols-3 gap-3 md:grid-cols-5">
         {liste.map((f) => (
           <button
@@ -61,6 +84,7 @@ export default function FondsEcran() {
           </button>
         ))}
       </div>
+      </BlocOrdonnable>
 
       <Dialog open={ouvert !== null} onOpenChange={(v) => !v && setOuvert(null)}>
         <DialogContent className="max-h-[92vh] max-w-md overflow-y-auto">

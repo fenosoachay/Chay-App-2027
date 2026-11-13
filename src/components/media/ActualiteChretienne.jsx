@@ -7,12 +7,28 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import { trierActualites, lienSur } from "@/lib/actualites";
 import CompteurVues from "@/components/media/CompteurVues";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
+import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import BlocOrdonnable from "@/components/media/BlocOrdonnable";
+import { enregistrerOrdreChamp } from "@/lib/ordreChamp";
 
 // Multimédia › « Actualité chrétienne » : publications de l'admin (collection ChristianNews). Section visible
 // des membres même vide ; une publication s'ouvre en lecture (texte riche nettoyé, lien externe éventuel).
 export default function ActualiteChretienne({ cibleId = null, onFermerCible }) {
   const [liste, setListe] = useState(null);
   const [ouverte, setOuverte] = useState(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  // Admin (1.3.9) : ordre au doigt, champ `order` (vu par les membres : trierActualites).
+  const reordonner = async (next) => {
+    setListe(next);
+    try {
+      setListe(await enregistrerOrdreChamp(next, (id, d) => base44.entities.ChristianNews.update(id, d)));
+    } catch (e) {
+      toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" });
+      base44.entities.ChristianNews.list("-created_date", 200).then((rows) => setListe(trierActualites(rows))).catch(() => {});
+    }
+  };
 
   useEffect(() => {
     let actif = true;
@@ -45,6 +61,15 @@ export default function ActualiteChretienne({ cibleId = null, onFermerCible }) {
           <p className="mt-1 text-sm text-foreground/60">Les nouvelles du monde chrétien apparaîtront ici.</p>
         </div>
       ) : (
+        <BlocOrdonnable
+          id="actualites"
+          isAdmin={user?.role === "admin"}
+          items={liste}
+          onReorder={reordonner}
+          libelle="les actualités"
+          vignette={(n) => n.cover_url}
+          titre={(n) => n.title}
+        >
         <ul className="space-y-3">
           {liste.map((n) => (
             <li key={n.id}>
@@ -69,6 +94,7 @@ export default function ActualiteChretienne({ cibleId = null, onFermerCible }) {
             </li>
           ))}
         </ul>
+        </BlocOrdonnable>
       )}
 
       <Dialog open={ouverte !== null} onOpenChange={(v) => !v && fermer()}>

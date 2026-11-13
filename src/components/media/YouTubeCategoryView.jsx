@@ -11,6 +11,9 @@ import YouTubeShuffleBanner from "@/components/media/YouTubeShuffleBanner";
 import { clearMediaControl, requestMediaPlayback } from "@/lib/mediaControl";
 import { useYoutubePrefs } from "@/hooks/useYoutubePrefs";
 import { applySavedOrder, shuffleArray } from "@/lib/youtubePrefs";
+import { appliquerOrdre, cleYoutube } from "@/lib/ordreMedia";
+import { enregistrerOrdreMedia, useOrdresMedia } from "@/hooks/useOrdreMedia";
+import { useToast } from "@/components/ui/use-toast";
 
 const SECTION_LABELS = { culte: "Culte", louange: "Louange", celebration: "Célébration" };
 
@@ -83,6 +86,14 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   const { prefs, update } = useYoutubePrefs();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { toast } = useToast();
+  // Ordre de l'admin (1.3.9), enregistré sur le serveur (MediaOrder) et vu par tous les membres, pour les sections
+  // Culte / Louange / Célébration (une sous-playlist garde l'ordre de ses liens). Avant, la réorganisation de
+  // l'admin restait dans SES préférences personnelles : les membres ne la voyaient pas.
+  const ordreDe = useOrdresMedia();
+  const sectionPartagee = (sec) => Object.prototype.hasOwnProperty.call(SECTION_LABELS, sec);
+  const enregistrerOrdre = (sec, ids) => enregistrerOrdreMedia(cleYoutube(sec), ids)
+    .catch((e) => toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" }));
 
   // Gestion admin : cadenas de réorganisation + liste des liens complets
   // (sans limite de pagination) + statut de suppression des vidéos.
@@ -161,10 +172,13 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
     () => youtube.filter((y) => (y.section || "culte") === section),
     [youtube, section]
   );
-  const customItems = useMemo(
-    () => applySavedOrder(baseItems, prefs.playlist_orders[section]),
-    [baseItems, prefs.playlist_orders, section]
-  );
+  const ordreAdmin = ordreDe(sectionPartagee(section) ? cleYoutube(section) : ""); // clé vide : aucun ordre
+  const customItems = useMemo(() => {
+    // Base : ordre de l'admin (nouvelles vidéos en tête). Admin : cet ordre seul. Membre : son ordre personnel
+    // éventuel par-dessus (fonction existante, gardée).
+    const base = appliquerOrdre(baseItems, ordreAdmin);
+    return isAdmin && sectionPartagee(section) ? base : applySavedOrder(base, prefs.playlist_orders[section]);
+  }, [baseItems, ordreAdmin, prefs.playlist_orders, section, isAdmin]);
   const shuffleOn = Boolean(prefs.shuffle_modes[section]);
   const locked = prefs.playlist_locks[section] !== false; // verrouillée par défaut
   const editing = !locked; // cadenas ouvert = réorganisation active
@@ -268,8 +282,9 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
 
 
   // Chaque déplacement est enregistré tout de suite (plus de bouton « Enregistrer »).
-  const reorder = (next) => update("playlist_orders", section, next.map((v) => v.id));
-  const resetOrder = () => update("playlist_orders", section, undefined);
+  const adminPartage = isAdmin && sectionPartagee(section);
+  const reorder = (next) => (adminPartage ? enregistrerOrdre(section, next.map((v) => v.id)) : update("playlist_orders", section, next.map((v) => v.id)));
+  const resetOrder = () => (adminPartage ? enregistrerOrdre(section, []) : update("playlist_orders", section, undefined));
   const toggleLock = () => update("playlist_locks", section, !locked);
 
   const shown = editing ? customItems : queueItems;
@@ -282,12 +297,11 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
   // est verrouillé, l'ordre est figé. Les liens "vidéo supprimée" peuvent être
   // retirés définitivement de la base via le bouton Supprimer.
   if (isAdmin && gerer) {
-    const orderOf = (id) => (prefs.playlist_orders[id] || []);
     const bySection = Object.keys(SECTION_LABELS).map((sec) => {
       const items = adminLinks.filter((y) => (y.section || "culte") === sec);
       return {
         sec,
-        items: applySavedOrder(items, orderOf(sec)),
+        items: appliquerOrdre(items, ordreDe(cleYoutube(sec))),
         locked: ytLocked,
       };
     });
@@ -331,7 +345,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
             </div>
 
             {!sectionLocked && items.length > 1 && (
-              <YouTubeEditBar onReset={() => update("playlist_orders", sec, undefined)} />
+              <YouTubeEditBar onReset={() => enregistrerOrdre(sec, [])} />
             )}
 
             {items.length ? (
@@ -353,7 +367,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
               ) : (
                 <YouTubeSortableList
                   items={items}
-                  onReorder={(next) => update("playlist_orders", sec, next.map((x) => x.id))}
+                  onReorder={(next) => enregistrerOrdre(sec, next.map((x) => x.id))}
                   renderRow={(v) => (
                     <YouTubeAdminRow
                       video={v}

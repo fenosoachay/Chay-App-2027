@@ -16,6 +16,10 @@ import { arbrePlaylists, contenusNonRanges } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
 import { YOUTUBE_SECTIONS, GALLERY_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
+import { appliquerOrdre, cleGalerie } from "@/lib/ordreMedia";
+import { enregistrerOrdreMedia, useOrdresMedia } from "@/hooks/useOrdreMedia";
+import { useToast } from "@/components/ui/use-toast";
+import BlocOrdonnable from "@/components/media/BlocOrdonnable";
 
 const TITLES = {
   radio: "Radio",
@@ -269,12 +273,14 @@ export default function MediaCategory({
   // Une photo n'apparaît que dans SA section : celles dont le champ
   // `category` est vide (les photos publiées avant l'ajout des sections)
   // étaient donc visibles nulle part — on les regroupe sous « Non classées ».
-  const sectionImages = gallery.filter(
-    (g) => normalizeSection(g.category) === gallerySection
-  );
-  const uncategorizedImages = gallery.filter(
-    (g) => !normalizeSection(g.category)
-  );
+  // Ordre de l'admin (1.3.9, MediaOrder) : photos de chaque section et « Non classées » (nouvelles en tête).
+  const { toast } = useToast();
+  const ordreDe = useOrdresMedia();
+  const photosDe = (section) => appliquerOrdre(gallery.filter((g) => normalizeSection(g.category) === (section || "")), ordreDe(cleGalerie(section)));
+  const reordonnerGalerie = (section) => (liste) => enregistrerOrdreMedia(cleGalerie(section), liste.map((g) => g.id))
+    .catch((e) => toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" }));
+  const sectionImages = photosDe(gallerySection);
+  const uncategorizedImages = photosDe(null);
 
   useEffect(() => {
     if (!targetVideoId) return;
@@ -294,9 +300,8 @@ export default function MediaCategory({
 
     const section = normalizeSection(target.category);
     if (section) {
-      const sectionItems = gallery.filter(
-        (image) => normalizeSection(image.category) === section
-      );
+      // Même ordre que l'affichage (ordre de l'admin) : l'indice ouvert est celui de la photo visée.
+      const sectionItems = photosDe(section);
       setGallerySection(section);
       setGalleryIdx(sectionItems.findIndex((image) => image.id === targetImageId));
       setOrphanIdx(null);
@@ -463,15 +468,23 @@ export default function MediaCategory({
                   bloc, elles n'étaient visibles dans AUCUNE section. */}
               {uncategorizedImages.length > 0 && (
                 <div className="mt-8">
-                  <div className="flex items-baseline justify-between gap-3 mb-3">
-                    <h3 className="font-display font-extrabold text-lg">
-                      Non classées
-                    </h3>
-                    <span className="text-xs text-foreground/50">
-                      {uncategorizedImages.length} photo
-                      {uncategorizedImages.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
+                  <BlocOrdonnable
+                    id="galerie-non-classees"
+                    isAdmin={isAdmin}
+                    items={uncategorizedImages}
+                    onReorder={reordonnerGalerie(null)}
+                    libelle="les photos non classées"
+                    vignette={(g) => g.image_url}
+                    titre={(g) => g.title}
+                    entete={(
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="font-display font-extrabold text-lg">Non classées</h3>
+                        <span className="text-xs text-foreground/50">
+                          {uncategorizedImages.length} photo{uncategorizedImages.length > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
+                  >
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {uncategorizedImages.map((g, i) => (
                       <button
@@ -490,6 +503,7 @@ export default function MediaCategory({
                       </button>
                     ))}
                   </div>
+                  </BlocOrdonnable>
                   <GalleryViewer
                     items={uncategorizedImages}
                     index={orphanIdx}
@@ -517,6 +531,15 @@ export default function MediaCategory({
               </button>
 
               {sectionImages.length ? (
+                <BlocOrdonnable
+                  id={`galerie-${gallerySection}`}
+                  isAdmin={isAdmin}
+                  items={sectionImages}
+                  onReorder={reordonnerGalerie(gallerySection)}
+                  libelle="les photos de cette section"
+                  vignette={(g) => g.image_url}
+                  titre={(g) => g.title}
+                >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {sectionImages.map((g, i) => (
                     <button
@@ -538,6 +561,7 @@ export default function MediaCategory({
                     </button>
                   ))}
                 </div>
+                </BlocOrdonnable>
               ) : (
                 <p className="text-foreground/50 text-sm">
                   Aucune image dans cette section.

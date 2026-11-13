@@ -1,0 +1,91 @@
+[
+  {
+    "name": "MediaOrder",
+    "type": "base",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\"",
+    "updateRule": "@request.auth.role = \"admin\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "fields": [
+      {
+        "name": "key",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 60,
+        "pattern": "^[a-z0-9:_-]+$"
+      },
+      {
+        "name": "ids",
+        "type": "json",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "maxSize": 400000
+      },
+      {
+        "name": "created_by_id",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "base44_created_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_updated_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_created_by",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 255,
+        "pattern": ""
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_mediaorder_key` ON `MediaOrder` (`key`)"
+    ]
+  }
+]
