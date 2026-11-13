@@ -1,7 +1,7 @@
 /// <reference path="../pb_data/types.d.ts" />
 // Ligne unique au démarrage, visible dans journalctl (stdout) et dans les journaux du tableau d'administration :
 //   [chay] hooks chargés : N tâches planifiées (id, id, …), mode notifications = X
-// N = tâches de NOS hooks (attendu : 5). Les tâches internes __pb… ne sont pas comptées.
+// N = tâches de NOS hooks (attendu : 6 depuis le lot E : annonce_version). Les tâches internes __pb… ne sont pas comptées.
 // Aucune donnée personnelle : seulement des identifiants de tâches et le mode.
 //
 // PocketBase charge les fichiers pb_hooks dans un ordre NON déterminé (le préfixe « zz_ » ne garantit rien) :

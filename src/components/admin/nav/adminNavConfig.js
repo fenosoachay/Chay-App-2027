@@ -3,7 +3,7 @@ import {
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
-  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass,
+  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -68,6 +68,7 @@ export const ADMIN_NAV = [
     items: [
       { key: "invite", label: "Inviter un admin", icon: UserPlus, path: "/admin/invite" },
       { key: "admins", label: "Gérer les administrateurs", icon: Users, path: "/admin/admins" },
+      { key: "app_update", label: "Annoncer une mise à jour", icon: Rocket, path: "/admin/mise-a-jour" },
     ],
   },
 ];

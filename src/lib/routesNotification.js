@@ -34,6 +34,7 @@ export function routeCible(type, id) {
     case "theme_request":
     case "theme_answer": return "/requests?tab=theme";
     case "prayer": return "/requests?tab=my-prayers";
+    case "app_update": return "/?apropos=1";
     case "content": return null;
     default: return "/";
   }

@@ -8,7 +8,8 @@
 //  (3) Wallpaper : Multimédia › « Fond d'écran » (photo jusqu'à 200 Mo, vignette thumb_url) ;
 //  (4) MissionRequest : Requêtes › « Se missionner » (création par la route createMissionRequest ; admins seulement) ;
 //  (5) compteur de vues : champ view_count (YouTubeVideo, Article, ChristianNews ; PlaylistTrack garde listen_count)
-//      et journal anti-doublon MediaVue (route compterVue seulement).
+//      et journal anti-doublon MediaVue (route compterVue seulement) ;
+//  (6) VersionAnnonce : une ligne par version annoncée (code unique : une seule annonce par version).
 //
 // Usage (tunnel SSH ouvert ; identifiants saisis masqués, voir docs/LOT-E.md) :
 //   node pocketbase/scripts/migrer-lot-e.mjs                   -> simulation (rien n'est écrit)
@@ -122,6 +123,23 @@ export function nouvellesCollections() {
         ...dates(),
       ],
       indexes: ['CREATE INDEX `idx_mediavue_user_cle` ON `MediaVue` (`user_id`, `cle`, `created`)'],
+    },
+    // ── (6) Annonce des nouvelles versions de l'APK (route annoncerVersion, tâche annonce_version) ──
+    {
+      name: 'VersionAnnonce', type: 'base',
+      listRule: ADMINS, viewRule: ADMINS, createRule: null, updateRule: null, deleteRule: null,
+      fields: [
+        nombre('version_code', { required: true, onlyInt: true, min: 1 }),
+        texte('version_name', 20, { required: true }),
+        texte('envoye_par', 64),
+        choix('statut', ['en_cours', 'termine']),
+        nombre('nb_emails', { onlyInt: true, min: 0 }),
+        nombre('emails_envoyes', { onlyInt: true, min: 0 }),
+        nombre('nb_appareils', { onlyInt: true, min: 0 }),
+        { name: 'restants', type: 'json', required: false, hidden: false, system: false, maxSize: 5000000 },
+        ...dates(),
+      ],
+      indexes: ['CREATE UNIQUE INDEX `idx_versionannonce_code` ON `VersionAnnonce` (`version_code`)'],
     },
   ];
 }

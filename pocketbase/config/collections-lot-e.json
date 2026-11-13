@@ -602,5 +602,117 @@
     "indexes": [
       "CREATE INDEX `idx_mediavue_user_cle` ON `MediaVue` (`user_id`, `cle`, `created`)"
     ]
+  },
+  {
+    "name": "VersionAnnonce",
+    "type": "base",
+    "listRule": "@request.auth.role = \"admin\"",
+    "viewRule": "@request.auth.role = \"admin\"",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "version_code",
+        "type": "number",
+        "required": true,
+        "hidden": false,
+        "system": false,
+        "min": 1,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "version_name",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 20,
+        "pattern": ""
+      },
+      {
+        "name": "envoye_par",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "statut",
+        "type": "select",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "maxSelect": 1,
+        "values": [
+          "en_cours",
+          "termine"
+        ]
+      },
+      {
+        "name": "nb_emails",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "emails_envoyes",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "nb_appareils",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "restants",
+        "type": "json",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "maxSize": 5000000
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_versionannonce_code` ON `VersionAnnonce` (`version_code`)"
+    ]
   }
 ]

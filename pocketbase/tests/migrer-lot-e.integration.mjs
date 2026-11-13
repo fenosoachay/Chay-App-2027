@@ -121,5 +121,42 @@ for (const j of journal) await http('DELETE', `/api/collections/MediaVue/records
 const journalA = (await http('GET', `/api/collections/MediaVue/records?perPage=50&filter=${q(`user_id = "${ADM.id}"`)}`, su)).data?.items || [];
 for (const j of journalA) await http('DELETE', `/api/collections/MediaVue/records/${j.id}`, su);
 
+console.log('\n■ (6) Annonce d’une nouvelle version');
+// Copie lancée en NOTIFICATIONS_MODE=test (seuls les comptes de test reçoivent) et ANNONCE_LOT_EMAILS=5 (la tâche
+// annonce_version envoie la suite de la file chaque minute) : voir docs/LOT-E.md.
+const code = 900000 + Math.floor(Math.random() * 90000);
+const corpsV = { version_name: '9.9.9', version_code: code };
+check('membre -> 403 ; version invalide -> 400',
+  (await fn('annoncerVersion', { token: M.token, body: corpsV })).status === 403
+  && (await fn('annoncerVersion', { token: ADM.token, body: { version_name: '1.x', version_code: code } })).status === 400);
+const apercu = await fn('annoncerVersion', { token: ADM.token, body: corpsV });
+const N = apercu.data?.destinataires;
+check('aperçu : N membres, appareils, rien d’envoyé, pas encore annoncée', apercu.status === 200 && N >= 2 && Number.isInteger(apercu.data?.appareils) && apercu.data?.deja === null, JSON.stringify(apercu.data));
+check('aperçu seul : aucune annonce enregistrée',
+  ((await http('GET', `/api/collections/VersionAnnonce/records?filter=${q(`version_code = ${code}`)}`, su)).data?.items || []).length === 0);
+check('confirmation avec un autre N -> 409 et nouveau N',
+  await fn('annoncerVersion', { token: ADM.token, body: { ...corpsV, confirmer: true, attendu: N + 1 } }).then((r) => r.status === 409 && r.data?.destinataires === N));
+const depuisV = Date.now();
+const envoi = await fn('annoncerVersion', { token: ADM.token, body: { ...corpsV, confirmer: true, attendu: N } });
+check('envoi confirmé : e-mails (1er lot + file) et push', envoi.status === 200 && envoi.data?.destinataires === N && envoi.data?.emails_restants > 0 && envoi.data?.emails_restants < N, JSON.stringify(envoi.data));
+const encore = await fn('annoncerVersion', { token: ADM.token, body: { ...corpsV, confirmer: true, attendu: N } });
+const apercu2 = await fn('annoncerVersion', { token: ADM.token, body: corpsV });
+check('anti-doublon : seconde annonce de la même version -> 409 ; l’aperçu le signale', encore.status === 409 && apercu2.data?.deja?.version_name === '9.9.9');
+const recV = ((await http('GET', `/api/collections/VersionAnnonce/records?filter=${q(`version_code = ${code}`)}`, su)).data?.items || [])[0];
+check('annonce enregistrée (lecture admin seulement)', Boolean(recV) && recV.nb_emails === N
+  && (await http('GET', `/api/collections/VersionAnnonce/records/${recV?.id}`, { token: M.token })).status === 404
+  && (await http('GET', `/api/collections/VersionAnnonce/records/${recV?.id}`, { token: ADM.token })).status === 200);
+// E-mail du compte admin de test : dans le 1er lot, ou envoyé par la tâche annonce_version (chaque minute).
+const mailV = await waitForMail(creds.admin.email, depuisV, 150000, /9\.9\.9/).catch(() => null);
+check('e-mail « Nouvelle version » reçu (lien de téléchargement)', Boolean(mailV) && /telechargements\/chay\.apk/.test(mailV.text));
+let finV = null;
+for (let i = 0; i < 40 && recV; i++) {
+  finV = (await http('GET', `/api/collections/VersionAnnonce/records/${recV.id}`, su)).data;
+  if (finV?.statut === 'termine') break;
+  await new Promise((ok) => setTimeout(ok, 5000));
+}
+check(`file d’e-mails vidée par la tâche annonce_version (${N} destinataires, plusieurs lots)`, finV?.statut === 'termine' && Array.isArray(finV?.restants) && finV.restants.length === 0, JSON.stringify({ statut: finV?.statut, reste: finV?.restants?.length }));
+if (recV) await http('DELETE', `/api/collections/VersionAnnonce/records/${recV.id}`, su);
+
 for (const [c, id] of crees.reverse()) await http('DELETE', `/api/collections/${c}/records/${id}`, su);
 done();
