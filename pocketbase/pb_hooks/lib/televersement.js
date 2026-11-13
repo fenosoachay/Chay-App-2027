@@ -286,6 +286,32 @@ function deleteObject(cfg, key) {
   s3(cfg, 'DELETE', key, {});
 }
 
+/** Suppression VÉRIFIÉE d'un objet : true si supprimé ou déjà absent (204, 200, 404), sinon erreur. */
+function supprimerObjet(cfg, key) {
+  const res = s3(cfg, 'DELETE', key, {});
+  if (res.status === 204 || res.status === 200 || res.status === 404) return true;
+  throw s3Fail('DeleteObject', res);
+}
+
+/** Objets sous un préfixe (ListObjectsV2, toutes les pages) : [{ key, size }]. */
+function listObjects(cfg, prefix) {
+  const out = [];
+  let jeton = '';
+  for (let guard = 0; guard < 200; guard++) {
+    const query = { 'list-type': '2', prefix, 'max-keys': '1000' };
+    if (jeton) query['continuation-token'] = jeton;
+    const res = s3(cfg, 'GET', '', query);
+    if (res.status !== 200) throw s3Fail('ListObjectsV2', res);
+    const re = /<Contents>([\s\S]*?)<\/Contents>/g;
+    let m;
+    while ((m = re.exec(res.text))) out.push({ key: xmlUnescape(xmlValue(m[1], 'Key')), size: Number(xmlValue(m[1], 'Size')) || 0 });
+    if (xmlValue(res.text, 'IsTruncated') !== 'true') break;
+    jeton = xmlUnescape(xmlValue(res.text, 'NextContinuationToken'));
+    if (!jeton) break;
+  }
+  return out;
+}
+
 /** Téléversements multipart en cours dans R2 sous le préfixe : [{ key, uploadId, initiated(ms) }]. */
 function listUploads(cfg) {
   const res = s3(cfg, 'GET', '', { uploads: '', prefix: `${cfg.prefix}/` });
@@ -580,6 +606,8 @@ module.exports = {
   headBytes,
   looksLikeVideo,
   deleteObject,
+  supprimerObjet,
+  listObjects,
   listUploads,
   presignPart,
   findSession,

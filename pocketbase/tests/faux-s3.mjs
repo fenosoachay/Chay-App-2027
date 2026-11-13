@@ -5,7 +5,7 @@
 // - REFUSE toute requête mal signée (SigV4 recalculée avec node:crypto : en-tête Authorization
 //   ou URL présignée, date, expiration, région, clé d'accès, empreinte du corps) ;
 // - opérations : CreateMultipartUpload, UploadPart, ListParts, CompleteMultipartUpload,
-//   AbortMultipartUpload, ListMultipartUploads, GetObject / HeadObject (Range), DeleteObject,
+//   AbortMultipartUpload, ListMultipartUploads, ListObjectsV2 (préfixe, pagination), PutObject (2 Mo), GetObject / HeadObject (Range), DeleteObject,
 //   CopyObject (x-amz-copy-source, x-amz-metadata-directive COPY / REPLACE, 5 Gio au plus) ;
 // - comme R2 : objet créé sans Content-Type -> « application/octet-stream » ; en-têtes de copie à signer ;
 // - outils de TEST (requêtes signées) : POST /<bucket>/_faux/echec-complete?fois=N,
@@ -231,6 +231,18 @@ async function handle(req, res) {
     const xml = items.map((m) => `<Upload><Key>${xmlEsc(m.key)}</Key><UploadId>${m.uploadId}</UploadId><Initiated>${new Date(m.initiated).toISOString()}</Initiated></Upload>`).join('');
     return send(res, 200, `<ListMultipartUploadsResult><Bucket>${env.R2_BUCKET}</Bucket><Prefix>${xmlEsc(prefix)}</Prefix><IsTruncated>false</IsTruncated>${xml}</ListMultipartUploadsResult>`);
   }
+  // ListObjectsV2 : GET /<bucket>?list-type=2&prefix=P[&max-keys=N][&continuation-token=T] (jeton = position).
+  if (req.method === 'GET' && !key && q['list-type'] === '2') {
+    const prefix = q.prefix || '';
+    const max = Math.max(1, Math.min(1000, Number(q['max-keys'] || 1000)));
+    const debut = Number(q['continuation-token'] || 0);
+    const tous = fs.readdirSync(OBJECTS).filter((f) => f.endsWith('.json')).map((f) => readJson(path.join(OBJECTS, f)))
+      .filter((m) => m.key.startsWith(prefix)).sort((a, b) => (a.key < b.key ? -1 : 1));
+    const page = tous.slice(debut, debut + max);
+    const suite = debut + max < tous.length;
+    const xml = page.map((m) => `<Contents><Key>${xmlEsc(m.key)}</Key><Size>${m.size}</Size></Contents>`).join('');
+    return send(res, 200, `<ListBucketResult><Name>${env.R2_BUCKET}</Name><Prefix>${xmlEsc(prefix)}</Prefix><KeyCount>${page.length}</KeyCount><IsTruncated>${suite}</IsTruncated>${suite ? `<NextContinuationToken>${debut + max}</NextContinuationToken>` : ''}${xml}</ListBucketResult>`);
+  }
   if (!key) return s3Error(res, 400, 'InvalidRequest', 'clé manquante');
 
   // CreateMultipartUpload : POST /<bucket>/<clé>?uploads
@@ -347,6 +359,18 @@ async function handle(req, res) {
     const created = Date.now();
     fs.writeFileSync(`${out}.json`, JSON.stringify({ key, size: smeta.size, etag, contentType, created, entetes }));
     return send(res, 200, `<CopyObjectResult><LastModified>${new Date(created).toISOString()}</LastModified><ETag>"${etag}"</ETag></CopyObjectResult>`);
+  }
+
+  // PutObject (corps de 2 Mo au plus) : amorçage des tests (objets existants à lister ou supprimer).
+  if (req.method === 'PUT' && !q.uploadId) {
+    const body = await readBody(req);
+    if (!checkPayload(res, auth.payloadHash, body)) return undefined;
+    const etag = crypto.createHash('md5').update(body).digest('hex');
+    const out = objFile(key);
+    fs.writeFileSync(`${out}.bin`, body);
+    fs.writeFileSync(`${out}.json`, JSON.stringify({ key, size: body.length, etag, contentType: req.headers['content-type'] || 'application/octet-stream', created: Date.now() }));
+    res.writeHead(200, { ETag: `"${etag}"` });
+    return res.end();
   }
 
   if (req.method === 'GET' || req.method === 'HEAD') return serveObject(req, res, key);
