@@ -29,6 +29,12 @@ const premiers = await migrer(BASE, h, { appliquer: true });
 const seconds = await migrer(BASE, h, { appliquer: true });
 check(`appliquée (${premiers.length} changement(s)), puis idempotente`, seconds.length === 0, seconds.join(' | '));
 
+console.log('\n■ Listes lues par l’app (tri « -created_date » traduit en « -base44_created_date,-created »)');
+for (const c of ['GameCategory', 'GameClassement', 'ChristianNews', 'Wallpaper', 'MissionRequest']) {
+  const r = await http('GET', `/api/collections/${c}/records?perPage=1&sort=${encodeURIComponent('-base44_created_date,-created')}`, { token: ADM.token });
+  check(`${c} : tri de l’app accepté`, r.status === 200, `HTTP ${r.status}`);
+}
+
 console.log('\n■ (1) Catégories de jeux');
 const cats = (await http('GET', '/api/collections/GameCategory/records?sort=order', { token: M.token })).data?.items || [];
 check('deux catégories de départ, lisibles par un membre', cats.length === 2 && cats[0].name && cats[1].name, JSON.stringify(cats.map((c) => c.name)));

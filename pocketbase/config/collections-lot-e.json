@@ -42,6 +42,46 @@
         "onlyInt": true
       },
       {
+        "name": "created_by_id",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "base44_created_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_updated_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_created_by",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 255,
+        "pattern": ""
+      },
+      {
         "name": "created",
         "type": "autodate",
         "onCreate": true,
@@ -93,6 +133,46 @@
           "game",
           "playmobile"
         ]
+      },
+      {
+        "name": "created_by_id",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "base44_created_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_updated_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_created_by",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 255,
+        "pattern": ""
       },
       {
         "name": "created",

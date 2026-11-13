@@ -51,7 +51,7 @@ export function nouvellesCollections() {
         choix('slot', EMPLACEMENTS_JEUX, { required: true }),
         texte('name', 60, { required: true }),
         nombre('order', { onlyInt: true }),
-        ...dates(),
+        ...base44(), // champs communs : l'app trie par created_date (-> base44_created_date)
       ],
       indexes: ['CREATE UNIQUE INDEX `idx_gamecategory_slot` ON `GameCategory` (`slot`)'],
     },
@@ -62,7 +62,7 @@ export function nouvellesCollections() {
       fields: [
         texte('game_id', 40, { required: true, pattern: '^[a-z0-9_-]+$' }),
         choix('slot', EMPLACEMENTS_JEUX, { required: true }),
-        ...dates(),
+        ...base44(),
       ],
       indexes: ['CREATE UNIQUE INDEX `idx_gameclassement_game` ON `GameClassement` (`game_id`)'],
     },
@@ -194,7 +194,18 @@ export async function migrer(url, h, { appliquer = false, log = () => {} } = {})
     return r.json();
   };
   for (const def of nouvellesCollections()) {
-    if (await lire(def.name)) continue;
+    const existante = await lire(def.name);
+    if (existante) {
+      // Collection déjà créée (script relancé, ou version antérieure du script) : seuls les champs manquants.
+      const plan = planChamps(existante, def.fields);
+      if (!plan) continue;
+      for (const f of plan.manquants) note(`${def.name}.${f.name} : nouveau champ ${f.type}`);
+      if (appliquer) {
+        const r = await fetch(`${url}/api/collections/${existante.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ fields: plan.fields }) });
+        if (!r.ok) throw new Error(`${def.name} : mise à jour refusée (HTTP ${r.status}) ${(await r.text()).slice(0, 300)}`);
+      }
+      continue;
+    }
     note(`${def.name} : nouvelle collection (${def.fields.filter((f) => !['created', 'updated', 'created_by_id', 'base44_created_date', 'base44_updated_date', 'base44_created_by'].includes(f.name)).map((f) => f.name).join(', ')})`);
     if (appliquer) {
       const c = await fetch(`${url}/api/collections`, { method: 'POST', headers: h, body: JSON.stringify(def) });
