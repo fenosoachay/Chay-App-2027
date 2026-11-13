@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Library, Upload } from "lucide-react";
 import ImageCrop from "@/components/media/ImageCrop";
 import PlaylistCover from "@/components/media/PlaylistCover";
-import { isValidPlaylistImageUrl } from "@/lib/playlist";
+import { MESSAGE_SCHEMA_PLAYLISTS, champPerdu, isValidPlaylistImageUrl } from "@/lib/playlist";
 
 export default function CreatePlaylistModal({
   open,
@@ -120,6 +120,20 @@ export default function CreatePlaylistModal({
         }
         pendingPlaylistIdRef.current = savedPlaylist.id;
         savedPlaylist = await base44.entities.Playlist.get(savedPlaylist.id);
+      }
+
+      // Rattachement (sous-playlist) et section réellement enregistrés ? Sinon : création annulée, erreur claire
+      // (avant la 1.3.9, la sous-playlist devenait une playlist de premier niveau sans aucun message).
+      const perdu = champPerdu(playlistData, savedPlaylist);
+      if (perdu) {
+        if (!playlistId && savedPlaylist?.id) {
+          await base44.entities.Playlist.delete(savedPlaylist.id).catch(() => {});
+          pendingPlaylistIdRef.current = null;
+        }
+        setSaveError(perdu === "parent_id"
+          ? MESSAGE_SCHEMA_PLAYLISTS
+          : "Le serveur n'a pas enregistré la section de la playlist (champ « category »). Appliquez la migration pocketbase/scripts/migrer-playlists.mjs.");
+        return;
       }
 
       const matchesSubmittedData = (saved) =>

@@ -20,6 +20,7 @@ import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import ListeTriable from "@/components/media/ListeTriable";
 import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
+import { MESSAGE_SCHEMA_PLAYLISTS, schemaSansSousPlaylists } from "@/lib/playlist";
 import {
   CATEGORIE_PLAYLIST,
   MESSAGE_SOUS_PLAYLIST,
@@ -556,6 +557,13 @@ export default function EntityCrud({
               <LockToggle locked={playlistsLocked} onToggle={() => setPlaylistsLocked((v) => !v)} />
             )}
           </div>
+
+          {/* Serveur sans champ Playlist.parent_id : les sous-playlists ne peuvent pas être enregistrées (1.3.9). */}
+          {sousPlaylist && schemaSansSousPlaylists(playlists) && (
+            <p role="alert" className="mb-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+              {MESSAGE_SCHEMA_PLAYLISTS}
+            </p>
+          )}
 
           {racines.length === 0 ? (
             <p className="text-sm text-foreground/50">

@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "android:sync": "vite build && cap sync android",
     "test:lot-e": "node pocketbase/tests/migrer-lot-e.integration.mjs",
-    "test:1-3-8": "node pocketbase/tests/bible-audio.integration.mjs && node pocketbase/tests/psaumes-nettoyage.integration.mjs"
+    "test:1-3-8": "node pocketbase/tests/bible-audio.integration.mjs && node pocketbase/tests/psaumes-nettoyage.integration.mjs",
+    "test:1-3-9": "node pocketbase/tests/sous-playlists-schema.integration.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.59",
