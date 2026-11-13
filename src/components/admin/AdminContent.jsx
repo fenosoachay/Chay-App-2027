@@ -8,6 +8,7 @@ import BibleSyncPanel from "@/components/bible/BibleSyncPanel";
 import DonationRequests from "@/components/admin/DonationRequests";
 import AdminThemeRequests from "@/components/requests/AdminThemeRequests";
 import JeuxCategoriesAdmin from "@/components/admin/JeuxCategoriesAdmin";
+import AdminMissions from "@/components/admin/AdminMissions";
 const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel"));
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
 const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
@@ -31,6 +32,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "overview") return <DashboardHome onNavigate={onNavigate} />;
   if (active === "donations") return <DonationRequests onChange={onDonationsChange} />;
   if (active === "theme_requests") return <AdminThemeRequests />;
+  if (active === "mission_requests") return <AdminMissions />;
   if (active === "publish") return <PublishContent />;
   if (active === "game_categories") return <JeuxCategoriesAdmin />;
   if (active === "bible_sync") return <BibleSyncPanel />;

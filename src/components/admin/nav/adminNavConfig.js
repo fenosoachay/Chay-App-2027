@@ -3,7 +3,7 @@ import {
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
-  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone,
+  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -57,6 +57,7 @@ export const ADMIN_NAV = [
     items: [
       { key: "donations", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
       { key: "theme_requests", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
+      { key: "mission_requests", label: "Se missionner", icon: Compass, path: "/admin/missions" },
       { key: "Faq", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
       { key: "ChurchHistory", label: "Histoire de l'église", icon: Landmark, path: "/admin/histoire" },
       { key: "StaffMember", label: "Personnel", icon: UserSquare, path: "/admin/personnel" },

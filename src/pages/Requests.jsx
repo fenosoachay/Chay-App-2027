@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ChevronLeft, MessageSquareQuote, HeartHandshake, BookMarked } from "lucide-react";
+import { ChevronLeft, MessageSquareQuote, HeartHandshake, BookMarked, Compass } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,17 @@ import MyThemeRequests from "@/components/requests/MyThemeRequests";
 import PrayerRequestForm from "@/components/requests/PrayerRequestForm";
 import PrayerWall from "@/components/requests/PrayerWall";
 import MyPrayers from "@/components/requests/MyPrayers";
+import MissionForm from "@/components/requests/MissionForm";
 import { fetchMyThemeRequests } from "@/lib/requests";
+
+// Les 4 sections, en grille 2 × 2 (ordre de lecture : Thèmes, Prière / Mes prières, Se missionner).
+export const SECTIONS_REQUETES = [
+  { value: "theme", label: "Thèmes", desc: "Proposer un thème", icon: MessageSquareQuote, tone: "from-[#4A6CFE] to-[#8A56E2]" },
+  { value: "prayer", label: "Prière", desc: "Confier un sujet", icon: HeartHandshake, tone: "from-[#FF57B2] to-[#FF4D2D]" },
+  { value: "my-prayers", label: "Mes prières", desc: "Mes demandes", icon: BookMarked, tone: "from-[#2E6F40] to-[#4A6CFE]" },
+  { value: "mission", label: "Se missionner", desc: "Servir avec l'église", icon: Compass, tone: "from-[#C18B33] to-[#A84D70]" },
+];
+const ONGLETS = SECTIONS_REQUETES.map((s) => s.value);
 
 export default function Requests() {
   const navigate = useNavigate();
@@ -20,11 +30,11 @@ export default function Requests() {
 
   // Onglet par défaut depuis l'URL, ou "theme"
   const urlTab = searchParams.get("tab");
-  const defaultTab = ["theme", "prayer", "my-prayers"].includes(urlTab) ? urlTab : "theme";
+  const defaultTab = ONGLETS.includes(urlTab) ? urlTab : "theme";
   const [activeTab, setActiveTab] = useState(defaultTab);
   // Notification cliquée alors que la page est déjà ouverte : l'onglet suit l'URL.
   useEffect(() => {
-    if (["theme", "prayer", "my-prayers"].includes(urlTab)) setActiveTab(urlTab);
+    if (ONGLETS.includes(urlTab)) setActiveTab(urlTab);
   }, [urlTab]);
 
   // Met à jour l'URL quand on change d'onglet
@@ -55,7 +65,7 @@ export default function Requests() {
 
   // Si l'URL change (depuis l'accueil par exemple), on change d'onglet
   useEffect(() => {
-    if (urlTab && ["theme", "prayer", "my-prayers"].includes(urlTab)) {
+    if (urlTab && ONGLETS.includes(urlTab)) {
       setActiveTab(urlTab);
     }
   }, [urlTab]);
@@ -83,26 +93,30 @@ export default function Requests() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Requêtes</h1>
             <p className="text-sm text-muted-foreground">
-              Propose un thème ou confie un sujet de prière.
+              Propose un thème, confie un sujet de prière ou engage-toi.
             </p>
           </div>
         </div>
       </header>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 mb-6">
-          <TabsTrigger value="theme" className="text-xs md:text-sm font-semibold">
-            <MessageSquareQuote className="h-3.5 w-3.5 mr-1.5 inline" />
-            Thème
-          </TabsTrigger>
-          <TabsTrigger value="prayer" className="text-xs md:text-sm font-semibold">
-            <HeartHandshake className="h-3.5 w-3.5 mr-1.5 inline" />
-            Prière
-          </TabsTrigger>
-          <TabsTrigger value="my-prayers" className="text-xs md:text-sm font-semibold">
-            <BookMarked className="h-3.5 w-3.5 mr-1.5 inline" />
-            Mes prières
-          </TabsTrigger>
+        {/* Grille 2 × 2 : grandes tuiles faciles à toucher ; la tuile active est entourée et légèrement relevée. */}
+        <TabsList className="mb-6 grid h-auto w-full grid-cols-2 gap-3 bg-transparent p-0">
+          {SECTIONS_REQUETES.map((s) => (
+            <TabsTrigger
+              key={s.value}
+              value={s.value}
+              className="group flex h-auto min-h-[5.5rem] flex-col items-start justify-between gap-2 whitespace-normal rounded-[1.25rem] border-2 border-border bg-card p-3.5 text-left shadow-sm transition-all hover:border-primary/40 data-[state=active]:-translate-y-0.5 data-[state=active]:border-primary data-[state=active]:bg-primary/5 data-[state=active]:shadow-md"
+            >
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${s.tone} text-white shadow-sm`}>
+                <s.icon className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.9375rem] font-extrabold leading-tight text-foreground">{s.label}</span>
+                <span className="block text-xs font-medium text-muted-foreground">{s.desc}</span>
+              </span>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* ── Onglet 1 : Thème à expliquer ── */}
@@ -132,6 +146,17 @@ export default function Requests() {
           </div>
 
           <PrayerWall key={`wall-${refreshKey}`} />
+        </TabsContent>
+
+        {/* ── Onglet 4 : Se missionner ── */}
+        <TabsContent value="mission" className="mt-0">
+          <div>
+            <h2 className="text-base font-bold mb-1">Se missionner</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Vous souhaitez servir avec l'église ? Remplissez ce formulaire : l'équipe vous recontactera.
+            </p>
+            <MissionForm />
+          </div>
         </TabsContent>
 
         {/* ── Onglet 3 : Mes prières ── */}

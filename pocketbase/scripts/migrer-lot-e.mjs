@@ -5,7 +5,8 @@
 // Contenu (une section par point du lot) :
 //  (1) GameCategory (2 catégories, noms modifiables par l'admin) et GameClassement (un jeu = une catégorie) ;
 //  (2) ChristianNews : Multimédia › « Actualité chrétienne » (lecture : membres ; écriture : admins) ;
-//  (3) Wallpaper : Multimédia › « Fond d'écran » (photo jusqu'à 200 Mo, vignette thumb_url).
+//  (3) Wallpaper : Multimédia › « Fond d'écran » (photo jusqu'à 200 Mo, vignette thumb_url) ;
+//  (4) MissionRequest : Requêtes › « Se missionner » (création par la route createMissionRequest ; admins seulement).
 //
 // Usage (tunnel SSH ouvert ; identifiants saisis masqués, voir docs/LOT-E.md) :
 //   node pocketbase/scripts/migrer-lot-e.mjs                   -> simulation (rien n'est écrit)
@@ -87,6 +88,26 @@ export function nouvellesCollections() {
         nombre('order'),
         ...base44(),
       ],
+    },
+    // ── (4) Se missionner ──
+    {
+      // Données personnelles (téléphone, adresse) : lecture réservée aux admins ; création par la route seulement.
+      name: 'MissionRequest', type: 'base',
+      listRule: ADMINS, viewRule: ADMINS, createRule: null, updateRule: ADMINS, deleteRule: ADMINS,
+      fields: [
+        texte('user_id', 64, { required: true }),
+        texte('last_name', 100, { required: true }),
+        texte('first_name', 100, { required: true }),
+        nombre('age', { required: true, onlyInt: true, min: 1, max: 120 }),
+        texte('phone', 30, { required: true }),
+        texte('address', 300, { required: true }),
+        choix('kind', ['evangeliser', 'batir_eglise', 'association', 'droits_videos', 'autre'], { required: true }),
+        texte('other_text', 300),
+        texte('details', 3000),
+        choix('status', ['nouvelle', 'traitee']),
+        ...base44(),
+      ],
+      indexes: ['CREATE INDEX `idx_missionrequest_user` ON `MissionRequest` (`user_id`, `created`)'],
     },
   ];
 }

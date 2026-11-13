@@ -9,7 +9,7 @@ if (new URL(process.env.PB_TEST_URL).port === '8090') {
   process.exit(2);
 }
 const { migrer } = await import('../scripts/migrer-lot-e.mjs');
-const { BASE, http, loadCreds, login, makeChecker, q } = await import('./lib.mjs');
+const { BASE, fn, http, loadCreds, login, makeChecker, q, waitForMail } = await import('./lib.mjs');
 
 const creds = loadCreds(['superuser', 'admin', 'membre']);
 const { check, done } = makeChecker();
@@ -60,6 +60,33 @@ const f1 = garder('Wallpaper', await http('POST', '/api/collections/Wallpaper/re
 check('admin : fond d’écran publié, lu par un membre', f1.status === 200 && (await http('GET', `/api/collections/Wallpaper/records/${f1.data?.id}`, { token: M.token })).status === 200);
 check('photo obligatoire', (await http('POST', '/api/collections/Wallpaper/records', { token: ADM.token, body: { title: 'sans photo' } })).status === 400);
 check('membre : publication refusée', (await http('POST', '/api/collections/Wallpaper/records', { token: M.token, body: { title: 'x', image_url: 'https://x/y.jpg' } })).status >= 400);
+
+console.log('\n■ (4) Se missionner');
+const form = { last_name: 'Test E', first_name: 'Mission', age: 30, phone: '06 12 34 56 78', address: '1 rue du Test', kind: 'autre', other_text: 'Chorale <b>', details: 'Ligne 1\nLigne 2' };
+check('anonyme -> 401', (await fn('createMissionRequest', { body: form })).status === 401);
+check('champ manquant -> 400 lisible', (await fn('createMissionRequest', { token: M.token, body: { ...form, address: '' } })).status === 400);
+check('« Autre demande » sans précision -> 400', (await fn('createMissionRequest', { token: M.token, body: { ...form, other_text: '' } })).status === 400);
+check('création directe dans la collection refusée (route seulement)', (await http('POST', '/api/collections/MissionRequest/records', { token: M.token, body: { ...form, user_id: M.id } })).status >= 400);
+const depuis = Date.now();
+const mr = await fn('createMissionRequest', { token: M.token, body: { ...form, user_id: 'usurpe' } });
+if (mr.data?.id) crees.push(['MissionRequest', mr.data.id]);
+check('membre : demande enregistrée, admins prévenus par e-mail', mr.status === 200 && mr.data?.admins_prevenus >= 1, JSON.stringify(mr.data));
+const lue = (await http('GET', `/api/collections/MissionRequest/records/${mr.data?.id}`, su)).data || {};
+check('demandeur imposé par le serveur, statut « nouvelle »', lue.user_id === M.id && lue.status === 'nouvelle' && lue.age === 30);
+check('membre : liste et lecture refusées (données personnelles)',
+  ((await http('GET', '/api/collections/MissionRequest/records', { token: M.token })).data?.items || []).length === 0
+  && (await http('GET', `/api/collections/MissionRequest/records/${mr.data?.id}`, { token: M.token })).status === 404);
+check('admin : voit la demande et la marque traitée',
+  (await http('GET', `/api/collections/MissionRequest/records/${mr.data?.id}`, { token: ADM.token })).status === 200
+  && (await http('PATCH', `/api/collections/MissionRequest/records/${mr.data?.id}`, { token: ADM.token, body: { status: 'traitee' } })).data?.status === 'traitee');
+const courriel = await waitForMail(creds.admin.email, depuis, 15000, /Se missionner/).catch(() => null);
+check('e-mail reçu par l’admin : tous les champs, texte du membre échappé', Boolean(courriel) && /Chorale &lt;b&gt;|Chorale &lt;b>/.test(courriel.text) && /06 12 34 56 78/.test(courriel.text) && /1 rue du Test/.test(courriel.text));
+let dernier = null;
+for (let i = 0; i < 5; i++) {
+  dernier = await fn('createMissionRequest', { token: M.token, body: { ...form, kind: 'evangeliser' } });
+  if (dernier.data?.id) crees.push(['MissionRequest', dernier.data.id]);
+}
+check('limite : 5 demandes par 24 h, la 6e -> 429', dernier.status === 429);
 
 for (const [c, id] of crees.reverse()) await http('DELETE', `/api/collections/${c}/records/${id}`, su);
 done();
