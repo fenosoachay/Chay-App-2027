@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -15,15 +15,42 @@ import {
   X,
 } from "lucide-react";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { JEUX, grouperJeux } from "@/lib/jeuxCategories";
 
-const GAMES = [
-  { id: "trivia", name: "Quiz", icon: Brain, tone: "from-[#4A6CFE] to-[#8A56E2]", live: true },
-  { id: "brique", name: "Brique", icon: Blocks, tone: "from-[#44916F] to-[#4A6CFE]", live: true, path: "/block-blast" },
-  { id: "emoji", name: "Émojis", icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]", live: true, path: "/games/emojis" },
-  { id: "scramble", name: "Mots mélangés", icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]", live: true, path: "/word-scramble" },
-  { id: "puzzle", name: "Puzzle", icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", live: true, path: "/puzzle" },
-  { id: "personality", name: "Personnalité biblique", icon: Heart, tone: "from-[#C18B33] to-[#A84D70]", live: true, path: "/personality-quiz" },
-];
+// Apparence de chaque jeu (identifiants : src/lib/jeuxCategories.js).
+const APPARENCE = {
+  trivia: { icon: Brain, tone: "from-[#4A6CFE] to-[#8A56E2]" },
+  brique: { icon: Blocks, tone: "from-[#44916F] to-[#4A6CFE]" },
+  emoji: { icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]" },
+  scramble: { icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]" },
+  puzzle: { icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]" },
+  personality: { icon: Heart, tone: "from-[#C18B33] to-[#A84D70]" },
+};
+const GAMES = JEUX.map((j) => ({ ...j, ...APPARENCE[j.id], live: true }));
+
+function GrilleJeux({ jeux, onOpen }) {
+  return (
+    <div className="mx-auto grid max-w-5xl grid-cols-2 place-items-center gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
+      {jeux.map((g) => (
+        <button
+          key={g.id}
+          type="button"
+          onClick={() => onOpen(g.path || "/quiz")}
+          aria-label={`Ouvrir le jeu ${g.name}`}
+          title={g.name}
+          className={`group flex aspect-square w-full max-w-32 flex-col items-center justify-center gap-2 rounded-full bg-gradient-to-br ${g.tone} p-3 text-center text-white shadow-md transition-all hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`}
+        >
+          <g.icon className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" aria-hidden="true" />
+          <span className="max-w-full break-words text-base font-bold leading-tight sm:text-lg">
+            {g.name}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const QUESTIONS = [
   { q: "Qui a construit l'arche pour survivre au déluge ?", options: ["Moïse", "Noé", "Abraham", "David"], answer: 1, explain: "Noé a construit l'arche sur l'ordre de Dieu (Genèse 6)." },
@@ -42,6 +69,20 @@ export default function Games() {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [done, setDone] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  // Catégories et classements : null = chargement ; collections absentes (avant la migration) = tous les jeux.
+  const [classement, setClassement] = useState(null);
+  useEffect(() => {
+    let actif = true;
+    Promise.all([
+      base44.entities.GameCategory.list("order", 10),
+      base44.entities.GameClassement.list("-created_date", 500),
+    ])
+      .then(([cats, cls]) => { if (actif) setClassement(grouperJeux(cats, cls, GAMES)); })
+      .catch(() => { if (actif) setClassement({ sections: [{ slot: "tous", name: "", jeux: GAMES }], nonClasses: [] }); });
+    return () => { actif = false; };
+  }, []);
 
   const startTrivia = () => {
     setSearchParams(
@@ -151,28 +192,33 @@ export default function Games() {
         <p className="mt-3 text-lg text-foreground/60">Découvrez la Parole en vous amusant.</p>
       </header>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-2 place-items-center gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
-        {GAMES.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            disabled={!g.live}
-            onClick={() => navigate(g.path || "/quiz")}
-            aria-label={g.live ? `Ouvrir le jeu ${g.name}` : `${g.name}, bientôt disponible`}
-            title={g.live ? g.name : `${g.name} — bientôt disponible`}
-            className={`group flex aspect-square w-full max-w-32 flex-col items-center justify-center gap-2 rounded-full bg-gradient-to-br ${g.tone} p-3 text-center text-white shadow-md transition-all ${
-              g.live
-                ? "hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                : "cursor-not-allowed opacity-65"
-            }`}
-          >
-            <g.icon className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" aria-hidden="true" />
-            <span className="max-w-full break-words text-base font-bold leading-tight sm:text-lg">
-              {g.name}
-            </span>
-          </button>
-        ))}
-      </div>
+      {classement === null ? (
+        <div className="h-32" aria-busy="true" />
+      ) : (
+        <div className="space-y-10">
+          {classement.sections.filter((c) => c.jeux.length).map((c) => (
+            <section key={c.slot} aria-label={c.name || "Jeux"}>
+              {c.name && (
+                <h2 className="mb-5 font-display text-2xl font-extrabold">
+                  <span className="brand-gradient-text">{c.name}</span>
+                </h2>
+              )}
+              <GrilleJeux jeux={c.jeux} onOpen={navigate} />
+            </section>
+          ))}
+          {!classement.sections.some((c) => c.jeux.length) && (
+            <p className="text-foreground/60">Les jeux arrivent bientôt.</p>
+          )}
+          {/* Jeux pas encore classés : jamais montrés aux membres ; les admins les voient pour les tester. */}
+          {isAdmin && classement.nonClasses.length > 0 && (
+            <section aria-label="Jeux à classer" className="rounded-[1.5rem] border border-dashed border-amber-500/50 p-5">
+              <h2 className="mb-1 font-display text-lg font-extrabold">À classer (visible des admins seulement)</h2>
+              <p className="mb-5 text-sm text-foreground/60">Panneau admin › Jeux › Catégories des jeux.</p>
+              <GrilleJeux jeux={classement.nonClasses} onOpen={navigate} />
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,118 @@
+[
+  {
+    "name": "GameCategory",
+    "type": "base",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": null,
+    "updateRule": "@request.auth.role = \"admin\"",
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "slot",
+        "type": "select",
+        "required": true,
+        "hidden": false,
+        "system": false,
+        "maxSelect": 1,
+        "values": [
+          "game",
+          "playmobile"
+        ]
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 60,
+        "pattern": ""
+      },
+      {
+        "name": "order",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": null,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_gamecategory_slot` ON `GameCategory` (`slot`)"
+    ]
+  },
+  {
+    "name": "GameClassement",
+    "type": "base",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\"",
+    "updateRule": "@request.auth.role = \"admin\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "fields": [
+      {
+        "name": "game_id",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 40,
+        "pattern": "^[a-z0-9_-]+$"
+      },
+      {
+        "name": "slot",
+        "type": "select",
+        "required": true,
+        "hidden": false,
+        "system": false,
+        "maxSelect": 1,
+        "values": [
+          "game",
+          "playmobile"
+        ]
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_gameclassement_game` ON `GameClassement` (`game_id`)"
+    ]
+  }
+]

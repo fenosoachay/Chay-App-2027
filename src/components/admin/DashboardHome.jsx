@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import QuizStatCard from "@/components/admin/QuizStatCard";
 import AlerteRangement from "@/components/admin/AlerteRangement";
+import { AlerteJeuxNonClasses } from "@/components/admin/JeuxCategoriesAdmin";
 import {
   Headphones,
   BookOpen,
@@ -65,6 +66,8 @@ export default function DashboardHome({ onNavigate }) {
 
       {/* Contenus pas encore rangés dans une sous-playlist (Musique, Prédication, YouTube, Articles, Galerie). */}
       <AlerteRangement onNavigate={onNavigate} />
+      {/* Jeux sans catégorie : invisibles des membres, une demande de classement par jeu. */}
+      <AlerteJeuxNonClasses onNavigate={onNavigate} />
 
       <h3 className="font-display font-extrabold text-xl mt-8 mb-4">
         Aperçu du contenu

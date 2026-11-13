@@ -3,7 +3,7 @@ import {
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
-  Smile, Puzzle, Blocks, Landmark, UserSquare,
+  Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -41,6 +41,7 @@ export const ADMIN_NAV = [
   {
     id: "games", label: "Jeux", icon: Gamepad2,
     items: [
+      { key: "game_categories", label: "Catégories des jeux", icon: LayoutGrid, path: "/admin/jeux-categories" },
       { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },
       { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
       { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
