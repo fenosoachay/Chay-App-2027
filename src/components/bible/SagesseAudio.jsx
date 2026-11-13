@@ -39,7 +39,7 @@ function Egaliseur() {
   );
 }
 
-// Bible › « Sagesse en audio » : Proverbes et Psaumes ; chaque chapitre est un carré numéroté. Toucher un carré
+// Bible › « Sagesse en audio » : Proverbes et Ecclésiaste ; chaque chapitre est un carré numéroté. Toucher un carré
 // lit l'audio du chapitre dans le lecteur global (lecture, pause, chapitre suivant, notification média).
 // Membres : écoute seulement. Admins : « Gérer les audios » puis toucher un carré pour ajouter ou remplacer
 // l'audio (envoyé sur R2, rangé par livre et chapitre).
@@ -143,7 +143,7 @@ export default function SagesseAudio({ onBack }) {
   if (!livre) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-4 md:px-8 md:py-10">
-        {enTete("Sagesse en audio", "Écoutez les Proverbes et les Psaumes")}
+        {enTete("Sagesse en audio", "Écoutez les Proverbes et l'Ecclésiaste")}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {LIVRES_SAGESSE.map((l) => {
             const n = rows ? audiosParChapitre(rows, l.id).size : null;

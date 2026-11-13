@@ -257,7 +257,8 @@ function contenuConforme(mime, bytes) {
 // Bible › « Sagesse en audio » (1.3.7) : audio d'un chapitre rangé par livre et chapitre dans R2 :
 //   <préfixe>/bible/<livre>/<Livre>-<chapitre sur 2 ou 3 chiffres>-<aléatoire>.mp3
 // (partie aléatoire : un remplacement reçoit une nouvelle adresse, jamais servie depuis un cache périmé).
-const LIVRES_BIBLE_AUDIO = { proverbes: { nom: 'Proverbes', chapitres: 31 }, psaumes: { nom: 'Psaumes', chapitres: 150 } };
+// 1.3.8 : Psaumes retirés, Ecclésiaste ajouté (nom ASCII dans la clé : « Ecclesiaste-01 »).
+const LIVRES_BIBLE_AUDIO = { proverbes: { nom: 'Proverbes', chapitres: 31 }, ecclesiaste: { nom: 'Ecclesiaste', chapitres: 12 } };
 
 /** Rangement demandé : null (aucun), { livre, chapitre } ou { erreur }. */
 function rangementBible(r) {
@@ -266,7 +267,7 @@ function rangementBible(r) {
   const livre = typeof r.livre === 'string' ? r.livre : '';
   const chapitre = Number(r.chapitre);
   const l = LIVRES_BIBLE_AUDIO[livre];
-  if (!l) return { erreur: 'livre inconnu (proverbes ou psaumes)' };
+  if (!l) return { erreur: 'livre inconnu (proverbes ou ecclesiaste)' };
   if (!Number.isInteger(chapitre) || chapitre < 1 || chapitre > l.chapitres) return { erreur: `chapitre invalide (1 à ${l.chapitres})` };
   return { livre, chapitre };
 }

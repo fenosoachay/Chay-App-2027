@@ -135,15 +135,15 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
     expect(url).toMatch(/\.mp3$/);
   });
 
-  // 1.3.7 : Bible › Sagesse en audio — même un petit mp3 va sur R2, rangé par livre et chapitre.
-  it('admin : audio de chapitre (300 Ko) -> R2, rangé bible/psaumes/Psaumes-023-…, contenu identique', async () => {
+  // 1.3.7 / 1.3.8 : Bible › Sagesse en audio — même un petit mp3 va sur R2, rangé par livre et chapitre.
+  it('admin : audio de chapitre (300 Ko) -> R2, rangé bible/ecclesiaste/Ecclesiaste-07-…, contenu identique', async () => {
     holder.api = admin;
     const buf = MP3(300 * 1024);
-    const url = await envoyerAudioBible(fileOf(buf, 'mon enregistrement.mp3', 'audio/mpeg'), { livre: 'psaumes', chapitre: 23 });
+    const url = await envoyerAudioBible(fileOf(buf, 'mon enregistrement.mp3', 'audio/mpeg'), { livre: 'ecclesiaste', chapitre: 7 });
     cleanup.objects.push(decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1)));
-    expect(url).toMatch(new RegExp(`^${s3env.R2_PUBLIC_BASE_URL}/videos/bible/psaumes/Psaumes-023-[a-z0-9]{8}\.mp3$`));
+    expect(url).toMatch(new RegExp(`^${s3env.R2_PUBLIC_BASE_URL}/videos/bible/ecclesiaste/Ecclesiaste-07-[a-z0-9]{8}\\.mp3$`));
     expect(sha(await download(url))).toBe(sha(buf));
-    await expect(envoyerAudioBible(fileOf(PNG, 'photo.png', 'image/png'), { livre: 'psaumes', chapitre: 1 })).rejects.toThrow(/audio/);
+    await expect(envoyerAudioBible(fileOf(PNG, 'photo.png', 'image/png'), { livre: 'ecclesiaste', chapitre: 1 })).rejects.toThrow(/audio/);
   });
 
   it('plafonds vérifiés AVANT tout envoi : audio > 1 Go, image > 200 Mo, autre type > 100 Mo', async () => {

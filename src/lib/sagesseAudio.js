@@ -1,11 +1,13 @@
-// Bible › « Sagesse en audio » : Proverbes (31 chapitres) et Psaumes (150), un audio par chapitre (collection
+// Bible › « Sagesse en audio » : Proverbes (31 chapitres) et Ecclésiaste (12), un audio par chapitre (collection
 // BibleAudio, fichiers sur R2). Lecture par le lecteur global (même lecteur que Musique / Prédication).
+// 1.3.8 : les Psaumes sont retirés (remplacés par l'Ecclésiaste).
 // Fichier pur : testé par node --test ; le script d'envoi en masse (pocketbase/scripts/envoyer-bible-audio.mjs)
 // utilise les mêmes règles de nommage.
 
+// `fichier` : préfixe ASCII des noms de fichiers (« Ecclesiaste-01.mp3 », sans accent).
 export const LIVRES_SAGESSE = [
-  { id: "proverbes", nom: "Proverbes", chapitres: 31 },
-  { id: "psaumes", nom: "Psaumes", chapitres: 150 },
+  { id: "proverbes", nom: "Proverbes", fichier: "Proverbes", chapitres: 31 },
+  { id: "ecclesiaste", nom: "Ecclésiaste", fichier: "Ecclesiaste", chapitres: 12 },
 ];
 
 export const livreSagesse = (id) => LIVRES_SAGESSE.find((l) => l.id === id) || null;
@@ -55,19 +57,21 @@ export function fileSagesse(livreId, rows) {
 
 /**
  * Nom de fichier du dépôt en masse -> { livre, chapitre } ou null.
- * Formats acceptés : « Proverbes-01.mp3 », « Psaumes-012.mp3 » (zéros de tête facultatifs, casse ignorée).
+ * Formats acceptés : « Proverbes-01.mp3 », « Ecclesiaste-01.mp3 » (zéros de tête facultatifs, casse et accents
+ * ignorés : « ecclesiaste-01.mp3 », « Ecclésiaste-1.mp3 »).
  */
 export function lireNomFichierAudio(nom) {
-  const m = /^(proverbes|psaumes)-0*(\d{1,3})\.mp3$/i.exec(String(nom || "").trim());
+  const simple = String(nom || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const m = /^(proverbes|ecclesiaste)-0*(\d{1,3})\.mp3$/i.exec(simple);
   if (!m) return null;
   const livre = m[1].toLowerCase();
   const chapitre = Number(m[2]);
   return chapitreValide(livre, chapitre) ? { livre, chapitre } : null;
 }
 
-/** Nom normalisé d'un chapitre : « Proverbes-01.mp3 », « Psaumes-012.mp3 » (2 chiffres / 3 chiffres). */
+/** Nom normalisé d'un chapitre : « Proverbes-01.mp3 », « Ecclesiaste-12.mp3 » (autant de chiffres que le dernier chapitre). */
 export function nomFichierAudio(livreId, chapitre) {
   const l = livreSagesse(livreId);
   if (!l || !chapitreValide(livreId, chapitre)) return null;
-  return `${l.nom}-${String(chapitre).padStart(String(l.chapitres).length, "0")}.mp3`;
+  return `${l.fichier}-${String(chapitre).padStart(String(l.chapitres).length, "0")}.mp3`;
 }

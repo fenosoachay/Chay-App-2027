@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Bible › « Sagesse en audio » : envoi EN MASSE des audios de chapitres vers R2, puis fiche BibleAudio par chapitre.
 //
-// Dossier attendu : des fichiers nommés « Proverbes-01.mp3 » … « Proverbes-31.mp3 », « Psaumes-001.mp3 » …
-// « Psaumes-150.mp3 » (zéros de tête facultatifs, casse ignorée). Tout autre nom est signalé et ignoré.
+// Dossier attendu : des fichiers nommés « Proverbes-01.mp3 » … « Proverbes-31.mp3 », « Ecclesiaste-01.mp3 » …
+// « Ecclesiaste-12.mp3 » (zéros de tête facultatifs, casse et accents ignorés). Tout autre nom est signalé et ignoré.
 // Chaque fichier passe par les routes du serveur (initMultipartUpload avec rangement livre + chapitre,
 // getPresignedUrl, completeMultipartUpload) : les octets vont directement du PC vers R2, la clé est imposée par
 // le serveur (videos/bible/<livre>/<Livre>-<chapitre>-<aléatoire>.mp3) et le contenu est contrôlé (vrai mp3).
@@ -68,7 +68,7 @@ export function planEnvoi(fichiers, existants, { remplacer = false } = {}) {
   const plan = [];
   for (const f of fichiers) {
     const lu = lireNomFichierAudio(f.nom);
-    if (!lu) { plan.push({ fichier: f.nom, action: 'ignoré', raison: 'nom attendu : Proverbes-01.mp3 … Psaumes-150.mp3' }); continue; }
+    if (!lu) { plan.push({ fichier: f.nom, action: 'ignoré', raison: 'nom attendu : Proverbes-01.mp3 … Proverbes-31.mp3 ou Ecclesiaste-01.mp3 … Ecclesiaste-12.mp3' }); continue; }
     const cle = `${lu.livre}:${lu.chapitre}`;
     if (vus.has(cle)) { plan.push({ fichier: f.nom, ...lu, action: 'doublon', raison: `même chapitre que ${vus.get(cle)}` }); continue; }
     vus.set(cle, f.nom);

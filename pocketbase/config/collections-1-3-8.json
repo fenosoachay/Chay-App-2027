@@ -1,0 +1,125 @@
+[
+  {
+    "name": "BibleAudio",
+    "type": "base",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"admin\"",
+    "updateRule": "@request.auth.role = \"admin\"",
+    "deleteRule": "@request.auth.role = \"admin\"",
+    "fields": [
+      {
+        "name": "book",
+        "type": "select",
+        "required": true,
+        "hidden": false,
+        "system": false,
+        "maxSelect": 1,
+        "values": [
+          "proverbes",
+          "ecclesiaste"
+        ]
+      },
+      {
+        "name": "chapter",
+        "type": "number",
+        "required": true,
+        "hidden": false,
+        "system": false,
+        "min": 1,
+        "max": 31,
+        "onlyInt": true
+      },
+      {
+        "name": "audio_url",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 2000,
+        "pattern": "^https?://"
+      },
+      {
+        "name": "duration",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "size",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
+        "name": "created_by_id",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "base44_created_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_updated_date",
+        "type": "date",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "base44_created_by",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 255,
+        "pattern": ""
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_bibleaudio_livre_chapitre` ON `BibleAudio` (`book`, `chapter`)"
+    ]
+  }
+]
