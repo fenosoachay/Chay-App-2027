@@ -150,7 +150,11 @@ try {
   const initBody = (over = {}) => ({ session_id: m1, fileName: 'Culte de Noël.mp4', fileSize: video.length, fileType: 'video/mp4', lastModified: 1, ...over });
   check('anonyme -> 401', (await fn('initMultipartUpload', { body: initBody() })).status === 401);
   check('membre -> 403', (await fn('initMultipartUpload', { token: A.token, body: initBody() })).status === 403);
-  check('audio (.mp3) -> 415', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileName: 'a.mp3', fileType: 'audio/mpeg' }) })).status === 415);
+  // Lot E (7) : audio (1 Go) et images (200 Mo) acceptés sur R2 ; tout autre type refusé.
+  check('archive (.zip) -> 415', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileName: 'a.zip', fileType: 'application/zip' }) })).status === 415);
+  check('nom .mp3 annoncé comme vidéo -> 415', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileName: 'a.mp3', fileType: 'video/mp4' }) })).status === 415);
+  check('audio de plus de 1 Go -> 413', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileName: 'a.mp3', fileType: 'audio/mpeg', fileSize: 1024 * MIO + 1 }) })).status === 413);
+  check('image de plus de 200 Mo -> 413', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileName: 'a.jpg', fileType: 'image/jpeg', fileSize: 200 * MIO + 1 }) })).status === 413);
   check('type annoncé non vidéo avec un nom .mp4 -> 415', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileType: 'application/zip' }) })).status === 415);
   check('plus de 5 Go -> 413', (await fn('initMultipartUpload', { token: ADM.token, body: initBody({ fileSize: 5 * 1024 * MIO + 1 }) })).status === 413);
   const mi = await fn('initMultipartUpload', { token: ADM.token, body: initBody({ key: '../../autre/chemin.mp4' }) });
@@ -214,6 +218,27 @@ try {
   const fc = await fn('completeMultipartUpload', { token: ADM.token, body: { session_id: m2, uploadId: fi.data.uploadId, key: fi.data.key, parts: [] } });
   check('contenu qui n’est pas une vidéo -> 415', fc.status === 415, `HTTP ${fc.status}`);
   check('… et objet supprimé du stockage', (await download(`${s3env.R2_PUBLIC_BASE_URL}/${fi.data.key}`)).status === 404);
+
+  // Audio sur R2 (lot E) : un vrai mp3 (en-tête ID3) passe ; des octets quelconques nommés .mp3 sont refusés.
+  const envoyerR2 = async (nom, type, buf) => {
+    const s = sid();
+    created.sessions.push(s);
+    const i = await fn('initMultipartUpload', { token: ADM.token, body: { session_id: s, fileName: nom, fileSize: buf.length, fileType: type, lastModified: 4 } });
+    if (i.data?.key) created.objects.push(i.data.key);
+    const p = await fn('getPresignedUrl', { token: ADM.token, body: { session_id: s, uploadId: i.data?.uploadId, key: i.data?.key, partNumber: 1 } });
+    await fetch(p.data?.presignedUrl, { method: 'PUT', body: buf });
+    return { init: i, fin: await fn('completeMultipartUpload', { token: ADM.token, body: { session_id: s, uploadId: i.data?.uploadId, key: i.data?.key, parts: [] } }) };
+  };
+  const mp3R2 = Buffer.concat([Buffer.from("4944330300000000000f", "hex"), crypto.randomBytes(2 * MIO)]);
+  const a1 = await envoyerR2("Prédication longue.mp3", "audio/mpeg", mp3R2);
+  check('audio (.mp3, en-tête ID3) -> R2 accepté, clé .mp3', a1.init.status === 200 && a1.fin.status === 200 && /-predication-longue\.mp3$/.test(a1.fin.data?.file_url || '') && a1.fin.data?.mime_type === 'audio/mpeg', `${a1.init.status}/${a1.fin.status}`);
+  const pasAudio = Buffer.concat([Buffer.alloc(16), crypto.randomBytes(MIO)]);
+  const a2 = await envoyerR2('faux.mp3', 'audio/mpeg', pasAudio);
+  check('octets quelconques nommés .mp3 -> 415 « pas un fichier audio », objet supprimé', a2.fin.status === 415 && /audio/.test(JSON.stringify(a2.fin.data))
+    && (await download(`${s3env.R2_PUBLIC_BASE_URL}/${a2.init.data?.key}`)).status === 404, `HTTP ${a2.fin.status}`);
+  const jpg = Buffer.concat([Buffer.from('ffd8ffe000104a464946', 'hex'), crypto.randomBytes(MIO)]);
+  const a3 = await envoyerR2('fond.jpg', 'image/jpeg', jpg);
+  check('image (.jpg) -> R2 accepté', a3.fin.status === 200 && a3.fin.data?.mime_type === 'image/jpeg', `HTTP ${a3.fin.status}`);
 
   // ── Nettoyage des téléversements incomplets ─────────────────────────────────
   console.log('\n■ Abandon et nettoyage (sessions de plus de 24 h)');

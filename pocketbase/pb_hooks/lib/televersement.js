@@ -20,6 +20,10 @@ const MIO = 1024 * 1024;
 const CHUNK_SIZE = 8 * MIO; // identique à src/lib/upload.js (CHUNK_SIZE)
 const MAX_CHUNKED_BYTES = 100 * MIO; // upload_chunk : jusqu'à 100 Mo (au-delà : R2)
 const MAX_VIDEO_BYTES = 5 * 1024 * MIO; // R2 : 5 Go
+// Fichiers de plus de 100 Mo qui ne sont pas des vidéos : R2 aussi. Avant la 1.3.6, un mp3 de plus de 100 Mo
+// partait vers R2 et recevait 415 « Seules les vidéos… » (échec des gros mp3 de prédication). Plafonds :
+const MAX_AUDIO_BYTES = 1024 * MIO; // audio : 1 Go
+const MAX_IMAGE_BYTES = 200 * MIO; // image (fonds d'écran) : 200 Mo
 const PART_SIZE = 8 * MIO; // R2 : parts de 8 Mo (minimum S3 : 5 Mo sauf la dernière)
 const MIN_PART = 5 * MIO;
 const MAX_PARTS = 10000;
@@ -27,6 +31,8 @@ const SESSION_TTL_MS = 24 * 3600 * 1000;
 const PRESIGN_TTL_SEC = 900;
 const VIDEO_EXT = ['mp4', 'm4v', 'mov', 'webm', 'mkv'];
 const VIDEO_TYPES = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska' };
+const AUDIO_TYPES = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac' };
+const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', heif: 'image/heif', avif: 'image/avif' };
 const SESSIONS = 'UploadSession';
 const FILE_COLLECTIONS = ['Fichier', 'FichierAdmin'];
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -188,13 +194,68 @@ function headBytes(cfg, key) {
   return res.bytes;
 }
 
+const commencePar = (bytes, sig, at) => sig.every((b, i) => bytes[(at || 0) + i] === b);
+const FTYP = [0x66, 0x74, 0x79, 0x70];
+const RIFF = [0x52, 0x49, 0x46, 0x46];
+
 /** Vrai si les premiers octets sont ceux d'une vidéo (ISO-BMFF « ftyp » : mp4 / mov / m4v ; EBML : webm / mkv). */
 function looksLikeVideo(bytes) {
   if (!bytes || bytes.length < 12) return false;
-  const ftyp = bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
-  const ebml = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
-  return ftyp || ebml;
+  return commencePar(bytes, FTYP, 4) || commencePar(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
 }
+
+/** Audio : mp3 (ID3 ou trame MPEG), AAC brut (ADTS), FLAC, Ogg / Opus, WAV, m4a (ISO-BMFF « ftyp »). */
+function looksLikeAudio(bytes) {
+  if (!bytes || bytes.length < 12) return false;
+  return commencePar(bytes, [0x49, 0x44, 0x33]) // « ID3 »
+    || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) // trame MPEG / ADTS
+    || commencePar(bytes, [0x66, 0x4c, 0x61, 0x43]) // « fLaC »
+    || commencePar(bytes, [0x4f, 0x67, 0x67, 0x53]) // « OggS »
+    || (commencePar(bytes, RIFF) && commencePar(bytes, [0x57, 0x41, 0x56, 0x45], 8)) // « RIFF….WAVE »
+    || commencePar(bytes, FTYP, 4);
+}
+
+/** Image : JPEG, PNG, GIF, WebP, HEIC / AVIF (ISO-BMFF « ftyp »). */
+function looksLikeImage(bytes) {
+  if (!bytes || bytes.length < 12) return false;
+  return commencePar(bytes, [0xff, 0xd8, 0xff])
+    || commencePar(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    || commencePar(bytes, [0x47, 0x49, 0x46, 0x38])
+    || (commencePar(bytes, RIFF) && commencePar(bytes, [0x57, 0x45, 0x42, 0x50], 8))
+    || commencePar(bytes, FTYP, 4);
+}
+
+const FAMILLES = {
+  video: { types: VIDEO_TYPES, max: MAX_VIDEO_BYTES, maxTexte: '5 Go', controle: looksLikeVideo, nom: 'une vidéo' },
+  audio: { types: AUDIO_TYPES, max: MAX_AUDIO_BYTES, maxTexte: '1 Go', controle: looksLikeAudio, nom: 'un fichier audio' },
+  image: { types: IMAGE_TYPES, max: MAX_IMAGE_BYTES, maxTexte: '200 Mo', controle: looksLikeImage, nom: 'une image' },
+};
+
+/**
+ * Famille d'un fichier envoyé vers R2, d'après son extension et le type annoncé par le navigateur :
+ * { famille, ext, mime, max, maxTexte } ou null (refus 415). Un type annoncé d'une autre famille est refusé ;
+ * un type vide ou « application/octet-stream » (certains Android) est accepté : le contenu est contrôlé à la fin.
+ */
+function familleR2(fileName, fileType) {
+  const ext = extensionOf(fileName, '');
+  const type = String(fileType || '').toLowerCase();
+  for (const famille of Object.keys(FAMILLES)) {
+    const f = FAMILLES[famille];
+    if (!f.types[ext]) continue;
+    if (type && type !== 'application/octet-stream' && type.indexOf(`${famille}/`) !== 0) return null;
+    return { famille, ext, mime: f.types[ext], max: f.max, maxTexte: f.maxTexte, nom: f.nom };
+  }
+  return null;
+}
+
+/** Contenu assemblé conforme à la famille enregistrée dans la session (son type MIME) ? */
+function contenuConforme(mime, bytes) {
+  const f = FAMILLES[String(mime || '').split('/')[0]];
+  return Boolean(f) && f.controle(bytes);
+}
+
+/** « une vidéo », « un fichier audio », « une image » (messages d'erreur). */
+const nomFamille = (mime) => (FAMILLES[String(mime || '').split('/')[0]] || { nom: 'un fichier autorisé' }).nom;
 
 function deleteObject(cfg, key) {
   s3(cfg, 'DELETE', key, {});
@@ -456,6 +517,8 @@ module.exports = {
   CHUNK_SIZE,
   MAX_CHUNKED_BYTES,
   MAX_VIDEO_BYTES,
+  MAX_AUDIO_BYTES,
+  MAX_IMAGE_BYTES,
   PART_SIZE,
   MIN_PART,
   MAX_PARTS,
@@ -463,6 +526,13 @@ module.exports = {
   PRESIGN_TTL_SEC,
   VIDEO_EXT,
   VIDEO_TYPES,
+  AUDIO_TYPES,
+  IMAGE_TYPES,
+  familleR2,
+  contenuConforme,
+  nomFamille,
+  looksLikeAudio,
+  looksLikeImage,
   VIDEO_REFUSED,
   isVideoName,
   SESSIONS,

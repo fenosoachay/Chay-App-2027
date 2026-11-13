@@ -13,6 +13,45 @@ export const REMOTE_APP_URL = "https://chay.base44.app";
 export const CHUNK_SIZE = 8 * 1024 * 1024; // 8 Mo
 export const SEUIL_UPLOAD_DIRECT = 15 * 1024 * 1024; // 15 Mo
 export const SEUIL_MULTIPART_S3 = 100 * 1024 * 1024; // 100 Mo
+const MO = 1024 * 1024;
+// Plafonds (mode PocketBase), identiques au serveur (pb_hooks/lib/televersement.js) : au-delà de 100 Mo, l'audio et
+// les images vont sur R2 comme les vidéos. Avant la 1.3.6, un mp3 de plus de 100 Mo y recevait 415 (vidéos seulement).
+export const MAX_AUDIO = 1024 * MO; // 1 Go
+export const MAX_IMAGE = 200 * MO; // 200 Mo
+export const MAX_VIDEO = 5 * 1024 * MO; // 5 Go
+const AUDIO_EXT = ["mp3", "m4a", "aac", "wav", "ogg", "oga", "opus", "flac"];
+const IMAGE_EXT = ["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "avif"];
+const extOf = (file) => ((/\.([a-z0-9]{1,5})$/i.exec(String(file?.name || "")) || [])[1] || "").toLowerCase();
+
+/** Famille d'un fichier (« video », « audio », « image » ou null), d'après son type puis son extension. */
+export function familleFichier(file) {
+  if (isVideoFile(file)) return "video";
+  const type = String(file?.type || "").toLowerCase();
+  if (type.startsWith("audio/") || AUDIO_EXT.includes(extOf(file))) return "audio";
+  if (type.startsWith("image/") || IMAGE_EXT.includes(extOf(file))) return "image";
+  return null;
+}
+
+/**
+ * Message d'erreur si le fichier dépasse le plafond de sa famille (refus AVANT tout envoi), sinon null.
+ * Au-delà de 100 Mo, seuls l'audio, les images et les vidéos sont acceptés.
+ */
+export function refusTaille(file) {
+  const famille = familleFichier(file);
+  const max = { video: [MAX_VIDEO, "5 Go"], audio: [MAX_AUDIO, "1 Go"], image: [MAX_IMAGE, "200 Mo"] }[famille];
+  if (max && file.size > max[0]) return `Fichier trop volumineux (max ${max[1]} pour ${famille === "video" ? "une vidéo" : famille === "audio" ? "un fichier audio" : "une image"}).`;
+  if (!max && file.size > SEUIL_MULTIPART_S3) return "Fichier trop volumineux (max 100 Mo pour ce type de fichier).";
+  return null;
+}
+
+// Le serveur reconnaît la famille à l'extension : un fichier audio ou image sans extension connue en reçoit une.
+const EXT_PAR_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/flac": "flac", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic", "image/avif": "avif" };
+function avecExtension(file, famille) {
+  const connues = famille === "audio" ? AUDIO_EXT : IMAGE_EXT;
+  if (connues.includes(extOf(file))) return file;
+  const ext = EXT_PAR_TYPE[String(file?.type || "").toLowerCase()] || (famille === "audio" ? "mp3" : "jpg");
+  return new File([file], `${famille === "audio" ? "audio" : "image"}.${ext}`, { type: file.type || "", lastModified: file.lastModified || Date.now() });
+}
 const MAX_RETRIES = 6;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -363,9 +402,15 @@ export async function uploadToBase44(file, { forceChunked = false, onProgress, o
   assertUploadable(file);
   // Mode PocketBase (forceChunked ignoré) :
   //  - vidéo (type video/* ou extension mp4, m4v, mov, webm, mkv), QUELLE QUE SOIT SA TAILLE -> R2 (admin) ;
-  //  - autres fichiers : <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ; au-delà : refusé
-  //    par le serveur (initMultipartUpload n'accepte que les vidéos).
+  //  - autres fichiers : <= 15 Mo -> Fichier / FichierAdmin ; <= 100 Mo -> upload_chunk (admin) ;
+  //  - au-delà de 100 Mo : audio (1 Go max) et image (200 Mo max) -> R2 (admin) ; autre type : refusé ici.
   if (IS_POCKETBASE) {
+    const refus = refusTaille(file);
+    if (refus) {
+      const err = new Error(refus);
+      err.status = 413;
+      throw err;
+    }
     if (isVideoFile(file)) return uploadMultipartS3(withVideoName(file), { onProgress, onDetail, signal });
     if (file.size <= SEUIL_UPLOAD_DIRECT) {
       const url = await directUpload(file);
@@ -373,7 +418,7 @@ export async function uploadToBase44(file, { forceChunked = false, onProgress, o
       return url;
     }
     if (file.size <= SEUIL_MULTIPART_S3) return uploadChunked(file, { onProgress, onDetail, signal });
-    return uploadMultipartS3(file, { onProgress, onDetail, signal });
+    return uploadMultipartS3(avecExtension(file, familleFichier(file)), { onProgress, onDetail, signal });
   }
 
   if (!appParams.appId) throw new Error("VITE_BASE44_APP_ID est vide.");

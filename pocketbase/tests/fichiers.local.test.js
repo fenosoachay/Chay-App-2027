@@ -117,9 +117,30 @@ describe('fichiers en mode PocketBase (vrai upload.js + vrai adaptateur)', () =>
     expect(sha(await download(url))).toBe(sha(buf));
   });
 
-  it('admin : 101 Mo qui ne sont pas une vidéo -> refusé avant tout envoi (415)', async () => {
+  // Lot E (7) : un mp3 de prédication de plus de 100 Mo recevait 415 (« Seules les vidéos… ») : il va maintenant sur R2.
+  it('admin : mp3 de prédication de 101 Mo -> R2 multipart, adresse publique .mp3, contenu identique', async () => {
     holder.api = admin;
-    await expect(uploadToBase44(fileOf(MP3(101 * MIO), 'concert.mp3', 'audio/mpeg'))).rejects.toThrow(/HTTP 415/);
+    const buf = MP3(101 * MIO);
+    const url = await uploadToBase44(fileOf(buf, 'Prédication du 9 novembre.mp3', 'audio/mpeg'));
+    cleanup.objects.push(decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1)));
+    expect(url).toMatch(new RegExp(`^${s3env.R2_PUBLIC_BASE_URL}/videos/\\d{4}/\\d{2}/[a-z0-9]{16}-predication-du-9-novembre\\.mp3$`));
+    expect(sha(await download(url))).toBe(sha(buf));
+  });
+
+  it('admin : mp3 de 101 Mo annoncé sans type (certains Android) -> R2 quand même', async () => {
+    holder.api = admin;
+    const buf = MP3(101 * MIO);
+    const url = await uploadToBase44(fileOf(buf, 'enregistrement.mp3', ''));
+    cleanup.objects.push(decodeURIComponent(url.slice(s3env.R2_PUBLIC_BASE_URL.length + 1)));
+    expect(url).toMatch(/\.mp3$/);
+  });
+
+  it('plafonds vérifiés AVANT tout envoi : audio > 1 Go, image > 200 Mo, autre type > 100 Mo', async () => {
+    holder.api = admin;
+    const faux = (name, type, size) => ({ name, type, size, lastModified: 1, slice: () => new Blob([]) });
+    await expect(uploadToBase44(faux('long.mp3', 'audio/mpeg', 1024 * MIO + 1))).rejects.toThrow(/max 1 Go/);
+    await expect(uploadToBase44(faux('fond.jpg', 'image/jpeg', 200 * MIO + 1))).rejects.toThrow(/max 200 Mo/);
+    await expect(uploadToBase44(faux('archive.zip', 'application/zip', 101 * MIO))).rejects.toThrow(/max 100 Mo/);
   });
 
   // ── Politique : TOUTES les vidéos sur R2, quelle que soit leur taille ─────────────────────────────

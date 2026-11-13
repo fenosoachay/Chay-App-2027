@@ -9,7 +9,8 @@
 //
 // Routes (même forme de réponse que les fonctions Base44 attendues par src/lib/upload.js) :
 //  POST /api/fn/upload_chunk              (admin) fichiers de 15 à 100 Mo (sauf vidéos), morceaux de 8 Mo -> FichierAdmin
-//  POST /api/fn/initMultipartUpload       (admin) TOUTE vidéo vers R2 (de 1 octet à 5 Go), vidéo seulement
+//  POST /api/fn/initMultipartUpload       (admin) TOUTE vidéo vers R2 (de 1 octet à 5 Go) ; audio de plus de
+//                                         100 Mo (jusqu'à 1 Go) et image de plus de 100 Mo (jusqu'à 200 Mo)
 //  POST /api/fn/getPresignedUrl           (admin) état de reprise / URL présignée d'une part (taille imposée)
 //  POST /api/fn/completeMultipartUpload   (admin) assemblage, contrôle de taille et du type réel (octets de tête)
 //  POST /api/fn/cleanupIncompleteUploads  (admin) nettoyage immédiat des sessions de plus de 24 h
@@ -156,7 +157,7 @@ routerAdd('POST', '/api/fn/upload_chunk', (e) => {
   });
 });
 
-// ── R2 multipart : vidéos > 100 Mo (admin, 5 Go max, vidéo seulement) ───────
+// ── R2 multipart : vidéos (5 Go), audio (1 Go) et images (200 Mo) de plus de 100 Mo (admin) ──
 routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   const lib = require(`${__hooks}/lib/televersement.js`);
@@ -168,11 +169,10 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     const fileSize = Number(body.fileSize);
     const fileType = typeof body.fileType === 'string' ? body.fileType.toLowerCase() : '';
     if (!Number.isInteger(fileSize) || fileSize <= 0) throw new fn.HttpError(400, 'fileSize invalide');
-    if (fileSize > lib.MAX_VIDEO_BYTES) throw new fn.HttpError(413, 'Fichier trop volumineux (max 5 Go)');
-    const ext = lib.extensionOf(fileName, '');
-    if (lib.VIDEO_EXT.indexOf(ext) < 0 || (fileType && fileType.indexOf('video/') !== 0)) {
-      throw new fn.HttpError(415, 'Seules les vidéos (mp4, mov, m4v, webm, mkv) peuvent être envoyées vers le stockage vidéo');
-    }
+    const famille = lib.familleR2(fileName, fileType);
+    if (!famille) throw new fn.HttpError(415, 'Type de fichier non autorisé : vidéo, audio ou image seulement');
+    if (fileSize > famille.max) throw new fn.HttpError(413, `Fichier trop volumineux (max ${famille.maxTexte})`);
+    const ext = famille.ext;
     const cfg = lib.requireR2();
     const totalParts = Math.ceil(fileSize / lib.PART_SIZE);
 
@@ -202,9 +202,9 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     const now = new Date();
     const month = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
     const key = `${cfg.prefix}/${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
-    const uploadId = lib.createMultipart(cfg, key, lib.VIDEO_TYPES[ext]);
+    const uploadId = lib.createMultipart(cfg, key, famille.mime);
     $app.save(fn.newRecord($app, lib.SESSIONS, {
-      session_id: sessionId, name: fingerprint, file_name: fileName, mime_type: lib.VIDEO_TYPES[ext], size: fileSize, total_chunks: totalParts,
+      session_id: sessionId, name: fingerprint, file_name: fileName, mime_type: famille.mime, size: fileSize, total_chunks: totalParts,
       part_size: lib.PART_SIZE, upload_id: uploadId, s3_key: key, storage: 's3-multipart', status: 'open',
       created_by: user.id, expires_at: lib.pbDate(lib.SESSION_TTL_MS), uploaded_indices: [], parts_json: '[]', final_file_url: '',
     }));
@@ -301,12 +301,13 @@ routerAdd('POST', '/api/fn/completeMultipartUpload', (e) => {
     }
     lib.completeMultipart(cfg, key, session.getString('upload_id'), finalParts);
     // Type réel : premiers octets de l'objet assemblé.
-    if (!lib.looksLikeVideo(lib.headBytes(cfg, key))) {
+    const mime = session.getString('mime_type');
+    if (!lib.contenuConforme(mime, lib.headBytes(cfg, key))) {
       lib.deleteObject(cfg, key);
       const s = $app.findRecordById(lib.SESSIONS, session.id);
       s.set('status', 'error');
       $app.save(s);
-      throw new fn.HttpError(415, 'Le contenu envoyé n’est pas une vidéo : fichier supprimé');
+      throw new fn.HttpError(415, `Le contenu envoyé n’est pas ${lib.nomFamille(mime)} : fichier supprimé`);
     }
     const url = lib.objectUrl(cfg, key);
     const s = $app.findRecordById(lib.SESSIONS, session.id);

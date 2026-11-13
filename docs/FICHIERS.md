@@ -10,6 +10,10 @@
 | ≤ 15 Mo, image ou audio | collection `Fichier` | membre connecté | `Core.UploadFile` (adaptateur) |
 | ≤ 15 Mo, image, audio, PDF | collection `FichierAdmin` | admin | `Core.UploadFile` (adaptateur) |
 | 15 à 100 Mo, sauf vidéo | `FichierAdmin` | admin | route `upload_chunk`, morceaux de 8 Mo, reprise possible |
+| **Audio** de 100 Mo à 1 Go, **image** de 100 à 200 Mo | Cloudflare R2 | admin | mêmes routes que les vidéos (clé `videos/AAAA/MM/…<ext>`, type `audio/…` ou `image/…`, contenu contrôlé à la fin : ID3/MPEG, FLAC, Ogg, WAV, m4a ; JPEG, PNG, GIF, WebP, HEIC) |
+| Autre type de plus de 100 Mo | refusé par l'app avant tout envoi | | |
+
+**Erreur 415 sur un gros mp3 (corrigée en 1.3.6)** : au-delà de 100 Mo, l'app envoyait l'audio vers R2, dont la route n'acceptait que les vidéos (415 « Seules les vidéos… »). Ni Caddy ni `maxSize` n'étaient en cause : les requêtes passant par Caddy font au plus 8 Mo (morceaux) et les parts R2 vont directement du navigateur à R2.
 
 Les entités gardent une **adresse en texte** (`avatar_url`, `image_urls[]`, `audio_url`, `video_url`…), comme avec Base44. Le choix se fait dans `src/lib/upload.js` (mode PocketBase seulement) : d'abord le type (vidéo d'après `video/*` ou l'extension), puis la taille. Le mode Base44 est inchangé.
 
