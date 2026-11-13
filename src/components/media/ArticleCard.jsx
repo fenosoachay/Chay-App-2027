@@ -10,6 +10,8 @@ import {
 import FullImage from "@/components/ui/FullImage";
 import ReactMarkdown from "react-markdown";
 import DOMPurify from "dompurify";
+import CompteurVues from "@/components/media/CompteurVues";
+import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
 
 // Le corps d'article existe sous deux formes :
@@ -67,6 +69,9 @@ export default function ArticleCard({ article }) {
   };
 
   const date = formatDate(article.created_date);
+  // Compteur de vues : +1 après 2 minutes de lecture de l'article ouvert.
+  const vue = { type: "article", id: article.id };
+  useLectureMinimale(vue, open);
 
   return (
     <>
@@ -79,7 +84,10 @@ export default function ArticleCard({ article }) {
         <h3 className="w-full break-words font-display font-bold text-base leading-snug text-foreground">
           {article.title || "Sans titre"}
         </h3>
-        {date && <span className="text-xs text-foreground/50">{date}</span>}
+        <span className="flex flex-wrap items-center gap-x-3">
+          {date && <span className="text-xs text-foreground/50">{date}</span>}
+          <CompteurVues vue={vue} base={article.view_count} />
+        </span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

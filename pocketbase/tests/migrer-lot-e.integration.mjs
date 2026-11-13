@@ -88,5 +88,38 @@ for (let i = 0; i < 5; i++) {
 }
 check('limite : 5 demandes par 24 h, la 6e -> 429', dernier.status === 429);
 
+console.log('\n■ (5) Compteur de vues');
+const ajout = async (col, body) => garder(col, await http('POST', `/api/collections/${col}/records`, { token: ADM.token, body: { created_by_id: ADM.id, ...body } }));
+const yt = await ajout('YouTubeVideo', { title: 'Test E vidéo', youtube_id: 'abcdefghijk', section: 'culte' });
+const art = await ajout('Article', { title: 'Test E article', body: 'x' });
+const act = await ajout('ChristianNews', { title: 'Test E actualité vues' });
+const pisteId = `teste${Date.now().toString(36)}`;
+const l1 = await ajout('PlaylistTrack', { playlist_id: 'p1', track_id: pisteId, title: 'Titre', audio_url: 'https://x/a.mp3', listen_count: 4 });
+const l2 = await ajout('PlaylistTrack', { playlist_id: 'p2', track_id: pisteId, title: 'Titre', audio_url: 'https://x/a.mp3', listen_count: 1 });
+check('contenus de test créés', [yt, art, act, l1, l2].every((r) => r.status === 200), [yt, art, act, l1, l2].map((r) => r.status).join(','));
+const vue = (tok, type, id) => fn('compterVue', { token: tok, body: { type, id } });
+check('anonyme -> 401 ; type inconnu -> 400 ; contenu absent -> 404',
+  (await vue(null, 'youtube', yt.data?.id)).status === 401
+  && (await vue(M.token, 'Video', yt.data?.id)).status === 400
+  && (await vue(M.token, 'youtube', 'inexistant000')).status === 404);
+const v1 = await vue(M.token, 'youtube', yt.data?.id);
+const v2 = await vue(M.token, 'youtube', yt.data?.id);
+check('YouTube : +1, puis même membre dans les 30 min ignoré', v1.data?.view_count === 1 && v1.data?.compte === true && v2.data?.view_count === 1 && v2.data?.compte === false, JSON.stringify([v1.data, v2.data]));
+const v3 = await vue(ADM.token, 'youtube', yt.data?.id);
+check('autre membre : +1', v3.data?.view_count === 2);
+check('compteur enregistré et lisible par les membres', (await http('GET', `/api/collections/YouTubeVideo/records/${yt.data?.id}`, { token: M.token })).data?.view_count === 2);
+check('article et actualité : +1', (await vue(M.token, 'article', art.data?.id)).data?.view_count === 1 && (await vue(M.token, 'actualite', act.data?.id)).data?.view_count === 1);
+const vp = await vue(M.token, 'piste', pisteId);
+const lu1 = (await http('GET', `/api/collections/PlaylistTrack/records/${l1.data?.id}`, su)).data;
+const lu2 = (await http('GET', `/api/collections/PlaylistTrack/records/${l2.data?.id}`, su)).data;
+check('titre présent dans 2 playlists : chaque ligne +1, réponse = le plus grand', vp.data?.view_count === 5 && lu1.listen_count === 5 && lu2.listen_count === 2, JSON.stringify(vp.data));
+check('journal MediaVue fermé aux membres (lecture et écriture)',
+  (await http('GET', '/api/collections/MediaVue/records', { token: M.token })).status >= 400 || ((await http('GET', '/api/collections/MediaVue/records', { token: M.token })).data?.items || []).length === 0);
+check('membre : compteur non modifiable à la main', (await http('PATCH', `/api/collections/YouTubeVideo/records/${yt.data?.id}`, { token: M.token, body: { view_count: 999 } })).status >= 400);
+const journal = (await http('GET', `/api/collections/MediaVue/records?perPage=50&filter=${q(`user_id = "${M.id}"`)}`, su)).data?.items || [];
+for (const j of journal) await http('DELETE', `/api/collections/MediaVue/records/${j.id}`, su);
+const journalA = (await http('GET', `/api/collections/MediaVue/records?perPage=50&filter=${q(`user_id = "${ADM.id}"`)}`, su)).data?.items || [];
+for (const j of journalA) await http('DELETE', `/api/collections/MediaVue/records/${j.id}`, su);
+
 for (const [c, id] of crees.reverse()) await http('DELETE', `/api/collections/${c}/records/${id}`, su);
 done();

@@ -17,6 +17,8 @@ export function buildFavoriteAudioQueue(playlist, selectedFavoriteId) {
       mediaType: "music",
       // Toucher la notification de lecture : « Votre Playlist », sur ce titre.
       route: `/media?cat=playlist&favori=${encodeURIComponent(favorite.id)}`,
+      // Compteur de vues : le même titre que dans sa playlist d'origine.
+      vue: { type: "piste", id: favorite.track_id },
     }));
 
   return {

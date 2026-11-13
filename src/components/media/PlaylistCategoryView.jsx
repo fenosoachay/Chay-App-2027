@@ -14,23 +14,26 @@ import VideoPlayer from "@/components/player/VideoPlayer";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
-import { formatListenCount } from "@/lib/playlist";
+import { formatVues } from "@/lib/vues";
+import { useCompteur } from "@/hooks/useCompteurVues";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { filePlaylist } from "@/lib/fileLecture";
 import ListeTriable from "@/components/media/ListeTriable";
 import GrillePlaylists from "@/components/media/GrillePlaylists";
 import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
-import { useHalfwayListen } from "@/hooks/useHalfwayListen";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
-import { subscribeMediaControl } from "@/lib/mediaControl";
 
-/* ─── Helper pour formatter le nombre de vues ─────────────────────────── */
-function formatViewCount(count) {
-  if (!count || count < 0) return "0";
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`;
-  }
-  return count.toString();
+/** Compteur discret (écoutes ou vues) d'un titre : PlaylistTrack.listen_count, mis à jour pendant la session. */
+function CompteurPiste({ piste, unite, Icone }) {
+  const n = useCompteur({ type: "piste", id: piste.track_id }, piste.listen_count);
+  const texte = formatVues(n, unite);
+  if (!texte) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full">
+      {Icone && <Icone className="h-3 w-3" aria-hidden="true" />}
+      {texte}
+    </span>
+  );
 }
 
 function LockToggle({ locked, onToggle }) {
@@ -82,14 +85,6 @@ export default function PlaylistCategoryView({
   /* États locaux ordonnables */
   const [orderedPlaylists, setOrderedPlaylists] = useState([]);
   const [orderedTracks, setOrderedTracks] = useState([]);
-
-  /* Comptage d'écoutes local optimiste */
-  const [listenCounts, setListenCounts] = useState({});
-
-  /* Comptage de vues local optimiste pour les vidéos */
-  const [viewCounts, setViewCounts] = useState({});
-  const [viewedVideos, setViewedVideos] = useState(new Set());
-  const halfwayReachedRef = useRef(new Set()); // Pour tracker les vidéos ayant atteint 50%
 
   const isVideo = kind === "video";
   const { reorderQueue } = useAudioPlayer();
@@ -178,92 +173,6 @@ export default function PlaylistCategoryView({
     [open, playlistTracks, toast, isVideo, reorderQueue, category]
   );
 
-
-  const recordListen = useCallback(
-    async (track) => {
-      if (!track?.id) return;
-      try {
-        const response = await base44.functions.invoke("recordMediaListen", {
-          playlist_track_id: track.id,
-        });
-        const nextCount = Number(
-          response?.data?.listen_count ?? response?.listen_count
-        );
-        if (!Number.isFinite(nextCount) || nextCount < 0) {
-          throw new Error("Invalid listen count response");
-        }
-        setListenCounts((prev) => ({ ...prev, [track.id]: nextCount }));
-      } catch (error) {
-        console.error("[PlaylistCategoryView] Could not record audio listen.", error);
-        toast({
-          title: "Écoute non enregistrée",
-          description: "Le morceau est en lecture, mais le compteur n'a pas pu être mis à jour.",
-          variant: "destructive",
-        });
-      }
-    },
-    [toast]
-  );
-
-  const recordVideoView = useCallback(
-    async (videoId) => {
-      if (!videoId || viewedVideos.has(videoId)) return;
-      try {
-        const response = await base44.functions.invoke("recordVideoView", {
-          video_id: videoId,
-        });
-        const nextCount = Number(response?.data?.view_count ?? response?.view_count);
-        if (!Number.isFinite(nextCount) || nextCount < 0) {
-          throw new Error("Invalid view count response");
-        }
-        setViewCounts((prev) => ({ ...prev, [videoId]: nextCount }));
-        setViewedVideos((prev) => new Set(prev).add(videoId));
-      } catch (error) {
-        console.error("[PlaylistCategoryView] Could not record video view.", error);
-      }
-    },
-    [viewedVideos]
-  );
-
-  // Écoute du lecteur global pour détecter les 50% sur les vidéos
-  useEffect(() => {
-    if (!isVideo) return;
-
-    const unsubscribe = subscribeMediaControl((control) => {
-      if (!control || control.type !== "video") return;
-      
-      const { currentTime, duration, title, source } = control;
-      
-      // Trouver le track_id correspondant à cette vidéo
-      const matchingTrack = orderedTracks.find(
-        (t) => t.video_url === source || t.title === title
-      );
-      
-      if (!matchingTrack) return;
-      
-      const trackId = matchingTrack.track_id;
-      
-      // Vérifier si on a déjà compté cette vidéo cette session
-      if (halfwayReachedRef.current.has(trackId)) return;
-      
-      // Détecter les 50%
-      if (duration > 0 && currentTime >= duration / 2) {
-        halfwayReachedRef.current.add(trackId);
-        recordVideoView(trackId);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [isVideo, orderedTracks, recordVideoView]);
-
-  // Une écoute n'est comptée qu'à la moitié du morceau (une fois par lecture).
-  const { currentTime, duration } = useAudioPlayer();
-  useHalfwayListen(currentTrack, currentTime, duration, (trackId) => {
-    const row = playlistTracks.find((pt) => pt.track_id === trackId);
-    if (row) recordListen(row);
-  });
 
   const cats = orderedPlaylists;
   const tracks = open ? orderedTracks : [];
@@ -395,6 +304,7 @@ export default function PlaylistCategoryView({
         src: track.video_url,
         title: track.title,
         poster: track.cover_url,
+        vue: { type: "piste", id: track.track_id }, // compteur de vues : +1 à la moitié (useCompteurVues)
       }));
     return (
       <div>
@@ -460,10 +370,7 @@ export default function PlaylistCategoryView({
                   <div className="flex items-start gap-3 p-3">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{t.title}</div>
-                      {/* Badge de vues - toujours affiché */}
-                      <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full mt-1">
-                        👁️ {formatViewCount(viewCounts[t.track_id] ?? 0)} vue{viewCounts[t.track_id] !== 1 ? "s" : ""}
-                      </span>
+                      <div className="mt-1"><CompteurPiste piste={t} unite="vue" /></div>
                     </div>
                     {favoriteCategory === "music" && (
                       <button
@@ -512,17 +419,7 @@ export default function PlaylistCategoryView({
                       <div className="font-bold truncate">{t.title}</div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {t.artist && <div className="text-xs text-foreground/55">{t.artist}</div>}
-                        {(() => {
-                          const count = listenCounts[t.id] ?? t.listen_count ?? 0;
-                          const formatted = formatListenCount(count);
-                          if (!formatted) return null;
-                          return (
-                            <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full">
-                              <Headphones className="h-3 w-3" />
-                              {formatted}
-                            </span>
-                          );
-                        })()}
+                        <CompteurPiste piste={t} unite="écoute" Icone={Headphones} />
                       </div>
                     </div>
                   </div>

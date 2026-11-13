@@ -190,6 +190,16 @@
         "onlyInt": false
       },
       {
+        "name": "view_count",
+        "type": "number",
+        "required": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": null,
+        "onlyInt": true
+      },
+      {
         "name": "created_by_id",
         "type": "text",
         "required": false,
@@ -539,6 +549,58 @@
     ],
     "indexes": [
       "CREATE INDEX `idx_missionrequest_user` ON `MissionRequest` (`user_id`, `created`)"
+    ]
+  },
+  {
+    "name": "MediaVue",
+    "type": "base",
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "user_id",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 64,
+        "pattern": ""
+      },
+      {
+        "name": "cle",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "hidden": false,
+        "system": false,
+        "min": 0,
+        "max": 80,
+        "pattern": ""
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_mediavue_user_cle` ON `MediaVue` (`user_id`, `cle`, `created`)"
     ]
   }
 ]

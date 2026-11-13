@@ -207,6 +207,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       subtitle: `${nomSection}${shuffleRef.current?.shuffleOn ? " · Aléatoire" : ""}`,
       artwork: item.thumbnail_url || item.cover_url || `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg`,
       source: item.youtube_id,
+      vue: { type: "youtube", id: item.id }, // compteur de vues : +1 à la moitié
       isPlaying: true,
       isBuffering: true,
       currentTime: 0,

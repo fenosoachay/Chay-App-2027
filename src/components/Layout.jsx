@@ -20,6 +20,7 @@ import { syncWebPush, disableWebPush, onWebPushNotificationClick } from "@/lib/w
 import NotificationBanner from "@/components/NotificationBanner";
 import MenuEglise from "@/components/MenuEglise";
 import { useOuvrirDepuisLecture } from "@/hooks/useOuvrirDepuisLecture";
+import { useCompteurVues } from "@/hooks/useCompteurVues";
 import { useMediaSessionSync } from "@/hooks/useMediaSessionSync";
 import {
   getBackAction,
@@ -95,6 +96,9 @@ export default function Layout() {
 
   // Toucher la notification de lecture (APK) : titre en cours, dans sa playlist.
   useOuvrirDepuisLecture(navigate);
+
+  // Compteur de vues : audio, films et YouTube comptent une vue à la moitié de la lecture.
+  useCompteurVues();
 
   // Clic sur une notification push navigateur : ouvre la bonne page.
   useEffect(

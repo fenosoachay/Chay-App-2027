@@ -6,7 +6,9 @@
 //  (1) GameCategory (2 catégories, noms modifiables par l'admin) et GameClassement (un jeu = une catégorie) ;
 //  (2) ChristianNews : Multimédia › « Actualité chrétienne » (lecture : membres ; écriture : admins) ;
 //  (3) Wallpaper : Multimédia › « Fond d'écran » (photo jusqu'à 200 Mo, vignette thumb_url) ;
-//  (4) MissionRequest : Requêtes › « Se missionner » (création par la route createMissionRequest ; admins seulement).
+//  (4) MissionRequest : Requêtes › « Se missionner » (création par la route createMissionRequest ; admins seulement) ;
+//  (5) compteur de vues : champ view_count (YouTubeVideo, Article, ChristianNews ; PlaylistTrack garde listen_count)
+//      et journal anti-doublon MediaVue (route compterVue seulement).
 //
 // Usage (tunnel SSH ouvert ; identifiants saisis masqués, voir docs/LOT-E.md) :
 //   node pocketbase/scripts/migrer-lot-e.mjs                   -> simulation (rien n'est écrit)
@@ -74,6 +76,7 @@ export function nouvellesCollections() {
         texte('cover_url', 5000),
         texte('link_url', 2000),
         nombre('order'),
+        nombre('view_count', { onlyInt: true, min: 0 }),
         ...base44(),
       ],
     },
@@ -109,12 +112,28 @@ export function nouvellesCollections() {
       ],
       indexes: ['CREATE INDEX `idx_missionrequest_user` ON `MissionRequest` (`user_id`, `created`)'],
     },
+    // ── (5) Compteur de vues : journal anti-doublon (30 min par membre et par contenu), route compterVue seulement ──
+    {
+      name: 'MediaVue', type: 'base',
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+      fields: [
+        texte('user_id', 64, { required: true }),
+        texte('cle', 80, { required: true }),
+        ...dates(),
+      ],
+      indexes: ['CREATE INDEX `idx_mediavue_user_cle` ON `MediaVue` (`user_id`, `cle`, `created`)'],
+    },
   ];
 }
 
 /** Champs ajoutés à des collections existantes : [{ collection, field }]. */
 export function champsAjoutes() {
-  return [];
+  const vues = () => nombre('view_count', { onlyInt: true, min: 0 });
+  return [
+    // (5) Compteur de vues (écrit par la route compterVue).
+    { collection: 'YouTubeVideo', field: vues() },
+    { collection: 'Article', field: vues() },
+  ];
 }
 
 /** Enregistrements de départ, créés seulement si absents : [{ collection, cle, valeur, data }]. */

@@ -5,6 +5,8 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { trierActualites, lienSur } from "@/lib/actualites";
+import CompteurVues from "@/components/media/CompteurVues";
+import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
 // Multimédia › « Actualité chrétienne » : publications de l'admin (collection ChristianNews). Section visible
 // des membres même vide ; une publication s'ouvre en lecture (texte riche nettoyé, lien externe éventuel).
@@ -28,6 +30,8 @@ export default function ActualiteChretienne({ cibleId = null, onFermerCible }) {
   }, [cibleId, liste]);
 
   const fermer = () => { setOuverte(null); onFermerCible?.(); };
+  // Compteur de vues : +1 après 2 minutes de lecture de la publication ouverte.
+  useLectureMinimale(ouverte ? { type: "actualite", id: ouverte.id } : null, ouverte !== null);
   useBackHandler(ouverte !== null, fermer);
 
   if (liste === null) return <Loader2 className="h-6 w-6 animate-spin text-primary" />;
@@ -59,6 +63,7 @@ export default function ActualiteChretienne({ cibleId = null, onFermerCible }) {
                 <span className="min-w-0 flex-1">
                   <span className="block font-bold break-words">{n.title}</span>
                   {n.summary && <span className="mt-0.5 block text-sm text-foreground/60 line-clamp-2">{n.summary}</span>}
+                  <CompteurVues vue={{ type: "actualite", id: n.id }} base={n.view_count} className="mt-1" />
                 </span>
               </button>
             </li>

@@ -43,6 +43,8 @@ export function filePlaylist(pistes, category) {
       mediaType: category === "sermons" ? "sermons" : "music",
       // Toucher la notification de lecture : ce titre, dans sa playlist.
       route: routeTitre(category === "sermons" ? "sermons" : "music", a.playlist_id, a.track_id),
+      // Compteur de vues (src/lib/vues.js) : +1 à la moitié de l'écoute.
+      vue: { type: "piste", id: a.track_id },
     }));
 }
 

@@ -41,6 +41,7 @@ export default function VideoPlayer({
         toggle: null,
         stop,
         onHalfway, // ← 2. AJOUTÉ : On la transmet au contrôleur média global
+        vue: item?.vue || null, // compteur de vues (useCompteurVues) : +1 à la moitié
       }, "video");
     };
     startAt(currentIndex);
