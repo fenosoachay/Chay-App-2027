@@ -18,7 +18,10 @@ export function analyser(colPlaylist, playlists, liens) {
   const problemes = [];
   const champs = new Map((colPlaylist?.fields || []).map((f) => [f.name, f]));
   const avecParent = champs.has('parent_id');
-  if (!avecParent) problemes.push('Champ Playlist.parent_id ABSENT : les sous-playlists sont enregistrées comme des playlists de premier niveau (cause du sélecteur vide). Appliquer migrer-playlists.mjs.');
+  if (!avecParent) problemes.push('Champ Playlist.parent_id ABSENT : les sous-playlists sont enregistrées comme des playlists de premier niveau (cause du sélecteur vide). Appliquer migrer-1-3-9.mjs.');
+  for (const nom of ['parent_id', 'category']) {
+    if (champs.get(nom)?.hidden) problemes.push(`Champ Playlist.${nom} CACHÉ (option « Hidden ») : PocketBase l'ignore sans erreur pour les admins de l'app${nom === 'parent_id' ? ' (parent_id vide en base : cause du sélecteur vide)' : ''}. Appliquer migrer-1-3-9.mjs.`);
+  }
   const valeurs = champs.get('category')?.values || [];
   const manquantes = ['youtube', 'articles', 'gallery'].filter((v) => !valeurs.includes(v));
   if (manquantes.length) problemes.push(`Playlist.category sans les valeurs ${manquantes.join(', ')} : création de playlists impossible dans ces sections. Appliquer migrer-playlists.mjs.`);
@@ -70,7 +73,8 @@ async function main() {
   const liens = await tout('PlaylistTrack', 'id,playlist_id');
   const a = analyser(col, playlists, liens);
   console.log(`Serveur : ${URL_PB} — ${playlists.length} playlist(s), ${liens.length} lien(s) PlaylistTrack`);
-  console.log(`Champ parent_id : ${a.avecParent ? 'présent' : 'ABSENT'} ; category : ${(col.fields.find((f) => f.name === 'category')?.values || []).join(', ')}`);
+  const pf = col.fields.find((f) => f.name === 'parent_id');
+  console.log(`Champ parent_id : ${a.avecParent ? `présent${pf?.hidden ? ', CACHÉ (option « Hidden »)' : ', visible'}` : 'ABSENT'} ; category : ${(col.fields.find((f) => f.name === 'category')?.values || []).join(', ')}`);
   console.log(`Règles Playlist : lecture « ${col.listRule} », création « ${col.createRule} »`);
   for (const [s, v] of Object.entries(a.parSection)) console.log(`  ${s.padEnd(9)} : ${v.racines} playlist(s), ${v.sous} sous-playlist(s), ${v.orphelines} orpheline(s), ${v.liensVersRacines} lien(s) vers une playlist de 1er niveau`);
   console.log(a.problemes.length ? `\nProblèmes :\n${a.problemes.map((p) => `  ✗ ${p}`).join('\n')}` : '\nAucun problème détecté.');

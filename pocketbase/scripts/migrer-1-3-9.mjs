@@ -4,8 +4,12 @@
 //      key = « sections » (grille Multimédia), « youtube:culte|louange|celebration », « galerie:eglise|mindset|
 //      non-classees » ; ids = identifiants dans l'ordre (json). Clé unique.
 //    Lecture : membres connectés ; écriture : admins.
+//  - Playlist : champs parent_id et category VISIBLES (option « Hidden » retirée) et présents. CAUSE DU BUG DES
+//    SOUS-PLAYLISTS EN PROD : parent_id « Hidden » est ignoré sans erreur pour un admin de l'app (parent_id vide en
+//    base, sélecteur de classement vide). Même contrôle que migrer-playlists.mjs.
 // Aucune donnée existante n'est modifiée (Musique, Prédication, Articles, sous-playlists, Actualité chrétienne et
-// Fonds d'écran gardent leur champ `order`).
+// Fonds d'écran gardent leur champ `order`) ; les sous-playlists créées à tort se rattachent avec
+// reparer-sous-playlists.mjs.
 //
 // Usage (tunnel SSH ouvert ; identifiants superuser saisis masqués, voir docs/1.3.9.md) :
 //   node pocketbase/scripts/migrer-1-3-9.mjs                   -> simulation
@@ -14,6 +18,7 @@
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { planChamps } from './migrer-lot-e.mjs';
+import { champsMigres } from './migrer-playlists.mjs';
 
 const MEMBRES = '@request.auth.id != ""';
 const ADMINS = '@request.auth.role = "admin"';
@@ -41,6 +46,18 @@ export function nouvellesCollections() {
 export async function migrer(url, h, { appliquer = false, log = () => {} } = {}) {
   const changements = [];
   const note = (t) => { changements.push(t); log(`  - ${t}`); };
+  // Playlist : parent_id présent et visible (option « Hidden » retirée), category visible.
+  const rp = await fetch(`${url}/api/collections/Playlist`, { headers: h });
+  if (!rp.ok) throw new Error(`lecture de Playlist impossible (HTTP ${rp.status})`);
+  const colP = await rp.json();
+  const planP = champsMigres(colP.fields);
+  if (planP) {
+    for (const c of planP.changements) note(`Playlist.${c}`);
+    if (appliquer) {
+      const r = await fetch(`${url}/api/collections/${colP.id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ fields: planP.fields }) });
+      if (!r.ok) throw new Error(`Playlist : mise à jour refusée (HTTP ${r.status}) ${(await r.text()).slice(0, 300)}`);
+    }
+  }
   for (const def of nouvellesCollections()) {
     const r = await fetch(`${url}/api/collections/${def.name}`, { headers: h });
     if (r.status !== 404 && !r.ok) throw new Error(`lecture de ${def.name} impossible (HTTP ${r.status})`);

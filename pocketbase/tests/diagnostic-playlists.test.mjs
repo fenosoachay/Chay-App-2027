@@ -26,3 +26,15 @@ test('catégories manquantes, orphelines, liens vers une playlist de premier niv
   const sain = analyser(col(true), [{ id: 'r', category: 'music' }, { id: 's', category: 'music', parent_id: 'r' }], [{ playlist_id: 's' }]);
   assert.deepEqual(sain.problemes, []);
 });
+
+test('champ parent_id CACHÉ (cas de la prod) : signalé par le diagnostic, option retirée par la migration', async () => {
+  const { champsMigres } = await import('../scripts/migrer-playlists.mjs');
+  const cache = { listRule: '@request.auth.id != ""', fields: [{ name: 'category', type: 'select', values: ['music', 'sermons', 'films', 'other', 'youtube', 'articles', 'gallery'] }, { name: 'parent_id', type: 'text', hidden: true }] };
+  const a = analyser(cache, [{ id: 'r', category: 'music' }], []);
+  assert.ok(a.problemes.some((p) => /parent_id CACHÉ/.test(p) && /migrer-1-3-9/.test(p)));
+  const plan = champsMigres(cache.fields);
+  assert.deepEqual(plan.changements, ["parent_id : option « Hidden » retirée (le champ était ignoré pour les admins de l'app)"]);
+  assert.equal(plan.fields.find((f) => f.name === 'parent_id').hidden, false);
+  assert.equal(cache.fields[1].hidden, true); // non modifié
+  assert.equal(champsMigres(plan.fields), null);
+});

@@ -34,6 +34,15 @@ export function champsMigres(fields) {
     out.push({ name: 'parent_id', type: 'text', required: false, presentable: false, hidden: false, system: false, min: 0, max: 64, pattern: '' });
     changements.push('parent_id : nouveau champ texte (64)');
   }
+  // 1.3.9 : un champ « Hidden » n'est accepté que du superuser ; pour un admin de l'app, PocketBase l'IGNORE sans
+  // erreur (cause du bug des sous-playlists en prod : parent_id vide en base). Option retirée de parent_id et category.
+  for (const nom of ['parent_id', 'category']) {
+    const f = out.find((x) => x.name === nom);
+    if (f && f.hidden) {
+      f.hidden = false;
+      changements.push(`${nom} : option « Hidden » retirée (le champ était ignoré pour les admins de l'app)`);
+    }
+  }
   return changements.length ? { fields: out, changements } : null;
 }
 

@@ -9,13 +9,14 @@ export function formatListenCount(count) {
 }
 
 // ── Sous-playlists : contrôle de l'enregistrement (1.3.9) ─────────────────────────────────────────────
-// Cause du bug « sélecteur de sous-playlist vide » : sans le champ Playlist.parent_id (migration
-// pocketbase/scripts/migrer-playlists.mjs non appliquée), PocketBase IGNORE ce champ sans erreur ; la
-// « sous-playlist » est enregistrée comme une playlist de premier niveau et le sélecteur n'a rien à proposer.
+// Cause du bug « sélecteur de sous-playlist vide » : champ Playlist.parent_id CACHÉ (option « Hidden », cas de la
+// prod) ou absent. PocketBase IGNORE alors ce champ sans erreur pour un admin de l'app ; la « sous-playlist » est
+// enregistrée comme une playlist de premier niveau et le sélecteur n'a rien à proposer. (Champ caché : il n'est pas
+// non plus renvoyé dans les réponses, d'où la même détection que pour un champ absent.)
 
 export const MESSAGE_SCHEMA_PLAYLISTS =
-  "Le serveur n'enregistre pas le rattachement des sous-playlists (champ « parent_id » absent de la collection " +
-  "Playlist). Appliquez la migration pocketbase/scripts/migrer-playlists.mjs (docs/PLAYLISTS-SECTIONS.md), puis réessayez.";
+  "Le serveur n'enregistre pas le rattachement des sous-playlists : champ « parent_id » de la collection Playlist " +
+  "caché (option « Hidden ») ou absent. Appliquez la migration pocketbase/scripts/migrer-1-3-9.mjs (docs/1.3.9.md), puis réessayez.";
 
 const norm = (v) => (v === null || v === undefined ? "" : String(v));
 
@@ -30,7 +31,7 @@ export function champPerdu(envoye, enregistre) {
   return null;
 }
 
-/** Playlists lues sans aucune clé « parent_id » : le champ n'existe pas sur le serveur. */
+/** Playlists lues sans aucune clé « parent_id » : le champ est caché (« Hidden ») ou n'existe pas sur le serveur. */
 export function schemaSansSousPlaylists(playlists) {
   const l = Array.isArray(playlists) ? playlists.filter(Boolean) : [];
   return l.length > 0 && l.every((p) => !Object.prototype.hasOwnProperty.call(p, "parent_id"));

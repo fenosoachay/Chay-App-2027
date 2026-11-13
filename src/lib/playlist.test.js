@@ -32,14 +32,15 @@ test("formatListenCount returns formatted string when > 0", () => {
 // ── 1.3.9 : sous-playlists enregistrées pour de vrai ─────────────────────────────────────────────
 import { champPerdu, schemaSansSousPlaylists, MESSAGE_SCHEMA_PLAYLISTS } from "./playlist.js";
 
-test("sous-playlist : rattachement perdu détecté (champ parent_id absent du serveur)", () => {
+test("sous-playlist : rattachement perdu détecté (champ parent_id caché « Hidden » ou absent du serveur)", () => {
   assert.equal(champPerdu({ parent_id: "p1", category: "articles" }, { id: "s", parent_id: "p1", category: "articles" }), null);
   assert.equal(champPerdu({ parent_id: "p1", category: "articles" }, { id: "s", category: "articles" }), "parent_id");
   assert.equal(champPerdu({ parent_id: "p1", category: "youtube" }, { id: "s", parent_id: "p1", category: "music" }), "category");
   assert.equal(champPerdu({ parent_id: "", category: "music" }, { id: "r", parent_id: null, category: "music" }), null);
   assert.equal(champPerdu({ parent_id: "", category: "music" }, { id: "r", category: "music" }), null); // racine : sans objet
   assert.equal(champPerdu({ parent_id: "p1" }, null), "parent_id");
-  assert.match(MESSAGE_SCHEMA_PLAYLISTS, /migrer-playlists\.mjs/);
+  assert.match(MESSAGE_SCHEMA_PLAYLISTS, /option « Hidden »/);
+  assert.match(MESSAGE_SCHEMA_PLAYLISTS, /migrer-1-3-9\.mjs/);
 });
 
 test("bandeau admin : schéma sans sous-playlists reconnu à l'absence de la clé parent_id", () => {

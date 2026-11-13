@@ -1,4 +1,8 @@
 // Playlists et sous-playlists (1.3.9) : contrôle des écritures venant de l'app (API).
+//  - CAUSE DU BUG EN PROD : champ Playlist.parent_id avec l'option « Hidden ». PocketBase n'accepte alors ce champ
+//    que du superuser : pour un admin de l'app, il est IGNORÉ sans erreur (parent_id vide en base) et n'est pas
+//    renvoyé dans les réponses. Une requête dont le parent_id envoyé n'a pas été appliqué est désormais REFUSÉE
+//    (400, message explicite) ; la migration migrer-1-3-9.mjs retire l'option « Hidden ».
 //  - Champ Playlist.parent_id ABSENT du schéma (migration migrer-playlists.mjs non appliquée) : une requête qui
 //    envoie un parent_id est REFUSÉE (400, message explicite). Sans ce contrôle, PocketBase ignorait le champ en
 //    silence : la sous-playlist devenait une playlist de premier niveau et le sélecteur « Sous-playlist » de
@@ -20,7 +24,17 @@ function controlerPlaylist(e) {
     }
     return e.next();
   }
+  // Champ caché (« Hidden ») : PocketBase le retire de la requête AVANT les hooks (il n'y est même plus visible) ;
+  // une sous-playlist serait enregistrée comme playlist de premier niveau. Toute écriture est refusée tant que la
+  // configuration n'est pas corrigée (migrer-1-3-9.mjs), au lieu de corrompre les données en silence.
+  if (champ.hidden) {
+    throw new BadRequestError("Playlists : le champ « parent_id » de la collection Playlist est caché (option « Hidden ») ; les sous-playlists ne peuvent pas être enregistrées. Appliquer pocketbase/scripts/migrer-1-3-9.mjs.");
+  }
   const parentId = e.record.getString('parent_id');
+  // parent_id envoyé mais pas appliqué (autre filtre) : refus explicite.
+  if (envoye !== undefined && envoye !== null && String(envoye) !== parentId) {
+    throw new BadRequestError("Sous-playlist non rattachée : le serveur n'accepte pas le champ « parent_id » de la collection Playlist (option « Hidden » cochée ?). Appliquer pocketbase/scripts/migrer-1-3-9.mjs.");
+  }
   if (parentId) {
     if (parentId === e.record.id) throw new BadRequestError('Une playlist ne peut pas être sa propre sous-playlist.');
     let parent = null;
