@@ -1,6 +1,6 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe,
 } from "lucide-react";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
@@ -154,6 +154,22 @@ export const SECTIONS = [
     ],
     showPlaylist: true,
     playlistField: "image_url",
+  },
+  {
+    // Multimédia › « Actualité chrétienne » : visible des membres dès maintenant, même vide.
+    key: "ChristianNews",
+    label: "Actualité chrétienne",
+    icon: Globe,
+    sort: "order",
+    listColumns: ["title"],
+    thumbField: "cover_url",
+    fields: [
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "summary", label: "Résumé", type: "textarea" },
+      { name: "body", label: "Texte", type: "rich-text" },
+      { name: "cover_url", label: "Image", type: "file", accept: "image/*" },
+      { name: "link_url", label: "Lien vers la source (https://…)", type: "text" },
+    ],
   },
   {
     // Menu ☰ > « Histoire de l'église » : la page affiche la fiche la plus récente.

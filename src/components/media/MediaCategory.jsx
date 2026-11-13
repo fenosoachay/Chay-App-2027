@@ -7,6 +7,7 @@ import RadioPlayer from "@/components/radio/RadioPlayer";
 import PlaylistCategoryView from "@/components/media/PlaylistCategoryView";
 import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
+import ActualiteChretienne from "@/components/media/ActualiteChretienne";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
@@ -24,6 +25,7 @@ const TITLES = {
   articles: "Articles",
   gallery: "Galerie",
   playlist: "Votre Playlist",
+  actualite: "Actualité chrétienne",
 };
 
 function SearchBar({ query, setQuery, placeholder, className = "mb-5" }) {
@@ -554,6 +556,10 @@ export default function MediaCategory({
           )}
         </div>
         </NavigationPlaylists>
+      )}
+
+      {cat === "actualite" && (
+        <ActualiteChretienne cibleId={searchParams.get("news")} onFermerCible={() => clearTarget("news")} />
       )}
 
       {cat === "playlist" && (

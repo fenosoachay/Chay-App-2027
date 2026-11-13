@@ -3,7 +3,8 @@
 // elle ajoute des collections, des champs et quelques enregistrements de départ (seulement s'ils manquent).
 //
 // Contenu (une section par point du lot) :
-//  (1) GameCategory (2 catégories, noms modifiables par l'admin) et GameClassement (un jeu = une catégorie).
+//  (1) GameCategory (2 catégories, noms modifiables par l'admin) et GameClassement (un jeu = une catégorie) ;
+//  (2) ChristianNews : Multimédia › « Actualité chrétienne » (lecture : membres ; écriture : admins).
 //
 // Usage (tunnel SSH ouvert ; identifiants saisis masqués, voir docs/LOT-E.md) :
 //   node pocketbase/scripts/migrer-lot-e.mjs                   -> simulation (rien n'est écrit)
@@ -59,6 +60,20 @@ export function nouvellesCollections() {
         ...dates(),
       ],
       indexes: ['CREATE UNIQUE INDEX `idx_gameclassement_game` ON `GameClassement` (`game_id`)'],
+    },
+    // ── (2) Actualité chrétienne ──
+    {
+      name: 'ChristianNews', type: 'base',
+      listRule: MEMBRES, viewRule: MEMBRES, createRule: ADMINS, updateRule: ADMINS, deleteRule: ADMINS,
+      fields: [
+        texte('title', 300, { required: true }),
+        texte('summary', 1000),
+        texte('body', 200000),
+        texte('cover_url', 5000),
+        texte('link_url', 2000),
+        nombre('order'),
+        ...base44(),
+      ],
     },
   ];
 }

@@ -48,5 +48,12 @@ check('membre : classement refusé, lecture permise',
   (await http('POST', '/api/collections/GameClassement/records', { token: M.token, body: { game_id: 'testlotf', slot: 'game' } })).status >= 400
   && ((await http('GET', `/api/collections/GameClassement/records?filter=${q('game_id = "testlote"')}`, { token: M.token })).data?.items || []).length === 1);
 
+console.log('\n■ (2) Actualité chrétienne');
+const vide = await http('GET', '/api/collections/ChristianNews/records', { token: M.token });
+check('membre : section lisible (même vide)', vide.status === 200);
+const n1 = garder('ChristianNews', await http('POST', '/api/collections/ChristianNews/records', { token: ADM.token, body: { title: 'Test E actualité', summary: 'r', body: '<p>t</p>', link_url: 'https://exemple.invalid', created_by_id: ADM.id } }));
+check('admin : publication créée, lue par un membre', n1.status === 200 && (await http('GET', `/api/collections/ChristianNews/records/${n1.data?.id}`, { token: M.token })).status === 200);
+check('membre : publication refusée', (await http('POST', '/api/collections/ChristianNews/records', { token: M.token, body: { title: 'x' } })).status >= 400);
+
 for (const [c, id] of crees.reverse()) await http('DELETE', `/api/collections/${c}/records/${id}`, su);
 done();
