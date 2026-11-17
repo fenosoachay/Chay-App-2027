@@ -7,7 +7,13 @@ import { nouvellesCollections } from "../../pocketbase/scripts/migrer-lot-d.mjs"
 const lire = (f) => fs.readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
 test("menu ☰ : Histoire de l'église, Personnel, Vision, But, Confession", () => {
-  assert.deepEqual(ENTREES_MENU_EGLISE.map((e) => [e.label, e.to]), [["Histoire de l'église", "/eglise/histoire"], ["Personnel", "/eglise/personnel"]]);
+  assert.deepEqual(ENTREES_MENU_EGLISE.map((e) => [e.label, e.to]), [
+    ["Histoire de l'église", "/eglise/histoire"],
+    ["Personnel", "/eglise/personnel"],
+    ["Vision de l'Église", "/eglise/vision"],
+    ["But de l'Église", "/eglise/but"],
+    ["Confession de foi", "/eglise/confession"],
+  ]);
   const layout = lire("src/components/Layout.jsx");
   assert.equal((layout.match(/<MenuEglise/g) || []).length, 2); // en-tête mobile et ordinateur
   const app = lire("src/App.jsx");

@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ENTREES_MENU_EGLISE } from "@/lib/menuEglise";
 
-// Icône ☰ à côté des icônes de l'en-tête : « Histoire de l'église » et « Personnel ».
+// Icône ☰ à côté des icônes de l'en-tête : « Histoire de l'église », « Personnel », Vision, But, Confession.
 export default function MenuEglise({ className = "" }) {
   return (
     <DropdownMenu>
@@ -17,11 +17,17 @@ export default function MenuEglise({ className = "" }) {
         <Menu className="h-[17px] w-[17px]" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[12rem]">
-        {ENTREES_MENU_EGLISE.map((e) => (
-          <DropdownMenuItem key={e.to} asChild>
-            <Link to={e.to} className="cursor-pointer py-2.5 text-sm font-semibold">{e.label}</Link>
-          </DropdownMenuItem>
-        ))}
+        {ENTREES_MENU_EGLISE.map((e) => {
+          const Icon = e.icon;
+          return (
+            <DropdownMenuItem key={e.to} asChild>
+              <Link to={e.to} className="flex items-center gap-2 cursor-pointer py-2.5 text-sm font-semibold">
+                {Icon && <Icon className="h-4 w-4" />}
+                <span>{e.label}</span>
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
