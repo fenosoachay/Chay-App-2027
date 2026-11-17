@@ -33,7 +33,7 @@ function fichier(name, accept, extra = {}) {
 }
 
 function images(name, extra = {}) {
-  return { name, type: 'images', required: false, hidden: false, system: false, ...extra };
+  return { name, type: 'file', required: false, maxSelect: 10, hidden: false, system: false, ...extra };
 }
 
 function relation(name, collectionId, extra = {}) {
@@ -130,7 +130,7 @@ export function nouvellesCollections() {
         texte('prenom', 100, { required: true }),
         texte('role', 100, { required: true }),
         fichier('photo_url', 'image/*'),
-        relation('user_id', 'users'),
+        relation('user_id', '_pb_users_auth_'),
         nombre('order', { hidden: false }),
         texte('created_by_id', 64),
         { name: 'base44_created_date', type: 'date', required: false, hidden: false, system: false, min: '', max: '' },
