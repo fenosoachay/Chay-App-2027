@@ -6,6 +6,18 @@ import ContentDetailDialog from "./ContentDetailDialog";
 import { getContentMediaPath } from "@/lib/contentLinks";
 import { getHomeContentMessage } from "@/lib/homeContentMessage";
 
+// Tous les types de contenu multimédia à inclure dans "Nouv."
+const MEDIA_TYPES = [
+  "audio",
+  "predication",
+  "video",
+  "youtube",
+  "article",
+  "gallery",
+  "wallpaper",
+  "christian_news"
+];
+
 // Panneau (gauche « Préc. » ou droite « Nouv. ») du widget de nouveautés.
 // blink = true (panneau « Nouv. » uniquement) fait clignoter le libellé et son
 // icône pour attirer l'œil sur la nouveauté (voir .blink-label dans index.css).
@@ -15,7 +27,7 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
       type="button"
       onClick={() => onOpen(item)}
       disabled={!item}
-      className={`flex-1 p-3 text-left flex flex-col justify-between min-h-[9rem] relative group transition-colors duration-300 ${
+      className={`flex-1 p-3 text-left flex flex-col min-h-[9rem] relative group transition-colors duration-300 ${
         isLatest ? "bg-primary/5 border-l border-border" : "bg-card hover:bg-muted/30"
       } disabled:opacity-50 disabled:cursor-default`}
     >
@@ -28,10 +40,10 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
 
       {item ? (
         <>
-          <p className="selectable text-[0.75rem] leading-tight text-foreground/90 line-clamp-none">
+          <p className="selectable text-[0.75rem] leading-tight text-foreground/90 line-clamp-none flex-1">
             {getHomeContentMessage(item)}
           </p>
-          <div className={`mt-auto pt-2 flex items-center gap-1 text-xs font-semibold ${isLatest ? "justify-end text-primary" : "justify-start text-foreground/60"}`}>
+          <div className="mt-auto pt-2 flex justify-center gap-1 text-xs font-semibold">
             {isLatest ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </div>
         </>
@@ -44,6 +56,8 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
 
 /**
  * Widget Nouveauté / Précédemment : affichage côte à côte des deux derniers contenus publiés.
+ * Inclut toutes les sections multimédia : Musique, Prédication, Films, YouTube, Galerie,
+ * Articles, Vidéos, Fonds d'écran, Actualité chrétienne — y compris contenus datés dans le futur.
  */
 export default function NouveauteWidget() {
   const navigate = useNavigate();
@@ -52,8 +66,11 @@ export default function NouveauteWidget() {
 
   useEffect(() => {
     base44.entities.Content
-      .filter({ status: "published" }, "-published_at", 5)
-      .then((list) => setItems(Array.isArray(list) ? list : []))
+      .filter({ status: "published" }, "-published_at", 10)
+      .then((list) => {
+        const filtered = Array.isArray(list) ? list.filter((c) => MEDIA_TYPES.includes(c.type)) : [];
+        setItems(filtered);
+      })
       .catch(() => setItems([]));
   }, []);
 
