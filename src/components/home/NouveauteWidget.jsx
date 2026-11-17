@@ -43,7 +43,7 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
           <p className="selectable text-[0.75rem] leading-tight text-foreground/90 line-clamp-none flex-1">
             {getHomeContentMessage(item)}
           </p>
-          <div className="mt-auto pt-2 flex justify-center gap-1 text-xs font-semibold">
+          <div className="mt-2 pt-2 flex justify-center gap-1 text-xs font-semibold">
             {isLatest ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </div>
         </>
