@@ -3,7 +3,7 @@ import { SortAsc, SortDesc, Lock, Unlock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import ParolesCard from "./ParolesCard";
-import { BlocOrdonnable } from "./BlocOrdonnable";
+import BlocOrdonnable from "./BlocOrdonnable";
 import { enregistrerOrdreChamp } from "@/lib/ordreChamp";
 import { useToast } from "@/components/ui/use-toast";
 
