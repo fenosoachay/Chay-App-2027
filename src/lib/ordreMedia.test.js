@@ -46,7 +46,7 @@ test("écrans : cadenas admin et même glisser (ListeTriable) ; ordre YouTube pa
   assert.doesNotMatch(yt, /update\("playlist_orders", sec, next\.map/); // gestion admin : plus dans les préférences perso
   assert.match(lire("src/components/media/MediaCategory.jsx"), /reordonnerGalerie\(gallerySection\)/);
   assert.match(lire("src/components/media/ActualiteChretienne.jsx"), /ChristianNews\.update\(id, d\)/);
-  assert.match(lire("src/components/media/FondsEcran.jsx"), /Wallpaper\.update\(id, d\)/);
+  assert.match(lire("src/components/media/FondsEcran.jsx"), /<GalleryViewer/);
   assert.match(lire("src/components/media/NavigationPlaylists.jsx"), /Playlist\.update\(p\.id, \{ order: i \}\)/);
   assert.match(lire("src/components/media/BlocOrdonnable.jsx"), /<ListeTriable/);
   const [col] = nouvellesCollections();
