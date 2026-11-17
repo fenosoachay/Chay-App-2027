@@ -6,13 +6,16 @@ import { nouvellesCollections } from "../../pocketbase/scripts/migrer-lot-d.mjs"
 
 const lire = (f) => fs.readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
-test("menu ☰ : Histoire de l'église et Personnel", () => {
+test("menu ☰ : Histoire de l'église, Personnel, Vision, But, Confession", () => {
   assert.deepEqual(ENTREES_MENU_EGLISE.map((e) => [e.label, e.to]), [["Histoire de l'église", "/eglise/histoire"], ["Personnel", "/eglise/personnel"]]);
   const layout = lire("src/components/Layout.jsx");
   assert.equal((layout.match(/<MenuEglise/g) || []).length, 2); // en-tête mobile et ordinateur
   const app = lire("src/App.jsx");
   assert.match(app, /<Route path="\/eglise\/histoire" element=\{<HistoireEglise \/>\} \/>/);
-  assert.match(app, /<Route path="\/eglise\/personnel" element=\{<Personnel \/>\} \/>/);
+  assert.match(app, /<Route path="\/eglise\/personnel" element=\{<StaffView \/>\} \/>/);
+  assert.match(app, /<Route path="\/eglise\/vision" element=\{<PageTexteView/);
+  assert.match(app, /<Route path="\/eglise\/but" element=\{<PageTexteView/);
+  assert.match(app, /<Route path="\/eglise\/confession" element=\{<PageTexteView/);
 });
 
 test("personnel dans l'ordre de l'admin ; photos de l'histoire (http seulement) ; initiales", () => {

@@ -223,6 +223,65 @@ export const SECTIONS = [
       { name: "order", label: "Ordre", type: "number" },
     ],
   },
+  // ── Nouvelles sections 1.3.11 ──────────────────────────────────────────────
+  {
+    // Multimédia › « Paroles » : paroles de chansons, triables par date ou titre
+    key: "Paroles",
+    label: "Paroles",
+    icon: Type,
+    sort: "order",
+    listColumns: ["title", "date"],
+    fields: [
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "body", label: "Texte", type: "rich-text", required: true },
+      { name: "date", label: "Date", type: "date", required: true },
+    ],
+  },
+  {
+    // Multimédia › « Verset » : versets prêchés, identique à Paroles + champ référence
+    key: "Verset",
+    label: "Verset",
+    icon: BookOpen,
+    sort: "order",
+    listColumns: ["title", "date", "reference"],
+    fields: [
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "body", label: "Texte", type: "rich-text", required: true },
+      { name: "date", label: "Date", type: "date", required: true },
+      { name: "reference", label: "Référence (ex. Jean 3:16)", type: "text" },
+    ],
+  },
+  {
+    // Menu ☰ › « Vision de l'Église » : page texte éditable par l'admin (texte + photos)
+    key: "PageTexte",
+    label: "Pages de texte",
+    icon: FileText,
+    sort: "cle",
+    listColumns: ["cle", "title"],
+    fields: [
+      { name: "cle", label: "Clé (vision/but/confession)", type: "text", required: true },
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "body", label: "Texte", type: "rich-text", required: true },
+      { name: "photos", label: "Photos", type: "images" },
+    ],
+    readOnly: false, // Admin gère via EntityCrud
+  },
+  {
+    // Menu ☰ › « Personnel » : grille 2 colonnes, fiche cliquable vers profil user
+    key: "Staff",
+    label: "Personnel",
+    icon: UserSquare,
+    sort: "order",
+    listColumns: ["prenom", "nom", "role"],
+    thumbField: "photo_url",
+    fields: [
+      { name: "nom", label: "Nom", type: "text", required: true },
+      { name: "prenom", label: "Prénom", type: "text", required: true },
+      { name: "role", label: "Rôle", type: "text", required: true },
+      { name: "photo_url", label: "Photo", type: "file", accept: "image/*" },
+      { name: "user_id", label: "Compte utilisateur lié", type: "relation", collectionId: "users" },
+    ],
+  },
   {
     key: "ContactMessage",
     label: "Messages",

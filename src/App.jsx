@@ -49,6 +49,10 @@ const MemberProfile = lazy(() => import("@/pages/MemberProfile"));
 const Donate = lazy(() => import("@/pages/Donate"));
 const HistoireEglise = lazy(() => import("@/pages/HistoireEglise"));
 const Personnel = lazy(() => import("@/pages/Personnel"));
+const PageTexteView = lazy(() => import("@/components/menu/PageTexteView"));
+const StaffView = lazy(() => import("@/components/menu/StaffView"));
+const ParolesCategoryView = lazy(() => import("@/components/media/ParolesCategoryView"));
+const VersetCategoryView = lazy(() => import("@/components/media/VersetCategoryView"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Requests = lazy(() => import("@/pages/Requests"));
 const Admin = lazy(() => import("@/pages/Admin"));
@@ -133,7 +137,10 @@ const AuthenticatedApp = () => {
           <Route path="/contact" element={<Contact />} />
           {/* Menu ☰ de l'en-tête */}
           <Route path="/eglise/histoire" element={<HistoireEglise />} />
-          <Route path="/eglise/personnel" element={<Personnel />} />
+          <Route path="/eglise/vision" element={<PageTexteView cle="vision" title="Vision de l'Église" icon={Target} />} />
+          <Route path="/eglise/but" element={<PageTexteView cle="but" title="But de l'Église" icon={Flag} />} />
+          <Route path="/eglise/confession" element={<PageTexteView cle="confession" title="Confession de foi" icon={ScrollText} />} />
+          <Route path="/eglise/personnel" element={<StaffView />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />

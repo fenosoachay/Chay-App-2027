@@ -11,6 +11,8 @@ import {
   Lightbulb,
   Newspaper,
   Smartphone,
+  Type,
+  BookOpen,
 } from "lucide-react";
 
 export const RADIO_URL =
@@ -29,6 +31,8 @@ export const CATEGORIES = [
   { id: "youtube", label: "YouTube", icon: Youtube, tone: "from-[#FF4D2D] to-[#FF57B2]" },
   { id: "articles", label: "Articles", icon: FileText, tone: "from-[#FF4D2D] to-[#8A56E2]" },
   { id: "gallery", label: "Galerie", icon: ImageIcon, tone: "from-[#4A6CFE] to-[#2E6F40]" },
+  { id: "paroles", label: "Paroles", icon: Type, tone: "from-[#FF4D2D] to-[#8A56E2]" },
+  { id: "verset", label: "Verset", icon: BookOpen, tone: "from-[#2E6F40] to-[#C18B33]" },
   { id: "playlist", label: "Votre Playlist", icon: ListMusic, tone: "from-[#8A56E2] to-[#4A6CFE]" },
   { id: "actualite", label: "Actualité chrétienne", icon: Newspaper, tone: "from-[#2E6F40] to-[#C18B33]" },
   { id: "fonds", label: "Fond d'écran", icon: Smartphone, tone: "from-[#C18B33] to-[#FF57B2]" },
