@@ -1,3 +1,4 @@
+import { Target, Flag, ScrollText } from "lucide-react";
 import { lazy, Suspense, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
