@@ -20,7 +20,11 @@ import {
   Loader2,
   ArrowDown,
   Download,
+  Share2,
 } from "lucide-react";
+
+// Lien de partage de l'application (facile à changer)
+const APP_SHARE_URL = "https://membres.chay.fr";
 
 export default function AboutDialog({ open, onOpenChange }) {
   const { user } = useAuth();
@@ -249,6 +253,38 @@ export default function AboutDialog({ open, onOpenChange }) {
             <p className="text-xs text-foreground/50">
               Si Android refuse l'installation, désinstallez d'abord l'ancienne application, puis réinstallez.
             </p>
+
+            {/* Partager l'application */}
+            <div className="border-t border-border pt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-foreground/50 mb-2">
+                Partager l'application
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  const url = APP_SHARE_URL;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: "Application Chay", url });
+                      return;
+                    } catch {
+                      // L'utilisateur a annulé ou erreur -> fallback
+                    }
+                  }
+                  // Fallback : copie dans le presse-papiers
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    toast({ title: "Lien copié dans le presse-papiers" });
+                  } catch {
+                    toast({ title: "Impossible de copier", variant: "destructive" });
+                  }
+                }}
+              >
+                <Share2 className="h-4 w-4 mr-2" /> Partager le lien
+              </Button>
+              <p className="text-xs text-foreground/50 mt-1 text-center">{APP_SHARE_URL}</p>
+            </div>
           </div>
         </div>
       </DialogContent>
