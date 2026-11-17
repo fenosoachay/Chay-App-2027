@@ -61,10 +61,12 @@ test("sections concernées : Musique, Prédication, YouTube, Articles, Galerie (
   assert.match(sections, /\{ value: "youtube", label: "YouTube" \}, \{ value: "articles", label: "Articles" \}, \{ value: "gallery", label: "Galerie" \}/);
 });
 
-test("formulaire admin : sous-playlist obligatoire (création ET modification), message clair, pré-remplie", () => {
+test("formulaire admin : sous-playlist FACULTATIVE (contenu direct sous playlist), message clair, pré-remplie", () => {
   const crud = lire("src/components/admin/EntityCrud.jsx");
-  assert.match(crud, /label: "Sous-playlist",\s*type: "select",[\s\S]{0,120}required: true,\s*options: optionsSousPlaylists\(arbre\),\s*missingMessage: MESSAGE_SOUS_PLAYLIST/);
-  assert.match(crud, /if \(sousPlaylist && !idsSousPlaylists\(arbre\)\.has\(playlist_id\)\) \{/);
+  assert.match(crud, /label: "Sous-playlist",\s*type: "select",[\s\S]{0,120}options: optionsSousPlaylists\(arbre\)/);
+  assert.doesNotMatch(crud, /required: true/);
+  assert.doesNotMatch(crud, /missingMessage: MESSAGE_SOUS_PLAYLIST/);
+  assert.match(crud, /laisser vide pour afficher directement sous la playlist/);
   assert.match(crud, /actuelle = sousPlaylistDe\(item\.id/);
   assert.match(crud, /parent=\{parentPourCreation\}/);
   const form = lire("src/components/admin/EntityForm.jsx");

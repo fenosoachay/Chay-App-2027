@@ -23,7 +23,6 @@ import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
 import { schemaSansSousPlaylists } from "@/lib/playlist";
 import {
   CATEGORIE_PLAYLIST,
-  MESSAGE_SOUS_PLAYLIST,
   arbrePlaylists,
   exigeSousPlaylist,
   idsSousPlaylists,
@@ -139,10 +138,8 @@ export default function EntityCrud({
           name: "playlist_id",
           label: "Sous-playlist",
           type: "select",
-          required: true,
           options: optionsSousPlaylists(arbre),
-          missingMessage: MESSAGE_SOUS_PLAYLIST,
-          help: "Playlist › Sous-playlist où ce contenu sera rangé."
+          help: "Playlist › Sous-playlist où ce contenu sera rangé (laisser vide pour afficher directement sous la playlist)."
         },
         ...fields,
       ]
