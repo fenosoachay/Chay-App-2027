@@ -82,3 +82,13 @@ export function contenusDe(playlistId, playlistTracks, contenus) {
   const parId = new Map((contenus || []).map((c) => [c.id, c]));
   return liensDe(playlistId, playlistTracks).map((t) => parId.get(t.track_id)).filter(Boolean);
 }
+
+/** Options pour le sélecteur unique : playlists de 1er niveau ET sous-playlists hiérarchisées.
+ *  Format : { value: "id", label: "Playlist A" } ou { value: "id", label: "Playlist A › Sous-playlist 1" }
+ *  Le champ playlist_id reste obligatoire pour la playlist, facultatif pour la sous-playlist. */
+export function optionsPlaylistEtSousPlaylists(arbre) {
+  return (arbre || []).flatMap((p) => [
+    { value: p.id, label: p.name },
+    ...(p.sous || []).map((s) => ({ value: s.id, label: `${p.name} › ${s.name}` }))
+  ]);
+}

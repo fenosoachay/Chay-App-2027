@@ -26,7 +26,7 @@ import {
   arbrePlaylists,
   exigeSousPlaylist,
   idsSousPlaylists,
-  optionsSousPlaylists,
+  optionsPlaylistEtSousPlaylists,
   sousPlaylistDe,
 } from "@/lib/playlistsArbre";
 import {
@@ -136,10 +136,10 @@ export default function EntityCrud({
     ? [
         {
           name: "playlist_id",
-          label: "Sous-playlist",
+          label: "Playlist ou sous-playlist",
           type: "select",
-          options: optionsSousPlaylists(arbre),
-          help: "Playlist › Sous-playlist où ce contenu sera rangé (laisser vide pour afficher directement sous la playlist)."
+          options: optionsPlaylistEtSousPlaylists(arbre),
+          help: "Choisissez une playlist de 1er niveau OU une sous-playlist. La playlist est obligatoire ; la sous-playlist est facultative (le contenu s'affichera alors directement sous la playlist)."
         },
         ...fields,
       ]

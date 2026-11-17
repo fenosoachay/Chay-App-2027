@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   SECTIONS_RANGEES, arbrePlaylists, contenusDe, contenusNonRanges, exigeSousPlaylist, idsSousPlaylists,
-  optionsSousPlaylists, sousPlaylistDe,
+  optionsSousPlaylists, optionsPlaylistEtSousPlaylists, sousPlaylistDe,
 } from "./playlistsArbre.js";
 import { champsMigres, CATEGORIES } from "../../pocketbase/scripts/migrer-playlists.mjs";
 
@@ -61,18 +61,12 @@ test("sections concernées : Musique, Prédication, YouTube, Articles, Galerie (
   assert.match(sections, /\{ value: "youtube", label: "YouTube" \}, \{ value: "articles", label: "Articles" \}, \{ value: "gallery", label: "Galerie" \}/);
 });
 
-test("formulaire admin : sous-playlist FACULTATIVE (contenu direct sous playlist), message clair, pré-remplie", () => {
+test("formulaire admin : sélecteur unique playlist + sous-playlists hiérarchisées, playlist obligatoire, sous-playlist facultative", () => {
   const crud = lire("src/components/admin/EntityCrud.jsx");
-  assert.match(crud, /label: "Sous-playlist",\s*type: "select",[\s\S]{0,120}options: optionsSousPlaylists\(arbre\)/);
+  assert.match(crud, /label: "Playlist ou sous-playlist"/);
+  assert.match(crud, /optionsPlaylistEtSousPlaylists\(arbre\)/);
   assert.doesNotMatch(crud, /required: true/);
-  assert.doesNotMatch(crud, /missingMessage: MESSAGE_SOUS_PLAYLIST/);
-  assert.match(crud, /laisser vide pour afficher directement sous la playlist/);
-  assert.match(crud, /actuelle = sousPlaylistDe\(item\.id/);
-  assert.match(crud, /parent=\{parentPourCreation\}/);
-  const form = lire("src/components/admin/EntityForm.jsx");
-  assert.match(form, /m\.missingMessage \|\| `Le champ/);
-  assert.match(form, /noValidate/);
-  assert.match(lire("src/components/media/CreatePlaylistModal.jsx"), /parent_id: playlist \? playlist\.parent_id \|\| "" : parent\?\.id \|\| ""/);
+  assert.match(crud, /[Ll]a playlist est obligatoire.*sous-playlist est facultative/);
 });
 
 test("glisser tactile admin : même mécanisme que YouTube (@hello-pangea/dnd) ; plus d'ancien hook", () => {
