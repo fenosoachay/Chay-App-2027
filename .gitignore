@@ -52,3 +52,9 @@ fichiers-correspondance.csv
 fichiers-telecharges.csv
 migration-fichiers-rapport.md
 adresses-r2-rapport.md
+
+# Fichiers audio Sagesse (envoyés sur R2, pas dans git)
+/Proverbes/
+/Psaumes/
+
+/Ecclesiaste/

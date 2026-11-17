@@ -47,6 +47,20 @@ export default function CibleNotificationAccueil() {
     setSearchParams(next, { replace: true });
   };
 
+  // Verset du jour (daily_verse) : affichage limité à une fois par jour par appareil.
+  // L'adresse ?verset= vient de la notification et l'app y revient à chaque réouverture.
+  useEffect(() => {
+    if (cible?.collection === "Devotional" && searchParams.has("verset")) {
+      const auj = new Date().toLocaleDateString("en-CA"); // AAAA-MM-JJ local
+      const dernier = localStorage.getItem("chay_dernier_verset_date");
+      if (dernier === auj) {
+        fermer();
+      } else {
+        localStorage.setItem("chay_dernier_verset_date", auj);
+      }
+    }
+  }, [cible, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!cible) return null;
   if (cible.collection === "Content" && fiche) {
     return <ContentDetailDialog item={fiche} open onOpenChange={(v) => !v && fermer()} />;

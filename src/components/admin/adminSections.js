@@ -75,7 +75,7 @@ export const SECTIONS = [
     playlistField: "cover_url",
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
-      { name: "artist", label: "Artiste", type: "text", required: true },
+      { name: "artist", label: "Artiste", type: "text" },
       { name: "audio_url", label: "Audio", type: "file", accept: "audio/*", required: true },
     ],
     showPlaylist: true,

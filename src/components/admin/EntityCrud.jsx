@@ -20,7 +20,7 @@ import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import ListeTriable from "@/components/media/ListeTriable";
 import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
-import { MESSAGE_SCHEMA_PLAYLISTS, schemaSansSousPlaylists } from "@/lib/playlist";
+import { schemaSansSousPlaylists } from "@/lib/playlist";
 import {
   CATEGORIE_PLAYLIST,
   MESSAGE_SOUS_PLAYLIST,
@@ -139,13 +139,10 @@ export default function EntityCrud({
           name: "playlist_id",
           label: "Sous-playlist",
           type: "select",
-          // Obligatoire, à la création comme en modification : tout contenu est rangé.
           required: true,
           options: optionsSousPlaylists(arbre),
           missingMessage: MESSAGE_SOUS_PLAYLIST,
-          help: arbre.some((p) => p.sous.length)
-            ? "Playlist › Sous-playlist où ce contenu sera rangé."
-            : MESSAGE_SOUS_PLAYLIST,
+          help: "Playlist › Sous-playlist où ce contenu sera rangé."
         },
         ...fields,
       ]
