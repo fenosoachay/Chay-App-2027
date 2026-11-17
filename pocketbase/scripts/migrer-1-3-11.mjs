@@ -33,7 +33,7 @@ function fichier(name, accept, extra = {}) {
 }
 
 function images(name, extra = {}) {
-  return { name, type: 'file', required: false, maxSelect: 10, hidden: false, system: false, ...extra };
+  return { name, type: 'json', required: false, maxSize: 200000, hidden: false, system: false, ...extra };
 }
 
 function relation(name, collectionId, extra = {}) {
@@ -129,7 +129,7 @@ export function nouvellesCollections() {
         texte('nom', 100, { required: true }),
         texte('prenom', 100, { required: true }),
         texte('role', 100, { required: true }),
-        fichier('photo_url', 'image/*'),
+        texte('photo_url', 5000),
         relation('user_id', '_pb_users_auth_'),
         nombre('order', { hidden: false }),
         texte('created_by_id', 64),
