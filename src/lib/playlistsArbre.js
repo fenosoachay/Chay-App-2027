@@ -63,7 +63,19 @@ export function liensDe(playlistId, playlistTracks) {
     .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999));
 }
 
-/** Sous-playlist actuelle d'un contenu (pour pré-remplir le formulaire en modification), sinon "". */
+/** Playlist ou sous-playlist actuelle d'un contenu (pour pré-remplir le formulaire en modification), sinon "". */
+export function playlistDe(contenuId, playlistTracks, arbre) {
+  const valides = idsSousPlaylists(arbre);
+  // Cherche d'abord un lien vers une sous-playlist
+  let lien = (playlistTracks || []).find((t) => t.track_id === contenuId && valides.has(t.playlist_id));
+  if (lien) return lien.playlist_id;
+  // Sinon, cherche un lien vers une playlist de premier niveau (sans parent_id)
+  const toutesPlaylists = new Set((arbre || []).flatMap((p) => [p.id, ...(p.sous || []).map((s) => s.id)]));
+  lien = (playlistTracks || []).find((t) => t.track_id === contenuId && toutesPlaylists.has(t.playlist_id) && !valides.has(t.playlist_id));
+  return lien ? lien.playlist_id : "";
+}
+
+/** Alias pour compatibilité : retourne la sous-playlist seulement (pour l'admin existant). */
 export function sousPlaylistDe(contenuId, playlistTracks, arbre) {
   const valides = idsSousPlaylists(arbre);
   const lien = (playlistTracks || []).find((t) => t.track_id === contenuId && valides.has(t.playlist_id));

@@ -15,7 +15,7 @@ import NavigationPlaylists from "@/components/media/NavigationPlaylists";
 import { arbrePlaylists, contenusNonRanges } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
-import { YOUTUBE_SECTIONS, GALLERY_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
+import { YOUTUBE_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
 import { appliquerOrdre, cleGalerie } from "@/lib/ordreMedia";
 import { enregistrerOrdreMedia, useOrdresMedia } from "@/hooks/useOrdreMedia";
 import { useToast } from "@/components/ui/use-toast";
@@ -270,13 +270,20 @@ export default function MediaCategory({
     else onBack();
   };
 
-  // Une photo n'apparaît que dans SA section : celles dont le champ
-  // `category` est vide (les photos publiées avant l'ajout des sections)
-  // étaient donc visibles nulle part — on les regroupe sous « Non classées ».
-  // Ordre de l'admin (1.3.9, MediaOrder) : photos de chaque section et « Non classées » (nouvelles en tête).
+  // Photos sans playlist : apparaissent dans « Non classées ».
+  // Photos avec playlist : affichées dans leur sous-playlist correspondante.
+  // Ordre de l'admin (1.3.12, MediaOrder) : photos sans playlist (nouvelles en tête).
   const { toast } = useToast();
   const ordreDe = useOrdresMedia();
-  const photosDe = (section) => appliquerOrdre(gallery.filter((g) => normalizeSection(g.category) === (section || "")), ordreDe(cleGalerie(section)));
+  const photosDe = (section) => {
+    if (section === null) {
+      // Non classées : photos sans playlist
+      return appliquerOrdre(gallery.filter((g) => !g.playlist_id), ordreDe(cleGalerie(null)));
+    }
+    // Section spécifique : photos avec playlist de cette section
+    const ordre = ordreDe(cleGalerie(section));
+    return appliquerOrdre(gallery.filter((g) => g.playlist_id && g.category === section), ordre);
+  };
   const reordonnerGalerie = (section) => (liste) => enregistrerOrdreMedia(cleGalerie(section), liste.map((g) => g.id))
     .catch((e) => toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" }));
   const sectionImages = photosDe(gallerySection);
@@ -550,9 +557,6 @@ export default function MediaCategory({
                       }}
                       className="block aspect-square overflow-hidden bg-muted group"
                     >
-                      {/* Au doigt, le zoom au survol reste « collé » après le
-                          tap et la vignette saute à la fermeture : on le garde
-                          donc sur bureau uniquement (md:). */}
                       <Image
                         src={g.image_url}
                         fittingType="fill"
@@ -564,7 +568,7 @@ export default function MediaCategory({
                 </BlocOrdonnable>
               ) : (
                 <p className="text-foreground/50 text-sm">
-                  Aucune image dans cette section.
+                  Aucune image dans cette playlist.
                 </p>
               )}
 

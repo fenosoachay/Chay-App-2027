@@ -30,7 +30,7 @@ import {
   exigeSousPlaylist,
   idsSousPlaylists,
   optionsPlaylistEtSousPlaylists,
-  sousPlaylistDe,
+  playlistDe,
 } from "@/lib/playlistsArbre";
 import {
   buildPlaylistTrackRecord,
@@ -444,12 +444,12 @@ export default function EntityCrud({
     }
   };
 
-  /** Modification : la sous-playlist actuelle du contenu est pré-remplie (lue dans PlaylistTrack). */
+  /** Modification : la playlist/sous-playlist actuelle du contenu est pré-remplie (lue dans PlaylistTrack). */
   const ouvrirModification = async (item) => {
     let actuelle = null;
     if (sousPlaylist) {
       const liens = await base44.entities.PlaylistTrack.filter({ track_id: item.id }, "-created_date", 50).catch(() => []);
-      actuelle = sousPlaylistDe(item.id, Array.isArray(liens) ? liens : [], arbre) || null;
+      actuelle = playlistDe(item.id, Array.isArray(liens) ? liens : [], arbre) || null;
     }
     setEditing(item);
     pendingSelectRef.current = actuelle;
