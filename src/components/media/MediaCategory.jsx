@@ -457,60 +457,47 @@ export default function MediaCategory({
           )}
           {!gallerySection ? (
             <>
-              <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-[13rem]">
-                {GALLERY_SECTIONS.map((s) => (
-                  <SectionTile
-                    key={s.id}
-                    item={s}
-                    onClick={() => {
-                      clearTarget("image");
-                      setGallerySection(s.id);
-                      setGalleryIdx(null);
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Photos publiées avant l'existence des sections : sans ce
-                  bloc, elles n'étaient visibles dans AUCUNE section. */}
+              {/* Photos sans playlist : apparaissent dans "Non classées" */}
               {uncategorizedImages.length > 0 && (
-                <div className="mt-8">
-                  <BlocOrdonnable
-                    id="galerie-non-classees"
-                    isAdmin={isAdmin}
-                    items={uncategorizedImages}
-                    onReorder={reordonnerGalerie(null)}
-                    libelle="les photos non classées"
-                    vignette={(g) => g.image_url}
-                    titre={(g) => g.title}
-                    entete={(
-                      <div className="flex items-baseline justify-between gap-3">
-                        <h3 className="font-display font-extrabold text-lg">Non classées</h3>
-                        <span className="text-xs text-foreground/50">
-                          {uncategorizedImages.length} photo{uncategorizedImages.length > 1 ? "s" : ""}
-                        </span>
+                <>
+                  <div className="mt-8">
+                    <BlocOrdonnable
+                      id="galerie-non-classees"
+                      isAdmin={isAdmin}
+                      items={uncategorizedImages}
+                      onReorder={reordonnerGalerie(null)}
+                      libelle="les photos non classées"
+                      vignette={(g) => g.image_url}
+                      titre={(g) => g.title}
+                      entete={(
+                        <div className="flex items-baseline justify-between gap-3">
+                          <h3 className="font-display font-extrabold text-lg">Non classées</h3>
+                          <span className="text-xs text-foreground/50">
+                            {uncategorizedImages.length} photo{uncategorizedImages.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      )}
+                    >
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {uncategorizedImages.map((g, i) => (
+                          <button
+                            key={g.id}
+                            onClick={() => {
+                              clearTarget("image");
+                              setOrphanIdx(i);
+                            }}
+                            className="block aspect-square overflow-hidden bg-muted group rounded-xl"
+                          >
+                            <Image
+                              src={g.image_url}
+                              fittingType="fill"
+                              className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
+                            />
+                          </button>
+                        ))}
                       </div>
-                    )}
-                  >
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {uncategorizedImages.map((g, i) => (
-                      <button
-                        key={g.id}
-                        onClick={() => {
-                          clearTarget("image");
-                          setOrphanIdx(i);
-                        }}
-                        className="block aspect-square overflow-hidden bg-muted group rounded-xl"
-                      >
-                        <Image
-                          src={g.image_url}
-                          fittingType="fill"
-                          className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
-                        />
-                      </button>
-                    ))}
+                    </BlocOrdonnable>
                   </div>
-                  </BlocOrdonnable>
                   <GalleryViewer
                     items={uncategorizedImages}
                     index={orphanIdx}
@@ -521,7 +508,7 @@ export default function MediaCategory({
                       setOrphanIdx(null);
                     }}
                   />
-                </div>
+                </>
               )}
             </>
           ) : (

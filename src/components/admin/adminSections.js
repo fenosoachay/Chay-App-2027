@@ -2,7 +2,6 @@ import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
   Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type,
 } from "lucide-react";
-import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 
 const LANGS = [
   { value: "fr", label: "Français" },

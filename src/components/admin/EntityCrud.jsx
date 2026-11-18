@@ -21,14 +21,9 @@ import PlaylistCover from "@/components/media/PlaylistCover";
 import ListeTriable from "@/components/media/ListeTriable";
 import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
 import {
-  schemaSansSousPlaylists,
-  MESSAGE_SOUS_PLAYLIST
-} from "@/lib/playlist";
-import {
   CATEGORIE_PLAYLIST,
   arbrePlaylists,
   exigeSousPlaylist,
-  idsSousPlaylists,
   optionsPlaylistEtSousPlaylists,
   playlistDe,
 } from "@/lib/playlistsArbre";
