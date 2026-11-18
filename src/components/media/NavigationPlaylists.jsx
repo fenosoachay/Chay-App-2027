@@ -48,8 +48,16 @@ export default function NavigationPlaylists({
   useEffect(() => {
     if (!cibleId) return;
     const valides = idsSousPlaylists(arbre);
-    const lien = (playlistTracks || []).find((t) => t.track_id === cibleId && valides.has(t.playlist_id));
+    const racines = new Set(arbre.map((p) => p.id));
+    const lien = (playlistTracks || []).find((t) => t.track_id === cibleId && valides.has(t.playlist_id))
+      || (playlistTracks || []).find((t) => t.track_id === cibleId && racines.has(t.playlist_id));
     if (!lien) return;
+    if (racines.has(lien.playlist_id)) {
+      // Contenu rangé directement dans une playlist de 1er niveau (sans sous-playlist).
+      setParent(arbre.find((x) => x.id === lien.playlist_id) || null);
+      setSous(null);
+      return;
+    }
     const p = arbre.find((x) => x.sous.some((s) => s.id === lien.playlist_id));
     setParent(p || null);
     setSous(p?.sous.find((s) => s.id === lien.playlist_id) || null);
@@ -60,13 +68,20 @@ export default function NavigationPlaylists({
     [sous, playlistTracks, contenus]
   );
 
-  // Contenus d'une sous-playlist pas encore chargés (listes paginées) : chargés par leur id.
+  // Contenus rangés DIRECTEMENT dans la playlist ouverte (playlist de 1er niveau, sans passer par une sous-playlist).
+  const contenusParent = useMemo(
+    () => (parent ? contenusDe(parent.id, playlistTracks, contenus) : []),
+    [parent, playlistTracks, contenus]
+  );
+
+  // Contenus pas encore chargés (listes paginées) : chargés par leur id (sous-playlist ouverte, sinon playlist ouverte).
   useEffect(() => {
-    if (!sous) return;
+    const ouverte = sous || parent;
+    if (!ouverte) return;
     const connus = new Set((contenus || []).map((c) => c.id));
-    const manquants = liensDe(sous.id, playlistTracks).map((t) => t.track_id).filter((id) => !connus.has(id));
+    const manquants = liensDe(ouverte.id, playlistTracks).map((t) => t.track_id).filter((id) => !connus.has(id));
     if (manquants.length) onChargerManquants?.(manquants);
-  }, [sous, playlistTracks]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sous, parent, playlistTracks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const retour = () => {
     if (sous) setSous(null);
@@ -87,7 +102,7 @@ export default function NavigationPlaylists({
         <ChevronLeft className="h-5 w-5" />
       </button>
       <h3 className="font-display font-extrabold text-2xl truncate flex-1">{titre}</h3>
-      {sous && isAdmin && contenusSous.length > 1 && (
+      {isAdmin && (sous ? contenusSous.length > 1 : contenusParent.length > 1) && (
         <button
           type="button"
           onClick={() => setVerrou((v) => !v)}
@@ -133,11 +148,33 @@ export default function NavigationPlaylists({
     return (
       <div>
         {enTete(parent.name)}
-        {cadenasPl(sp.length, "les sous-playlists")}
-        {sp.length ? (
-          <GrillePlaylists id={`sous-${parent.id}`} items={sp} onOuvrir={setSous} reorganiser={isAdmin && !verrouPl} onReorder={reordonnerPlaylists} />
-        ) : (
-          <p className="text-foreground/50 text-sm">Aucune sous-playlist pour le moment.</p>
+        {sp.length > 0 && (
+          <>
+            {cadenasPl(sp.length, "les sous-playlists")}
+            <GrillePlaylists id={`sous-${parent.id}`} items={sp} onOuvrir={setSous} reorganiser={isAdmin && !verrouPl} onReorder={reordonnerPlaylists} />
+          </>
+        )}
+        {contenusParent.length > 0 && (
+          <div className={sp.length ? "mt-8" : ""}>
+            {isAdmin && !verrou ? (
+              <ListeTriable
+                id={`contenus-${parent.id}`}
+                items={contenusParent}
+                onReorder={(next) => onReorderLiens?.(parent.id, next)}
+                renderRow={(c) => (
+                  <>
+                    <PlaylistCover playlist={{ cover_url: vignette?.(c), name: c.title }} className="h-10 w-10 shrink-0 rounded-[10px]" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold">{c.title || "Sans titre"}</span>
+                  </>
+                )}
+              />
+            ) : (
+              renderContenus(parent, contenusParent)
+            )}
+          </div>
+        )}
+        {!sp.length && !contenusParent.length && (
+          <p className="text-foreground/50 text-sm">Aucun contenu dans cette playlist pour le moment.</p>
         )}
       </div>
     );
