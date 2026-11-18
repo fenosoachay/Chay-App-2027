@@ -19,7 +19,3 @@ export function schemaSansSousPlaylists(playlists) {
 export const MESSAGE_SOUS_PLAYLIST =
   "Le champ « parent_id » de la collection Playlist est absent ou caché (option « Hidden »). " +
   "Les sous-playlists ne peuvent pas être listées. Appliquez la migration pocketbase/scripts/migrer-1-3-9.mjs.";
-
-export const MESSAGE_SCHEMA_PLAYLISTS =
-  "Le serveur n'enregistre pas le rattachement des sous-playlists : champ « parent_id » de la collection Playlist " +
-  "caché (option « Hidden ») ou absent. Appliquez la migration pocketbase/scripts/migrer-1-3-9.mjs (docs/1.3.9.md), puis réessayez.";

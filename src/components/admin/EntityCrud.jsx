@@ -22,8 +22,7 @@ import ListeTriable from "@/components/media/ListeTriable";
 import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
 import {
   schemaSansSousPlaylists,
-  MESSAGE_SOUS_PLAYLIST,
-  MESSAGE_SCHEMA_PLAYLISTS
+  MESSAGE_SOUS_PLAYLIST
 } from "@/lib/playlist";
 import {
   CATEGORIE_PLAYLIST,
@@ -298,11 +297,7 @@ export default function EntityCrud({
         toast({ title: "Heure requise", description: "Indiquez l'heure de la réunion (HH:MM).", variant: "destructive" });
         return;
       }
-      if (sousPlaylist && !idsSousPlaylists(arbre).has(playlist_id)) {
-        toast({ title: "Sous-playlist obligatoire", description: MESSAGE_SOUS_PLAYLIST, variant: "destructive" });
-        return;
-      }
-      if (showPlaylist && !sousPlaylist && !editing && !playlist_id) {
+            if (showPlaylist && !sousPlaylist && !editing && !playlist_id) {
         toast({
           title: "Playlist obligatoire",
           description: "Choisissez la playlist avant d'enregistrer le contenu.",
@@ -556,13 +551,7 @@ export default function EntityCrud({
             )}
           </div>
 
-          {/* Serveur sans champ Playlist.parent_id : les sous-playlists ne peuvent pas être enregistrées (1.3.9). */}
-          {sousPlaylist && schemaSansSousPlaylists(playlists) && (
-            <p role="alert" className="mb-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm font-semibold text-destructive">
-              {MESSAGE_SCHEMA_PLAYLISTS}
-            </p>
-          )}
-
+          
           {racines.length === 0 ? (
             <p className="text-sm text-foreground/50">
               Aucune playlist. Utilisez « {sousPlaylist ? "Nouvelle playlist" : "Créer une nouvelle playlist"} »
