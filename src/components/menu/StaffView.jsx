@@ -43,7 +43,7 @@ export default function StaffView() {
       {!items.length ? (
         <p className="text-foreground/60 text-center py-12">Aucun membre du personnel pour le moment.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           {items.map((staff) => (
             <StaffCard key={staff.id} staff={staff} onOpen={() => setDetail(staff)} />
           ))}
@@ -93,20 +93,20 @@ function StaffCard({ staff, onOpen }) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="flex flex-col items-center gap-2 text-center md:flex-row md:items-start md:gap-4 md:text-left rounded-2xl border border-border bg-card p-3 md:p-4 transition-colors hover:bg-muted/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {staff.photo_url ? (
-        <img src={staff.photo_url} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover" />
+        <img src={staff.photo_url} alt="" className="h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-full object-cover" />
       ) : (
-        <div className="h-20 w-20 shrink-0 rounded-full bg-primary/10 grid place-items-center text-primary">
+        <div className="h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-full bg-primary/10 grid place-items-center text-primary">
           <User className="h-8 w-8" />
         </div>
       )}
-      <div className="flex-1 min-w-0">
-        <h3 className="font-display font-bold text-lg truncate">{nomDe(staff)}</h3>
-        {staff.role && <p className="mt-1 text-sm text-foreground/60">{staff.role}</p>}
+      <div className="flex-1 min-w-0 w-full">
+        <h3 className="font-display font-bold text-base md:text-lg truncate">{nomDe(staff)}</h3>
+        {staff.role && <p className="mt-1 text-xs md:text-sm text-foreground/60">{staff.role}</p>}
       </div>
-      <span className="text-foreground/40">›</span>
+      <span className="hidden md:inline text-foreground/40">›</span>
     </button>
   );
 }
