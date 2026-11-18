@@ -35,7 +35,11 @@ export function buildPlaylistTrackRecord({
 }
 
 export function resolveSelectedPlaylistId(selectedPlaylistId, submittedPlaylistId) {
-  return selectedPlaylistId === null ? submittedPlaylistId : selectedPlaylistId;
+  // Priorité au choix explicite de l'utilisateur dans le formulaire.
+  // Une chaîne vide signifie "retirer la playlist".
+  return submittedPlaylistId !== undefined && submittedPlaylistId !== null
+    ? submittedPlaylistId
+    : selectedPlaylistId;
 }
 
 const wait = (milliseconds) =>

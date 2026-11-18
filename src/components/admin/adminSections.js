@@ -147,7 +147,7 @@ export const SECTIONS = [
       { name: "image_url", label: "Image", type: "file", required: true, accept: "image/*" },
       {
         name: "category",
-        label: "Section",
+        label: "Catégorie",
         type: "select",
         options: GALLERY_SECTIONS.map((s) => ({ value: s.id, label: s.label })),
       },
