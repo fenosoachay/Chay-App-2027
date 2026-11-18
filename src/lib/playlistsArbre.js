@@ -82,10 +82,13 @@ export function sousPlaylistDe(contenuId, playlistTracks, arbre) {
   return lien ? lien.playlist_id : "";
 }
 
-/** Contenus d'une section qui ne sont dans AUCUNE sous-playlist de cette section (à ranger). */
+/** Contenus d'une section qui ne sont dans AUCUNE playlist (racine ou sous) de cette section (à ranger). */
 export function contenusNonRanges(contenus, playlistTracks, arbre) {
   const valides = idsSousPlaylists(arbre);
-  const ranges = new Set((playlistTracks || []).filter((t) => valides.has(t.playlist_id)).map((t) => t.track_id));
+  // Toutes les playlists valides : racines ET sous-playlists
+  const toutesLesPlaylists = new Set((arbre || []).flatMap((p) => [p.id, ...(p.sous || []).map((s) => s.id)]));
+  // Contenus liés à une playlist de la section
+  const ranges = new Set((playlistTracks || []).filter((t) => toutesLesPlaylists.has(t.playlist_id)).map((t) => t.track_id));
   return (Array.isArray(contenus) ? contenus : []).filter((c) => c && !ranges.has(c.id));
 }
 

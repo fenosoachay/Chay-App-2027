@@ -12,7 +12,7 @@ import FondsEcran from "@/components/media/FondsEcran";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
-import { arbrePlaylists, contenusNonRanges } from "@/lib/playlistsArbre";
+import { arbrePlaylists, contenusNonRanges, playlistDe } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
 import { YOUTUBE_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
@@ -275,14 +275,28 @@ export default function MediaCategory({
   // Ordre de l'admin (1.3.12, MediaOrder) : photos sans playlist (nouvelles en tête).
   const { toast } = useToast();
   const ordreDe = useOrdresMedia();
+  // Arbre des playlists de la galerie (pour retrouver la playlist/sous-playlist d'une photo)
+  const arbreGalerie = useMemo(() => arbrePlaylists(playlists, "gallery"), [playlists]);
   const photosDe = (section) => {
     if (section === null) {
-      // Non classées : photos sans playlist
-      return appliquerOrdre(gallery.filter((g) => !g.playlist_id), ordreDe(cleGalerie(null)));
+      // Non classées : photos SANS AUCUNE playlist (ni racine, ni sous-playlist)
+      return appliquerOrdre(
+        gallery.filter((g) => !playlistDe(g.id, playlistTracks, arbreGalerie)),
+        ordreDe(cleGalerie(null))
+      );
     }
-    // Section spécifique : photos avec playlist de cette section
+    // Section spécifique : photos avec playlist de cette section (racine OU sous-playlist)
     const ordre = ordreDe(cleGalerie(section));
-    return appliquerOrdre(gallery.filter((g) => g.playlist_id && g.category === section), ordre);
+    return appliquerOrdre(
+      gallery.filter((g) => {
+        const plId = playlistDe(g.id, playlistTracks, arbreGalerie);
+        if (!plId) return false;
+        // Trouver la playlist racine de ce lien
+        const pl = (arbreGalerie || []).find((p) => p.id === plId || (p.sous || []).some((s) => s.id === plId));
+        return pl && pl.id === section;
+      }),
+      ordre
+    );
   };
   const reordonnerGalerie = (section) => (liste) => enregistrerOrdreMedia(cleGalerie(section), liste.map((g) => g.id))
     .catch((e) => toast({ title: "Ordre non enregistré", description: e.message, variant: "destructive" }));
@@ -457,46 +471,33 @@ export default function MediaCategory({
           )}
           {!gallerySection ? (
             <>
-              {/* Photos sans playlist : apparaissent dans "Non classées" */}
               {uncategorizedImages.length > 0 && (
-                <>
-                  <div className="mt-8">
-                    <BlocOrdonnable
-                      id="galerie-non-classees"
-                      isAdmin={isAdmin}
-                      items={uncategorizedImages}
-                      onReorder={reordonnerGalerie(null)}
-                      libelle="les photos non classées"
-                      vignette={(g) => g.image_url}
-                      titre={(g) => g.title}
-                      entete={(
-                        <div className="flex items-baseline justify-between gap-3">
-                          <h3 className="font-display font-extrabold text-lg">Non classées</h3>
-                          <span className="text-xs text-foreground/50">
-                            {uncategorizedImages.length} photo{uncategorizedImages.length > 1 ? "s" : ""}
-                          </span>
-                        </div>
-                      )}
-                    >
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {uncategorizedImages.map((g, i) => (
-                          <button
-                            key={g.id}
-                            onClick={() => {
-                              clearTarget("image");
-                              setOrphanIdx(i);
-                            }}
-                            className="block aspect-square overflow-hidden bg-muted group rounded-xl"
-                          >
-                            <Image
-                              src={g.image_url}
-                              fittingType="fill"
-                              className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </BlocOrdonnable>
+                <BlocOrdonnable
+                  id="galerie-non-classees"
+                  isAdmin={isAdmin}
+                  items={uncategorizedImages}
+                  onReorder={reordonnerGalerie(null)}
+                  libelle="les photos non classées"
+                  vignette={(g) => g.image_url}
+                  titre={(g) => g.title}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {uncategorizedImages.map((g, i) => (
+                      <button
+                        key={g.id}
+                        onClick={() => {
+                          clearTarget("image");
+                          setOrphanIdx(i);
+                        }}
+                        className="block aspect-square overflow-hidden bg-muted group rounded-xl"
+                      >
+                        <Image
+                          src={g.image_url}
+                          fittingType="fill"
+                          className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
+                        />
+                      </button>
+                    ))}
                   </div>
                   <GalleryViewer
                     items={uncategorizedImages}
@@ -508,7 +509,7 @@ export default function MediaCategory({
                       setOrphanIdx(null);
                     }}
                   />
-                </>
+                </BlocOrdonnable>
               )}
             </>
           ) : (
