@@ -20,7 +20,11 @@ import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import ListeTriable from "@/components/media/ListeTriable";
 import ArbrePlaylistsTriable from "@/components/media/ArbrePlaylistsTriable";
-import { schemaSansSousPlaylists } from "@/lib/playlist";
+import {
+  schemaSansSousPlaylists,
+  MESSAGE_SOUS_PLAYLIST,
+  MESSAGE_SCHEMA_PLAYLISTS
+} from "@/lib/playlist";
 import {
   CATEGORIE_PLAYLIST,
   arbrePlaylists,
