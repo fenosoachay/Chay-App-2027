@@ -103,7 +103,7 @@ export const SECTIONS = [
     label: "Articles",
     icon: FileText,
     sort: "-created_date",
-    listColumns: ["title", "category"],
+    listColumns: ["title"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       // « rich-text » : éditeur de texte riche (React Quill) au lieu du simple
@@ -124,7 +124,7 @@ export const SECTIONS = [
     label: "YouTube",
     icon: Youtube,
     sort: "-created_date",
-    listColumns: ["title", "category"],
+    listColumns: ["title"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "youtube_id", label: "ID YouTube", type: "text", required: true },
@@ -139,18 +139,12 @@ export const SECTIONS = [
     label: "Galerie",
     icon: ImageIcon,
     sort: "-created_date",
-    listColumns: ["title", "category"],
+    listColumns: ["title"],
     // Vignette carrée (recadrée automatiquement) à gauche de chaque ligne.
     thumbField: "image_url",
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "image_url", label: "Image", type: "file", required: true, accept: "image/*" },
-      {
-        name: "category",
-        label: "Catégorie",
-        type: "select",
-        options: GALLERY_SECTIONS.map((s) => ({ value: s.id, label: s.label })),
-      },
     ],
     showPlaylist: true,
     playlistField: "image_url",
