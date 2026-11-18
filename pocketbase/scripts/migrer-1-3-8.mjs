@@ -14,7 +14,8 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { nouvellesCollections as collections137 } from './migrer-1-3-7.mjs';
 
-export const LIVRES = ['proverbes', 'ecclesiaste'];
+// 1.3.14 : Hébreux ajouté (13 chapitres ; la limite par livre est dans pb_hooks/bible_audio.pb.js).
+export const LIVRES = ['proverbes', 'ecclesiaste', 'hebreux'];
 export const CHAPITRE_MAX = 31;
 
 /** Définition complète de BibleAudio en 1.3.8 (fragment collections.json, installation neuve). */

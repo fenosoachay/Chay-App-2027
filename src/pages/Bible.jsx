@@ -105,7 +105,7 @@ export default function Bible() {
           </div>
           <div className="text-left">
             <h2 className="text-sm font-bold text-foreground">Sagesse en audio</h2>
-            <p className="text-[0.6875rem] text-muted-foreground">Proverbes & Ecclésiaste à écouter</p>
+            <p className="text-[0.6875rem] text-muted-foreground">Proverbes, Ecclésiaste & Hébreux à écouter</p>
           </div>
         </button>
 

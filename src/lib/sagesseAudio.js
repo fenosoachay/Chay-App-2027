@@ -1,6 +1,6 @@
 // Bible › « Sagesse en audio » : Proverbes (31 chapitres) et Ecclésiaste (12), un audio par chapitre (collection
 // BibleAudio, fichiers sur R2). Lecture par le lecteur global (même lecteur que Musique / Prédication).
-// 1.3.8 : les Psaumes sont retirés (remplacés par l'Ecclésiaste).
+// 1.3.8 : les Psaumes sont retirés (remplacés par l'Ecclésiaste). 1.3.14 : Hébreux (13 chapitres) ajouté.
 // Fichier pur : testé par node --test ; le script d'envoi en masse (pocketbase/scripts/envoyer-bible-audio.mjs)
 // utilise les mêmes règles de nommage.
 
@@ -8,6 +8,7 @@
 export const LIVRES_SAGESSE = [
   { id: "proverbes", nom: "Proverbes", fichier: "Proverbes", chapitres: 31 },
   { id: "ecclesiaste", nom: "Ecclésiaste", fichier: "Ecclesiaste", chapitres: 12 },
+  { id: "hebreux", nom: "Hébreux", fichier: "Hebreux", chapitres: 13 },
 ];
 
 export const livreSagesse = (id) => LIVRES_SAGESSE.find((l) => l.id === id) || null;
@@ -62,7 +63,7 @@ export function fileSagesse(livreId, rows) {
  */
 export function lireNomFichierAudio(nom) {
   const simple = String(nom || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const m = /^(proverbes|ecclesiaste)-0*(\d{1,3})\.mp3$/i.exec(simple);
+  const m = /^(proverbes|ecclesiaste|hebreux)-0*(\d{1,3})\.mp3$/i.exec(simple);
   if (!m) return null;
   const livre = m[1].toLowerCase();
   const chapitre = Number(m[2]);

@@ -8,7 +8,9 @@ import { definitionBibleAudio } from "../../pocketbase/scripts/migrer-1-3-8.mjs"
 const lire = (f) => fs.readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
 test("livres (1.3.8) : Proverbes 31 chapitres, Ecclésiaste 12 ; plus de Psaumes", () => {
-  assert.deepEqual(LIVRES_SAGESSE.map((l) => [l.id, l.nom, l.chapitres]), [["proverbes", "Proverbes", 31], ["ecclesiaste", "Ecclésiaste", 12]]);
+  assert.deepEqual(LIVRES_SAGESSE.map((l) => [l.id, l.nom, l.chapitres]), [["proverbes", "Proverbes", 31], ["ecclesiaste", "Ecclésiaste", 12], ["hebreux", "Hébreux", 13]]);
+  assert.ok(chapitreValide("hebreux", 13));
+  assert.ok(!chapitreValide("hebreux", 14));
   assert.ok(chapitreValide("ecclesiaste", 12));
   assert.ok(!chapitreValide("ecclesiaste", 13));
   assert.ok(chapitreValide("proverbes", 31));
@@ -42,6 +44,10 @@ test("noms des fichiers du dépôt en masse : Ecclesiaste-01.mp3 (casse et accen
   assert.equal(lireNomFichierAudio("Psaumes-012.mp3"), null);
   assert.equal(nomFichierAudio("ecclesiaste", 3), "Ecclesiaste-03.mp3");
   assert.equal(nomFichierAudio("proverbes", 1), "Proverbes-01.mp3");
+  assert.deepEqual(lireNomFichierAudio("Hebreux-01.mp3"), { livre: "hebreux", chapitre: 1 });
+  assert.deepEqual(lireNomFichierAudio("Hébreux-13.mp3"), { livre: "hebreux", chapitre: 13 });
+  assert.equal(lireNomFichierAudio("Hebreux-14.mp3"), null);
+  assert.equal(nomFichierAudio("hebreux", 5), "Hebreux-05.mp3");
 });
 
 test("écran : carrés numérotés (au moins 4 colonnes), état en lecture, envoi R2 réservé aux admins ; schéma 1.3.8", () => {
@@ -51,9 +57,9 @@ test("écran : carrés numérotés (au moins 4 colonnes), état en lecture, envo
   assert.match(vue, /\{isAdmin && \(/);
   assert.match(vue, /envoyerAudioBible\(f, \{ livre: livre\.id, chapitre/);
   assert.doesNotMatch(vue, /download|psaume/i);
-  assert.match(lire("src/pages/Bible.jsx"), /Proverbes & Ecclésiaste à écouter/);
+  assert.match(lire("src/pages/Bible.jsx"), /Proverbes, Ecclésiaste & Hébreux à écouter/);
   const col = definitionBibleAudio();
-  assert.deepEqual(col.fields.find((f) => f.name === "book").values, ["proverbes", "ecclesiaste"]);
+  assert.deepEqual(col.fields.find((f) => f.name === "book").values, ["proverbes", "ecclesiaste", "hebreux"]);
   assert.equal(col.fields.find((f) => f.name === "chapter").max, 31);
   assert.equal(col.listRule, '@request.auth.id != ""');
   assert.equal(col.createRule, '@request.auth.role = "admin"');

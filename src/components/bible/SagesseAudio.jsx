@@ -143,7 +143,7 @@ export default function SagesseAudio({ onBack }) {
   if (!livre) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-4 md:px-8 md:py-10">
-        {enTete("Sagesse en audio", "Écoutez les Proverbes et l'Ecclésiaste")}
+        {enTete("Sagesse en audio", "Écoutez les Proverbes, l'Ecclésiaste et Hébreux")}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {LIVRES_SAGESSE.map((l) => {
             const n = rows ? audiosParChapitre(rows, l.id).size : null;
