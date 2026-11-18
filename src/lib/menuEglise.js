@@ -1,13 +1,13 @@
-// Menu ☰ de l'en-tête : « Histoire de l'église », « Personnel », Vision, But, Confession (collections ChurchHistory, StaffMember, PageTexte).
+// Menu ☰ de l'en-tête : « Histoire de l'Église », « Personnel », Vision, But, Confession (collections ChurchHistory, StaffMember, PageTexte).
 
-import { Target, Flag, ScrollText } from "lucide-react";
+import { History, Users, Target, Flag, ScrollText } from "lucide-react";
 
 export const ENTREES_MENU_EGLISE = [
-  { to: "/eglise/histoire", label: "Histoire de l'église" },
-  { to: "/eglise/personnel", label: "Personnel" },
+  { to: "/eglise/histoire", label: "Histoire de l'Église", icon: History },
   { to: "/eglise/vision", label: "Vision de l'Église", icon: Target },
   { to: "/eglise/but", label: "But de l'Église", icon: Flag },
   { to: "/eglise/confession", label: "Confession de foi", icon: ScrollText },
+  { to: "/eglise/personnel", label: "Personnel", icon: Users },
 ];
 
 /** Photos de la fiche « Histoire » : tableau d'URL http(s), dans l'ordre de l'admin. */
