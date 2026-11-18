@@ -260,22 +260,6 @@ export const SECTIONS = [
     readOnly: false, // Admin gère via EntityCrud
   },
   {
-    // Menu ☰ › « Personnel » : grille 2 colonnes, fiche cliquable vers profil user
-    key: "Staff",
-    label: "Personnel",
-    icon: UserSquare,
-    sort: "order",
-    listColumns: ["prenom", "nom", "role"],
-    thumbField: "photo_url",
-    fields: [
-      { name: "nom", label: "Nom", type: "text", required: true },
-      { name: "prenom", label: "Prénom", type: "text", required: true },
-      { name: "role", label: "Rôle", type: "text", required: true },
-      { name: "photo_url", label: "Photo", type: "file", accept: "image/*" },
-      { name: "user_id", label: "Compte utilisateur lié", type: "relation", collectionId: "users" },
-    ],
-  },
-  {
     key: "ContactMessage",
     label: "Messages",
     icon: Mail,

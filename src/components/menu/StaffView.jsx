@@ -6,6 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useNavigate } from "react-router-dom";
 
+// Nom affiché : champ `name` (StaffMember) ; prenom/nom gardés en secours.
+const nomDe = (s) => s?.name || [s?.prenom, s?.nom].filter(Boolean).join(" ");
+
 // Page Personnel : grille 2 colonnes, fiches cliquables vers /profile/{user_id}
 export default function StaffView() {
   const { user } = useAuth();
@@ -15,7 +18,8 @@ export default function StaffView() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    base44.entities.Staff.list("order", 100)
+    // Liste gérée dans l'admin : Engagement › Personnel (entité StaffMember : name, role, photo_url, order).
+    base44.entities.StaffMember.list("order", 100)
       .then((rows) => setItems(Array.isArray(rows) ? rows : []))
       .catch(() => setItems([]));
   }, []);
@@ -51,7 +55,7 @@ export default function StaffView() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display font-bold text-2xl">
-              {detail?.prenom} {detail?.nom}
+              {nomDe(detail)}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
@@ -59,7 +63,7 @@ export default function StaffView() {
               <img src={detail.photo_url} alt="" className="mx-auto h-32 w-32 rounded-full object-cover border-4 border-primary/20" />
             )}
             <div className="text-center">
-              <p className="font-bold text-lg">{detail?.prenom} {detail?.nom}</p>
+              <p className="font-bold text-lg">{nomDe(detail)}</p>
               {detail?.role && <p className="text-foreground/60">{detail.role}</p>}
             </div>
             {detail?.user_id && (
@@ -99,7 +103,7 @@ function StaffCard({ staff, onOpen }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <h3 className="font-display font-bold text-lg truncate">{staff.prenom} {staff.nom}</h3>
+        <h3 className="font-display font-bold text-lg truncate">{nomDe(staff)}</h3>
         {staff.role && <p className="mt-1 text-sm text-foreground/60">{staff.role}</p>}
       </div>
       <span className="text-foreground/40">›</span>
