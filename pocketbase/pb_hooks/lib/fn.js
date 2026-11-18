@@ -155,6 +155,8 @@ function run(e, name, fallback, handler) {
       return e.json(err.status, body);
     }
     $app.logger().error('[fn] échec', 'fonction', name);
+    // Message réel dans le journal système (journalctl -u pocketbase) : sans lui, une erreur 500 est indiagnosticable.
+    console.error(`[fn] échec ${name} : ${String((err && err.message) || err).slice(0, 500)}`);
     return e.json(500, { error: fallback });
   }
 }
