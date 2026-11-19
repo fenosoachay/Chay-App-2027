@@ -51,7 +51,7 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   const canManagePost = Boolean(isMine || currentUser?.role === "admin");
   const { nameOf, avatarOf } = useMemberDirectory();
   const displayName = nameOf(post.created_by_id, post.author_name || (isMine ? "Vous" : "Membre"));
-  const postAvatar = avatarOf(post.created_by_id, displayName);
+  const postAvatar = avatarOf(post.created_by_id, displayName, post.author_name);
   const liked = reactions.some((r) => r.user_id === currentUser?.id);
   const likeCount = reactions.length;
   const imageUrls = communityPostImages(post);

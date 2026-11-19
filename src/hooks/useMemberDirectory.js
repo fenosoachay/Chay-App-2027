@@ -90,7 +90,8 @@ export default function useMemberDirectory() {
     // Nom actuel du membre ; `fallback` = nom copié sur le message/post (anciens contenus).
     nameOf: (userId, fallback) => dir[userId]?.display_name || fallback || "Membre",
     // `nom` (facultatif) : nom affiché de l'auteur, dernier recours pour les anciens contenus.
-    avatarOf: (userId, nom) => dir[userId]?.avatar_url || photosComptes[userId] || photosParNom[cleNom(nom)] || "",
+    avatarOf: (userId, ...noms) =>
+      dir[userId]?.avatar_url || photosComptes[userId] || noms.map((n) => photosParNom[cleNom(n)]).find(Boolean) || "",
     profileOf: (userId) => dir[userId] || null,
   };
 }

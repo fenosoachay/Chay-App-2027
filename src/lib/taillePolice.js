@@ -25,7 +25,8 @@ export function appliquerTaillePolice(v, doc = globalThis.document) {
   const t = normaliserTaille(v);
   const html = doc?.documentElement;
   if (!html) return t;
-  html.style.fontSize = t === 100 ? "" : `${t}%`;
+  // Base réduite sur écran étroit (html de src/index.css), multipliée par la taille choisie.
+  html.style.fontSize = t === 100 ? "" : `calc(min(16px, 4.2667vw) * ${t / 100})`;
   html.dataset.police = String(t);
   if (t >= SEUIL_GRANDE_POLICE) html.dataset.policeGrande = "";
   else delete html.dataset.policeGrande;
