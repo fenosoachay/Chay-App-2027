@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { uploadToBase44 } from "@/lib/upload";
-import { ImagePlus, Send, Loader2, X, Users, Trash2, AlertTriangle } from "lucide-react";
+import { ImagePlus, Send, Loader2, X, Users, Trash2, AlertTriangle, Search } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useToast } from "@/components/ui/use-toast";
 import PostCard from "@/components/community/PostCard";
@@ -29,6 +29,16 @@ export default function Community() {
   const [usersError, setUsersError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+  // Admins : liste complète. Membres : recherche seulement (au moins 2 lettres), sans liste.
+  const [recherche, setRecherche] = useState("");
+  const estAdmin = user?.role === "admin";
+  const sansAccents = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const termes = sansAccents(recherche).trim();
+  const membresAffiches = estAdmin
+    ? users
+    : termes.length < 2
+      ? []
+      : users.filter((m) => sansAccents([m.first_name, m.last_name].filter(Boolean).join(" ")).includes(termes)).slice(0, 20);
 
   const loadPosts = async () => {
     const p = await base44.entities.CommunityPost
@@ -187,8 +197,16 @@ export default function Community() {
               : "text-foreground/60"
           }`}
         >
-          <Users className="h-4 w-4 mr-1.5" /> Utilisateurs (
-          {usersLoading ? "…" : usersError ? "—" : users.length})
+          {estAdmin ? (
+            <>
+              <Users className="h-4 w-4 mr-1.5" /> Utilisateurs (
+              {usersLoading ? "…" : usersError ? "—" : users.length})
+            </>
+          ) : (
+            <>
+              <Search className="h-4 w-4 mr-1.5" /> Chercher un membre
+            </>
+          )}
         </button>
       </div>
 
@@ -296,7 +314,22 @@ export default function Community() {
 
       {activeTab === "utilisateurs" && (
         <div className="space-y-3">
-          {usersLoading ? (
+          {!estAdmin && (
+            <label className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5">
+              <Search className="h-4 w-4 shrink-0 text-foreground/40" aria-hidden="true" />
+              <input
+                type="search"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Chercher un membre…"
+                aria-label="Chercher un membre"
+                className="min-w-0 flex-1 bg-transparent outline-none"
+              />
+            </label>
+          )}
+          {!estAdmin && !usersLoading && !usersError && termes.length < 2 ? (
+            <p className="text-center text-foreground/50 py-8">Tapez au moins 2 lettres du prénom ou du nom.</p>
+          ) : usersLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -311,10 +344,10 @@ export default function Community() {
                 Réessayer
               </button>
             </p>
-          ) : users.length === 0 ? (
-            <p className="text-center text-foreground/50 py-12">Aucun utilisateur trouvé.</p>
+          ) : membresAffiches.length === 0 ? (
+            <p className="text-center text-foreground/50 py-12">Aucun membre trouvé.</p>
           ) : (
-            users.map((m) => (
+            membresAffiches.map((m) => (
               <div
                 key={m.id}
                 className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
