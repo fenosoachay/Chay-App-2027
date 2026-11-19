@@ -452,8 +452,19 @@ const playVideo = (source) => {
     if (pleinEcranWeb && (!isFullPlayer || !isVideo)) document.exitFullscreen?.().catch(() => {});
   }, [isFullPlayer, isVideo, pleinEcranWeb]);
 
+  // Repère « −10 s / +10 s » affiché un instant sur la vidéo (ordinateur).
+  const [repere, setRepere] = useState(null); // { ecart, n }
+  const repereDelaiRef = useRef(null);
+  useEffect(() => () => clearTimeout(repereDelaiRef.current), []);
+  const montrerRepere = (ecart) => {
+    clearTimeout(repereDelaiRef.current);
+    setRepere((r) => ({ ecart, n: (r?.n || 0) + 1 }));
+    repereDelaiRef.current = setTimeout(() => setRepere(null), 700);
+  };
+
   const deplacerVideo = (ecart) => {
     if (!control) return;
+    montrerRepere(ecart);
     // Web : lecteur <video> de la page.
     if (!isNativeAndroidPlayer) {
       const v = videoRef.current;
@@ -701,6 +712,19 @@ const playVideo = (source) => {
   }}
 />
         
+        {repere && isVideo && (
+          <div
+            key={repere.n}
+            aria-live="polite"
+            className={`pointer-events-none absolute inset-y-0 z-20 flex items-center ${repere.ecart < 0 ? "left-[12%]" : "right-[12%]"}`}
+          >
+            <span className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-3 text-lg font-bold animate-in fade-in zoom-in-95">
+              {repere.ecart < 0 ? <RotateCcw className="h-5 w-5" /> : <RotateCw className="h-5 w-5" />}
+              {repere.ecart < 0 ? "−10 s" : "+10 s"}
+            </span>
+          </div>
+        )}
+
         {/* INDICATEUR DE BUFFERING : source unique (events natifs <video>). */}
         {showVideoSpinner && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
