@@ -8,8 +8,9 @@ import GalleryViewer from "./GalleryViewer";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
 // Multimédia › « Fond d'écran » : grille de vignettes (format téléphone) ; un toucher ouvre l'aperçu
-// dans la visionneuse partagée GalleryViewer (glissement gauche/droite, plein écran, commentaires).
-// Seule différence avec la Galerie : un bouton « Télécharger » en haut à droite de la visionneuse.
+// dans la visionneuse partagée GalleryViewer (glissement gauche/droite, plein écran).
+// Différences avec la Galerie : bouton « Télécharger » (image d'origine, pleine qualité) en haut à droite,
+// pas de commentaires, pas de boutons Modifier/Supprimer de la Galerie (les fonds se gèrent dans l'admin).
 export default function FondsEcran() {
   const { toast } = useToast();
   const [liste, setListe] = useState(null);
@@ -76,25 +77,24 @@ export default function FondsEcran() {
         items={itemsForViewer}
         index={viewerItem ? itemsForViewer.findIndex((i) => i.id === viewerItem.id) : null}
         onClose={() => setViewerItem(null)}
-        onItemUpdated={(updated) => {
-          setListe((prev) => prev?.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)));
-        }}
-      >
-        {/* Override : bouton Télécharger en haut à droite de la visionneuse */}
-        {viewerItem && (
-          <div className="absolute top-4 right-4 z-20">
+        sansCommentaires
+        sansGestion
+        actionsHaut={(photo) => {
+          // Fichier d'origine (pleine qualité), pas la vignette affichée dans la grille.
+          const original = liste.find((f) => f.id === photo.id) || photo;
+          return (
             <button
               type="button"
               disabled={envoi}
-              onClick={(e) => { e.stopPropagation(); enregistrer(viewerItem); }}
-              className="h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 shadow-lg"
-              aria-label={`Télécharger ${viewerItem.title || "cet arrière-plan"}`}
+              onClick={(e) => { e.stopPropagation(); enregistrer(original); }}
+              className="h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
+              aria-label={`Télécharger ${original.title || "ce fond d'écran"}`}
             >
               {envoi ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
             </button>
-          </div>
-        )}
-      </GalleryViewer>
+          );
+        }}
+      />
     </>
   );
 }

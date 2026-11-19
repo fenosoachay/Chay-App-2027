@@ -20,7 +20,9 @@ import { confirmFr } from "@/lib/confirmFr";
 // jamais entrer en collision avec l'identifiant d'un vrai post.
 const commentKey = (id) => `gallery:${id}`;
 
-export default function GalleryViewer({ items = [], index, onClose, onItemUpdated, onItemDeleted }) {
+// Options (Fond d'écran) : `sansCommentaires` retire les commentaires, `sansGestion` les boutons Modifier/Supprimer
+// de la Galerie, `actionsHaut(photo)` ajoute des boutons en haut à droite (ex. Télécharger), pour la photo affichée.
+export default function GalleryViewer({ items = [], index, onClose, onItemUpdated, onItemDeleted, sansCommentaires = false, sansGestion = false, actionsHaut = null }) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -74,9 +76,9 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
 
   const isOpen = index !== null && index !== undefined && items.length > 0;
   const current = isOpen ? items[i] : null;
-  const key = current && current.id ? commentKey(current.id) : null;
+  const key = !sansCommentaires && current && current.id ? commentKey(current.id) : null;
   const canManageItem = Boolean(
-    current && (current.created_by_id === user?.id || user?.role === "admin")
+    !sansGestion && current && (current.created_by_id === user?.id || user?.role === "admin")
   );
 
   const sourceUrl = (current && current.image_url) || null;
@@ -320,6 +322,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
         >
           {/* Contrôles haut : commentaires + fermeture */}
           <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+            {current && actionsHaut?.(current)}
             {canManageItem && (
               <>
                 <button
@@ -374,7 +377,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
           )}
 
           {/* Commentaires : bandeau sous la photo */}
-          {!showComments && (
+          {!showComments && !sansCommentaires && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
               className="absolute bottom-4 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
