@@ -820,7 +820,7 @@ const playVideo = (source) => {
               <span className="w-10 tabular-nums">{formatTime(control.duration)}</span>
             </div>
           )}
-          {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
+          {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} onSelect={control.playAt} />}
           <div
             className={pleinEcranFilm
               ? `absolute inset-x-0 bottom-16 z-30 flex items-center justify-center gap-5 transition-opacity duration-300 ${commandesVisibles ? "opacity-100" : "pointer-events-none opacity-0"}`

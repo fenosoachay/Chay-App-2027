@@ -1,7 +1,7 @@
 import React from "react";
 
-// File « à suivre » : la vidéo en cours est surlignée.
-export default function PlayerQueueList({ queue = [], index = 0 }) {
+// File « à suivre » : la vidéo en cours est surlignée ; toucher un titre lance cette vidéo (si `onSelect`).
+export default function PlayerQueueList({ queue = [], index = 0, onSelect }) {
   if (queue.length < 2) return null;
   return (
     <div className="mx-auto mb-2 w-full max-w-5xl">
@@ -11,12 +11,20 @@ export default function PlayerQueueList({ queue = [], index = 0 }) {
           <li
             key={item.id || i}
             ref={i === index ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined}
-            className={`flex items-center gap-2 rounded-lg p-1.5 text-sm transition ${
-              i === index ? "bg-white/15 font-bold" : "text-white/70"
-            }`}
           >
-            {item.artwork && <img src={item.artwork} alt="" className="h-8 w-14 shrink-0 rounded object-cover" />}
-            <span className="min-w-0 truncate">{item.title}</span>
+            <button
+              type="button"
+              disabled={!onSelect || i === index}
+              onClick={() => onSelect?.(i)}
+              aria-current={i === index ? "true" : undefined}
+              aria-label={`Lire : ${item.title || "vidéo"}`}
+              className={`flex w-full items-center gap-2 rounded-lg p-1.5 text-left text-sm transition enabled:hover:bg-white/10 ${
+                i === index ? "bg-white/15 font-bold" : "text-white/70"
+              }`}
+            >
+              {item.artwork && <img src={item.artwork} alt="" className="h-8 w-14 shrink-0 rounded object-cover" />}
+              <span className="min-w-0 truncate">{item.title}</span>
+            </button>
           </li>
         ))}
       </ul>

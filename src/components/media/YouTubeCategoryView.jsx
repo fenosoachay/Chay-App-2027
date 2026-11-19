@@ -241,6 +241,8 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
         artwork: entry.thumbnail_url || entry.cover_url || null,
       })),
       queueIndex: index,
+      // Toucher un titre de la file « À suivre » : lecture de cette vidéo, la suite continue après elle.
+      playAt: (i) => playQueue(list, i),
       stop,
     }, "youtube");
     setPlayingId(item.id);
