@@ -12,6 +12,9 @@ import FondsEcran from "@/components/media/FondsEcran";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
+import ParolesCategoryView from "@/components/media/ParolesCategoryView";
+import VersetCategoryView from "@/components/media/VersetCategoryView";
+import ReelsView from "@/components/media/ReelsView";
 import { arbrePlaylists, contenusNonRanges, playlistDe } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
@@ -32,6 +35,9 @@ const TITLES = {
   playlist: "Votre Playlist",
   actualite: "Actualité chrétienne",
   fonds: "Fond d'écran",
+  paroles: "Paroles",
+  verset: "Verset",
+  reels: "Reels",
 };
 
 function SearchBar({ query, setQuery, placeholder, className = "mb-5" }) {
@@ -581,6 +587,12 @@ export default function MediaCategory({
       )}
 
       {cat === "fonds" && <FondsEcran />}
+
+      {cat === "paroles" && <ParolesCategoryView category="paroles" data={data} onBack={onBack} />}
+
+      {cat === "verset" && <VersetCategoryView category="verset" data={data} onBack={onBack} />}
+
+      {cat === "reels" && <ReelsView onBack={onBack} />}
 
       {cat === "playlist" && (
         <FavoritesView
