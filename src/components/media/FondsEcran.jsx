@@ -11,6 +11,9 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 // dans la visionneuse partagée GalleryViewer (glissement gauche/droite, plein écran).
 // Différences avec la Galerie : bouton « Télécharger » (image d'origine, pleine qualité) en haut à droite,
 // pas de commentaires, pas de boutons Modifier/Supprimer de la Galerie (les fonds se gèrent dans l'admin).
+// Phrase d'accueil affichée au-dessus des fonds d'écran.
+const PHRASE = "Emporte la Parole de Dieu partout avec toi ! Découvre et télécharge des fonds d'écran inspirants pour garder les promesses de Dieu sous tes yeux chaque jour. ✨";
+
 export default function FondsEcran() {
   const { toast } = useToast();
   const [liste, setListe] = useState(null);
@@ -40,13 +43,18 @@ export default function FondsEcran() {
     }
   };
 
-  if (liste === null) return <Loader2 className="h-6 w-6 animate-spin text-primary" />;
+  const intro = <p className="mb-4 text-foreground/70">{PHRASE}</p>;
+
+  if (liste === null) return <>{intro}<Loader2 className="h-6 w-6 animate-spin text-primary" /></>;
   if (!liste.length) {
     return (
+      <>
+      {intro}
       <div className="rounded-[1.5rem] border border-dashed border-border p-8 text-center">
         <ImageDown className="mx-auto mb-3 h-8 w-8 text-foreground/40" aria-hidden="true" />
         <p className="font-semibold">Aucun fond d'écran pour le moment.</p>
       </div>
+      </>
     );
   }
 
@@ -59,6 +67,7 @@ export default function FondsEcran() {
 
   return (
     <>
+      {intro}
       <div className="grid grid-cols-3 gap-3 md:grid-cols-5">
         {liste.map((f) => (
           <button
