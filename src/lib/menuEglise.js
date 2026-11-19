@@ -7,7 +7,7 @@ export const ENTREES_MENU_EGLISE = [
   { to: "/eglise/vision", label: "Vision de l'Église", icon: Target },
   { to: "/eglise/but", label: "But de l'Église", icon: Flag },
   { to: "/eglise/confession", label: "Confession de foi", icon: ScrollText },
-  { to: "/eglise/personnel", label: "Personnel", icon: Users },
+  { to: "/eglise/personnel", label: "En service", icon: Users },
 ];
 
 /** Photos de la fiche « Histoire » : tableau d'URL http(s), dans l'ordre de l'admin. */

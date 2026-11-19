@@ -12,7 +12,7 @@ test("menu ☰ : Histoire de l'Église, Vision, But, Confession, Personnel", () 
     ["Vision de l'Église", "/eglise/vision"],
     ["But de l'Église", "/eglise/but"],
     ["Confession de foi", "/eglise/confession"],
-    ["Personnel", "/eglise/personnel"],
+    ["En service", "/eglise/personnel"],
   ]);
   assert.ok(ENTREES_MENU_EGLISE.every((e) => e.icon && typeof e.icon === "function"));
   const layout = lire("src/components/Layout.jsx");

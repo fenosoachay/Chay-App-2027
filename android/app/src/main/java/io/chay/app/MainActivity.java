@@ -40,6 +40,9 @@ public class MainActivity extends BridgeActivity {
         if (webView != null) {
             // Lecture sans geste utilisateur (enchaînement des vidéos/musiques).
             webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+            // Taille du texte indépendante du réglage « Taille de police » du téléphone : l'app s'affiche partout
+            // comme à 100 %. La taille propre à l'app (Paramètres > Affichage, src/lib/taillePolice.js) reste active.
+            webView.getSettings().setTextZoom(100);
         }
         // Fond transparent (capacitor.config.json) seulement pendant le lancement : le dégradé de la fenêtre
         // (styles.xml) apparaît à travers la WebView, sans éclair blanc. Dès que la page est chargée, son propre

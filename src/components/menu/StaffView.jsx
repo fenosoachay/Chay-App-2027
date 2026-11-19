@@ -35,7 +35,7 @@ export default function StaffView() {
           <span className="h-11 w-11 shrink-0 rounded-2xl brand-gradient grid place-items-center text-white">
             <User className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h1 className="font-display font-extrabold text-3xl brand-gradient-text">Personnel</h1>
+          <h1 className="font-display font-extrabold text-3xl brand-gradient-text">En service</h1>
         </div>
         {/* Admin : bouton pour créer/modifier (optionnel, via admin) */}
       </header>
