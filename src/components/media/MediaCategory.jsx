@@ -15,6 +15,7 @@ import NavigationPlaylists from "@/components/media/NavigationPlaylists";
 import ParolesCategoryView from "@/components/media/ParolesCategoryView";
 import VersetCategoryView from "@/components/media/VersetCategoryView";
 import ReelsView from "@/components/media/ReelsView";
+import { useLibellesMedia } from "@/hooks/useLibellesMedia";
 import { arbrePlaylists, contenusNonRanges, playlistDe } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
@@ -213,6 +214,7 @@ export default function MediaCategory({
   onChargerContenus,
   onReorderLiens,
 }) {
+  const libelles = useLibellesMedia();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = user?.role === "admin";
@@ -345,7 +347,7 @@ export default function MediaCategory({
         <button onClick={handleBack} className="h-9 w-9 grid place-items-center rounded-full border border-border hover:bg-muted">
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <h2 className="font-display font-extrabold text-2xl">{TITLES[cat]}</h2>
+        <h2 className="font-display font-extrabold text-2xl">{libelles[cat] || TITLES[cat]}</h2>
       </div>
 
       {cat === "radio" && <RadioPlayer />}
