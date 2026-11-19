@@ -13,6 +13,7 @@ export default function ReelsView({ onBack }) {
   const [actif, setActif] = useState(0);
   const [muet, setMuet] = useState(false);
   const [enPause, setEnPause] = useState(false);
+  const [progression, setProgression] = useState(0); // 0 à 1, vidéo à l'écran
   const conteneurRef = useRef(null);
   const videosRef = useRef([]);
 
@@ -75,7 +76,17 @@ export default function ReelsView({ onBack }) {
     });
   }, [actif, reels, muet, enPause]);
 
-  useEffect(() => { setEnPause(false); }, [actif]);
+  useEffect(() => { setEnPause(false); setProgression(0); }, [actif]);
+
+  // Toucher la barre : la vidéo saute à cet endroit.
+  const allerA = (e) => {
+    const v = videosRef.current[actif];
+    if (!v || !Number.isFinite(v.duration) || v.duration <= 0) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    v.currentTime = ratio * v.duration;
+    setProgression(ratio);
+  };
 
   const basculerPause = useCallback(() => {
     const v = videosRef.current[actif];
@@ -139,6 +150,11 @@ export default function ReelsView({ onBack }) {
                 controlsList="nodownload"
                 disablePictureInPicture
                 onClick={basculerPause}
+                onTimeUpdate={(e) => {
+                  if (i !== actif) return;
+                  const v = e.currentTarget;
+                  if (Number.isFinite(v.duration) && v.duration > 0) setProgression(v.currentTime / v.duration);
+                }}
                 className="h-full w-full bg-black object-contain"
               />
               {i === actif && enPause && (
@@ -149,9 +165,24 @@ export default function ReelsView({ onBack }) {
                 </div>
               )}
               {(r.title || r.description) && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-16">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-16">
                   {r.title && <p className="font-display text-base font-bold leading-snug">{r.title}</p>}
                   {r.description && <p className="mt-1 line-clamp-3 text-sm text-white/80">{r.description}</p>}
+                </div>
+              )}
+              {i === actif && (
+                <div
+                  role="slider"
+                  aria-label="Progression de la vidéo"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(progression * 100)}
+                  onClick={allerA}
+                  className="absolute inset-x-0 bottom-[env(safe-area-inset-bottom)] z-10 flex h-6 cursor-pointer items-end"
+                >
+                  <div className="h-1 w-full bg-white/25">
+                    <div className="h-full bg-white" style={{ width: `${progression * 100}%` }} />
+                  </div>
                 </div>
               )}
             </section>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { SortAsc, SortDesc, Lock, Unlock } from "lucide-react";
+import { SortAsc, SortDesc, Lock, Unlock, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import ParolesCard from "./ParolesCard";

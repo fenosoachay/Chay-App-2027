@@ -437,6 +437,14 @@ const playVideo = (source) => {
   }, [isFullPlayer, isVideo]); // eslint-disable-line react-hooks/exhaustive-deps
   const deplacerVideo = (ecart) => {
     if (!control) return;
+    // Web : lecteur <video> de la page.
+    if (!isNativeAndroidPlayer) {
+      const v = videoRef.current;
+      if (!v) return;
+      const fin = Number.isFinite(v.duration) ? v.duration : Infinity;
+      v.currentTime = Math.max(0, Math.min(fin, (v.currentTime || 0) + ecart));
+      return;
+    }
     const fin = Math.max(0, Number(control.duration) || 0);
     const position = Math.max(0, Math.min(fin || Infinity, (Number(control.currentTime) || 0) + ecart));
     updateMediaControl(control.id, { currentTime: position });
@@ -743,7 +751,7 @@ const playVideo = (source) => {
           )}
           {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
           <div className="flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
+            {isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={() => deplacerVideo(-10)} aria-label="Reculer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCcw /></button>
             )}
             {control.previous && (
@@ -755,9 +763,11 @@ const playVideo = (source) => {
             {control.next && (
               <button type="button" onClick={control.next} aria-label="Suivant" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><SkipForward /></button>
             )}
+            {isVideo && showEmbeddedPlayer && (
+              <button type="button" onClick={() => deplacerVideo(10)} aria-label="Avancer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCw /></button>
+            )}
             {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
               <>
-                <button type="button" onClick={() => deplacerVideo(10)} aria-label="Avancer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCw /></button>
                 <button type="button" onClick={() => basculerPleinEcran(true)} aria-label="Plein écran" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Maximize /></button>
               </>
             )}
