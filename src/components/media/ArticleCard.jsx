@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import FullImage from "@/components/ui/FullImage";
 import ReactMarkdown from "react-markdown";
-import DOMPurify from "dompurify";
-import { lignesVides } from "@/components/media/TexteRiche";
+import TexteRiche from "@/components/media/TexteRiche";
 import CompteurVues from "@/components/media/CompteurVues";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
@@ -25,13 +24,9 @@ function ArticleBody({ body }) {
   if (!body) return null;
 
   if (looksLikeHtml(body)) {
-    return (
-    <div
-className="article-body"
-dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lignesVides(body)) }}
-/>
-
-    );
+    // Texte de l'éditeur : affiché avec les styles de l'éditeur (centrage, couleurs, tailles, lignes vides),
+    // exactement comme dans l'admin.
+    return <TexteRiche html={body} className="break-words" />;
   }
   return (
     <div className="article-body">
