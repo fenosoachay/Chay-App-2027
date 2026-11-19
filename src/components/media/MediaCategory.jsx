@@ -343,12 +343,14 @@ export default function MediaCategory({
 
   return (
     <div>
+      {cat !== "paroles" && (
       <div className="flex items-center gap-3 mb-5">
         <button onClick={handleBack} className="h-9 w-9 grid place-items-center rounded-full border border-border hover:bg-muted">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <h2 className="font-display font-extrabold text-2xl">{libelles[cat] || TITLES[cat]}</h2>
       </div>
+      )}
 
       {cat === "radio" && <RadioPlayer />}
 
@@ -590,7 +592,7 @@ export default function MediaCategory({
 
       {cat === "fonds" && <FondsEcran />}
 
-      {cat === "paroles" && <ParolesCategoryView category="paroles" data={data} onBack={onBack} />}
+      {cat === "paroles" && <ParolesCategoryView titre={libelles.paroles || TITLES.paroles} onBack={handleBack} />}
 
       {cat === "verset" && <VersetCategoryView category="verset" data={data} onBack={onBack} />}
 

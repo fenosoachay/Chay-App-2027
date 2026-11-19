@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 import { useToast } from "@/components/ui/use-toast";
+import { ChevronRight, Music } from "lucide-react";
 import TexteRiche from "./TexteRiche";
 
 
@@ -16,7 +17,8 @@ function Body({ body }) {
   return <TexteRiche html={body} />;
 }
 
-export default function ParolesCard({ texte }) {
+// `variante="ligne"` : ligne de liste (icône, titre, flèche), utilisée dans la section Paroles groupée par lettre.
+export default function ParolesCard({ texte, variante = "carte" }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const open = searchParams.get("parole") === texte.id;
@@ -40,11 +42,15 @@ export default function ParolesCard({ texte }) {
         onClick={() => setOpen(true)}
         disabled={loading}
         aria-label={`Lire : ${texte.title || "sans titre"}`}
-        className="flex min-w-0 flex-1 flex-col gap-1 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className={variante === "ligne"
+          ? "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+          : "flex min-w-0 flex-1 flex-col gap-1 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"}
       >
-        <h3 className="w-full break-words font-display font-bold text-base leading-snug text-foreground">
+        {variante === "ligne" && <Music className="h-5 w-5 shrink-0 text-foreground/70" aria-hidden="true" />}
+        <h3 className="min-w-0 flex-1 break-words font-display font-bold text-base leading-snug text-foreground">
           {texte.title || "Sans titre"}
         </h3>
+        {variante === "ligne" && <ChevronRight className="h-5 w-5 shrink-0 text-foreground/50" aria-hidden="true" />}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
