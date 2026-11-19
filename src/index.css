@@ -2,10 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Écrans étroits : toute l'app (tailles en rem) se réduit pour garder la mise en page d'un écran de 375 px
-   (4.2667vw = 16px à 375 px de large). Au-delà de 375 px, rien ne change. La taille choisie dans
-   Paramètres > Affichage multiplie cette base (src/lib/taillePolice.js et index.html). */
-html { font-size: min(16px, 4.2667vw); }
+/* Taille de base de toute l'app (tailles en rem). Téléphones : réduite (14 px au lieu de 16) et encore un peu
+   plus sur les écrans étroits (3.7333vw = 14 px à 375 px de large), pour que les textes tiennent partout.
+   Tablettes et ordinateurs : inchangé. La taille choisie dans Paramètres > Affichage multiplie cette base
+   (src/lib/taillePolice.js et index.html). */
+:root { --chay-base: 16px; }
+@media (max-width: 767px) {
+  :root { --chay-base: min(14px, 3.7333vw); }
+}
+html { font-size: var(--chay-base); }
 
 /* base44-workspace-fonts:start */
 @font-face {

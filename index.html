@@ -45,7 +45,7 @@
           var t = Number(localStorage.getItem("chay-taille-police"));
           if ([125, 150, 175, 200].indexOf(t) === -1) return;
           var h = document.documentElement;
-          h.style.fontSize = "calc(min(16px, 4.2667vw) * " + t / 100 + ")";
+          h.style.fontSize = "calc(var(--chay-base, 16px) * " + t / 100 + ")";
           h.setAttribute("data-police", String(t));
           if (t >= 150) h.setAttribute("data-police-grande", "");
         } catch (e) {}

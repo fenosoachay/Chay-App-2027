@@ -20,11 +20,11 @@ test("100 % à 200 % par paliers de 25 %, enregistré sur l'appareil, appliqué 
   assert.equal(lireTaillePolice(f.storage), 100);
   assert.equal(enregistrerTaillePolice(200, f.storage, f.doc), 200);
   assert.equal(f.m.get(CLE_TAILLE_POLICE), "200");
-  assert.equal(f.html.style.fontSize, "calc(min(16px, 4.2667vw) * 2)");
+  assert.equal(f.html.style.fontSize, "calc(var(--chay-base, 16px) * 2)");
   assert.equal(f.html.dataset.police, "200");
   assert.ok("policeGrande" in f.html.dataset);
   appliquerTaillePolice(125, f.doc);
-  assert.equal(f.html.style.fontSize, "calc(min(16px, 4.2667vw) * 1.25)");
+  assert.equal(f.html.style.fontSize, "calc(var(--chay-base, 16px) * 1.25)");
   assert.equal("policeGrande" in f.html.dataset, false);
   appliquerTaillePolice(100, f.doc);
   assert.equal(f.html.style.fontSize, "");
