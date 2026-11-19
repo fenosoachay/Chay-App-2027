@@ -1,6 +1,8 @@
 package io.chay.app;
 
 import android.content.ComponentName;
+import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +13,9 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
@@ -57,6 +62,9 @@ public class AndroidExoPlayerPlugin extends Plugin {
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
     private PlayerView playerView;
+    // Plein écran vidéo : le lecteur Android couvre tout l'écran, en paysage, avec ses propres commandes.
+    private boolean pleinEcran = false;
+    private FrameLayout.LayoutParams derniereFenetre = null;
 
     @Override
     public void load() {
@@ -270,6 +278,60 @@ public class AndroidExoPlayerPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void setFullscreen(PluginCall call) {
+        boolean actif = call.getBoolean("active", false);
+        if (playerView == null || getActivity() == null) {
+            call.resolve();
+            return;
+        }
+        getActivity().runOnUiThread(() -> {
+            if (actif) entrerPleinEcran();
+            else quitterPleinEcran(false);
+            call.resolve();
+        });
+    }
+
+    private void entrerPleinEcran() {
+        if (playerView == null || getActivity() == null || pleinEcran) return;
+        pleinEcran = true;
+        if (playerView.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            derniereFenetre = new FrameLayout.LayoutParams((FrameLayout.LayoutParams) playerView.getLayoutParams());
+        }
+        playerView.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        playerView.setBackgroundColor(Color.BLACK);
+        playerView.setUseController(true);
+        playerView.setControllerShowTimeoutMs(3000);
+        playerView.setFullscreenButtonClickListener(etat -> quitterPleinEcran(true));
+        playerView.setVisibility(View.VISIBLE);
+        playerView.bringToFront();
+        playerView.showController();
+        getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+        WindowInsetsControllerCompat barres = WindowCompat.getInsetsController(
+            getActivity().getWindow(), getActivity().getWindow().getDecorView());
+        barres.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        barres.hide(WindowInsetsCompat.Type.systemBars());
+    }
+
+    /** `prevenir` : sortie demandée par le lecteur Android (bouton) : l'app est avertie pour se remettre à jour. */
+    private void quitterPleinEcran(boolean prevenir) {
+        if (playerView == null || getActivity() == null || !pleinEcran) return;
+        pleinEcran = false;
+        playerView.setUseController(false);
+        playerView.setFullscreenButtonClickListener(null);
+        playerView.setBackgroundColor(Color.TRANSPARENT);
+        if (derniereFenetre != null) playerView.setLayoutParams(derniereFenetre);
+        getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        WindowCompat.getInsetsController(getActivity().getWindow(), getActivity().getWindow().getDecorView())
+            .show(WindowInsetsCompat.Type.systemBars());
+        if (prevenir) {
+            JSObject data = new JSObject();
+            data.put("active", false);
+            notifyListeners("fullscreen", data);
+        }
+    }
+
+    @PluginMethod
     public void setVideoBounds(PluginCall call) {
         if (playerView == null || getActivity() == null) {
             call.resolve();
@@ -285,7 +347,13 @@ public class AndroidExoPlayerPlugin extends Plugin {
 
         getActivity().runOnUiThread(() -> {
             if (playerView == null) return;
+            // En plein écran, la fenêtre vidéo couvre tout l'écran : les positions de la page sont ignorées.
+            if (pleinEcran && visible) {
+                call.resolve();
+                return;
+            }
             if (!visible || width <= 0 || height <= 0) {
+                quitterPleinEcran(true);
                 playerView.setVisibility(View.GONE);
                 call.resolve();
                 return;

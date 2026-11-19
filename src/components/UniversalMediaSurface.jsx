@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2 } from "lucide-react";
+import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2, Maximize, RotateCcw, RotateCw } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -30,9 +30,11 @@ import {
   playWithAndroidExoPlayer,
   resumeAndroidExoPlayer,
   seekAndroidExoPlayer,
+  setAndroidExoPlayerFullscreen,
   setAndroidExoPlayerVideoBounds,
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
+  subscribeAndroidExoPlayerFullscreen,
 } from "@/lib/androidExoPlayer";
 import { isActiveVideoEvent, videoQueueId } from "@/lib/videoPlaybackEvent";
 import {
@@ -410,6 +412,36 @@ const playVideo = (source) => {
   const isVideo = control?.type === "video";
   const isYouTube = control?.type === "youtube";
   const isRadio = control?.type === "radio";
+
+  // ── Plein écran vidéo (téléphone Android) : paysage, commandes du lecteur Android. ──
+  const [pleinEcran, setPleinEcran] = useState(false);
+  const basculerPleinEcran = (actif) => {
+    setPleinEcran(actif);
+    setAndroidExoPlayerFullscreen(actif).catch((error) => {
+      console.error("[MediaPlayer] Unable to toggle fullscreen.", error);
+      setPleinEcran(false);
+    });
+  };
+  useEffect(() => {
+    if (!isNativeAndroidPlayer) return undefined;
+    const abonnement = subscribeAndroidExoPlayerFullscreen((e) => {
+      if (!e?.active) setPleinEcran(false);
+    });
+    return () => { Promise.resolve(abonnement).then((a) => a?.remove?.()).catch(() => {}); };
+  }, [isNativeAndroidPlayer]);
+  // Bouton retour : quitte le plein écran (avant de fermer le lecteur).
+  useBackHandler(pleinEcran, () => basculerPleinEcran(false));
+  // Lecteur réduit ou autre média : on sort du plein écran.
+  useEffect(() => {
+    if (pleinEcran && (!isFullPlayer || !isVideo)) basculerPleinEcran(false);
+  }, [isFullPlayer, isVideo]); // eslint-disable-line react-hooks/exhaustive-deps
+  const deplacerVideo = (ecart) => {
+    if (!control) return;
+    const fin = Math.max(0, Number(control.duration) || 0);
+    const position = Math.max(0, Math.min(fin || Infinity, (Number(control.currentTime) || 0) + ecart));
+    updateMediaControl(control.id, { currentTime: position });
+    seekAndroidExoPlayer(position).catch((error) => console.error("[MediaPlayer] Unable to seek ExoPlayer video.", error));
+  };
   const { isOnline } = useNetwork();
   const [retryTick, setRetryTick] = useState(0);
   const blockedOffline = Boolean(isYouTube && !isOnline);
@@ -711,6 +743,9 @@ const playVideo = (source) => {
           )}
           {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
           <div className="flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
+              <button type="button" onClick={() => deplacerVideo(-10)} aria-label="Reculer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCcw /></button>
+            )}
             {control.previous && (
               <button type="button" onClick={control.previous} aria-label="Précédent" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><SkipBack /></button>
             )}
@@ -719,6 +754,12 @@ const playVideo = (source) => {
             </button>
             {control.next && (
               <button type="button" onClick={control.next} aria-label="Suivant" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><SkipForward /></button>
+            )}
+            {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
+              <>
+                <button type="button" onClick={() => deplacerVideo(10)} aria-label="Avancer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCw /></button>
+                <button type="button" onClick={() => basculerPleinEcran(true)} aria-label="Plein écran" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Maximize /></button>
+              </>
             )}
             <button type="button" onClick={() => setExpanded(false)} aria-label="Réduire le lecteur et continuer la lecture" className="grid h-12 w-12 place-items-center rounded-full text-white/70 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><X /></button>
           </div>

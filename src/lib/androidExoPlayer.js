@@ -49,6 +49,16 @@ export function setAndroidExoPlayerVideoBounds(bounds) {
   return AndroidExoPlayer.setVideoBounds(bounds);
 }
 
+/** Plein écran vidéo (paysage, commandes du lecteur Android). */
+export function setAndroidExoPlayerFullscreen(active) {
+  return AndroidExoPlayer.setFullscreen({ active: Boolean(active) });
+}
+
+/** Sortie du plein écran par le lecteur Android lui-même ({ active: false }). */
+export function subscribeAndroidExoPlayerFullscreen(listener) {
+  return AndroidExoPlayer.addListener("fullscreen", listener);
+}
+
 export function subscribeAndroidExoPlayer(listener) {
   return AndroidExoPlayer.addListener("playbackState", listener);
 }

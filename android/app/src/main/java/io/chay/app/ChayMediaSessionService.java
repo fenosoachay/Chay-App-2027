@@ -27,6 +27,9 @@ public class ChayMediaSessionService extends MediaSessionService {
         super.onCreate();
         player = new ExoPlayer.Builder(this)
             .setHandleAudioBecomingNoisy(true)
+            // Boutons « reculer / avancer » du lecteur vidéo plein écran : 10 secondes.
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(10_000)
             .build();
         player.setAudioAttributes(
             new AudioAttributes.Builder()
