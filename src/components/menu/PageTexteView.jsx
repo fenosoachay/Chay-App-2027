@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import DOMPurify from "dompurify";
+import TexteRiche from "@/components/media/TexteRiche";
 import { ChevronLeft, ChevronRight, Loader2, Target, Flag, ScrollText } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -48,10 +48,7 @@ export default function PageTexteView({ cle, title, icon: Icon }) {
         <p className="text-foreground/60">{title} sera bientôt publié.</p>
       ) : (
         <>
-          <article
-            className="prose prose-sm md:prose-base dark:prose-invert max-w-none break-words"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fiche.body || "") }}
-          />
+          <TexteRiche html={fiche.body || ""} className="break-words" />
           {photos.length > 0 && (
             <section className="mt-8" aria-label="Photos">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

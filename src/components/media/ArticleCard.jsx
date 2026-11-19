@@ -10,6 +10,7 @@ import {
 import FullImage from "@/components/ui/FullImage";
 import ReactMarkdown from "react-markdown";
 import DOMPurify from "dompurify";
+import { lignesVides } from "@/components/media/TexteRiche";
 import CompteurVues from "@/components/media/CompteurVues";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
@@ -27,7 +28,7 @@ function ArticleBody({ body }) {
     return (
     <div
 className="article-body"
-dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }}
+dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lignesVides(body)) }}
 />
 
     );
