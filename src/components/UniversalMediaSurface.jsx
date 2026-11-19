@@ -444,6 +444,17 @@ const playVideo = (source) => {
     document.addEventListener("fullscreenchange", suivre);
     return () => document.removeEventListener("fullscreenchange", suivre);
   }, [isNativeAndroidPlayer]);
+  // En plein écran : boutons visibles quand la souris bouge, cachés après 3 s d'immobilité.
+  const [commandesVisibles, setCommandesVisibles] = useState(true);
+  const inactiviteRef = useRef(null);
+  useEffect(() => () => clearTimeout(inactiviteRef.current), []);
+  const reveillerCommandes = () => {
+    setCommandesVisibles(true);
+    clearTimeout(inactiviteRef.current);
+    inactiviteRef.current = setTimeout(() => setCommandesVisibles(false), 3000);
+  };
+  useEffect(() => { if (pleinEcranWeb) reveillerCommandes(); else setCommandesVisibles(true); }, [pleinEcranWeb]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pleinEcranFilm = pleinEcranWeb && isVideo;
   const basculerPleinEcranWeb = () => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     else racineRef.current?.requestFullscreen?.().catch(() => {});
@@ -569,10 +580,11 @@ const playVideo = (source) => {
       aria-label={control ? `Lecteur : ${control.title}` : "Lecteur multimédia"}
       aria-hidden={!isFullPlayer}
       ref={racineRef}
-      style={{ pointerEvents: isFullPlayer ? "auto" : "none" }}
-      className="fixed inset-0 z-[65] flex flex-col bg-black/95 p-4 text-white"
+      onMouseMove={pleinEcranFilm ? reveillerCommandes : undefined}
+      style={{ pointerEvents: isFullPlayer ? "auto" : "none", cursor: pleinEcranFilm && !commandesVisibles ? "none" : undefined }}
+      className={`fixed inset-0 z-[65] flex flex-col text-white ${pleinEcranFilm ? "bg-black p-0" : "bg-black/95 p-4"}`}
     >
-      {control && (
+      {control && !pleinEcranFilm && (
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <p className="truncate text-base font-bold">{control.title}</p>
@@ -611,11 +623,11 @@ const playVideo = (source) => {
       )}
 
       <div
-        className={`mx-auto w-full overflow-hidden rounded-xl bg-black relative ${
+        className={`mx-auto w-full overflow-hidden rounded-xl bg-black ${
           showEmbeddedPlayer
-            ? pleinEcranWeb && isVideo
-              ? "my-auto aspect-video max-w-[min(100%,calc((100vh-9rem)*16/9))]"
-              : "my-auto aspect-video max-w-5xl"
+            ? pleinEcranFilm
+              ? "absolute inset-0 h-full rounded-none"
+              : "relative my-auto aspect-video max-w-5xl"
             : "max-w-5xl pointer-events-none fixed bottom-0 right-0 h-[200px] w-[320px] opacity-0"
         }`}
         aria-hidden={!showEmbeddedPlayer}
@@ -809,7 +821,11 @@ const playVideo = (source) => {
             </div>
           )}
           {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} />}
-          <div className="flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <div
+            className={pleinEcranFilm
+              ? `absolute inset-x-0 bottom-16 z-30 flex items-center justify-center gap-5 transition-opacity duration-300 ${commandesVisibles ? "opacity-100" : "pointer-events-none opacity-0"}`
+              : "flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"}
+          >
             {isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={() => deplacerVideo(-10)} aria-label="Reculer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCcw /></button>
             )}
