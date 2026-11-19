@@ -178,20 +178,22 @@ export default function Community() {
       </header>
 
       {/* Onglets */}
-      <div className="inline-flex rounded-full border border-border bg-card p-1 gap-1 mb-6">
+      {/* Deux onglets de même largeur, texte sur une seule ligne quel que soit le téléphone (taille d'écran,
+          taille du texte) : trop long, il est coupé avec « … » au lieu de passer à la ligne. */}
+      <div className="grid w-full max-w-md grid-cols-2 rounded-full border border-border bg-card p-1 gap-1 mb-6">
         <button
           onClick={() => setActiveTab("actualites")}
-          className={`inline-flex items-center px-5 py-2 rounded-full text-sm font-bold transition ${
+          className={`flex min-w-0 items-center justify-center whitespace-nowrap px-3 py-2 rounded-full text-sm font-bold transition ${
             activeTab === "actualites"
               ? "bg-primary text-primary-foreground"
               : "text-foreground/60"
           }`}
         >
-          <Send className="h-4 w-4 mr-1.5" /> Actualités
+          <Send className="h-4 w-4 mr-1.5 shrink-0" /> <span className="truncate">Actualités</span>
         </button>
         <button
           onClick={() => setActiveTab("utilisateurs")}
-          className={`inline-flex items-center px-5 py-2 rounded-full text-sm font-bold transition ${
+          className={`flex min-w-0 items-center justify-center whitespace-nowrap px-3 py-2 rounded-full text-sm font-bold transition ${
             activeTab === "utilisateurs"
               ? "bg-primary text-primary-foreground"
               : "text-foreground/60"
@@ -199,12 +201,12 @@ export default function Community() {
         >
           {estAdmin ? (
             <>
-              <Users className="h-4 w-4 mr-1.5" /> Utilisateurs (
-              {usersLoading ? "…" : usersError ? "—" : users.length})
+              <Users className="h-4 w-4 mr-1.5 shrink-0" />
+              <span className="truncate">Utilisateurs ({usersLoading ? "…" : usersError ? "—" : users.length})</span>
             </>
           ) : (
             <>
-              <Search className="h-4 w-4 mr-1.5" /> Chercher un membre
+              <Search className="h-4 w-4 mr-1.5 shrink-0" /> <span className="truncate">Chercher</span>
             </>
           )}
         </button>
