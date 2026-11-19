@@ -323,6 +323,8 @@ button button, button [role="button"], [role="button"] button { zoom: 1; }
   cursor: text;
 }
 .ql-editor.texte-riche a { color: hsl(var(--primary)); text-decoration: underline; }
+/* Ligne vide (paragraphe vide) : hauteur d'une ligne, comme dans l'éditeur. */
+.ql-editor.texte-riche p:empty::before { content: "\200b"; }
 
 .article-body {
   max-width: 100%;
