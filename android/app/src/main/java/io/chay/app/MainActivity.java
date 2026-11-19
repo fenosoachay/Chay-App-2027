@@ -25,6 +25,8 @@ public class MainActivity extends BridgeActivity {
         Locale.setDefault(french);
         Configuration config = new Configuration(context.getResources().getConfiguration());
         config.setLocale(french);
+        // Taille de police du téléphone neutralisée pour toute l'app (la WebView en dérive sa taille de texte).
+        config.fontScale = 1.0f;
         return context.createConfigurationContext(config);
     }
 
@@ -52,6 +54,8 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void onPageLoaded(WebView view) {
                 view.setBackgroundColor(couleurFondOpaque());
+                // Réappliqué une fois la page chargée : rien ne doit avoir remis la taille du téléphone.
+                view.getSettings().setTextZoom(100);
             }
         });
     }

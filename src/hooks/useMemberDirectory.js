@@ -8,6 +8,9 @@ import { base44 } from "@/api/base44Client";
 let byUser = {};
 // Photo du COMPTE (users.profile_photo_url, via listCommunityUsers) : secours quand aucun profil public n'en a.
 let photosComptes = {};
+// Même photo, retrouvée par le NOM : les contenus d'avant la migration portent l'ancien identifiant de l'auteur.
+let photosParNom = {};
+const cleNom = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 let loaded = false;
 let loading = null;
 let unsub = null;
@@ -45,8 +48,16 @@ function ensureLoaded() {
         const users = r?.data?.users;
         if (!Array.isArray(users)) return;
         const next = {};
-        users.forEach((u) => { if (u?.id && u.profile_photo_url) next[u.id] = u.profile_photo_url; });
+        const parNom = {};
+        users.forEach((u) => {
+          if (!u?.id || !u.profile_photo_url) return;
+          next[u.id] = u.profile_photo_url;
+          const nom = cleNom([u.first_name, u.last_name].filter(Boolean).join(" "));
+          // Nom porté par deux comptes : ambigu, on ne devine pas.
+          if (nom) parNom[nom] = nom in parNom ? "" : u.profile_photo_url;
+        });
         photosComptes = next;
+        photosParNom = parNom;
         byUser = { ...byUser }; // nouvel objet : les écrans se redessinent avec les photos
         emit();
       })
@@ -78,7 +89,8 @@ export default function useMemberDirectory() {
   return {
     // Nom actuel du membre ; `fallback` = nom copié sur le message/post (anciens contenus).
     nameOf: (userId, fallback) => dir[userId]?.display_name || fallback || "Membre",
-    avatarOf: (userId) => dir[userId]?.avatar_url || photosComptes[userId] || "",
+    // `nom` (facultatif) : nom affiché de l'auteur, dernier recours pour les anciens contenus.
+    avatarOf: (userId, nom) => dir[userId]?.avatar_url || photosComptes[userId] || photosParNom[cleNom(nom)] || "",
     profileOf: (userId) => dir[userId] || null,
   };
 }

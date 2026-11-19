@@ -50,8 +50,8 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
   const isMine = currentUser && post.created_by_id === currentUser.id;
   const canManagePost = Boolean(isMine || currentUser?.role === "admin");
   const { nameOf, avatarOf } = useMemberDirectory();
-  const postAvatar = avatarOf(post.created_by_id);
   const displayName = nameOf(post.created_by_id, post.author_name || (isMine ? "Vous" : "Membre"));
+  const postAvatar = avatarOf(post.created_by_id, displayName);
   const liked = reactions.some((r) => r.user_id === currentUser?.id);
   const likeCount = reactions.length;
   const imageUrls = communityPostImages(post);
@@ -426,8 +426,8 @@ export default function PostCard({ post, currentUser, onPostUpdated, onPostDelet
               <div key={c.id} className="flex gap-2.5">
                 {c.created_by_id ? (
                   <Link to={`/profile/${c.created_by_id}`} className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs font-bold shrink-0 overflow-hidden">
-                    {avatarOf(c.created_by_id) ? (
-                      <img src={avatarOf(c.created_by_id)} alt="" className="h-full w-full object-cover" />
+                    {avatarOf(c.created_by_id, nameOf(c.created_by_id, c.author_name)) ? (
+                      <img src={avatarOf(c.created_by_id, nameOf(c.created_by_id, c.author_name))} alt="" className="h-full w-full object-cover" />
                     ) : (
                       nameOf(c.created_by_id, c.author_name)[0]?.toUpperCase()
                     )}
