@@ -11,6 +11,10 @@
   :root { --chay-base: min(14px, 3.7333vw); }
 }
 html { font-size: var(--chay-base); }
+/* Taille du texte agrandie (Paramètres > Affichage) : les boutons gardent leur taille d'origine (texte, icônes,
+   marges). --chay-zoom = taille choisie / 100, posée sur <html> par src/lib/taillePolice.js et index.html. */
+button, [role="tab"], [role="button"] { zoom: calc(1 / var(--chay-zoom, 1)); }
+button button, button [role="button"], [role="button"] button { zoom: 1; }
 
 /* base44-workspace-fonts:start */
 @font-face {

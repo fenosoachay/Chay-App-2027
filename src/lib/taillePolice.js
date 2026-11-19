@@ -27,6 +27,9 @@ export function appliquerTaillePolice(v, doc = globalThis.document) {
   if (!html) return t;
   // Base réduite sur écran étroit (html de src/index.css), multipliée par la taille choisie.
   html.style.fontSize = t === 100 ? "" : `calc(var(--chay-base, 16px) * ${t / 100})`;
+  // Les boutons annulent cet agrandissement (src/index.css) : ils gardent leur taille.
+  if (t === 100) html.style.removeProperty?.("--chay-zoom");
+  else html.style.setProperty?.("--chay-zoom", String(t / 100));
   html.dataset.police = String(t);
   if (t >= SEUIL_GRANDE_POLICE) html.dataset.policeGrande = "";
   else delete html.dataset.policeGrande;
