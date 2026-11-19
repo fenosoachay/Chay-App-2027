@@ -1,10 +1,39 @@
 export const YOUTUBE_ORIGIN = "https://www.youtube-nocookie.com";
 export const YOUTUBE_REFERRER_POLICY = "origin";
 
-export function buildYouTubeEmbedUrl(videoId, pageOrigin) {
-  if (!videoId || !pageOrigin || pageOrigin === "null") return null;
+const ID_RE = /^[A-Za-z0-9_-]{11}$/;
 
-  const url = new URL(`/embed/${encodeURIComponent(videoId)}`, YOUTUBE_ORIGIN);
+/**
+ * Identifiant YouTube (11 caractères) à partir d'un identifiant ou de n'importe quel lien YouTube :
+ * watch?v=, youtu.be/, live/, shorts/, embed/, v/, m.youtube.com, music.youtube.com, avec ou sans ?si=… / &t=….
+ * Renvoie "" si rien de valide (le lecteur affiche alors une erreur au lieu d'un écran noir).
+ */
+export function idYoutube(valeur) {
+  const v = String(valeur || "").trim();
+  if (ID_RE.test(v)) return v;
+  try {
+    const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+    const hote = u.hostname.toLowerCase().replace(/^(www\.|m\.|music\.)/, "");
+    let id = "";
+    if (hote === "youtu.be") id = u.pathname.split("/")[1] || "";
+    else if (hote === "youtube.com" || hote === "youtube-nocookie.com") {
+      id = u.searchParams.get("v") || "";
+      if (!id) {
+        const m = u.pathname.match(/^\/(?:embed|shorts|live|v|e)\/([^/?#]+)/);
+        id = m ? m[1] : "";
+      }
+    }
+    return ID_RE.test(id) ? id : "";
+  } catch {
+    return "";
+  }
+}
+
+export function buildYouTubeEmbedUrl(videoId, pageOrigin) {
+  const id = idYoutube(videoId);
+  if (!id || !pageOrigin || pageOrigin === "null") return null;
+
+  const url = new URL(`/embed/${encodeURIComponent(id)}`, YOUTUBE_ORIGIN);
   url.search = new URLSearchParams({
     autoplay: "1",
     rel: "0",
@@ -41,9 +70,10 @@ export function lecteurYoutube({ platform, pageOrigin, relaisBase }) {
     relais: true,
     origin,
     url: (videoId) => {
-      if (!videoId || !origin || !pageOrigin || pageOrigin === "null") return null;
+      const id = idYoutube(videoId);
+      if (!id || !origin || !pageOrigin || pageOrigin === "null") return null;
       const url = new URL(YOUTUBE_RELAIS_CHEMIN, origin);
-      url.search = new URLSearchParams({ v: String(videoId), parent: pageOrigin }).toString();
+      url.search = new URLSearchParams({ v: id, parent: pageOrigin }).toString();
       return url.toString();
     },
   };

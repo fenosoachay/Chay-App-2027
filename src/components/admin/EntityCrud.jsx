@@ -7,6 +7,7 @@ import { notifyAdminUpload } from "@/lib/adminNotify";
 import { annonceVisibleMaintenant, genreAnnonce } from "@/lib/cibleAccueil";
 import { confirmFr } from "@/lib/confirmFr";
 import { HEURE_RE } from "@/lib/upcomingEvents";
+import { idYoutube } from "@/lib/youtubeEmbed";
 import {
   Dialog,
   DialogContent,
@@ -317,6 +318,16 @@ export default function EntityCrud({
         await load();
         await loadPlaylists();
         return;
+      }
+
+      // YouTube : on n'enregistre que l'identifiant (11 caractères), quel que soit le lien collé (watch, youtu.be, live…).
+      if (entity === "YouTubeVideo" && Object.prototype.hasOwnProperty.call(rest, "youtube_id")) {
+        const idYt = idYoutube(rest.youtube_id);
+        if (!idYt) {
+          toast({ title: "Lien YouTube non reconnu", description: "Collez le lien de la vidéo (youtube.com/watch?v=…, youtu.be/…, youtube.com/live/…) ou son identifiant.", variant: "destructive" });
+          return;
+        }
+        rest.youtube_id = idYt;
       }
 
       let createdItem;

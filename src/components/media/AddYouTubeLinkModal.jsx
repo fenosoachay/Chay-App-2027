@@ -11,14 +11,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Printer } from "lucide-react";
 import CroppableUploader from "@/components/media/CroppableUploader";
 import { notifyAdminUpload } from "@/lib/adminNotify";
+import { idYoutube } from "@/lib/youtubeEmbed";
 
-function extractYtId(value) {
-  if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
-  const m = value.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  return m ? m[1] : "";
-}
+const extractYtId = (value) => idYoutube(value);
 
 export default function AddYouTubeLinkModal({ open, onOpenChange, section = "culte", onSaved }) {
   const { toast } = useToast();
