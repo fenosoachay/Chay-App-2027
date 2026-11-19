@@ -312,6 +312,18 @@ button button, button [role="button"], [role="button"] button { zoom: 1; }
    utilisées auparavant n'avaient donc AUCUN effet et le texte s'affichait
    brut. Ces règles remplacent l'extension pour un confort de lecture correct,
    dans les deux thèmes (clair et sombre). */
+/* Verset, Paroles : texte de l'éditeur Quill affiché tel qu'il a été tapé (src/components/media/TexteRiche.jsx). */
+.ql-editor.texte-riche {
+  padding: 0;
+  height: auto;
+  overflow: visible;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: hsl(var(--foreground) / 0.9);
+  cursor: text;
+}
+.ql-editor.texte-riche a { color: hsl(var(--primary)); text-decoration: underline; }
+
 .article-body {
   max-width: 100%;
   color: hsl(var(--foreground) / 0.85);

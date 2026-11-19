@@ -6,20 +6,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import DOMPurify from "dompurify";
 import { Calendar } from "lucide-react";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 import { useToast } from "@/components/ui/use-toast";
+import TexteRiche from "./TexteRiche";
 
-// Le corps existe sous deux formes : HTML (éditeur riche) ou texte/Markdown
-const looksLikeHtml = (s) => /<[a-z][^>]*>/i.test(s || "");
 
 function Body({ body }) {
   if (!body) return null;
-  if (looksLikeHtml(body)) {
-    return <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }} />;
-  }
-  return <div className="prose prose-sm dark:prose-invert max-w-none">{body}</div>;
+  return <TexteRiche html={body} />;
 }
 
 function formatDate(value) {

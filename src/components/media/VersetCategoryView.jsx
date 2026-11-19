@@ -2,14 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { SortAsc, SortDesc, Lock, Unlock, BookOpen, Calendar, Loader2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import DOMPurify from "dompurify";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { enregistrerOrdreChamp } from "@/lib/ordreChamp";
 import { useToast } from "@/components/ui/use-toast";
+import TexteRiche from "./TexteRiche";
 
-// Helper functions
-const looksLikeHtml = (s) => /<[a-z][^>]*>/i.test(s || "");
 function formatDate(value) {
   if (!value) return "";
   const d = new Date(value);
@@ -167,10 +165,7 @@ function VersetCard({ verset }) {
           <DialogTitle className="sr-only">{verset.title}</DialogTitle>
           <div className="pr-7">
             {verset.body ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(verset.body) }}
-              />
+              <TexteRiche html={verset.body} />
             ) : (
               <p className="text-sm text-foreground/50 italic">Ce verset ne contient pas encore de contenu.</p>
             )}
