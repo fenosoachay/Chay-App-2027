@@ -48,7 +48,16 @@ export default function Community() {
       if (!Array.isArray(list)) {
         throw new Error(result?.data?.error || "Réponse invalide du serveur.");
       }
-      setUsers(list);
+      // Ordre alphabétique du prénom (accents et majuscules ignorés), puis du nom ; sans prénom : à la fin.
+      const cle = (v) => String(v || "").trim();
+      const parPrenom = (x, y) => {
+        const a = cle(x.first_name), b = cle(y.first_name);
+        if (!a !== !b) return a ? -1 : 1;
+        return a.localeCompare(b, "fr", { sensitivity: "base" })
+          || cle(x.last_name).localeCompare(cle(y.last_name), "fr", { sensitivity: "base" })
+          || cle(x.email).localeCompare(cle(y.email), "fr");
+      };
+      setUsers([...list].sort(parPrenom));
     } catch (error) {
       setUsersError(error?.message || "Erreur inconnue.");
     } finally {
