@@ -31,6 +31,7 @@ import {
   resumeAndroidExoPlayer,
   seekAndroidExoPlayer,
   setAndroidExoPlayerFullscreen,
+  setAndroidImmersif,
   setAndroidExoPlayerVideoBounds,
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
@@ -454,14 +455,27 @@ const playVideo = (source) => {
     inactiviteRef.current = setTimeout(() => setCommandesVisibles(false), 3000);
   };
   useEffect(() => { if (pleinEcranWeb) reveillerCommandes(); else setCommandesVisibles(true); }, [pleinEcranWeb]); // eslint-disable-line react-hooks/exhaustive-deps
-  const pleinEcranFilm = pleinEcranWeb && isVideo;
+  // YouTube sur téléphone : plein écran de la page (paysage, barres masquées) ; le lecteur couvre l'écran.
+  const [pleinEcranAppli, setPleinEcranAppli] = useState(false);
+  const basculerPleinEcranAppli = (actif) => {
+    setPleinEcranAppli(actif);
+    setAndroidImmersif(actif).catch(() => {});
+  };
+  useBackHandler(pleinEcranAppli, () => basculerPleinEcranAppli(false));
+  useEffect(() => {
+    if (pleinEcranAppli && (!isFullPlayer || !isYouTube)) basculerPleinEcranAppli(false);
+  }, [isFullPlayer, isYouTube]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pleinEcranFilm = (pleinEcranWeb && (isVideo || isYouTube)) || (pleinEcranAppli && isYouTube);
+  // YouTube : la vidéo capte les touchers, on ne peut donc pas savoir quand réafficher les boutons : ils restent
+  // visibles, en haut (les commandes de YouTube sont en bas).
+  const commandesYoutubeFixes = pleinEcranFilm && isYouTube;
   const basculerPleinEcranWeb = () => {
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     else racineRef.current?.requestFullscreen?.().catch(() => {});
   };
   useEffect(() => {
-    if (pleinEcranWeb && (!isFullPlayer || !isVideo)) document.exitFullscreen?.().catch(() => {});
-  }, [isFullPlayer, isVideo, pleinEcranWeb]);
+    if (pleinEcranWeb && (!isFullPlayer || !(isVideo || isYouTube))) document.exitFullscreen?.().catch(() => {});
+  }, [isFullPlayer, isVideo, isYouTube, pleinEcranWeb]);
 
   // Repère « −10 s / +10 s » affiché un instant sur la vidéo (ordinateur).
   const [repere, setRepere] = useState(null); // { ecart, n }
@@ -820,9 +834,11 @@ const playVideo = (source) => {
               <span className="w-10 tabular-nums">{formatTime(control.duration)}</span>
             </div>
           )}
-          {isYouTube && <PlayerQueueList queue={control.queue} index={control.queueIndex} onSelect={control.playAt} />}
+          {isYouTube && !pleinEcranFilm && <PlayerQueueList queue={control.queue} index={control.queueIndex} onSelect={control.playAt} />}
           <div
-            className={pleinEcranFilm
+            className={commandesYoutubeFixes
+              ? "absolute right-3 top-3 z-30 flex items-center gap-2 rounded-full bg-black/50 px-2 py-1 backdrop-blur"
+              : pleinEcranFilm
               ? `absolute inset-x-0 bottom-16 z-30 flex items-center justify-center gap-5 transition-opacity duration-300 ${commandesVisibles ? "opacity-100" : "pointer-events-none opacity-0"}`
               : "flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"}
           >
@@ -840,6 +856,16 @@ const playVideo = (source) => {
             )}
             {isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={() => deplacerVideo(10)} aria-label="Avancer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCw /></button>
+            )}
+            {isYouTube && showEmbeddedPlayer && (
+              <button
+                type="button"
+                onClick={() => (isNativeAndroidPlayer ? basculerPleinEcranAppli(!pleinEcranAppli) : basculerPleinEcranWeb())}
+                aria-label={pleinEcranFilm ? "Quitter le plein écran" : "Plein écran"}
+                className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                {pleinEcranFilm ? <Minimize /> : <Maximize />}
+              </button>
             )}
             {!isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={basculerPleinEcranWeb} aria-label={pleinEcranWeb ? "Quitter le plein écran" : "Plein écran"} className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">{pleinEcranWeb ? <Minimize /> : <Maximize />}</button>

@@ -258,14 +258,21 @@ export const SECTIONS = [
     ],
   },
   {
-    // Menu ☰ › « Vision de l'Église » : page texte éditable par l'admin (texte + photos)
+    // Menu ☰ de l'Église › « Vision de l'Église », « But de l'Église », « Confession de foi » : une fiche par page.
     key: "PageTexte",
-    label: "Pages de texte",
+    label: "Vision, But, Confession",
     icon: FileText,
     sort: "cle",
     listColumns: ["cle", "title"],
     fields: [
-      { name: "cle", label: "Clé (vision/but/confession)", type: "text", required: true },
+      {
+        name: "cle", label: "Page", type: "select", required: true,
+        options: [
+          { value: "vision", label: "Vision de l'Église" },
+          { value: "but", label: "But de l'Église" },
+          { value: "confession", label: "Confession de foi" },
+        ],
+      },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "body", label: "Texte", type: "rich-text", required: true },
       { name: "photos", label: "Photos", type: "images" },

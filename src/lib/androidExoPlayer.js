@@ -54,6 +54,11 @@ export function setAndroidExoPlayerFullscreen(active) {
   return AndroidExoPlayer.setFullscreen({ active: Boolean(active) });
 }
 
+/** Plein écran de la page (lecteur YouTube) : paysage et barres du téléphone masquées. */
+export function setAndroidImmersif(active) {
+  return AndroidExoPlayer.setImmersif({ active: Boolean(active) });
+}
+
 /** Sortie du plein écran par le lecteur Android lui-même ({ active: false }). */
 export function subscribeAndroidExoPlayerFullscreen(listener) {
   return AndroidExoPlayer.addListener("fullscreen", listener);

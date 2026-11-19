@@ -291,6 +291,29 @@ public class AndroidExoPlayerPlugin extends Plugin {
         });
     }
 
+    /** Plein écran de la page elle-même (lecteur YouTube) : paysage et barres du téléphone masquées. */
+    @PluginMethod
+    public void setImmersif(PluginCall call) {
+        boolean actif = call.getBoolean("active", false);
+        if (getActivity() == null) {
+            call.resolve();
+            return;
+        }
+        getActivity().runOnUiThread(() -> {
+            WindowInsetsControllerCompat barres = WindowCompat.getInsetsController(
+                getActivity().getWindow(), getActivity().getWindow().getDecorView());
+            if (actif) {
+                getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                barres.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                barres.hide(WindowInsetsCompat.Type.systemBars());
+            } else if (!pleinEcran) {
+                getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                barres.show(WindowInsetsCompat.Type.systemBars());
+            }
+            call.resolve();
+        });
+    }
+
     private void entrerPleinEcran() {
         if (playerView == null || getActivity() == null || pleinEcran) return;
         pleinEcran = true;

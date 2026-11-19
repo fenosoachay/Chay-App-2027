@@ -65,6 +65,7 @@ export const ADMIN_NAV = [
       { key: "Faq", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
       { key: "ChurchHistory", label: "Histoire de l'église", icon: Landmark, path: "/admin/histoire" },
       { key: "StaffMember", label: "Personnel", icon: UserSquare, path: "/admin/personnel" },
+      { key: "PageTexte", label: "Vision, But, Confession", icon: FileText, path: "/admin/pages-eglise" },
     ],
   },
   {
