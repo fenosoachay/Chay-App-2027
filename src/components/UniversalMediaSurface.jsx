@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2, Maximize, RotateCcw, RotateCw } from "lucide-react";
+import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -435,6 +435,23 @@ const playVideo = (source) => {
   useEffect(() => {
     if (pleinEcran && (!isFullPlayer || !isVideo)) basculerPleinEcran(false);
   }, [isFullPlayer, isVideo]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Plein écran sur ordinateur : tout le lecteur (vidéo + boutons), pas seulement la vidéo du navigateur. ──
+  const racineRef = useRef(null);
+  const [pleinEcranWeb, setPleinEcranWeb] = useState(false);
+  useEffect(() => {
+    if (isNativeAndroidPlayer) return undefined;
+    const suivre = () => setPleinEcranWeb(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", suivre);
+    return () => document.removeEventListener("fullscreenchange", suivre);
+  }, [isNativeAndroidPlayer]);
+  const basculerPleinEcranWeb = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    else racineRef.current?.requestFullscreen?.().catch(() => {});
+  };
+  useEffect(() => {
+    if (pleinEcranWeb && (!isFullPlayer || !isVideo)) document.exitFullscreen?.().catch(() => {});
+  }, [isFullPlayer, isVideo, pleinEcranWeb]);
+
   const deplacerVideo = (ecart) => {
     if (!control) return;
     // Web : lecteur <video> de la page.
@@ -450,6 +467,21 @@ const playVideo = (source) => {
     updateMediaControl(control.id, { currentTime: position });
     seekAndroidExoPlayer(position).catch((error) => console.error("[MediaPlayer] Unable to seek ExoPlayer video.", error));
   };
+  // Clavier (ordinateur) : ← recule et → avance de 10 secondes pendant un film.
+  const deplacerRef = useRef(null);
+  deplacerRef.current = deplacerVideo;
+  useEffect(() => {
+    if (isNativeAndroidPlayer || !(isFullPlayer && isVideo)) return undefined;
+    const touche = (e) => {
+      const cible = e.target;
+      if (cible && (cible.tagName === "INPUT" || cible.tagName === "TEXTAREA" || cible.isContentEditable)) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); deplacerRef.current?.(-10); }
+      if (e.key === "ArrowRight") { e.preventDefault(); deplacerRef.current?.(10); }
+    };
+    window.addEventListener("keydown", touche, true);
+    return () => window.removeEventListener("keydown", touche, true);
+  }, [isNativeAndroidPlayer, isFullPlayer, isVideo]);
+
   const { isOnline } = useNetwork();
   const [retryTick, setRetryTick] = useState(0);
   const blockedOffline = Boolean(isYouTube && !isOnline);
@@ -525,6 +557,7 @@ const playVideo = (source) => {
       aria-modal={Boolean(isFullPlayer)}
       aria-label={control ? `Lecteur : ${control.title}` : "Lecteur multimédia"}
       aria-hidden={!isFullPlayer}
+      ref={racineRef}
       style={{ pointerEvents: isFullPlayer ? "auto" : "none" }}
       className="fixed inset-0 z-[65] flex flex-col bg-black/95 p-4 text-white"
     >
@@ -567,10 +600,12 @@ const playVideo = (source) => {
       )}
 
       <div
-        className={`mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-black relative ${
+        className={`mx-auto w-full overflow-hidden rounded-xl bg-black relative ${
           showEmbeddedPlayer
-            ? "my-auto aspect-video"
-            : "pointer-events-none fixed bottom-0 right-0 h-[200px] w-[320px] opacity-0"
+            ? pleinEcranWeb && isVideo
+              ? "my-auto aspect-video max-w-[min(100%,calc((100vh-9rem)*16/9))]"
+              : "my-auto aspect-video max-w-5xl"
+            : "max-w-5xl pointer-events-none fixed bottom-0 right-0 h-[200px] w-[320px] opacity-0"
         }`}
         aria-hidden={!showEmbeddedPlayer}
       >
@@ -582,7 +617,7 @@ const playVideo = (source) => {
           className={`h-full w-full bg-black object-contain ${classeVideoLecteur({ isNativeAndroidPlayer, isVideo })}`}
   playsInline
           controls={showEmbeddedPlayer && isVideo && !isNativeAndroidPlayer}
-  controlsList="nodownload"
+  controlsList="nodownload nofullscreen"
   disablePictureInPicture
   // Chargement immédiat : "metadata" faisait attendre le navigateur avant
   // d'amorcer le téléchargement des premières images → démarrage perçu lent.
@@ -765,6 +800,9 @@ const playVideo = (source) => {
             )}
             {isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={() => deplacerVideo(10)} aria-label="Avancer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCw /></button>
+            )}
+            {!isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
+              <button type="button" onClick={basculerPleinEcranWeb} aria-label={pleinEcranWeb ? "Quitter le plein écran" : "Plein écran"} className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">{pleinEcranWeb ? <Minimize /> : <Maximize />}</button>
             )}
             {isNativeAndroidPlayer && isVideo && showEmbeddedPlayer && (
               <>
