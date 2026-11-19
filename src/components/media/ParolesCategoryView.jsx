@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Cross, Loader2, Music, Search } from "lucide-react";
+import { ChevronLeft, Loader2, Music, Search } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import ParolesCard from "./ParolesCard";
@@ -12,7 +12,7 @@ const lettreDe = (titre) => {
   return LETTRES.includes(l) ? l : "#";
 };
 
-/** Bannière dessinée : lever de soleil doré sur un champ et croix (clair) ; montagnes violettes (sombre). */
+/** Bannière dessinée : lever de soleil doré sur un champ (clair) ; montagnes violettes (sombre). */
 function Banniere({ titre, onBack, onRecherche }) {
   return (
     <div className="relative mb-4 h-36 overflow-hidden rounded-[1.5rem] text-[#3b2410] dark:text-white">
@@ -24,7 +24,6 @@ function Banniere({ titre, onBack, onRecherche }) {
         <path d="M0 38 Q120 28 220 36 T400 32 V60 H0Z" fill="#c8913f" />
         <path d="M0 50 Q140 42 260 48 T400 46 V60 H0Z" fill="#a8732c" />
       </svg>
-      <Cross className="absolute left-[64%] top-7 h-20 w-20 text-[#7a4a1c] opacity-80 dark:hidden" strokeWidth={1.6} aria-hidden="true" />
       {/* Sombre : crépuscule violet et montagnes */}
       <div className="absolute inset-0 hidden bg-gradient-to-b from-[#2d1f57] via-[#5a3d8f] to-[#c07aa8] dark:block" />
       <div className="absolute left-[62%] top-[55%] hidden h-24 w-24 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,#ffd6a8_0%,#f3a2b8_35%,transparent_70%)] dark:block" />
