@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
-import { ADMIN_NAV, findNav } from "@/components/admin/nav/adminNavConfig";
+import { ChevronRight, Search, X } from "lucide-react";
+import { ADMIN_NAV, chercherNav, findNav } from "@/components/admin/nav/adminNavConfig";
 
 const linkBase =
   "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors text-left border-l-4";
@@ -22,8 +22,71 @@ export default function AdminSidebarNav({ active, onSelect, donationsUnread = 0 
     if (activeGroup) setOpenId(activeGroup);
   }, [activeGroup]);
 
+  // Recherche : un seul résultat -> il s'affiche seul ; plusieurs -> liste de suggestions. Entrée ouvre le premier.
+  const [recherche, setRecherche] = useState("");
+  const resultats = recherche.trim() ? chercherNav(recherche) : null;
+  const ouvrir = (key) => { setRecherche(""); onSelect(key); };
+
+  const champ = (
+    <div className="relative mb-2">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+      <input
+        type="search"
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && resultats?.length) { e.preventDefault(); ouvrir(resultats[0].item.key); }
+          if (e.key === "Escape") setRecherche("");
+        }}
+        placeholder="Rechercher (Article, Foi…)"
+        aria-label="Rechercher dans l'administration"
+        className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-9 text-sm font-semibold outline-none focus:border-primary [&::-webkit-search-cancel-button]:hidden"
+      />
+      {recherche && (
+        <button
+          type="button"
+          onClick={() => setRecherche("")}
+          aria-label="Effacer la recherche"
+          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-foreground/50 hover:bg-muted"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  if (resultats) {
+    return (
+      <nav className="space-y-1" aria-label="Navigation administration">
+        {champ}
+        {!resultats.length && <p className="px-3 py-2 text-sm text-foreground/50">Aucune page trouvée.</p>}
+        {resultats.length > 1 && (
+          <p className="px-3 pb-1 text-xs font-semibold text-foreground/50">{resultats.length} suggestions</p>
+        )}
+        {resultats.map(({ item, groupe }) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.key}
+              onClick={() => ouvrir(item.key)}
+              className={`${linkBase} ${active === item.key ? linkActive : linkIdle}`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{item.label}</span>
+                {groupe && <span className="block truncate text-xs font-semibold text-foreground/50">{groupe}</span>}
+              </span>
+              {item.key === "donations" && <Badge n={donationsUnread} />}
+            </button>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
     <nav className="space-y-1" aria-label="Navigation administration">
+      {champ}
       {ADMIN_NAV.map((entry) => {
         const Icon = entry.icon;
         if (!entry.items) {

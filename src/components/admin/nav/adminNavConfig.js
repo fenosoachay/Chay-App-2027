@@ -14,33 +14,33 @@ export const ADMIN_NAV = [
   {
     id: "bible", label: "Bible", icon: BookOpen,
     items: [
-      { key: "bible_sync", label: "Recherche Bible", icon: Search, path: "/admin/bible-search" },
-      { key: "Devotional", label: "Dévotionnels", icon: Sun, path: "/admin/devotionals" },
+      { key: "bible_sync", mots: "verset passage", label: "Recherche Bible", icon: Search, path: "/admin/bible-search" },
+      { key: "Devotional", mots: "devotion meditation", label: "Dévotionnels", icon: Sun, path: "/admin/devotionals" },
     ],
   },
   {
     id: "media", label: "Multimédia", icon: Film,
     items: [
-      { key: "Sermon", label: "Prédications", icon: Headphones, path: "/admin/sermons" },
-      { key: "MusicTrack", label: "Musique", icon: Music, path: "/admin/music" },
-      { key: "Video", label: "Vidéos", icon: Video, path: "/admin/videos" },
-      { key: "Reel", label: "Reels", icon: Clapperboard, path: "/admin/reels" },
-      { key: "YouTubeVideo", label: "YouTube", icon: Youtube, path: "/admin/youtube" },
-      { key: "GalleryImage", label: "Galerie", icon: ImageIcon, path: "/admin/gallery" },
-      { key: "Playlist", label: "Playlists", icon: Library, path: "/admin/playlists" },
-      { key: "ChristianNews", label: "Actualité chrétienne", icon: Globe, path: "/admin/actualite" },
-      { key: "Wallpaper", label: "Fonds d'écran", icon: Smartphone, path: "/admin/fonds-ecran" },
-      { key: "Paroles", label: "Paroles", icon: Type, path: "/admin/paroles" },
+      { key: "Sermon", mots: "predication sermon message audio", label: "Prédications", icon: Headphones, path: "/admin/sermons" },
+      { key: "MusicTrack", mots: "chant chanson louange", label: "Musique", icon: Music, path: "/admin/music" },
+      { key: "Video", mots: "film", label: "Vidéos", icon: Video, path: "/admin/videos" },
+      { key: "Reel", mots: "tiktok court", label: "Reels", icon: Clapperboard, path: "/admin/reels" },
+      { key: "YouTubeVideo", mots: "culte celebration", label: "YouTube", icon: Youtube, path: "/admin/youtube" },
+      { key: "GalleryImage", mots: "photo image", label: "Galerie", icon: ImageIcon, path: "/admin/gallery" },
+      { key: "Playlist", mots: "liste sous-playlist", label: "Playlists", icon: Library, path: "/admin/playlists" },
+      { key: "ChristianNews", mots: "news nouvelles", label: "Actualité chrétienne", icon: Globe, path: "/admin/actualite" },
+      { key: "Wallpaper", mots: "fond ecran wallpaper", label: "Fonds d'écran", icon: Smartphone, path: "/admin/fonds-ecran" },
+      { key: "Paroles", mots: "chant lyrics", label: "Paroles", icon: Type, path: "/admin/paroles" },
       { key: "Verset", label: "Verset", icon: BookOpen, path: "/admin/verset" },
     ],
   },
   {
     id: "community", label: "Communauté", icon: Users,
     items: [
-      { key: "Announcement", label: "Annonces", icon: Megaphone, path: "/admin/announcements" },
+      { key: "Announcement", mots: "annonce", label: "Annonces", icon: Megaphone, path: "/admin/announcements" },
       { key: "Article", label: "Articles", icon: FileText, path: "/admin/articles" },
-      { key: "ContactMessage", label: "Messages", icon: Mail, path: "/admin/messages" },
-      { key: "publish", label: "Publier", icon: Send, path: "/admin/publish" },
+      { key: "ContactMessage", mots: "contact", label: "Messages", icon: Mail, path: "/admin/messages" },
+      { key: "publish", mots: "publication", label: "Publier", icon: Send, path: "/admin/publish" },
       { key: "Content", label: "Contenus publiés", icon: Newspaper, path: "/admin/published" },
     ],
   },
@@ -50,30 +50,30 @@ export const ADMIN_NAV = [
       { key: "game_categories", label: "Catégories des jeux", icon: LayoutGrid, path: "/admin/jeux-categories" },
       { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },
       { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
-      { key: "emojis", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
+      { key: "emojis", mots: "emoji devine", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
       { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
-      { key: "personalityquiz", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
-      { key: "blockblast", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
+      { key: "personalityquiz", mots: "personnalite", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
+      { key: "blockblast", mots: "brique block", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
     ],
   },
   {
     id: "engagement", label: "Engagement", icon: Heart,
     items: [
-      { key: "donations", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
-      { key: "theme_requests", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
-      { key: "mission_requests", label: "Se missionner", icon: Compass, path: "/admin/missions" },
-      { key: "Faq", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
+      { key: "donations", mots: "don argent", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
+      { key: "theme_requests", mots: "theme", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
+      { key: "mission_requests", mots: "mission", label: "Se missionner", icon: Compass, path: "/admin/missions" },
+      { key: "Faq", mots: "question reponse", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
       { key: "ChurchHistory", label: "Histoire de l'église", icon: Landmark, path: "/admin/histoire" },
-      { key: "StaffMember", label: "Personnel", icon: UserSquare, path: "/admin/personnel" },
-      { key: "PageTexte", label: "Vision, But, Confession", icon: FileText, path: "/admin/pages-eglise" },
+      { key: "StaffMember", mots: "en service equipe staff", label: "Personnel", icon: UserSquare, path: "/admin/personnel" },
+      { key: "PageTexte", mots: "foi declaration de foi confession vision but", label: "Vision, But, Confession", icon: FileText, path: "/admin/pages-eglise" },
     ],
   },
   {
     id: "team", label: "Équipe", icon: Shield,
     items: [
       { key: "invite", label: "Inviter un admin", icon: UserPlus, path: "/admin/invite" },
-      { key: "admins", label: "Gérer les administrateurs", icon: Users, path: "/admin/admins" },
-      { key: "app_update", label: "Annoncer une mise à jour", icon: Rocket, path: "/admin/mise-a-jour" },
+      { key: "admins", mots: "administrateur role", label: "Gérer les administrateurs", icon: Users, path: "/admin/admins" },
+      { key: "app_update", mots: "version apk", label: "Annoncer une mise à jour", icon: Rocket, path: "/admin/mise-a-jour" },
     ],
   },
 ];
@@ -96,4 +96,26 @@ export function findNavByPath(pathname) {
     if (item) return item.key;
   }
   return "overview";
+}
+
+// Recherche dans le menu admin (champ au-dessus de « Tableau de bord ») : nom de la page, de sa section et
+// mots-clés (`mots`), sans tenir compte des accents ni des majuscules. Ex. « foi » -> Vision, But, Confession.
+const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+export function chercherNav(texte) {
+  const mots = simplifier(texte).split(/\s+/).filter(Boolean);
+  if (!mots.length) return [];
+  const resultats = [];
+  for (const entry of ADMIN_NAV) {
+    for (const item of entry.items || [entry]) {
+      const nom = simplifier(item.label);
+      // Chaque mot tapé doit être le début d'un mot du nom, de la section ou des mots-clés.
+      const tout = `${nom} ${simplifier(entry.items ? entry.label : "")} ${simplifier(item.mots)}`.split(/[^a-z0-9]+/);
+      if (!mots.every((m) => tout.some((w) => w.startsWith(m)))) continue;
+      // Le nom qui commence par la recherche passe en premier, puis le nom qui la contient, puis le reste.
+      const rang = nom.startsWith(mots[0]) ? 0 : nom.includes(mots[0]) ? 1 : 2;
+      resultats.push({ item, groupe: entry.items ? entry.label : null, rang });
+    }
+  }
+  return resultats.sort((a, b) => a.rang - b.rang);
 }
