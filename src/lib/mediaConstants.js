@@ -10,10 +10,8 @@ import {
   Home,
   Lightbulb,
   Newspaper,
-  Smartphone,
   Type,
   BookOpen,
-  Clapperboard,
 } from "lucide-react";
 
 export const RADIO_URL =
@@ -29,7 +27,6 @@ export const CATEGORIES = [
   { id: "music", label: "Musique", icon: Music, tone: "from-[#4A6CFE] to-[#8A56E2]" },
   { id: "sermons", label: "Prédications", icon: Headphones, tone: "from-[#2E6F40] to-[#4A6CFE]" },
   { id: "films", label: "Films", icon: Film, tone: "from-[#8A56E2] to-[#FF57B2]" },
-  { id: "reels", label: "Reels", icon: Clapperboard, tone: "from-[#FF57B2] to-[#FF4D2D]" },
   { id: "youtube", label: "YouTube", icon: Youtube, tone: "from-[#FF4D2D] to-[#FF57B2]" },
   { id: "articles", label: "Articles", icon: FileText, tone: "from-[#FF4D2D] to-[#8A56E2]" },
   { id: "gallery", label: "Galerie", icon: ImageIcon, tone: "from-[#4A6CFE] to-[#2E6F40]" },
@@ -37,8 +34,9 @@ export const CATEGORIES = [
   { id: "verset", label: "Verset", icon: BookOpen, tone: "from-[#2E6F40] to-[#C18B33]" },
   { id: "playlist", label: "Votre Playlist", icon: ListMusic, tone: "from-[#8A56E2] to-[#4A6CFE]" },
   { id: "actualite", label: "Actualité chrétienne", icon: Newspaper, tone: "from-[#2E6F40] to-[#C18B33]" },
-  { id: "fonds", label: "Fond d'écran", icon: Smartphone, tone: "from-[#C18B33] to-[#FF57B2]" },
 ];
+// « Fond d'écran » est rangé dans la Galerie (bouton en haut de la Galerie) ; « Reels » est supprimé :
+// les vidéos courtes vont dans la playlist « Drôle » de la section Vidéo (affichage façon TikTok).
 
 export const YOUTUBE_SECTIONS = [
   { id: "culte", label: "Culte", icon: Youtube, tone: "from-[#FF4D2D] to-[#FF57B2]" },

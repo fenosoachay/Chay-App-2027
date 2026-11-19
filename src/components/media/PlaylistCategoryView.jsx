@@ -22,6 +22,14 @@ import ListeTriable from "@/components/media/ListeTriable";
 import GrillePlaylists from "@/components/media/GrillePlaylists";
 import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
+import Description from "@/components/media/Description";
+import VideosVerticales from "@/components/media/VideosVerticales";
+
+// Entité d'où vient la description d'un titre (champ « Description » de l'admin), par section.
+const ENTITE_DESCRIPTION = { films: "Video", sermons: "Sermon" };
+const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+/** Playlist « Drôle » de la section Vidéo : affichage façon TikTok. */
+const estDrole = (p) => simplifier(p?.name) === "drole";
 
 /** Compteur discret (écoutes ou vues) d'un titre : PlaylistTrack.listen_count, mis à jour pendant la session. */
 function CompteurPiste({ piste, unite, Icone }) {
@@ -88,6 +96,21 @@ export default function PlaylistCategoryView({
 
   const isVideo = kind === "video";
   const { reorderQueue } = useAudioPlayer();
+
+  // Descriptions des titres (vidéos, prédications), affichées seulement quand l'admin les a remplies.
+  const [descriptions, setDescriptions] = useState(() => new Map());
+  useEffect(() => {
+    const entite = ENTITE_DESCRIPTION[category];
+    if (!entite) return undefined;
+    let vivant = true;
+    base44.entities[entite].list("-created_date", 1000)
+      .then((rows) => {
+        if (!vivant) return;
+        setDescriptions(new Map((rows || []).filter((r) => String(r?.description || "").trim()).map((r) => [r.id, r.description])));
+      })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, [category]);
 
   useEffect(() => {
     // Premier niveau seulement : les sous-playlists s'affichent dans leur playlist.
@@ -271,6 +294,7 @@ export default function PlaylistCategoryView({
             <LockToggle locked={playlistsLocked} onToggle={() => setPlaylistsLocked((v) => !v)} />
           )}
         </div>
+        <Description texte={parent.description} className="-mt-2 mb-5" />
         {sous.length ? (
           <GrillePlaylists
             id={`sous-${parent.id}`}
@@ -325,6 +349,7 @@ export default function PlaylistCategoryView({
             />
           )}
         </div>
+        <Description texte={open.description} className="-mt-2 mb-5" />
 
         {tracks.length && !tracksLocked && isAdmin ? (
           <ListeTriable
@@ -338,6 +363,8 @@ export default function PlaylistCategoryView({
               </>
             )}
           />
+        ) : tracks.length && isVideo && estDrole(open) ? (
+          <VideosVerticales pistes={tracks} descriptions={descriptions} titre={open.name} />
         ) : tracks.length ? (
           <div className="space-y-3">
             {tracks.map((t, idx) =>
@@ -371,6 +398,7 @@ export default function PlaylistCategoryView({
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{t.title}</div>
                       <div className="mt-1"><CompteurPiste piste={t} unite="vue" /></div>
+                      <Description texte={descriptions.get(t.track_id)} className="mt-2" />
                     </div>
                     {favoriteCategory === "music" && (
                       <button
@@ -421,6 +449,7 @@ export default function PlaylistCategoryView({
                         {t.artist && <div className="text-xs text-foreground/55">{t.artist}</div>}
                         <CompteurPiste piste={t} unite="écoute" Icone={Headphones} />
                       </div>
+                      <Description texte={descriptions.get(t.track_id)} className="mt-1" />
                     </div>
                   </div>
                   {favoriteCategory === "music" && (

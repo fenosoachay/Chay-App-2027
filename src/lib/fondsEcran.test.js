@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { dimensionsApercu, enregistrerFond, nomFichierFond, trierFonds, vignetteFond } from "./fondsEcran.js";
-import { CATEGORIES } from "./mediaConstants.js";
 import { nouvellesCollections } from "../../pocketbase/scripts/migrer-lot-e.mjs";
 
 const lire = (f) => fs.readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
@@ -28,9 +27,9 @@ test("fonds d'écran : APK -> plugin natif (galerie) ; navigateur -> télécharg
   await assert.rejects(enregistrerFond({ image_url: "https://x/p.jpg" }, { natif: false, fetchImpl: async () => ({ ok: false, status: 404 }) }), /HTTP 404/);
 });
 
-test("fonds d'écran : section Multimédia, admin (200 Mo, vignette), plugin Android, schéma", () => {
-  assert.ok(CATEGORIES.some((c) => c.id === "fonds" && c.label === "Fond d'écran"));
-  assert.match(lire("src/components/media/MediaCategory.jsx"), /cat === "fonds" && <FondsEcran \/>/);
+test("fonds d'écran : dans la Galerie, admin (200 Mo, vignette), plugin Android, schéma", () => {
+  assert.match(lire("src/components/media/MediaCategory.jsx"), /fondsOuverts && \(/);
+  assert.match(lire("src/components/media/MediaCategory.jsx"), /<FondsEcran \/>/);
   assert.match(lire("src/components/admin/adminSections.js"), /key: "Wallpaper"[\s\S]*?apercu: "thumb_url"/);
   assert.match(lire("src/lib/upload.js"), /MAX_IMAGE = 200 \* MO/);
   const java = lire("android/app/src/main/java/io/chay/app/ChayGaleriePlugin.java");

@@ -4,7 +4,7 @@ import {
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
   Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
-  Clapperboard, Type,
+  Type,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -23,8 +23,7 @@ export const ADMIN_NAV = [
     items: [
       { key: "Sermon", mots: "predication sermon message audio", label: "Prédications", icon: Headphones, path: "/admin/sermons" },
       { key: "MusicTrack", mots: "chant chanson louange", label: "Musique", icon: Music, path: "/admin/music" },
-      { key: "Video", mots: "film", label: "Vidéos", icon: Video, path: "/admin/videos" },
-      { key: "Reel", mots: "tiktok court", label: "Reels", icon: Clapperboard, path: "/admin/reels" },
+      { key: "Video", mots: "film drole tiktok court", label: "Vidéos", icon: Video, path: "/admin/videos" },
       { key: "YouTubeVideo", mots: "culte celebration", label: "YouTube", icon: Youtube, path: "/admin/youtube" },
       { key: "GalleryImage", mots: "photo image", label: "Galerie", icon: ImageIcon, path: "/admin/gallery" },
       { key: "Playlist", mots: "liste sous-playlist", label: "Playlists", icon: Library, path: "/admin/playlists" },

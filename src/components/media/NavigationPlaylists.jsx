@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import CadenasOrdre from "@/components/media/CadenasOrdre";
 import { arbrePlaylists, contenusDe, idsSousPlaylists, liensDe } from "@/lib/playlistsArbre";
+import Description from "@/components/media/Description";
 
 /**
  * Navigation membre d'une section (YouTube, Articles, Galerie) : Section > Playlist > Sous-playlist > contenus,
@@ -15,11 +16,12 @@ import { arbrePlaylists, contenusDe, idsSousPlaylists, liensDe } from "@/lib/pla
  *  - renderContenus(sousPlaylist, contenus) : contenus d'une sous-playlist, dans l'ordre choisi par l'admin ;
  *  - onChargerManquants(ids) : charge les contenus d'une sous-playlist absents des listes déjà chargées ;
  *  - cibleId : contenu visé par un lien / une notification -> sa sous-playlist s'ouvre ;
- *  - onReorderLiens(sousPlaylistId, contenus) : ordre des contenus (admin, cadenas ouvert).
+ *  - onReorderLiens(sousPlaylistId, contenus) : ordre des contenus (admin, cadenas ouvert) ;
+ *  - avantGrille : affiché en haut de la section seulement (pas dans une playlist), ex. « Fond d'écran » en Galerie.
  */
 export default function NavigationPlaylists({
   categorie, playlists, playlistTracks, contenus, nbNonClasses, isAdmin,
-  renderContenus, onChargerManquants, cibleId, onReorderLiens, vignette, children,
+  renderContenus, onChargerManquants, cibleId, onReorderLiens, vignette, children, avantGrille = null,
 }) {
   // Ordre des playlists et sous-playlists (admin, 1.3.9) : Playlist.order, appliqué tout de suite ici.
   const [ordresLocaux, setOrdresLocaux] = useState(() => new Map());
@@ -91,7 +93,8 @@ export default function NavigationPlaylists({
   useBackHandler(Boolean(parent), () => { setSous(null); setParent(null); });
   useBackHandler(Boolean(sous), () => setSous(null));
 
-  const enTete = (titre) => (
+  const enTete = (titre, description) => (
+    <>
     <div className="flex items-center gap-3 mb-5">
       <button
         type="button"
@@ -116,12 +119,14 @@ export default function NavigationPlaylists({
         </button>
       )}
     </div>
+    <Description texte={description} className="-mt-2 mb-5" />
+    </>
   );
 
   if (sous) {
     return (
       <div>
-        {enTete(sous.name)}
+        {enTete(sous.name, sous.description)}
         {!contenusSous.length ? (
           <p className="text-foreground/50 text-sm">Aucun contenu dans cette sous-playlist pour le moment.</p>
         ) : isAdmin && !verrou ? (
@@ -147,7 +152,7 @@ export default function NavigationPlaylists({
     const sp = arbre.find((p) => p.id === parent.id)?.sous || [];
     return (
       <div>
-        {enTete(parent.name)}
+        {enTete(parent.name, parent.description)}
         {sp.length > 0 && (
           <>
             {cadenasPl(sp.length, "les sous-playlists")}
@@ -181,10 +186,11 @@ export default function NavigationPlaylists({
   }
 
   // Aucune playlist encore : l'affichage d'avant, inchangé.
-  if (!arbre.length) return children;
+  if (!arbre.length) return <>{avantGrille}{children}</>;
 
   return (
     <div>
+      {avantGrille}
       {cadenasPl(arbre.length, "les playlists")}
       <GrillePlaylists id={`playlists-${categorie}`} items={arbre} onOuvrir={setParent} reorganiser={isAdmin && !verrouPl} onReorder={reordonnerPlaylists} />
       {nbNonClasses > 0 && (

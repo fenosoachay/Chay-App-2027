@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Lock, Search, Unlock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Search, Smartphone, Unlock } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Image } from "@/components/ui/image";
 import ArticleCard from "@/components/media/ArticleCard";
@@ -14,7 +14,6 @@ import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
 import ParolesCategoryView from "@/components/media/ParolesCategoryView";
 import VersetCategoryView from "@/components/media/VersetCategoryView";
-import ReelsView from "@/components/media/ReelsView";
 import { useLibellesMedia } from "@/hooks/useLibellesMedia";
 import { arbrePlaylists, contenusNonRanges, playlistDe } from "@/lib/playlistsArbre";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -38,7 +37,6 @@ const TITLES = {
   fonds: "Fond d'écran",
   paroles: "Paroles",
   verset: "Verset",
-  reels: "Reels",
 };
 
 function SearchBar({ query, setQuery, placeholder, className = "mb-5" }) {
@@ -236,6 +234,9 @@ export default function MediaCategory({
   const [gallerySection, setGallerySection] = useState(null);
   const [galleryIdx, setGalleryIdx] = useState(null);
   const [orphanIdx, setOrphanIdx] = useState(null);
+  // Galerie › Fond d'écran ouvert (le bouton retour du téléphone revient à la Galerie).
+  const [fondsOuverts, setFondsOuverts] = useState(false);
+  useBackHandler(fondsOuverts, () => setFondsOuverts(false));
 
   const clearTarget = (key) => {
     const next = new URLSearchParams(searchParams);
@@ -274,7 +275,8 @@ export default function MediaCategory({
   });
 
   const handleBack = () => {
-    if (inSection) backFromSection();
+    if (fondsOuverts) setFondsOuverts(false);
+    else if (inSection) backFromSection();
     else onBack();
   };
 
@@ -459,10 +461,31 @@ export default function MediaCategory({
         </NavigationPlaylists>
       )}
 
-      {cat === "gallery" && (
+      {cat === "gallery" && fondsOuverts && (
+        <div>
+          <h3 className="font-display font-extrabold text-xl mb-4">Fond d'écran</h3>
+          <FondsEcran />
+        </div>
+      )}
+
+      {cat === "gallery" && !fondsOuverts && (
         <NavigationPlaylists
           {...nav("gallery", touteGalerie, gallery.length, targetImageId, "GalleryImage")}
           vignette={(g) => g.image_url}
+          avantGrille={(
+            // Fond d'écran : rangé dans la Galerie (n'est plus une section du Multimédia).
+            <button
+              type="button"
+              onClick={() => setFondsOuverts(true)}
+              className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left hover:bg-muted"
+            >
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#C18B33] to-[#FF57B2] text-white">
+                <Smartphone className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1 truncate font-bold">Fond d'écran</span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-foreground/40" aria-hidden="true" />
+            </button>
+          )}
           renderContenus={(sp, images) => (
             <GalerieSousPlaylist
               images={images}
@@ -595,8 +618,6 @@ export default function MediaCategory({
       {cat === "paroles" && <ParolesCategoryView titre={libelles.paroles || TITLES.paroles} onBack={handleBack} />}
 
       {cat === "verset" && <VersetCategoryView category="verset" data={data} onBack={onBack} />}
-
-      {cat === "reels" && <ReelsView onBack={onBack} />}
 
       {cat === "playlist" && (
         <FavoritesView

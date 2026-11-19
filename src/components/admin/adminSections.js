@@ -98,20 +98,6 @@ export const SECTIONS = [
     showPlaylist: true,
   },
   {
-    // Multimédia › « Reels » : vidéos courtes verticales, façon TikTok (1.3.16).
-    key: "Reel",
-    label: "Reels",
-    icon: Film,
-    sort: "-created_date",
-    listColumns: ["title"],
-    fields: [
-      { name: "title", label: "Titre", type: "text", required: true },
-      { name: "video_url", label: "Vidéo (format vertical conseillé)", type: "file", accept: "video/*", required: true },
-      { name: "description", label: "Description", type: "textarea" },
-      { name: "cover_url", label: "Image d'aperçu", type: "file", accept: "image/*" },
-    ],
-  },
-  {
     key: "Article",
     label: "Articles",
     icon: FileText,
