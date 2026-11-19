@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Dialog,
@@ -52,20 +52,26 @@ function formatDate(value) {
 
 export default function ArticleCard({ article }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const open = searchParams.get("article") === article.id;
+  // Lien ou notification vers cet article (?article=<id>) : il s'ouvre tout seul.
+  const cible = searchParams.get("article") === article.id;
+  // 1.3.15 : un clic ouvre l'article SANS changer l'adresse. Avant, l'ajout de ?article= relançait le chargement
+  // de la cible (Media.jsx), recalculait la playlist ouverte (NavigationPlaylists) et ajoutait une entrée
+  // d'historique en plus de celle de la fenêtre : dans une playlist, l'article se refermait au bout d'une seconde.
+  // Le bouton retour ferme toujours l'article (entrée d'historique de la fenêtre, useBackHandler).
+  const [open, setOuvert] = useState(cible);
+  useEffect(() => {
+    if (cible) setOuvert(true);
+  }, [cible]);
 
-  // IMPORTANT : on part des paramètres DÉJÀ présents (?cat=articles) avant
-  // d'ajouter `article`. Avec setSearchParams({ article }), React Router
-  // remplace toute la chaîne de requête : `cat` disparaît, Media.jsx perd son
-  // activeCat et la page retombe sur la grille de catégories au lieu
-  // d'ouvrir l'article.
   const setOpen = (v) => {
-    const next = new URLSearchParams(searchParams);
-    if (v) next.set("article", article.id);
-    else next.delete("article");
-    // Ouverture = nouvelle entrée d'historique (le retour ferme l'article) ;
-    // fermeture = remplacement (pas d'entrée fantôme dans l'historique).
-    setSearchParams(next, { replace: !v });
+    setOuvert(v);
+    // Fermeture d'un article ouvert par un lien : on retire ?article= (remplacement, sans entrée fantôme).
+    // On part des paramètres DÉJÀ présents pour garder ?cat=articles.
+    if (!v && searchParams.get("article") === article.id) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("article");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   const date = formatDate(article.created_date);
