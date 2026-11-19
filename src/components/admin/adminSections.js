@@ -232,16 +232,15 @@ export const SECTIONS = [
   },
   // ── Nouvelles sections 1.3.11 ──────────────────────────────────────────────
   {
-    // Multimédia › « Paroles » : paroles de chansons, triables par date ou titre
+    // Multimédia › « Paroles » : paroles de chansons, affichées par ordre alphabétique (pas de date).
     key: "Paroles",
     label: "Paroles",
     icon: Type,
-    sort: "order",
-    listColumns: ["title", "date"],
+    sort: "title",
+    listColumns: ["title"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "body", label: "Texte", type: "rich-text", required: true },
-      { name: "date", label: "Date", type: "date", required: true },
     ],
   },
   {

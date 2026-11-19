@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calendar } from "lucide-react";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 import { useToast } from "@/components/ui/use-toast";
 import TexteRiche from "./TexteRiche";
@@ -15,13 +14,6 @@ import TexteRiche from "./TexteRiche";
 function Body({ body }) {
   if (!body) return null;
   return <TexteRiche html={body} />;
-}
-
-function formatDate(value) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
 export default function ParolesCard({ texte }) {
@@ -41,8 +33,6 @@ export default function ParolesCard({ texte }) {
   const vue = { type: "parole", id: texte.id };
   useLectureMinimale(vue, open);
 
-  const date = formatDate(texte.date);
-
   return (
     <>
       <button
@@ -55,24 +45,12 @@ export default function ParolesCard({ texte }) {
         <h3 className="w-full break-words font-display font-bold text-base leading-snug text-foreground">
           {texte.title || "Sans titre"}
         </h3>
-        <div className="flex flex-wrap items-center gap-x-3">
-          {date && (
-            <span className="flex items-center gap-1 text-xs text-foreground/50">
-              <Calendar className="h-3 w-3" /> {date}
-            </span>
-          )}
-        </div>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto sm:rounded-3xl">
           <div className="pr-7">
             <DialogHeader className="gap-0">
-              {date && (
-                <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary/10 px-3 py-1 text-[0.6875rem] font-bold uppercase tracking-wider text-primary">
-                  {date}
-                </span>
-              )}
               <DialogTitle className="font-display text-2xl md:text-3xl font-extrabold leading-[1.15] tracking-normal text-foreground">
                 {texte.title}
               </DialogTitle>
