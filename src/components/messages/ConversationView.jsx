@@ -28,7 +28,6 @@ import PhotoViewer from "@/components/messages/PhotoViewer";
 import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
-import { onEnterSubmit } from "@/hooks/useKeyboardShortcuts";
 import { enqueue } from "@/lib/offlineQueue";
 import { envoyerMessageTexte } from "@/lib/messageSend";
 
@@ -57,6 +56,7 @@ export default function ConversationView({
   const [editText, setEditText] = useState("");
   const scrollRef = useRef(null);
   const fileRef = useRef(null);
+  const champRef = useRef(null);
   const typingTimer = useRef(null);
   const isTypingSent = useRef(false);
   const pressTimer = useRef(null);
@@ -204,6 +204,10 @@ export default function ConversationView({
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => setTypingState(false), 2500);
   };
+  // Message envoyé (champ vidé) : le champ reprend sa hauteur d'une ligne.
+  useEffect(() => {
+    if (!draft && champRef.current) champRef.current.style.height = "auto";
+  }, [draft]);
 
   const send = async () => {
     const text = draft.trim();
@@ -557,7 +561,7 @@ image_url: uploadedUrl,
         )}
 
         {/* Conteneur Flexible - w-full max-w-3xl garantit qu'il ne déborde jamais */}
-        <div className="flex items-center gap-2 w-full max-w-3xl mx-auto">
+        <div className="flex items-end gap-2 w-full max-w-3xl mx-auto">
           
           {/* Bouton Emoji */}
           <button
@@ -582,13 +586,21 @@ image_url: uploadedUrl,
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { sendImage(e.target.files?.[0]); e.target.value = ""; }} />
 
           {/* Champ Texte - min-w-0 EST OBLIGATOIRE POUR ÉVITER LE DÉBORDEMENT */}
-          <input
+          {/* Entrée = à la ligne (téléphone et ordinateur) ; l'envoi se fait seulement avec le bouton Envoyer.
+              Le champ grandit avec le texte (jusqu'à 6 lignes environ, puis défilement). */}
+          <textarea
+            ref={champRef}
             value={draft}
-            onChange={onDraftChange}
-            onKeyDown={onEnterSubmit(send)}
-            enterKeyHint="send"
+            onChange={(e) => {
+              onDraftChange(e);
+              const el = e.target;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
+            }}
+            rows={1}
+            enterKeyHint="enter"
             placeholder="Message…"
-            className="flex-1 min-w-0 rounded-full border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary shadow-inner"
+            className="flex-1 min-w-0 max-h-36 resize-none rounded-3xl border border-border bg-card px-4 py-2.5 text-sm leading-5 outline-none focus:border-primary shadow-inner"
           />
 
           {/* Bouton Envoyer Compact (Icône seule) */}

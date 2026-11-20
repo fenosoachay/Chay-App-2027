@@ -16,7 +16,7 @@ import ParolesCategoryView from "@/components/media/ParolesCategoryView";
 import VersetCategoryView from "@/components/media/VersetCategoryView";
 import { useLibellesMedia } from "@/hooks/useLibellesMedia";
 import { arbrePlaylists, contenusNonRanges, playlistDe } from "@/lib/playlistsArbre";
-import { useBackHandler } from "@/hooks/useBackHandler";
+import { hasOpenOverlay, useBackHandler } from "@/hooks/useBackHandler";
 import { useAuth } from "@/lib/AuthContext";
 import { YOUTUBE_SECTIONS, normalizeSection } from "@/lib/mediaConstants";
 import { appliquerOrdre, cleGalerie } from "@/lib/ordreMedia";
@@ -247,7 +247,6 @@ export default function MediaCategory({
   // Retour imbriqué : depuis une section (Église/Mindset, Culte/Louange),
   // le retour va d'abord à la liste des sections, puis quitte la catégorie —
   // le bouton rond du titre et le bouton matériel suivent la même logique.
-  const inSection = Boolean(gallerySection || ytSection);
   const backFromSection = () => {
     if (gallerySection) {
       clearTarget("image");
@@ -274,9 +273,10 @@ export default function MediaCategory({
     setYtSection(null);
   });
 
+  // Bouton retour du titre : même chemin que le retour du téléphone — un niveau à la fois (sous-playlist,
+  // playlist, section, Fond d'écran…), et seulement au dernier niveau, retour au Multimédia.
   const handleBack = () => {
-    if (fondsOuverts) setFondsOuverts(false);
-    else if (inSection) backFromSection();
+    if (hasOpenOverlay()) window.history.back();
     else onBack();
   };
 

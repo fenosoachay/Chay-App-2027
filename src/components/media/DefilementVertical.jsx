@@ -1,15 +1,43 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChevronLeft, Pause, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, Eye, Heart, Pause, Share2, Volume2, VolumeX } from "lucide-react";
 import { subscribeMediaControl } from "@/lib/mediaControl";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { compterVue, useCompteur } from "@/hooks/useCompteurVues";
+import { useJaimes } from "@/hooks/useJaimes";
+import { useToast } from "@/components/ui/use-toast";
 import Description from "@/components/media/Description";
 
-// Vidéos en plein écran vertical, façon TikTok, à partir de la vidéo touchée (`depart`) jusqu'à la dernière :
-//  - on glisse vers le haut / le bas pour passer d'une vidéo à l'autre (défilement « aimanté ») ;
-//  - seule la vidéo à l'écran joue, en boucle ; un toucher met en pause ou relance ;
-//  - barre de progression (toucher = aller à cet endroit), bouton son, titre et description en bas ;
+// Vidéos verticales façon TikTok, à partir de la vidéo touchée (`depart`) jusqu'à la dernière :
+//  - chaque vidéo remplit tout l'écran (bords coupés si elle n'est pas exactement 9:16) ;
+//  - on glisse vers le haut / le bas pour passer d'une vidéo à l'autre ; seule la vidéo à l'écran joue, en boucle ;
+//  - un toucher met en pause ou relance ; barre de progression en bas (toucher = aller à cet endroit) ;
+//  - colonne de droite : J'aime, Partager, Son, Vues ; titre et description en bas à gauche ;
+//  - une vue est comptée à la moitié de la vidéo (comme les autres vidéos) ;
 //  - retour (bouton ou geste du téléphone) : revient à la grille.
-// items : [{ id, video_url, cover_url, title, description }]
+// items : [{ id, track_id, playlist_id, video_url, cover_url, title, description, listen_count }]
+
+const LIEN_SITE = "https://membres.chay.fr";
+const compact = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".0", "")} M` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(".0", "")} k` : String(n));
+
+function Action({ label, valeur, onClick, children, actif = false }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} aria-pressed={actif} className="flex flex-col items-center gap-1">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-black/35 backdrop-blur">{children}</span>
+      {valeur !== undefined && <span className="text-xs font-bold drop-shadow">{valeur}</span>}
+    </button>
+  );
+}
+
+function Vues({ item }) {
+  const n = useCompteur({ type: "piste", id: item.track_id }, item.listen_count);
+  return (
+    <div className="flex flex-col items-center gap-1" aria-label={`${n || 0} vues`}>
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-black/35 backdrop-blur"><Eye className="h-6 w-6" /></span>
+      <span className="text-xs font-bold drop-shadow">{compact(Math.max(0, Math.floor(Number(n) || 0)))}</span>
+    </div>
+  );
+}
+
 export default function DefilementVertical({ items, depart = 0, titre, onClose }) {
   const [actif, setActif] = useState(depart);
   const [muet, setMuet] = useState(false);
@@ -17,6 +45,9 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
   const [progression, setProgression] = useState(0); // 0 à 1, vidéo à l'écran
   const conteneurRef = useRef(null);
   const videosRef = useRef([]);
+  const vueComptee = useRef(false);
+  const { toast } = useToast();
+  const jaimes = useJaimes(items.map((v) => v.track_id).filter(Boolean));
 
   useBackHandler(true, onClose);
 
@@ -71,7 +102,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
     });
   }, [actif, items, muet, enPause]);
 
-  useEffect(() => { setEnPause(false); setProgression(0); }, [actif]);
+  useEffect(() => { setEnPause(false); setProgression(0); vueComptee.current = false; }, [actif]);
 
   const basculerPause = useCallback(() => {
     const v = videosRef.current[actif];
@@ -90,6 +121,24 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
     setProgression(ratio);
   };
 
+  const partager = async (item) => {
+    const url = `${LIEN_SITE}/media?cat=films&playlist=${encodeURIComponent(item.playlist_id || "")}&track=${encodeURIComponent(item.track_id || "")}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: item.title || "Vidéo", url });
+        return;
+      }
+    } catch (e) {
+      if (e?.name === "AbortError") return; // partage annulé par la personne
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Lien copié", description: "Collez-le dans un message pour partager la vidéo." });
+    } catch {
+      toast({ title: "Partage impossible", description: url });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[70] bg-black text-white">
       <button
@@ -101,18 +150,10 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
         <ChevronLeft className="h-6 w-6" />
       </button>
       {titre && (
-        <span className="pointer-events-none absolute left-1/2 top-[max(1.25rem,env(safe-area-inset-top))] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold">
+        <span className="pointer-events-none absolute left-1/2 top-[max(1.25rem,env(safe-area-inset-top))] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold drop-shadow">
           {titre}
         </span>
       )}
-      <button
-        type="button"
-        onClick={() => setMuet((m) => !m)}
-        aria-label={muet ? "Activer le son" : "Couper le son"}
-        className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur"
-      >
-        {muet ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-      </button>
 
       <div
         ref={conteneurRef}
@@ -123,7 +164,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
             key={r.id}
             data-video
             data-index={i}
-            className="relative h-[100dvh] w-full snap-start snap-always overflow-hidden"
+            className="relative h-[100dvh] w-full snap-start snap-always overflow-hidden bg-black"
           >
             <video
               ref={(el) => { videosRef.current[i] = el; }}
@@ -138,9 +179,15 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
               onTimeUpdate={(e) => {
                 if (i !== actif) return;
                 const v = e.currentTarget;
-                if (Number.isFinite(v.duration) && v.duration > 0) setProgression(v.currentTime / v.duration);
+                if (!Number.isFinite(v.duration) || v.duration <= 0) return;
+                setProgression(v.currentTime / v.duration);
+                // Une vue à la moitié de la vidéo, une fois par passage sur cette vidéo.
+                if (!vueComptee.current && v.currentTime / v.duration >= 0.5 && r.track_id) {
+                  vueComptee.current = true;
+                  compterVue({ type: "piste", id: r.track_id });
+                }
               }}
-              className="h-full w-full bg-black object-contain"
+              className="h-full w-full object-cover"
             />
             {i === actif && enPause && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -149,9 +196,29 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
                 </span>
               </div>
             )}
+
+            {/* Colonne de droite, comme TikTok */}
+            <div className="absolute right-3 bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] z-10 flex flex-col items-center gap-5">
+              <Action
+                label={jaimes.aime(r.track_id) ? "Je n'aime plus" : "J'aime"}
+                actif={jaimes.aime(r.track_id)}
+                valeur={compact(jaimes.compte(r.track_id))}
+                onClick={() => jaimes.basculer(r.track_id)}
+              >
+                <Heart className={`h-7 w-7 ${jaimes.aime(r.track_id) ? "fill-[#FF2D55] text-[#FF2D55]" : ""}`} />
+              </Action>
+              <Action label="Partager" valeur="Partager" onClick={() => partager(r)}>
+                <Share2 className="h-6 w-6" />
+              </Action>
+              <Action label={muet ? "Activer le son" : "Couper le son"} onClick={() => setMuet((m) => !m)}>
+                {muet ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+              </Action>
+              <Vues item={r} />
+            </div>
+
             {(r.title || r.description) && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 max-h-[55%] overflow-y-auto bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-16">
-                {r.title && <p className="font-display text-base font-bold leading-snug">{r.title}</p>}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 max-h-[50%] overflow-y-auto bg-gradient-to-t from-black/85 to-transparent pl-4 pr-20 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-16">
+                {r.title && <p className="font-display text-base font-bold leading-snug drop-shadow">{r.title}</p>}
                 <div className="pointer-events-auto">
                   <Description texte={r.description} clair className="mt-1" />
                 </div>

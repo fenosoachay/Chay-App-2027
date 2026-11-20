@@ -1,24 +1,36 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import DefilementVertical from "@/components/media/DefilementVertical";
 
-// Playlist « Drôle » (section Vidéo) : toutes les vidéos d'abord, en grille de vignettes verticales ;
+// Playlist « Drôle » (section Vidéo) : toutes les vidéos d'abord, en grille de vignettes verticales 9:16 ;
 // toucher une vidéo l'ouvre en plein écran façon TikTok, et on fait défiler jusqu'à la dernière.
-// pistes : PlaylistTrack de la playlist (ordre de l'admin) ; descriptions : Map track_id -> description.
-export default function VideosVerticales({ pistes, descriptions, titre }) {
+// pistes : PlaylistTrack de la playlist (ordre de l'admin) ; descriptions : Map track_id -> description ;
+// cibleId : contenu visé par un lien partagé (track_id) -> ouvert directement en plein écran.
+export default function VideosVerticales({ pistes, descriptions, titre, cibleId }) {
   const [depart, setDepart] = useState(null);
   const items = useMemo(
     () => (pistes || [])
       .filter((t) => t.video_url)
       .map((t) => ({
         id: t.id,
+        track_id: t.track_id,
+        playlist_id: t.playlist_id,
         video_url: t.video_url,
         cover_url: t.cover_url,
         title: t.title,
+        listen_count: t.listen_count,
         description: descriptions?.get(t.track_id) || "",
       })),
     [pistes, descriptions]
   );
+
+  // Lien partagé : ouverture directe sur la vidéo (une seule fois).
+  const cibleOuverte = useRef(false);
+  useEffect(() => {
+    if (!cibleId || cibleOuverte.current) return;
+    const i = items.findIndex((v) => v.track_id === cibleId);
+    if (i >= 0) { cibleOuverte.current = true; setDepart(i); }
+  }, [cibleId, items]);
 
   if (!items.length) {
     return <p className="text-foreground/50 text-sm">Aucune vidéo dans cette playlist pour le moment.</p>;
