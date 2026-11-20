@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import EntityForm from "@/components/admin/EntityForm";
 import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
@@ -37,6 +37,17 @@ import {
 
 /** Champ PlaylistTrack qui porte le média (vérifié après l'ajout à la playlist), selon l'entité. */
 const CHAMP_MEDIA = { MusicTrack: "audio_url", Sermon: "audio_url", Video: "video_url" };
+
+/** Liste admin : nombre maximum de contenus chargés (tout, en pratique). */
+const LIMITE_LISTE = 1000;
+const simplifier = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+const dateDe = (item) => new Date(item.created_date || item.updated_date || 0).getTime();
+const TRIS = [
+  { id: "defaut", label: "Par défaut" },
+  { id: "recents", label: "Plus récents" },
+  { id: "anciens", label: "Plus anciens" },
+  { id: "az", label: "A → Z" },
+];
 
 /* ─── Cadenas ──────────────────────────────────────────────────────────── */
 function LockToggle({ locked, onToggle }) {
@@ -93,6 +104,10 @@ export default function EntityCrud({
   // Sous-playlists : playlist parente de la sous-playlist en cours de création, playlists dépliées.
   const [parentPourCreation, setParentPourCreation] = useState(null);
   const [deplies, setDeplies] = useState(() => new Set());
+  // Liste des contenus : recherche, tri, et playlist de chaque contenu (liens PlaylistTrack).
+  const [recherche, setRecherche] = useState("");
+  const [tri, setTri] = useState("defaut");
+  const [liens, setLiens] = useState([]);
   const categorie = CATEGORIE_PLAYLIST[entity];
   // Musique, Prédication, YouTube, Articles, Galerie : tout contenu est rangé dans une sous-playlist.
   const sousPlaylist = showPlaylist && exigeSousPlaylist(entity);
@@ -101,10 +116,12 @@ export default function EntityCrud({
 
   const load = async () => {
     setLoading(true);
-    const res = await base44.entities[entity]
-      .list(sort || "-created_date", 50)
-      .catch(() => []);
+    const [res, tracks] = await Promise.all([
+      base44.entities[entity].list(sort || "-created_date", LIMITE_LISTE).catch(() => []),
+      showPlaylist ? base44.entities.PlaylistTrack.list("-created_date", 20000).catch(() => []) : [],
+    ]);
     setItems(Array.isArray(res) ? res : []);
+    setLiens(Array.isArray(tracks) ? tracks : []);
     setLoading(false);
   };
 
@@ -507,12 +524,46 @@ export default function EntityCrud({
     </>
   );
 
+  /* ─── Liste affichée : recherche + tri (désactivés pendant la réorganisation au cadenas) ─── */
+  const reorganisation = isAdmin && !tracksLocked;
+  const titreDe = (item) => listColumns.map((c) => item[c]).filter(Boolean).join(" · ");
+  const itemsAffiches = useMemo(() => {
+    if (reorganisation) return items;
+    const mots = simplifier(recherche).split(/\s+/).filter(Boolean);
+    let liste = mots.length
+      ? items.filter((item) => {
+          const texte = simplifier(`${titreDe(item)} ${detailField ? item[detailField] || "" : ""}`);
+          return mots.every((m) => texte.includes(m));
+        })
+      : [...items];
+    if (tri === "recents") liste.sort((a, b) => dateDe(b) - dateDe(a));
+    else if (tri === "anciens") liste.sort((a, b) => dateDe(a) - dateDe(b));
+    else if (tri === "az") liste.sort((a, b) => titreDe(a).localeCompare(titreDe(b), "fr", { sensitivity: "base" }));
+    return liste;
+  }, [items, recherche, tri, reorganisation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Playlist de chaque contenu : « Playlist › Sous-playlist », ou rien (=> « Non rangé »).
+  const playlistParContenu = useMemo(() => {
+    if (!showPlaylist) return new Map();
+    const parId = new Map(playlists.map((p) => [p.id, p]));
+    const m = new Map();
+    for (const l of liens) {
+      const p = parId.get(l.playlist_id);
+      if (!p || m.has(l.track_id)) continue;
+      const parent = p.parent_id ? parId.get(p.parent_id) : null;
+      m.set(l.track_id, parent ? `${parent.name} › ${p.name}` : p.name);
+    }
+    return m;
+  }, [showPlaylist, playlists, liens]);
+
   /* ─── Rendu ─────────────────────────────────────────────────────────── */
   return (
     <div>
       {/* ── Barre d'actions ── */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground">{items.length} élément(s)</p>
+        <p className="text-sm text-muted-foreground">
+          {itemsAffiches.length === items.length ? `${items.length} élément(s)` : `${itemsAffiches.length} sur ${items.length} élément(s)`}
+        </p>
         {!readOnly && (
           <div className="flex gap-2 flex-wrap justify-end">
             {showPlaylist && (
@@ -648,14 +699,53 @@ export default function EntityCrud({
         <p className="text-sm text-foreground/50 py-8">{emptyLabel || "Aucun élément."}</p>
       ) : (
         <>
-          {isAdmin && items.length > 1 && (
-            <div className="flex justify-end mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {!reorganisation && (
+              <>
+                <div className="relative min-w-[12rem] flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+                  <input
+                    type="search"
+                    value={recherche}
+                    onChange={(e) => setRecherche(e.target.value)}
+                    placeholder="Rechercher un titre…"
+                    aria-label="Rechercher dans la liste"
+                    className="w-full rounded-full border border-border bg-background py-2 pl-9 pr-9 text-sm outline-none focus:border-primary [&::-webkit-search-cancel-button]:hidden"
+                  />
+                  {recherche && (
+                    <button
+                      type="button"
+                      onClick={() => setRecherche("")}
+                      aria-label="Effacer la recherche"
+                      className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-foreground/50 hover:bg-muted"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <select
+                  value={tri}
+                  onChange={(e) => setTri(e.target.value)}
+                  aria-label="Trier la liste"
+                  className="rounded-full border border-border bg-background px-3 py-2 text-sm font-semibold outline-none focus:border-primary"
+                >
+                  {TRIS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </>
+            )}
+            {reorganisation && (
+              <p className="flex-1 text-xs text-foreground/50">Réorganisation : glissez les éléments. Recherche et tri reviennent en refermant le cadenas.</p>
+            )}
+            {isAdmin && items.length > 1 && (
               <LockToggle locked={tracksLocked} onToggle={() => setTracksLocked((v) => !v)} />
-            </div>
+            )}
+          </div>
+          {itemsAffiches.length === 0 && (
+            <p className="text-sm text-foreground/50 py-6">Aucun élément ne correspond à « {recherche} ».</p>
           )}
           <ListeTriable
             id={`elements-${entity}`}
-            items={items}
+            items={itemsAffiches}
             actif={!tracksLocked && isAdmin}
             onReorder={handleReorderItems}
             renderRow={(item) => (
@@ -672,6 +762,13 @@ export default function EntityCrud({
                   </div>
                   {detailField && item[detailField] && (
                     <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{item[detailField]}</div>
+                  )}
+                  {showPlaylist && (
+                    playlistParContenu.has(item.id) ? (
+                      <div className="text-xs font-semibold text-primary mt-1 truncate">{playlistParContenu.get(item.id)}</div>
+                    ) : (
+                      <div className="text-xs font-semibold text-amber-500 mt-1">Non rangé</div>
+                    )
                   )}
                   <div className="text-xs text-muted-foreground mt-1">
                     {new Date(item.created_date || item.updated_date).toLocaleDateString("fr-FR")}

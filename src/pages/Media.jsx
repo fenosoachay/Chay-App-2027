@@ -92,12 +92,12 @@ export default function Media() {
 
   const loadAll = async () => {
     const [t, s, v, a, y, g, p, pl, pt] = await Promise.all([
-      base44.entities.MusicTrack.list("-created_date", 30).catch(() => []),
-      base44.entities.Sermon.list("-date", 30).catch(() => []),
-      base44.entities.Video.list("-created_date", 30).catch(() => []),
-      base44.entities.Article.list("order", 20).catch(() => []),
+      base44.entities.MusicTrack.list("-created_date", 500).catch(() => []),
+      base44.entities.Sermon.list("-date", 500).catch(() => []),
+      base44.entities.Video.list("-created_date", 500).catch(() => []),
+      base44.entities.Article.list("order", 500).catch(() => []),
       loadYoutubeListWithCache(() => base44.entities.YouTubeVideo.list("-created_date")),
-      base44.entities.GalleryImage.list("-created_date", 30).catch(() => []),
+      base44.entities.GalleryImage.list("-created_date", 500).catch(() => []),
       base44.entities.PlaylistItem.list("-created_date", 50).catch(() => []),
       // Toutes les playlists et tous les liens : sections > playlists > sous-playlists (petits volumes).
       base44.entities.Playlist.list("-created_date", 2000).catch(() => []),
