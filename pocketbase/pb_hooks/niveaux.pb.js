@@ -1,4 +1,4 @@
-// Niveaux des comptes (Tout le monde / Membre / VIP) : Admin › Équipe › Gérer les membres.
+// Niveaux des comptes (Utilisateur / Membre / VIP) : Admin › Équipe › Gérer les membres.
 //  - POST /api/fn/listerNiveaux  (admin) : tous les comptes avec leur niveau ;
 //  - POST /api/fn/definirNiveau  (admin) : { user_id, niveau: "tous" | "membre" | "vip" }.
 // Un membre ne peut pas changer son propre niveau (règle de mise à jour de users, migrer-1-3-21).
@@ -8,7 +8,7 @@ routerAdd('POST', '/api/fn/listerNiveaux', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   return fn.run(e, 'listerNiveaux', 'Erreur interne', () => {
     fn.requireAdmin(e, 'Forbidden');
-    const rows = $app.findRecordsByFilter('users', "id != ''", '', 0, 0);
+    const rows = $app.findRecordsByFilter('users', 'systeme != true', '', 0, 0); // sans le compte automatique « Chay »
     return {
       membres: rows.map((r) => ({
         id: r.id,

@@ -22,6 +22,7 @@ const PanelFallback = () => (
 );
 import AdminListPanel from "@/components/admin/AdminListPanel";
 import GererMembres from "@/components/admin/GererMembres";
+import SignalementsTechniques from "@/components/admin/SignalementsTechniques";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import { SECTIONS } from "@/components/admin/adminSections";
@@ -46,6 +47,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "blockblast") return <Suspense fallback={<PanelFallback />}><BlockBlastMessagesAdminPanel /></Suspense>;
   if (active === "admins") return <AdminListPanel />;
   if (active === "membres") return <GererMembres />;
+  if (active === "signalements") return <SignalementsTechniques />;
   if (active === "app_update") return <AnnoncerVersion />;
 
   const section = SECTIONS.find((s) => s.key === active);

@@ -39,6 +39,7 @@ test("chaque type ouvre l'écran précis de son contenu", () => {
   assert.equal(routeCible("prayer", "p1"), "/requests?tab=my-prayers");
   assert.equal(routeCible("theme_answer", "x"), "/requests?tab=theme");
   assert.equal(routeCible("content", "c1"), null);
+  assert.equal(routeCible("signalement", "s1"), "/admin/signalements");
   assert.equal(routeCible("message", "a&b"), "/messages?c=a%26b");
 });
 

@@ -25,6 +25,11 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
     const participants = fn.plain(conversation).participant_ids;
     const list = Array.isArray(participants) ? participants : [];
     if (list.indexOf(caller.id) === -1) throw new fn.HttpError(403, 'Forbidden');
+    // Messages automatiques du compte « Chay » (1.3.22) : on ne peut pas y répondre.
+    const systeme = require(`${__hooks}/lib/signalements.js`).idsSysteme($app);
+    if (systeme.indexOf(caller.id) === -1 && list.some((id) => systeme.indexOf(id) !== -1)) {
+      throw new fn.HttpError(403, 'On ne peut pas répondre aux messages automatiques de Chay.');
+    }
 
     const myName = caller.getString('name')
       || [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')

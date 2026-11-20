@@ -84,9 +84,13 @@ export default function ConversationView({
     : otherProfile?.display_name || "Membre";
   const avatarUrl = isGroup ? conversation?.photo_url : otherProfile?.avatar_url;
   const online = !isGroup && isOnline(otherProfile?.last_seen_at);
+  // Compte automatique « Chay » (1.3.22) : messages automatiques, on ne peut pas y répondre.
+  const automatique = !isGroup && Boolean(otherProfile?.systeme);
   const statusText = isGroup
     ? `${conversation?.participant_ids?.length || 0} membres`
-    : lastSeenLabel(otherProfile?.last_seen_at);
+    : automatique
+      ? "Messages automatiques"
+      : lastSeenLabel(otherProfile?.last_seen_at);
 
   const myName =
     user?.full_name ||
@@ -586,6 +590,15 @@ image_url: uploadedUrl,
           </button>
         </div>
       )}
+      {automatique ? (
+        <div
+          className="relative z-10 border-t border-border bg-background/95 px-4 py-3 text-center text-xs text-foreground/60"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          Message automatique de Chay : on ne peut pas y répondre.
+        </div>
+      ) : (
+      <>
       {/* Composer */}
       <div
         className="relative z-10 bg-background/95 backdrop-blur-md border-t border-border px-3 py-2 safe-area-pb"
@@ -665,6 +678,8 @@ image_url: uploadedUrl,
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {menu && (
         <MessageActionMenu

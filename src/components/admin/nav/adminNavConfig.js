@@ -4,7 +4,7 @@ import {
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
   Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
-  Type, Palette, Baby, Crown,
+  Type, Palette, Baby, Crown, Wrench,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -65,6 +65,7 @@ export const ADMIN_NAV = [
     id: "engagement", label: "Engagement", icon: Heart,
     items: [
       { key: "donations", mots: "don argent", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
+      { key: "signalements", mots: "probleme technique bug aide assistance signalement", label: "Problèmes techniques", icon: Wrench, path: "/admin/signalements" },
       { key: "theme_requests", mots: "theme", label: "Demandes de thème", icon: MessageSquareQuote, path: "/admin/theme-requests" },
       { key: "mission_requests", mots: "mission", label: "Se missionner", icon: Compass, path: "/admin/missions" },
       { key: "Faq", mots: "question reponse", label: "FAQ", icon: HelpCircle, path: "/admin/faq" },
@@ -77,7 +78,7 @@ export const ADMIN_NAV = [
     id: "team", label: "Équipe", icon: Shield,
     items: [
       { key: "invite", label: "Inviter un admin", icon: UserPlus, path: "/admin/invite" },
-      { key: "membres", mots: "membre vip niveau tout le monde", label: "Gérer les membres", icon: Crown, path: "/admin/membres" },
+      { key: "membres", mots: "membre vip niveau utilisateur", label: "Gérer les membres", icon: Crown, path: "/admin/membres" },
       { key: "admins", mots: "administrateur role", label: "Gérer les administrateurs", icon: Users, path: "/admin/admins" },
       { key: "app_update", mots: "version apk", label: "Annoncer une mise à jour", icon: Rocket, path: "/admin/mise-a-jour" },
     ],

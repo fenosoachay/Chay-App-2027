@@ -29,7 +29,8 @@ export default function NewChatSheet({
   const [groupPhoto, setGroupPhoto] = useState(null);
   const [creating, setCreating] = useState(false);
 
-  const others = profiles.filter((p) => p.created_by_id !== user?.id);
+  // Sans le compte automatique « Chay » (messages automatiques, on ne lui écrit pas).
+  const others = profiles.filter((p) => p.created_by_id !== user?.id && !p.systeme);
   const filtered = query
     ? others.filter((p) =>
         (p.display_name || "").toLowerCase().includes(query.toLowerCase())

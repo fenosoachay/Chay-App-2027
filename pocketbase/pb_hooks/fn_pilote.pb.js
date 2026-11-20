@@ -8,7 +8,7 @@ routerAdd('POST', '/api/fn/listCommunityUsers', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   return fn.run(e, 'listCommunityUsers', 'Erreur interne', () => {
     fn.requireUser(e, 'Connexion requise');
-    const records = $app.findRecordsByFilter('users', "id != ''", '-base44_created_date,-created', 100, 0);
+    const records = $app.findRecordsByFilter('users', 'systeme != true', '-base44_created_date,-created', 100, 0); // sans le compte automatique « Chay »
     const users = records.map((r) => ({
       id: r.id,
       first_name: r.getString('first_name') || '',
