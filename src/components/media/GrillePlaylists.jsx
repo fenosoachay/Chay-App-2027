@@ -10,14 +10,15 @@ export const COINS_VIGNETTE = "rounded-[18%] ring-1 ring-black/5";
  * En réorganisation (admin, cadenas ouvert) : liste à glisser, même mécanisme que la réorganisation YouTube.
  */
 /**
- * Nom sous une vignette : on ne coupe jamais un mot en deux (« Célébratio / n »). Un mot long est écrit un peu
- * plus petit pour tenir dans la case ; deux lignes au plus.
+ * Nom sous une vignette : on ne coupe jamais un mot en deux (« Célébratio / n »). Le nom peut déborder un peu
+ * sur l'espace entre les vignettes (-mx-2), ce qui garde presque la taille normale ; seuls les mots très longs
+ * sont un peu réduits. Deux lignes au plus.
  */
 function NomPlaylist({ nom }) {
   const plusLong = Math.max(0, ...String(nom || "").split(/\s+/).map((m) => m.length));
-  const taille = plusLong >= 11 ? "text-[0.64rem]" : plusLong >= 9 ? "text-[0.7rem]" : "text-xs";
+  const taille = plusLong >= 14 ? "text-[0.66rem]" : plusLong >= 12 ? "text-[0.7rem]" : "text-xs";
   return (
-    <div className={`font-bold ${taille} leading-tight tracking-tight line-clamp-2 [overflow-wrap:normal] [word-break:normal] [hyphens:none]`}>
+    <div className={`-mx-2 font-bold ${taille} leading-tight tracking-tight line-clamp-2 [overflow-wrap:normal] [word-break:normal] [hyphens:none]`}>
       {nom}
     </div>
   );

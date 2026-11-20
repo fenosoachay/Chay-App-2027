@@ -1,5 +1,5 @@
 // Qui voit un contenu (Musique, Prédications, Vidéos, YouTube, Galerie, Articles) : champ `audience`.
-//  - « tous »   : tout le monde (tous les comptes inscrits) — aussi les anciens contenus sans valeur ;
+//  - « tous »   : « Utilisateur », c.-à-d. tous les comptes inscrits — aussi les anciens contenus sans valeur ;
 //  - « membre » : les membres et les VIP ;
 //  - « vip »    : les VIP seulement.
 // Le niveau d'un compte (users.niveau : tous / membre / vip) est donné par les admins (Admin › Équipe ›
@@ -7,14 +7,14 @@
 // (règles PocketBase et notifications) : l'affichage ne fait que suivre.
 
 export const AUDIENCES = [
-  { value: "tous", label: "Tout le monde" },
+  { value: "tous", label: "Utilisateur" },
   { value: "membre", label: "Membre" },
   { value: "vip", label: "VIP" },
 ];
 
 export const NIVEAUX = AUDIENCES; // mêmes valeurs pour le niveau d'un compte
 
-export const libelleAudience = (v) => AUDIENCES.find((a) => a.value === v)?.label || "Tout le monde";
+export const libelleAudience = (v) => AUDIENCES.find((a) => a.value === v)?.label || "Utilisateur";
 
 /** Ce compte peut-il voir ce contenu ? (même règle que le serveur) */
 export function peutVoir({ role, niveau } = {}, audience) {

@@ -21,7 +21,7 @@ export default function ConfirmHost() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{req?.title || "Confirmation"}</AlertDialogTitle>
-          <AlertDialogDescription>{req?.message}</AlertDialogDescription>
+          <AlertDialogDescription className="break-all">{req?.message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => close(false)}>{req?.cancelLabel || "Annuler"}</AlertDialogCancel>

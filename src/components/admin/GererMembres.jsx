@@ -4,9 +4,9 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { NIVEAUX } from "@/lib/audience";
 
-// Admin › Équipe › Gérer les membres : niveau de chaque compte (Tout le monde / Membre / VIP).
+// Admin › Équipe › Gérer les membres : niveau de chaque compte (Utilisateur / Membre / VIP).
 // Les membres ne voient pas leur niveau ; il décide des contenus qu'ils voient et des notifications reçues.
-// Par défaut, tout compte est « Tout le monde ». Les admins voient tout, quel que soit leur niveau.
+// Par défaut, tout compte est « Utilisateur ». Les admins voient tout, quel que soit leur niveau.
 const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const nomDe = (m) => [m.prenom, m.nom].filter(Boolean).join(" ") || m.email || "Membre";
 
@@ -62,12 +62,12 @@ export default function GererMembres() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-foreground/60">
-        Choisissez le niveau de chaque compte. <b>Tout le monde</b> voit les contenus pour tout le monde ;
+        Choisissez le niveau de chaque compte. <b>Utilisateur</b> voit les contenus pour les utilisateurs ;
         <b> Membre</b> voit aussi ceux des membres ; <b>VIP</b> voit tout. Les membres ne voient pas leur niveau.
       </p>
 
       <div className="flex flex-wrap gap-2">
-        {[["tous-les-comptes", `Tous les comptes (${membres.length})`], ["tous", `Tout le monde (${compte.tous})`], ["membre", `Membres (${compte.membre})`], ["vip", `VIP (${compte.vip})`]].map(([id, label]) => (
+        {[["tous-les-comptes", `Tous les comptes (${membres.length})`], ["tous", `Utilisateurs (${compte.tous})`], ["membre", `Membres (${compte.membre})`], ["vip", `VIP (${compte.vip})`]].map(([id, label]) => (
           <button
             key={id}
             type="button"
