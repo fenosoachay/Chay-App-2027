@@ -37,6 +37,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AndroidMediaNotificationPlugin.class);
         registerPlugin(ChayConversationPlugin.class);
         registerPlugin(ChayGaleriePlugin.class);
+        registerPlugin(ChayMiseAJourPlugin.class);
         super.onCreate(savedInstanceState);
         WebView webView = getBridge().getWebView();
         if (webView != null) {

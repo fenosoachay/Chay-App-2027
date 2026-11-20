@@ -5,6 +5,9 @@ import { Capacitor, registerPlugin } from "@capacitor/core";
 
 export const ChayConversation = registerPlugin("ChayConversation");
 
+// Mise à jour de l'application depuis l'application (ChayMiseAJourPlugin.java, voir src/lib/miseAJour.js).
+export const ChayMiseAJour = registerPlugin("ChayMiseAJour");
+
 export function estNatif() {
   try {
     return Capacitor.isNativePlatform();

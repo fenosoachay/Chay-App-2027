@@ -73,6 +73,18 @@
             </intent-filter>
         </service>
 
+        <!-- Mise à jour depuis l'app : réponse d'Android à l'installation, puis « Chay est à jour ». -->
+        <receiver
+            android:name=".MiseAJourReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".MiseAJourTermineeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -90,6 +102,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Mise à jour depuis l'app (ChayMiseAJourPlugin) : Android demande l'accord du membre la première fois. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Fonds d'écran : enregistrement dans la galerie sur Android 5 à 9 seulement (Android 10+ : MediaStore, sans permission). -->
