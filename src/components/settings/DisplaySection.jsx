@@ -48,13 +48,39 @@ export default function DisplaySection() {
 
       <div>
         <p className="text-xs font-semibold mb-1.5">Taille du texte</p>
-        <Segmented
-          ariaLabel="Taille du texte"
-          options={TAILLES_POLICE}
-          value={taille}
-          onChange={(v) => setTaille(enregistrerTaillePolice(v))}
-          labels={TAILLES_POLICE.map((t) => `${t} %`)}
-        />
+        {/* 100 % (taille de départ) à 150 %, par paliers de 5 % : boutons − / + et curseur. */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setTaille(enregistrerTaillePolice(taille - 5))}
+            disabled={taille <= TAILLES_POLICE[0]}
+            aria-label="Texte plus petit"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border text-lg font-bold disabled:opacity-30"
+          >
+            −
+          </button>
+          <input
+            type="range"
+            min={TAILLES_POLICE[0]}
+            max={TAILLES_POLICE[TAILLES_POLICE.length - 1]}
+            step={5}
+            value={taille}
+            onChange={(e) => setTaille(enregistrerTaillePolice(e.target.value))}
+            aria-label="Taille du texte"
+            aria-valuetext={`${taille} %`}
+            className="h-2 min-w-0 flex-1 cursor-pointer accent-[hsl(var(--primary))]"
+          />
+          <button
+            type="button"
+            onClick={() => setTaille(enregistrerTaillePolice(taille + 5))}
+            disabled={taille >= TAILLES_POLICE[TAILLES_POLICE.length - 1]}
+            aria-label="Texte plus grand"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border text-lg font-bold disabled:opacity-30"
+          >
+            +
+          </button>
+          <span className="w-14 shrink-0 text-right text-sm font-bold tabular-nums">{taille} %</span>
+        </div>
         <p className="text-xs text-foreground/50 mt-1">
           S'applique à toute l'application, sur cet appareil seulement.
         </p>

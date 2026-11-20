@@ -7,7 +7,7 @@ import { SPLASH_EXIT_S, SPLASH_GRADIENT, SPLASH_STEPS, removeBootSplash } from "
 const MONTBOLD = "'Gilroy', 'Helvetica Neue', sans-serif";
 const ease = "easeOut";
 
-export default function SplashScreen({ onSkip }) {
+export default function SplashScreen({ onSkip, instantane = false }) {
   // Opaque dès la première image : le fond de démarrage d'index.html (même dégradé) peut être retiré.
   useEffect(() => { removeBootSplash(); }, []);
 
@@ -33,7 +33,8 @@ export default function SplashScreen({ onSkip }) {
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: SPLASH_EXIT_S, ease: "easeInOut" }}
+      // instantane : ouverte depuis une notification -> disparaît sans fondu.
+      transition={{ duration: instantane ? 0 : SPLASH_EXIT_S, ease: "easeInOut" }}
     >
       {/* Contenu Central */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-2 px-8 text-center">

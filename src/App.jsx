@@ -6,6 +6,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { AnimatePresence } from "framer-motion";
 import SplashScreen from "@/components/SplashScreen";
 import { SPLASH_DURATION_MS, removeBootSplash } from "@/lib/splash";
+import { ChayConversation, estNatif } from "@/lib/chayConversation";
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -164,6 +165,7 @@ function App() {
   const [showSplash, setShowSplash] = useState(
     () => typeof sessionStorage === "undefined" || sessionStorage.getItem(SPLASH_SESSION_KEY) !== "1"
   );
+  const [splashInstantane, setSplashInstantane] = useState(false);
   useEffect(() => {
     // Cache le splash natif Capacitor dès que React monte (double sécurité :
     // launchShowDuration est déjà à 0 dans capacitor.config.json).
@@ -175,6 +177,13 @@ function App() {
     }
     // Marqué immédiatement : un actualisation pendant l'animation ne la rejoue pas.
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+    // Ouverte en touchant une notification (message, contenu…) ou dans une bulle : pas d'animation, on va
+    // directement à l'écran visé.
+    if (estNatif()) {
+      ChayConversation.lancement()
+        .then((r) => { if (r?.notification) { setSplashInstantane(true); setShowSplash(false); } })
+        .catch(() => {});
+    }
     // 4 s (apparitions lentes jusqu'à 3,4 s, puis pause), puis fondu de sortie ; un toucher la passe.
     const t = setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
     return () => clearTimeout(t);
@@ -195,7 +204,7 @@ function App() {
               <AuthenticatedApp />
             </ErrorBoundary>
             <AnimatePresence>
-              {showSplash && <SplashScreen key="splash" onSkip={() => setShowSplash(false)} />}
+              {showSplash && <SplashScreen key="splash" instantane={splashInstantane} onSkip={() => setShowSplash(false)} />}
             </AnimatePresence>
           </Router>
             <Toaster />

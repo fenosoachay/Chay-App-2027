@@ -192,8 +192,16 @@ export default function AccountSection() {
 
       <div className="rounded-xl bg-muted/40 p-3 flex items-center gap-2">
         <Mail className="h-4 w-4 text-foreground/50 shrink-0" />
-        <span className="text-sm font-semibold flex-1 break-all">
-          {user?.email}
+        {/* E-mail long : le nom sur une ligne (coupé avec « … » si besoin), « @domaine » en dessous. */}
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-sm font-semibold [overflow-wrap:normal]" title={user?.email}>
+            {String(user?.email || "").split("@")[0]}
+          </span>
+          {String(user?.email || "").includes("@") && (
+            <span className="block truncate text-xs text-foreground/55 [overflow-wrap:normal]">
+              @{String(user?.email).split("@").slice(1).join("@")}
+            </span>
+          )}
         </span>
         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
           <BadgeCheck className="h-3.5 w-3.5" /> Vérifié

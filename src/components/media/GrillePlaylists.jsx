@@ -9,6 +9,20 @@ export const COINS_VIGNETTE = "rounded-[18%] ring-1 ring-black/5";
  * Grille de playlists ou de sous-playlists, au style de Musique (couverture carrée + nom).
  * En réorganisation (admin, cadenas ouvert) : liste à glisser, même mécanisme que la réorganisation YouTube.
  */
+/**
+ * Nom sous une vignette : on ne coupe jamais un mot en deux (« Célébratio / n »). Un mot long est écrit un peu
+ * plus petit pour tenir dans la case ; deux lignes au plus.
+ */
+function NomPlaylist({ nom }) {
+  const plusLong = Math.max(0, ...String(nom || "").split(/\s+/).map((m) => m.length));
+  const taille = plusLong >= 11 ? "text-[0.64rem]" : plusLong >= 9 ? "text-[0.7rem]" : "text-xs";
+  return (
+    <div className={`font-bold ${taille} leading-tight tracking-tight line-clamp-2 [overflow-wrap:normal] [word-break:normal] [hyphens:none]`}>
+      {nom}
+    </div>
+  );
+}
+
 export default function GrillePlaylists({ id, items, reorganiser = false, onReorder, onOuvrir }) {
   if (reorganiser) {
     return (
@@ -32,7 +46,7 @@ export default function GrillePlaylists({ id, items, reorganiser = false, onReor
           <button type="button" onClick={() => onOuvrir(p)} className="w-full text-center">
             {/* Carré à coins légèrement arrondis, comme une icône d'application Android. */}
             <PlaylistCover playlist={p} className={`mx-auto aspect-square w-full mb-1.5 ${COINS_VIGNETTE}`} />
-            <div className="font-bold text-xs line-clamp-2">{p.name}</div>
+            <NomPlaylist nom={p.name} />
           </button>
         </div>
       ))}

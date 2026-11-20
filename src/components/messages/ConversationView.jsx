@@ -484,10 +484,10 @@ image_url: uploadedUrl,
                   onPointerLeave={cancelPress}
                   onPointerCancel={cancelPress}
                   onContextMenu={(e) => onContextMenuMenu(e, m)}
-                  className={`w-fit max-w-full rounded-2xl cursor-pointer select-none transition active:scale-[0.99] ${editing?.id === m.id ? "hidden" : ""} ${
+                  className={`w-fit max-w-full rounded-[12px] cursor-pointer select-none transition active:scale-[0.99] ${editing?.id === m.id ? "hidden" : ""} ${
                     imageOnly
                       ? "p-0 bg-transparent border-0 shadow-none"
-                      : `px-4 py-2.5 ${mine ? "brand-gradient text-white rounded-br-md" : "bg-card border border-border rounded-bl-md"} ${grouped ? (mine ? "rounded-br-md" : "rounded-bl-md") : ""}`
+                      : `px-3.5 py-2 ${mine ? "brand-gradient text-white rounded-br-[4px]" : "bg-card border border-border rounded-bl-[4px]"}`
                   }`}
                 >
                   {isGroup && !mine && !grouped && (
@@ -499,7 +499,7 @@ image_url: uploadedUrl,
                     <button
                       type="button"
                       onClick={() => openPhoto(m)}
-                      className={`block overflow-hidden focus:outline-none ${imageOnly ? "rounded-2xl" : "rounded-xl mb-1"} max-w-[240px] md:max-w-[280px]`}
+                      className={`block overflow-hidden focus:outline-none ${imageOnly ? "rounded-[10px]" : "rounded-[8px] mb-1"} max-w-[240px] md:max-w-[280px]`}
                       aria-label={`Agrandir la photo envoyée par ${m.sender_name || "Membre"}`}
                     >
                       <Image

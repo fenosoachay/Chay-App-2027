@@ -27,7 +27,7 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
       type="button"
       onClick={() => onOpen(item)}
       disabled={!item}
-      className={`flex-1 p-3 text-left flex flex-col min-h-[9rem] relative group transition-colors duration-300 ${
+      className={`flex-1 p-3 text-left flex flex-col relative group transition-colors duration-300 ${
         isLatest ? "bg-primary/5 border-l border-border" : "bg-card hover:bg-muted/30"
       } disabled:opacity-50 disabled:cursor-default`}
     >
@@ -40,11 +40,15 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
 
       {item ? (
         <>
-          <p className="selectable text-[0.75rem] leading-tight text-foreground/90 line-clamp-none flex-1">
+          <p className="selectable text-[0.75rem] leading-tight text-foreground/90 line-clamp-none">
             {getHomeContentMessage(item)}
           </p>
-          <div className="mt-2 pt-2 flex justify-center gap-1 text-xs font-semibold">
-            {isLatest ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {/* Flèche 3,78 px sous la phrase : « Préc. » alignée à gauche (sur l'icône et la phrase),
+              « Nouv. » alignée à droite. -5px : la flèche dessinée a une marge intérieure, on l'aligne sur le trait. */}
+          <div className={`mt-[3.78px] flex ${isLatest ? "justify-end" : "justify-start"}`}>
+            {isLatest
+              ? <ChevronRight className="-mr-[5px] h-4 w-4" />
+              : <ChevronLeft className="-ml-[5px] h-4 w-4" />}
           </div>
         </>
       ) : (

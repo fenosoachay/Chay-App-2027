@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
 import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { openExternal } from "@/lib/openExternal";
+import { enregistrerFond } from "@/lib/fondsEcran";
 import { useToast } from "@/components/ui/use-toast";
 
 /**
@@ -23,34 +23,19 @@ export default function PhotoViewer({ images, index, onClose }) {
     ArrowRight: () => { if (total > 1) setI((p) => (p + 1) % total); },
   });
 
+  // Téléchargement : APK -> galerie du téléphone (Images › Chay) ; navigateur -> fichier téléchargé.
   const download = async () => {
     const url = images[i];
-    // N'ouvre que les URL http(s) — bloque les schémas dangereux (javascript:, data:).
-    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) {
-      return;
-    }
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
+    setDownloading(true);
     try {
-      setDownloading(true);
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const obj = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = obj;
-      a.download = `chay_photo_${Date.now()}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(obj);
-    } catch {
-      try {
-        await openExternal(url);
-      } catch (error) {
-        toast({
-          title: "Impossible d'ouvrir le lien",
-          description: error?.message,
-          variant: "destructive",
-        });
-      }
+      const ou = await enregistrerFond({ image_url: url, title: "photo-chay" });
+      toast({
+        title: ou === "galerie" ? "Photo enregistrée dans la galerie" : "Photo téléchargée",
+        description: ou === "galerie" ? "Dossier Images › Chay." : undefined,
+      });
+    } catch (error) {
+      toast({ title: "Téléchargement impossible", description: error?.message, variant: "destructive" });
     } finally {
       setDownloading(false);
     }

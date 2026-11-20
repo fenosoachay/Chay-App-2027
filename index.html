@@ -43,7 +43,8 @@
       (function () {
         try {
           var t = Number(localStorage.getItem("chay-taille-police"));
-          if ([125, 150, 175, 200].indexOf(t) === -1) return;
+          if (!(t > 100)) return;
+          t = t >= 150 ? 150 : Math.round(t / 5) * 5;
           var h = document.documentElement;
           h.style.fontSize = "calc(var(--chay-base, 16px) * " + t / 100 + ")";
           h.style.setProperty("--chay-zoom", String(t / 100));

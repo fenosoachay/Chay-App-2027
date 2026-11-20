@@ -49,7 +49,22 @@ public class ChayConversationPlugin extends Plugin {
 
     @PluginMethod
     public void effacer(PluginCall call) {
-        ConversationNotifier.effacer(getContext(), call.getString("conversation"));
+        // Dans la bulle de discussion : on ne retire pas la notification, sinon la bulle disparaît avec elle.
+        if (!(getActivity() instanceof BubbleActivity)) {
+            ConversationNotifier.effacer(getContext(), call.getString("conversation"));
+        }
         call.resolve();
+    }
+
+    /** L'app a-t-elle été ouverte en touchant une notification (ou dans une bulle) ? -> pas d'animation d'accueil. */
+    @PluginMethod
+    public void lancement(PluginCall call) {
+        Intent i = getActivity() != null ? getActivity().getIntent() : null;
+        boolean depuisNotification = getActivity() instanceof BubbleActivity
+            || (i != null && (i.hasExtra("google.message_id") || i.hasExtra("target_type")
+                || RouteMedia.ACTION.equals(i.getAction())));
+        JSObject res = new JSObject();
+        res.put("notification", depuisNotification);
+        call.resolve(res);
     }
 }

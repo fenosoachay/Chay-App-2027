@@ -3,13 +3,16 @@
 // rem (textes, marges, boutons) suit. Le même calcul est fait avant le premier rendu par index.html (anti-saut).
 
 export const CLE_TAILLE_POLICE = "chay-taille-police"; // synchronisée avec le script de index.html
-export const TAILLES_POLICE = [100, 125, 150, 175, 200];
+export const TAILLES_POLICE = [100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150];
 /** À partir de cette taille, les titres et textes tronqués passent à la ligne (styles de src/index.css). */
 export const SEUIL_GRANDE_POLICE = 150;
 
+/** Taille retenue : un palier de 5 entre 100 et 150 (une ancienne taille 175 ou 200 devient 150). */
 export function normaliserTaille(v) {
   const n = Number(v);
-  return TAILLES_POLICE.includes(n) ? n : 100;
+  if (!Number.isFinite(n) || n <= 100) return 100;
+  if (n >= 150) return 150;
+  return Math.round(n / 5) * 5;
 }
 
 export function lireTaillePolice(storage = globalThis.localStorage) {

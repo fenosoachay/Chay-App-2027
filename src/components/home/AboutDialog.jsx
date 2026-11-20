@@ -23,8 +23,9 @@ import {
   Share2,
 } from "lucide-react";
 
-// Lien de partage de l'application (facile à changer)
-const APP_SHARE_URL = "https://membres.chay.fr";
+// Partage de l'application : le fichier d'installation Android (APK), pas le site.
+const APP_SHARE_URL = "https://membres.chay.fr/telechargements/chay.apk";
+const APP_SHARE_TEXTE = "Installe l'application de l'Église Chay (Android) :";
 
 export default function AboutDialog({ open, onOpenChange }) {
   const { user } = useAuth();
@@ -266,7 +267,7 @@ export default function AboutDialog({ open, onOpenChange }) {
                   const url = APP_SHARE_URL;
                   if (navigator.share) {
                     try {
-                      await navigator.share({ title: "Application Chay", url });
+                      await navigator.share({ title: "Application Église Chay", text: APP_SHARE_TEXTE, url });
                       return;
                     } catch {
                       // L'utilisateur a annulé ou erreur -> fallback
@@ -274,14 +275,14 @@ export default function AboutDialog({ open, onOpenChange }) {
                   }
                   // Fallback : copie dans le presse-papiers
                   try {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(`${APP_SHARE_TEXTE} ${url}`);
                     toast({ title: "Lien copié dans le presse-papiers" });
                   } catch {
                     toast({ title: "Impossible de copier", variant: "destructive" });
                   }
                 }}
               >
-                <Share2 className="h-4 w-4 mr-2" /> Partager le lien
+                <Share2 className="h-4 w-4 mr-2" /> Partager l'application (Android)
               </Button>
               <p className="text-xs text-foreground/50 mt-1 text-center">{APP_SHARE_URL}</p>
             </div>
