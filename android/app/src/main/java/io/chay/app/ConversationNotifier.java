@@ -1,6 +1,5 @@
 package io.chay.app;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -14,7 +13,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
-import android.service.notification.StatusBarNotification;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
@@ -87,9 +85,9 @@ final class ConversationNotifier {
             // limite de raccourcis atteinte : notification sans bulle
         }
 
-        // Historique : les messages déjà affichés dans la notification de cette conversation sont conservés.
-        NotificationCompat.MessagingStyle style = styleExistant(ctx, conversation);
-        if (style == null) style = new NotificationCompat.MessagingStyle(moi);
+        // Seulement le DERNIER message : les anciens ne restent plus dans la notification (ils étaient souvent
+        // déjà lus ou répondus depuis l'app). La notification est aussi retirée quand la conversation est ouverte.
+        NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(moi);
         style.addMessage(corps, System.currentTimeMillis(), lui);
 
         int code = notificationId(conversation);
@@ -164,23 +162,6 @@ final class ConversationNotifier {
             .putExtra("target_id", conversation)
             .putExtra("route", route)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    }
-
-    private static NotificationCompat.MessagingStyle styleExistant(Context ctx, String conversation) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null;
-        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm == null) return null;
-        try {
-            for (StatusBarNotification sbn : nm.getActiveNotifications()) {
-                if (TAG.equals(sbn.getTag()) && sbn.getId() == notificationId(conversation)) {
-                    Notification n = sbn.getNotification();
-                    return NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(n);
-                }
-            }
-        } catch (RuntimeException ignored) {
-            // pas d'historique : nouvelle notification
-        }
-        return null;
     }
 
     private static void creerCanal(Context ctx) {

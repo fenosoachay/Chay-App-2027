@@ -14,6 +14,7 @@ import {
   X,
   Smile,
   Settings,
+  Camera,
 } from "lucide-react";
 import Avatar from "@/components/messages/Avatar";
 import MessageAvatar from "@/components/messages/MessageAvatar";
@@ -25,6 +26,9 @@ import GroupSettingsSheet from "@/components/messages/GroupSettingsSheet";
 import EmojiPicker from "@/components/messages/EmojiPicker";
 import MessageActionMenu from "@/components/messages/MessageActionMenu";
 import PhotoViewer from "@/components/messages/PhotoViewer";
+import PhotoEditeur from "@/components/messages/PhotoEditeur";
+import TexteAvecLiens from "@/components/messages/TexteAvecLiens";
+import { ChayConversation, estNatif } from "@/lib/chayConversation";
 import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
@@ -56,7 +60,10 @@ export default function ConversationView({
   const [editText, setEditText] = useState("");
   const scrollRef = useRef(null);
   const fileRef = useRef(null);
+  const cameraRef = useRef(null);
   const champRef = useRef(null);
+  // Photo choisie (galerie ou appareil photo) : modifiée (pivoter, recadrer) avant l'envoi.
+  const [photoAEditer, setPhotoAEditer] = useState(null);
   const typingTimer = useRef(null);
   const isTypingSent = useRef(false);
   const pressTimer = useRef(null);
@@ -204,6 +211,12 @@ export default function ConversationView({
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => setTypingState(false), 2500);
   };
+  // Conversation ouverte (et à chaque nouveau message) : sa notification Android est retirée.
+  useEffect(() => {
+    if (!conversation?.id || !estNatif()) return;
+    ChayConversation.effacer({ conversation: conversation.id }).catch(() => {});
+  }, [conversation?.id, messages.length]);
+
   // Message envoyé (champ vidé) : le champ reprend sa hauteur d'une ligne.
   useEffect(() => {
     if (!draft && champRef.current) champRef.current.style.height = "auto";
@@ -243,8 +256,10 @@ export default function ConversationView({
     setSending(false);
   };
 
-  const sendImage = async (file) => {
-    if (!file || !conversation) return;
+  const sendImage = async (photo) => {
+    if (!photo || !conversation) return;
+    // Photo modifiée (Blob) : redevient un fichier nommé pour l'envoi.
+    const file = photo instanceof File ? photo : new File([photo], `photo_${Date.now()}.jpg`, { type: photo.type || "image/jpeg" });
     setSending(true);
     try {
       const uploadedUrl = await uploadToBase44(file);
@@ -497,7 +512,7 @@ image_url: uploadedUrl,
                   )}
                   {m.text ? (
                     <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {m.text}
+                      <TexteAvecLiens texte={m.text} clair={mine} />
                     </div>
                   ) : null}
                 </div>
@@ -583,7 +598,17 @@ image_url: uploadedUrl,
             <ImageIcon className="h-5 w-5" />
           </button>
           
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { sendImage(e.target.files?.[0]); e.target.value = ""; }} />
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoAEditer(f); e.target.value = ""; }} />
+
+          {/* Bouton Appareil photo : prendre une photo directement */}
+          <button
+            onClick={() => cameraRef.current?.click()}
+            className="h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted text-foreground/60"
+            aria-label="Prendre une photo"
+          >
+            <Camera className="h-5 w-5" />
+          </button>
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoAEditer(f); e.target.value = ""; }} />
 
           {/* Champ Texte - min-w-0 EST OBLIGATOIRE POUR ÉVITER LE DÉBORDEMENT */}
           {/* Entrée = à la ligne (téléphone et ordinateur) ; l'envoi se fait seulement avec le bouton Envoyer.
@@ -656,6 +681,14 @@ image_url: uploadedUrl,
           images={viewer.images}
           index={viewer.index}
           onClose={() => setViewer(null)}
+        />
+      )}
+
+      {photoAEditer && (
+        <PhotoEditeur
+          fichier={photoAEditer}
+          onAnnuler={() => setPhotoAEditer(null)}
+          onEnvoyer={(photo) => { setPhotoAEditer(null); sendImage(photo); }}
         />
       )}
     </div>,

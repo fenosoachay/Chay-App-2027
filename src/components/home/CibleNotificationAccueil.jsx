@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import FullImage from "@/components/ui/FullImage";
 import ContentDetailDialog from "./ContentDetailDialog";
 import { cibleAccueil, libelleAnnonce } from "@/lib/cibleAccueil";
 
@@ -21,8 +20,8 @@ const dateFr = (v) => {
     : d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
-// Écran précis d'une notification sur l'accueil : verset du jour (?verset=), annonce ou réunion (?annonce=),
-// autre contenu publié (?contenu=). Chargé par son id : fonctionne même si les sections ne sont pas chargées.
+// Écran précis d'une notification sur l'accueil : annonce ou réunion (?annonce=),
+// autre contenu publié (?contenu=). Chargé par son id. Verset du jour (?verset=) : accueil seul, sans fenêtre.
 export default function CibleNotificationAccueil() {
   const [searchParams, setSearchParams] = useSearchParams();
   const cible = cibleAccueil(searchParams);
@@ -32,7 +31,7 @@ export default function CibleNotificationAccueil() {
   useEffect(() => {
     setFiche(null);
     setIntrouvable(false);
-    if (!cible) return undefined;
+    if (!cible || cible.collection === "Devotional") return undefined;
     let actif = true;
     base44.entities[cible.collection]
       .get(cible.id)
@@ -47,21 +46,14 @@ export default function CibleNotificationAccueil() {
     setSearchParams(next, { replace: true });
   };
 
-  // Verset du jour (daily_verse) : affichage limité à une fois par jour par appareil.
-  // L'adresse ?verset= vient de la notification et l'app y revient à chaque réouverture.
+  // Verset du jour (notification ?verset=) : plus de fenêtre, l'accueil s'affiche simplement (le verset du jour
+  // est déjà sur l'accueil). L'adresse est nettoyée.
+  const estVerset = cible?.collection === "Devotional";
   useEffect(() => {
-    if (cible?.collection === "Devotional" && searchParams.has("verset")) {
-      const auj = new Date().toLocaleDateString("en-CA"); // AAAA-MM-JJ local
-      const dernier = localStorage.getItem("chay_dernier_verset_date");
-      if (dernier === auj) {
-        fermer();
-      } else {
-        localStorage.setItem("chay_dernier_verset_date", auj);
-      }
-    }
-  }, [cible, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (estVerset) fermer();
+  }, [estVerset]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!cible) return null;
+  if (!cible || estVerset) return null;
   if (cible.collection === "Content" && fiche) {
     return <ContentDetailDialog item={fiche} open onOpenChange={(v) => !v && fermer()} />;
   }
@@ -72,20 +64,6 @@ export default function CibleNotificationAccueil() {
   if (introuvable) {
     titre = "Contenu introuvable";
     corps = <p className="text-sm text-foreground/60">Ce contenu n'est plus disponible.</p>;
-  } else if (fiche && cible.collection === "Devotional") {
-    titre = fiche.scripture_reference || fiche.title || "Verset du jour";
-    sousTitre = `Verset du jour${fiche.reading_date ? ` · ${dateFr(fiche.reading_date)}` : ""}`;
-    corps = (
-      <>
-        <FullImage src={fiche.image_url} className="rounded-xl mb-2 bg-muted/40" />
-        {fiche.verse_text && <blockquote className="border-l-4 border-primary pl-3 italic">{fiche.verse_text}</blockquote>}
-        {fiche.content && (
-          <div className="prose prose-sm dark:prose-invert max-w-none mt-3">
-            <ReactMarkdown>{fiche.content}</ReactMarkdown>
-          </div>
-        )}
-      </>
-    );
   } else if (fiche && cible.collection === "Announcement") {
     titre = fiche.title || libelleAnnonce(fiche);
     const quand = dateFr(fiche.event_date || fiche.date);

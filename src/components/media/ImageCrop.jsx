@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { cropGeometry, loadImage, renderCropToBlob } from "@/lib/imageCrop";
 
-export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allowOriginal = false }) {
+export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allowOriginal = false, outW }) {
+  // outW : largeur de l'image rognée (640 par défaut ; plus grand pour une photo envoyée dans un message).
   // Deuxième argument de onConfirm : true si l'image a été explicitement
   // rognée, false si l'original a été conservé (permet aux appelants de
   // mémoriser le recadrage — ex. cartes d'articles). Les appelants qui
@@ -56,13 +57,13 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
     setBusy(true);
     try {
       const im = await loadImage(img);
-      confirmCropped(await renderCropToBlob(im, source, aspect));
+      confirmCropped(await renderCropToBlob(im, source, aspect, outW ? { outW } : undefined));
     } catch (e) {
       console.error("[ImageCrop]", e);
     } finally {
       setBusy(false);
     }
-  }, [img, source, aspect, busy, confirmCropped]);
+  }, [img, source, aspect, busy, confirmCropped, outW]);
 
   return (
     <div className="flex flex-col items-center gap-4">

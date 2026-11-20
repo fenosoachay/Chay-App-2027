@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
-import { useToast } from "@/components/ui/use-toast";
 import { ChevronRight, Music } from "lucide-react";
 import TexteRiche from "./TexteRiche";
 
@@ -20,15 +19,19 @@ function Body({ body }) {
 // `variante="ligne"` : ligne de liste (icône, titre, flèche), utilisée dans la section Paroles groupée par lettre.
 export default function ParolesCard({ texte, variante = "carte" }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { toast } = useToast();
-  const open = searchParams.get("parole") === texte.id;
-  const [loading, setLoading] = useState(false);
+  // Ouverture gardée ici (et non dans l'adresse) : changer l'adresse rechargeait la page Multimédia, et la
+  // fenêtre des paroles s'ouvrait puis se refermait aussitôt (clignotement). Un lien ?parole= (ancien partage)
+  // ouvre encore la fenêtre une fois, puis l'adresse est nettoyée.
+  const [open, setOpenLocal] = useState(() => searchParams.get("parole") === texte.id);
+  const [loading] = useState(false);
 
   const setOpen = (v) => {
-    const next = new URLSearchParams(searchParams);
-    if (v) next.set("parole", texte.id);
-    else next.delete("parole");
-    setSearchParams(next, { replace: !v });
+    setOpenLocal(Boolean(v));
+    if (!v && searchParams.get("parole")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("parole");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   // Compteur de vues : +1 après 2 minutes de lecture
