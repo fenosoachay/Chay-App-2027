@@ -1,11 +1,11 @@
 // Compteur de vues du multimédia, façon YouTube (lot E) :
 //  - audio et vidéo (Musique, Prédication, Films, Votre Playlist, YouTube) : +1 à la MOITIÉ de la lecture ;
-//  - article et actualité : +1 après 2 minutes de lecture (onglet visible) ;
+//  - article et actualité : +1 après 2 minutes de lecture (onglet visible) ; paroles et verset : après 10 secondes ;
 //  - une seule fois par ouverture côté app ; le serveur (route compterVue) ignore en plus une nouvelle vue du même
 //    membre sur le même contenu pendant 30 minutes (ouvertures courtes répétées).
 // Ce fichier est pur (testé par node --test) ; l'appel serveur est dans src/hooks/useCompteurVues.js.
 
-export const TYPES_VUE = ["piste", "youtube", "article", "actualite"];
+export const TYPES_VUE = ["piste", "youtube", "article", "actualite", "parole", "verset"];
 export const LECTURE_MIN_MS = 2 * 60 * 1000;
 
 export const cleVue = (vue) => (vue && TYPES_VUE.includes(vue.type) && vue.id ? `${vue.type}:${vue.id}` : null);

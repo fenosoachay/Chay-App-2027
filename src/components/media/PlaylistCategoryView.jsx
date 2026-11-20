@@ -35,8 +35,7 @@ const estDrole = (p) => simplifier(p?.name).replace(/[^a-z0-9]/g, "") === "drole
 /** Compteur discret (écoutes ou vues) d'un titre : PlaylistTrack.listen_count, mis à jour pendant la session. */
 function CompteurPiste({ piste, unite, Icone }) {
   const n = useCompteur({ type: "piste", id: piste.track_id }, piste.listen_count);
-  const texte = formatVues(n, unite);
-  if (!texte) return null;
+  const texte = formatVues(n, unite) || `0 ${unite}`; // tous les contenus ont un compteur, même à 0
   return (
     <span className="inline-flex items-center gap-1 text-[0.6875rem] font-medium text-foreground/50 bg-muted/60 px-2 py-0.5 rounded-full">
       {Icone && <Icone className="h-3 w-3" aria-hidden="true" />}

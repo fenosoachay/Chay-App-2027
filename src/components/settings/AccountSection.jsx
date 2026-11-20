@@ -48,6 +48,17 @@ export default function AccountSection() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Profil public (MemberProfile) mis à jour aussitôt : les autres membres voient la nouvelle photo
+  // instantanément (messages, listes des membres…), par le temps réel, sans actualiser. Tous les profils de ce
+  // membre sont mis à jour (il peut en exister plusieurs).
+  const majProfilPublic = async (champs) => {
+    const miens = await base44.entities.MemberProfile
+      .filter({ created_by_id: user.id }, "-created_date", 20)
+      .catch(() => []);
+    if (miens.length) await Promise.all(miens.map((p) => base44.entities.MemberProfile.update(p.id, champs).catch(() => {})));
+    else await base44.entities.MemberProfile.create({ display_name: user.full_name || "", ...champs, last_seen_at: new Date().toISOString() }).catch(() => {});
+  };
+
   const pickAvatar = (file) => {
     if (!file) return;
     setAvatarFile(file);
@@ -61,6 +72,7 @@ export default function AccountSection() {
       const photoUrl = await uploadToBase44(blob);
       set("profile_photo_url", photoUrl);
       await base44.auth.updateMe({ profile_photo_url: photoUrl });
+      await majProfilPublic({ avatar_url: photoUrl });
       toast({ title: "Photo mise à jour" });
       setAvatarCropOpen(false);
       setAvatarFile(null);
@@ -74,6 +86,7 @@ export default function AccountSection() {
     set("cover_photo_url", url);
     try {
       await base44.auth.updateMe({ cover_photo_url: url });
+      await majProfilPublic({ cover_url: url });
       toast({ title: "Photo de couverture mise à jour" });
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -101,6 +114,7 @@ export default function AccountSection() {
         .catch(() => []);
       if (mine[0]) await base44.entities.MemberProfile.update(mine[0].id, publicInfo);
       else await base44.entities.MemberProfile.create({ ...publicInfo, last_seen_at: new Date().toISOString() });
+      await majProfilPublic(publicInfo); // les autres profils de ce membre aussi
       toast({ title: "Profil enregistré" });
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });

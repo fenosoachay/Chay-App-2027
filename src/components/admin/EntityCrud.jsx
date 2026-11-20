@@ -241,7 +241,8 @@ export default function EntityCrud({
     createdItem,
     playlistId,
     submittedData,
-    isRetry = false
+    isRetry = false,
+    precedent = null
   ) => {
     if (!playlistId) return;
     const record = buildPlaylistTrackRecord({
@@ -251,6 +252,11 @@ export default function EntityCrud({
       submittedData,
       coverField: playlistField,
     });
+    // Modification : le compteur d'écoutes / vues est gardé, et la place aussi si la playlist n'a pas changé.
+    if (precedent) {
+      if (precedent.listen_count > 0) record.listen_count = precedent.listen_count;
+      if (precedent.orders?.[playlistId] !== undefined) record.order = precedent.orders[playlistId];
+    }
     // A new upload gets a new track ID, so there cannot already be a link for
     // it. Create the playlist relation directly instead of blocking the save
     // on an extra lookup request.
@@ -289,11 +295,13 @@ export default function EntityCrud({
       "-created_date",
       5000
     );
-    await Promise.all(
-      (Array.isArray(tracks) ? tracks : []).map((track) =>
-        base44.entities.PlaylistTrack.delete(track.id)
-      )
-    );
+    const liste = Array.isArray(tracks) ? tracks : [];
+    await Promise.all(liste.map((track) => base44.entities.PlaylistTrack.delete(track.id)));
+    // Ce qu'il faut garder en recréant le lien : compteur d'écoutes / vues, place dans chaque playlist.
+    return {
+      listen_count: liste.reduce((m, t) => Math.max(m, Number(t.listen_count) || 0), 0),
+      orders: Object.fromEntries(liste.map((t) => [t.playlist_id, t.order])),
+    };
   };
 
   const submit = async (data) => {
@@ -348,9 +356,10 @@ export default function EntityCrud({
       }
 
       let createdItem;
+      let precedent = null;
       if (editing) {
         createdItem = await base44.entities[entity].update(editing.id, rest);
-        await detachFromPlaylists(editing.id);
+        precedent = await detachFromPlaylists(editing.id);
       } else {
         rest.created_by_admin = true;
         createdItem = await base44.entities[entity].create(rest);
@@ -402,7 +411,7 @@ export default function EntityCrud({
           data: rest,
         };
         try {
-          await attachToPlaylist(createdItem, playlist_id, rest);
+          await attachToPlaylist(createdItem, playlist_id, rest, false, precedent);
           pendingPlaylistAttachmentRef.current = null;
         } catch (err) {
           playlistAttached = false;

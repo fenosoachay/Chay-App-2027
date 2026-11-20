@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { enregistrerReglage, useReglageMedia } from "@/hooks/useReglageMedia";
 import { useToast } from "@/components/ui/use-toast";
 import TexteRiche from "./TexteRiche";
+import CompteurVues from "@/components/media/CompteurVues";
+import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
 function formatDate(value) {
   if (!value) return "";
@@ -92,6 +94,9 @@ function VersetCard({ verset }) {
   // s'ouvrait puis se refermait aussitôt (clignotement). Un lien ?verset= (notification) l'ouvre une fois.
   const [open, setOpenLocal] = useState(() => searchParams.get("verset") === verset.id);
   const date = formatDate(verset.date);
+  // Compteur de vues : +1 après 10 secondes de lecture (verset ouvert)
+  const vue = { type: "verset", id: verset.id };
+  useLectureMinimale(vue, open, 10000);
 
   const setOpen = (v) => {
     setOpenLocal(Boolean(v));
@@ -124,6 +129,7 @@ function VersetCard({ verset }) {
               <BookOpen className="h-3 w-3" /> {verset.reference}
             </span>
           )}
+          <CompteurVues vue={vue} base={verset.view_count} />
         </div>
       </button>
 

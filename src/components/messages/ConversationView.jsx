@@ -15,6 +15,7 @@ import {
   Smile,
   Settings,
   Camera,
+  Info,
 } from "lucide-react";
 import Avatar from "@/components/messages/Avatar";
 import MessageAvatar from "@/components/messages/MessageAvatar";
@@ -28,6 +29,7 @@ import MessageActionMenu from "@/components/messages/MessageActionMenu";
 import PhotoViewer from "@/components/messages/PhotoViewer";
 import PhotoEditeur from "@/components/messages/PhotoEditeur";
 import TexteAvecLiens from "@/components/messages/TexteAvecLiens";
+import InfosConversation from "@/components/messages/InfosConversation";
 import { ChayConversation, estNatif } from "@/lib/chayConversation";
 import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
@@ -54,6 +56,8 @@ export default function ConversationView({
   const [replyTo, setReplyTo] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [infosOuvertes, setInfosOuvertes] = useState(false);
+  const [surligne, setSurligne] = useState(null); // message trouvé par la recherche (mis en évidence)
   const [menu, setMenu] = useState(null);
   const [viewer, setViewer] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -286,6 +290,15 @@ image_url: uploadedUrl,
     setSending(false);
   };
 
+  // Recherche (bouton i) : la conversation défile jusqu'au message, qui est mis en évidence 2 secondes.
+  const allerAuMessage = (id) => {
+    setTimeout(() => {
+      document.getElementById(`msg-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      setSurligne(id);
+      setTimeout(() => setSurligne(null), 2000);
+    }, 150);
+  };
+
   const openPhoto = (m) => {
     const imgs = messages.filter((x) => x.image_url).map((x) => x.image_url);
     const idx = imgs.indexOf(m.image_url);
@@ -380,6 +393,14 @@ image_url: uploadedUrl,
             )}
           </div>
         </div>
+        {/* i : infos de la conversation (profil, recherche, photos, liens), façon Messenger */}
+        <button
+          onClick={() => setInfosOuvertes(true)}
+          className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted shrink-0 text-primary"
+          aria-label="Infos de la conversation"
+        >
+          <Info className="h-5 w-5" />
+        </button>
         {isGroup && (
           <button
             onClick={() => setSettingsOpen(true)}
@@ -426,9 +447,10 @@ image_url: uploadedUrl,
           return (
             <div
               key={m.id}
+              id={`msg-${m.id}`}
               className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} animate-float-in ${
                 grouped ? "mt-0.5" : "mt-2.5"
-              }`}
+              } ${surligne === m.id ? "rounded-[12px] bg-primary/15 transition-colors" : ""}`}
             >
               {!mine && (
                 <MessageAvatar
@@ -681,6 +703,19 @@ image_url: uploadedUrl,
           images={viewer.images}
           index={viewer.index}
           onClose={() => setViewer(null)}
+        />
+      )}
+
+      {infosOuvertes && (
+        <InfosConversation
+          titre={title}
+          avatar={avatarUrl}
+          autreId={otherId}
+          messages={messages}
+          nomDe={(m) => (m.sender_id === user?.id ? "Vous" : nameOf(m.sender_id, m.sender_name))}
+          onFermer={() => setInfosOuvertes(false)}
+          onAllerAuMessage={allerAuMessage}
+          onVoirPhoto={openPhoto}
         />
       )}
 

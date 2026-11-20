@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
+import CompteurVues from "@/components/media/CompteurVues";
 import { ChevronRight, Music } from "lucide-react";
 import TexteRiche from "./TexteRiche";
 
@@ -34,9 +35,9 @@ export default function ParolesCard({ texte, variante = "carte" }) {
     }
   };
 
-  // Compteur de vues : +1 après 2 minutes de lecture
+  // Compteur de vues : +1 après 10 secondes de lecture (paroles ouvertes)
   const vue = { type: "parole", id: texte.id };
-  useLectureMinimale(vue, open);
+  useLectureMinimale(vue, open, 10000);
 
   return (
     <>
@@ -50,9 +51,12 @@ export default function ParolesCard({ texte, variante = "carte" }) {
           : "flex min-w-0 flex-1 flex-col gap-1 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"}
       >
         {variante === "ligne" && <Music className="h-5 w-5 shrink-0 text-foreground/70" aria-hidden="true" />}
-        <h3 className="min-w-0 flex-1 break-words font-display font-bold text-base leading-snug text-foreground">
-          {texte.title || "Sans titre"}
-        </h3>
+        <span className="min-w-0 flex-1">
+          <h3 className="break-words font-display font-bold text-base leading-snug text-foreground">
+            {texte.title || "Sans titre"}
+          </h3>
+          <CompteurVues vue={vue} base={texte.view_count} />
+        </span>
         {variante === "ligne" && <ChevronRight className="h-5 w-5 shrink-0 text-foreground/50" aria-hidden="true" />}
       </button>
 
