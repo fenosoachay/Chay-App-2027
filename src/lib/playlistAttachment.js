@@ -31,6 +31,8 @@ export function buildPlaylistTrackRecord({
     // audio / video : pistes (Musique, Prédication, Films) ; vide pour YouTube, Articles, Galerie.
     kind: entity === "Video" ? "video" : entity === "MusicTrack" || entity === "Sermon" ? "audio" : "",
     order: Date.now(),
+    // Qui voit ce titre (Tout le monde / Membre / VIP) : comme le contenu lui-même (règles du serveur).
+    ...((item.audience || submittedData.audience) ? { audience: item.audience || submittedData.audience } : {}),
   };
 }
 

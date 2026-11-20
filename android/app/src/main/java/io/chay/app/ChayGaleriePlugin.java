@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
@@ -16,6 +17,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.util.Locale;
  * dossier « Images/Chay ». Android 10+ : MediaStore, sans permission. Android 5 à 9 : permission d'écriture
  * (WRITE_EXTERNAL_STORAGE, maxSdkVersion 28 dans le manifeste), demandée au premier enregistrement.
  * Plafond : 200 Mo (même limite que l'envoi par l'admin). Le contenu doit être une image (Content-Type image/*).
+ * Ou bien `donnees` (image en base64, ex. un dessin colorié dans la section Enfants) + `type` (image/png…).
  */
 @CapacitorPlugin(
     name = "ChayGalerie",
@@ -41,6 +44,20 @@ public class ChayGaleriePlugin extends Plugin {
 
     @PluginMethod
     public void enregistrerImage(PluginCall call) {
+        String donnees = call.getString("donnees", "");
+        if (donnees != null && !donnees.isEmpty()) {
+            String type = call.getString("type", "image/png");
+            if (type == null || !type.startsWith("image/")) {
+                call.reject("Le fichier n'est pas une image.");
+                return;
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && getPermissionState("stockage") != PermissionState.GRANTED) {
+                requestPermissionForAlias("stockage", call, "apresPermission");
+                return;
+            }
+            lancer(call);
+            return;
+        }
         String url = call.getString("url", "");
         Uri uri = Uri.parse(url);
         String scheme = uri.getScheme();
@@ -68,7 +85,9 @@ public class ChayGaleriePlugin extends Plugin {
         new Thread(() -> {
             try {
                 JSObject res = new JSObject();
-                res.put("nom", telecharger(call.getString("url"), call.getString("nom", "fond-ecran")));
+                String donnees = call.getString("donnees", "");
+                if (donnees != null && !donnees.isEmpty()) res.put("nom", enregistrerDonnees(donnees, call.getString("type", "image/png"), call.getString("nom", "dessin")));
+                else res.put("nom", telecharger(call.getString("url"), call.getString("nom", "fond-ecran")));
                 call.resolve(res);
             } catch (Exception e) {
                 call.reject(e.getMessage() != null ? e.getMessage() : "Enregistrement impossible.");
@@ -114,6 +133,25 @@ public class ChayGaleriePlugin extends Plugin {
         } finally {
             cx.disconnect();
         }
+    }
+
+    /** Image reçue de l'app en base64 (dessin colorié…) -> galerie. */
+    private String enregistrerDonnees(String base64, String mime, String nom) throws IOException {
+        byte[] octets;
+        try {
+            octets = Base64.decode(base64, Base64.DEFAULT);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("Image illisible.");
+        }
+        if (octets.length == 0) throw new IOException("Image vide.");
+        if (octets.length > MAX_OCTETS) throw new IOException("Image trop volumineuse (max 200 Mo).");
+        String type = mime.toLowerCase(Locale.ROOT);
+        String fichier = nomSur(nom) + "-" + System.currentTimeMillis() + "." + extension(type);
+        try (InputStream in = new ByteArrayInputStream(octets)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) enregistrerMediaStore(in, fichier, type);
+            else enregistrerFichier(in, fichier, type);
+        }
+        return fichier;
     }
 
     private static void copier(InputStream in, OutputStream out) throws IOException {

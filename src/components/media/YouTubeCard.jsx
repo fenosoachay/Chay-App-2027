@@ -1,6 +1,7 @@
 import React from "react";
 import { Play } from "lucide-react";
 import CompteurVues from "@/components/media/CompteurVues";
+import BadgeAudience from "@/components/media/BadgeAudience";
 
 function ytThumb(id) {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
@@ -42,7 +43,10 @@ export default function YouTubeCard({ video, index = 0, playingIndex = -1, onPla
         </div>
         <div className="p-3">
           <h3 className="font-bold text-sm line-clamp-2 leading-snug">{video.title}</h3>
-          <CompteurVues vue={{ type: "youtube", id: video.id }} base={video.view_count} className="mt-1" />
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <CompteurVues vue={{ type: "youtube", id: video.id }} base={video.view_count} />
+            <BadgeAudience audience={video.audience} />
+          </div>
           {video.verse_note && (
             <p className="mt-1.5 text-xs text-foreground/55 line-clamp-2 whitespace-pre-line">
               {video.verse_note}

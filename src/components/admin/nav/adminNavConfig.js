@@ -4,7 +4,7 @@ import {
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
   Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
-  Type,
+  Type, Palette, Baby, Crown,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -56,6 +56,12 @@ export const ADMIN_NAV = [
     ],
   },
   {
+    id: "enfants", label: "Enfants", icon: Baby,
+    items: [
+      { key: "Coloriage", mots: "coloriage dessin enfant colorier", label: "Coloriages", icon: Palette, path: "/admin/coloriages" },
+    ],
+  },
+  {
     id: "engagement", label: "Engagement", icon: Heart,
     items: [
       { key: "donations", mots: "don argent", label: "Demandes de don", icon: HeartHandshake, path: "/admin/donations" },
@@ -71,6 +77,7 @@ export const ADMIN_NAV = [
     id: "team", label: "Équipe", icon: Shield,
     items: [
       { key: "invite", label: "Inviter un admin", icon: UserPlus, path: "/admin/invite" },
+      { key: "membres", mots: "membre vip niveau tout le monde", label: "Gérer les membres", icon: Crown, path: "/admin/membres" },
       { key: "admins", mots: "administrateur role", label: "Gérer les administrateurs", icon: Users, path: "/admin/admins" },
       { key: "app_update", mots: "version apk", label: "Annoncer une mise à jour", icon: Rocket, path: "/admin/mise-a-jour" },
     ],

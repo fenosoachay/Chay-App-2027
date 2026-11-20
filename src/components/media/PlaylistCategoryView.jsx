@@ -24,6 +24,7 @@ import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 import Description from "@/components/media/Description";
 import VideosVerticales from "@/components/media/VideosVerticales";
+import BadgeAudience from "@/components/media/BadgeAudience";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
 // Entité d'où vient la description d'un titre (champ « Description » de l'admin), par section.
@@ -401,7 +402,7 @@ export default function PlaylistCategoryView({
                   <div className="flex items-start gap-3 p-3">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{t.title}</div>
-                      <div className="mt-1"><CompteurPiste piste={t} unite="vue" /></div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5"><CompteurPiste piste={t} unite="vue" /><BadgeAudience audience={t.audience} /></div>
                       <Description texte={descriptions.get(t.track_id)} className="mt-2" />
                     </div>
                     {favoriteCategory === "music" && (
@@ -452,6 +453,7 @@ export default function PlaylistCategoryView({
                       <div className="flex items-center gap-2 flex-wrap">
                         {t.artist && <div className="text-xs text-foreground/55">{t.artist}</div>}
                         <CompteurPiste piste={t} unite="écoute" Icone={Headphones} />
+                        <BadgeAudience audience={t.audience} />
                       </div>
                       <Description texte={descriptions.get(t.track_id)} className="mt-1" />
                     </div>

@@ -11,6 +11,7 @@ import FullImage from "@/components/ui/FullImage";
 import ReactMarkdown from "react-markdown";
 import TexteRiche from "@/components/media/TexteRiche";
 import CompteurVues from "@/components/media/CompteurVues";
+import BadgeAudience from "@/components/media/BadgeAudience";
 import { useLectureMinimale } from "@/hooks/useCompteurVues";
 
 
@@ -89,6 +90,7 @@ export default function ArticleCard({ article }) {
         <span className="flex flex-wrap items-center gap-x-3">
           {date && <span className="text-xs text-foreground/50">{date}</span>}
           <CompteurVues vue={vue} base={article.view_count} />
+          <BadgeAudience audience={article.audience} />
         </span>
       </button>
 

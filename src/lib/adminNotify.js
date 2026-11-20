@@ -21,6 +21,7 @@ export async function notifyAdminUpload({
   playlistId,
   section,
   contentId,
+  audience,
 }) {
   let message = "";
   let linkPath = "/media";
@@ -106,6 +107,8 @@ export async function notifyAdminUpload({
       resource_id: contentId || null,
       resource_type: resourceType || null,
       playlist_id: playlistId || null,
+      // Contenu réservé (Membre / VIP) : la notification ne va qu'à ceux qui peuvent le voir (serveur).
+      audience: audience || "tous",
       category: playlist || section || null,
       link: linkPath,
     });

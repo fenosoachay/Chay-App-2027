@@ -294,6 +294,19 @@ function communityPostNotify(postRecord) {
 }
 
 // ── notifyNewContent ─────────────────────────────────────────────────────────
+/**
+ * Ce membre peut-il voir ce contenu ? (même règle que les collections : champ audience du contenu,
+ * niveau du compte ; les admins voient tout). Vide ou « tous » : tout le monde.
+ */
+function peutVoir(u, audience) {
+  const a = String(audience || '');
+  if (!a || a === 'tous' || u.getString('role') === 'admin') return true;
+  const n = u.getString('niveau');
+  if (a === 'membre') return n === 'membre' || n === 'vip';
+  if (a === 'vip') return n === 'vip';
+  return true;
+}
+
 function contentEmailHtml(title, description) {
   return mail.shell('Nouveau contenu',
     mail.paragraph('Un nouveau contenu vient d\'être publié dans l\'application Chay.')
@@ -308,7 +321,8 @@ function newContentNotify(contentRecord, sendEmail) {
   if (notificationExists(notifId)) return { skipped: 'already_notified' };
   const title = `Nouveau : ${c.title || 'Contenu'}`;
   const messageText = String(c.description || '').slice(0, 160);
-  const users = activeUsers();
+  // Contenu réservé (Membre / VIP) : seuls ceux qui peuvent le voir sont prévenus.
+  const users = activeUsers().filter((u) => peutVoir(u, c.audience));
   const rows = [];
   const pushIds = [];
   for (const u of users) {

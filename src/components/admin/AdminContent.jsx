@@ -21,6 +21,7 @@ const PanelFallback = () => (
   <div className="py-16 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /></div>
 );
 import AdminListPanel from "@/components/admin/AdminListPanel";
+import GererMembres from "@/components/admin/GererMembres";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import { SECTIONS } from "@/components/admin/adminSections";
@@ -44,6 +45,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "personalityquiz") return <Suspense fallback={<PanelFallback />}><PersonalityQuizAdminPanel /></Suspense>;
   if (active === "blockblast") return <Suspense fallback={<PanelFallback />}><BlockBlastMessagesAdminPanel /></Suspense>;
   if (active === "admins") return <AdminListPanel />;
+  if (active === "membres") return <GererMembres />;
   if (active === "app_update") return <AnnoncerVersion />;
 
   const section = SECTIONS.find((s) => s.key === active);

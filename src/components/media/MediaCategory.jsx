@@ -9,6 +9,7 @@ import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
 import ActualiteChretienne from "@/components/media/ActualiteChretienne";
 import FondsEcran from "@/components/media/FondsEcran";
+import BadgeAudience from "@/components/media/BadgeAudience";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
@@ -183,10 +184,11 @@ function GalerieSousPlaylist({ images, targetImageId, clearTarget, onItemUpdated
           <button
             key={g.id}
             onClick={() => { clearTarget("image"); setIdx(i); }}
-            className="block aspect-square overflow-hidden bg-muted group"
+            className="relative block aspect-square overflow-hidden bg-muted group"
             aria-label={g.title || "Photo"}
           >
             <Image src={g.image_url} fittingType="fill" className="w-full h-full object-cover md:group-hover:scale-105 transition-transform" />
+            <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
           </button>
         ))}
       </div>
@@ -522,13 +524,14 @@ export default function MediaCategory({
                           clearTarget("image");
                           setOrphanIdx(i);
                         }}
-                        className="block aspect-square overflow-hidden bg-muted group rounded-xl"
+                        className="relative block aspect-square overflow-hidden bg-muted group rounded-xl"
                       >
                         <Image
                           src={g.image_url}
                           fittingType="fill"
                           className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
                         />
+                        <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
                       </button>
                     ))}
                   </div>
@@ -576,13 +579,14 @@ export default function MediaCategory({
                         clearTarget("image");
                         setGalleryIdx(i);
                       }}
-                      className="block aspect-square overflow-hidden bg-muted group"
+                      className="relative block aspect-square overflow-hidden bg-muted group"
                     >
                       <Image
                         src={g.image_url}
                         fittingType="fill"
                         className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
                       />
+                      <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
                     </button>
                   ))}
                 </div>

@@ -1,7 +1,8 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette,
 } from "lucide-react";
+import { AUDIENCES } from "@/lib/audience";
 
 const LANGS = [
   { value: "fr", label: "Français" },
@@ -34,6 +35,7 @@ export const SECTIONS = [
     listColumns: ["title", "speaker"],
     playlistField: "cover_url",
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "description", label: "Description", type: "textarea" },
       { name: "audio_url", label: "Audio", type: "file", accept: "audio/*", required: true },
@@ -73,6 +75,7 @@ export const SECTIONS = [
     listColumns: ["title", "artist"],
     playlistField: "cover_url",
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "artist", label: "Artiste", type: "text" },
       { name: "audio_url", label: "Audio", type: "file", accept: "audio/*", required: true },
@@ -87,6 +90,7 @@ export const SECTIONS = [
     listColumns: ["title"],
     playlistField: "cover_url",
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "video_url", label: "Vidéo", type: "file", accept: "video/*", required: true },
       { name: "description", label: "Description", type: "textarea" },
@@ -104,6 +108,7 @@ export const SECTIONS = [
     sort: "-created_date",
     listColumns: ["title"],
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       // « rich-text » : éditeur de texte riche (React Quill) au lieu du simple
       // textarea — le champ « body » reste un string HTML, même entité qu'avant.
@@ -125,6 +130,7 @@ export const SECTIONS = [
     sort: "-created_date",
     listColumns: ["title"],
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "youtube_id", label: "ID YouTube", type: "text", required: true },
       { name: "category", label: "Catégorie", type: "text" },
@@ -142,6 +148,7 @@ export const SECTIONS = [
     // Vignette carrée (recadrée automatiquement) à gauche de chaque ligne.
     thumbField: "image_url",
     fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "image_url", label: "Image", type: "file", required: true, accept: "image/*" },
     ],
@@ -159,6 +166,19 @@ export const SECTIONS = [
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "image_url", label: "Photo (200 Mo max)", type: "file", accept: "image/*", required: true, apercu: "thumb_url" },
+    ],
+  },
+  {
+    // Enfants › « Coloriage » : dessins en noir et blanc (traits noirs sur fond blanc) que les enfants colorient.
+    key: "Coloriage",
+    label: "Coloriages",
+    icon: Palette,
+    sort: "order",
+    listColumns: ["title"],
+    thumbField: "thumb_url",
+    fields: [
+      { name: "title", label: "Titre (ex. Jésus marche sur l'eau)", type: "text", required: true },
+      { name: "image_url", label: "Dessin en noir et blanc (traits noirs sur fond blanc)", type: "file", accept: "image/*", required: true, apercu: "thumb_url" },
     ],
   },
   {

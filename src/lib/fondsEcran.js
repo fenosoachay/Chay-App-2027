@@ -83,3 +83,36 @@ export async function enregistrerFond(fond, { natif = estNatif(), plugin = ChayG
   setTimeout(() => URL.revokeObjectURL(objet), 60_000);
   return "telechargement";
 }
+
+/** Blob -> base64 (sans le préfixe « data:… ; base64, »). */
+function enBase64(blob) {
+  return new Promise((ok, ko) => {
+    const r = new globalThis.FileReader();
+    r.onload = () => ok(String(r.result).split(",")[1] || "");
+    r.onerror = () => ko(new Error("Image illisible."));
+    r.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Enregistre une image créée dans l'app (dessin colorié…) : APK -> galerie (Images/Chay) ; navigateur ->
+ * téléchargement. Renvoie « galerie » ou « telechargement ».
+ */
+export async function enregistrerImageGalerie(blob, titre, { natif = estNatif(), plugin = ChayGalerie, doc = globalThis.document } = {}) {
+  if (!blob || !blob.size) throw new Error("Image vide.");
+  const nom = nomFichierFond(titre);
+  if (natif) {
+    await plugin.enregistrerImage({ donnees: await enBase64(blob), type: blob.type || "image/png", nom });
+    return "galerie";
+  }
+  const ext = { "image/png": "png", "image/webp": "webp" }[blob.type] || "jpg";
+  const lien = doc.createElement("a");
+  const objet = URL.createObjectURL(blob);
+  lien.href = objet;
+  lien.download = `${nom}.${ext}`;
+  doc.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+  setTimeout(() => URL.revokeObjectURL(objet), 60_000);
+  return "telechargement";
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import DefilementVertical from "@/components/media/DefilementVertical";
+import BadgeAudience from "@/components/media/BadgeAudience";
 
 // Playlist « Drôle » (section Vidéo) : toutes les vidéos d'abord, en grille de vignettes verticales 9:16 ;
 // toucher une vidéo l'ouvre en plein écran façon TikTok, et on fait défiler jusqu'à la dernière.
@@ -19,6 +20,7 @@ export default function VideosVerticales({ pistes, descriptions, titre, cibleId 
         cover_url: t.cover_url,
         title: t.title,
         listen_count: t.listen_count,
+        audience: t.audience,
         description: descriptions?.get(t.track_id) || "",
       })),
     [pistes, descriptions]
@@ -56,6 +58,7 @@ export default function VideosVerticales({ pistes, descriptions, titre, cibleId 
             <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pb-1.5 pt-6 text-left">
               <Play className="mb-0.5 h-3.5 w-3.5 text-white" fill="currentColor" aria-hidden="true" />
               {v.title && <span className="block truncate text-xs font-bold text-white">{v.title}</span>}
+              <BadgeAudience audience={v.audience} className="mt-0.5" />
             </span>
           </button>
         ))}

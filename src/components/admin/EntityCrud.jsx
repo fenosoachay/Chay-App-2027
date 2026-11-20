@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
 import { Image } from "@/components/ui/image";
+import { AUDIENCES } from "@/lib/audience";
 import EntityForm from "@/components/admin/EntityForm";
 import CreatePlaylistModal from "@/components/media/CreatePlaylistModal";
 import PlaylistCover from "@/components/media/PlaylistCover";
@@ -286,7 +287,24 @@ export default function EntityCrud({
       playlist: playlists.find((p) => p.id === playlistId)?.name,
       playlistId,
       contentId: item.id,
+      audience: item.audience,
     });
+  };
+
+  // « C'est pour » (Tout le monde / Membre / VIP) : changement rapide depuis la liste, sans ouvrir la fiche.
+  // Les liens de playlist du contenu suivent (le serveur filtre aussi les titres des playlists).
+  const avecAudience = fields.some((f) => f.name === "audience");
+  const changerAudience = async (item, audience) => {
+    if (!audience || item.audience === audience) return;
+    setItems((l) => l.map((x) => (x.id === item.id ? { ...x, audience } : x)));
+    try {
+      await base44.entities[entity].update(item.id, { audience });
+      const liens = await base44.entities.PlaylistTrack.filter({ track_id: item.id }, "-created_date", 50).catch(() => []);
+      await Promise.all((liens || []).map((l) => base44.entities.PlaylistTrack.update(l.id, { audience })));
+    } catch (e) {
+      toast({ title: "Non enregistré", description: e?.message, variant: "destructive" });
+      await load();
+    }
   };
 
   const detachFromPlaylists = async (itemId) => {
@@ -783,6 +801,24 @@ export default function EntityCrud({
                     {new Date(item.created_date || item.updated_date).toLocaleDateString("fr-FR")}
                   </div>
                 </div>
+
+                {avecAudience && !readOnly && (
+                  <select
+                    value={item.audience || ""}
+                    onChange={(e) => changerAudience(item, e.target.value)}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    aria-label="C'est pour"
+                    className={`shrink-0 rounded-full border px-2 py-1 text-xs font-bold outline-none ${
+                      item.audience === "vip" ? "border-[#C9A227] text-[#8a6d00] dark:text-[#F2C94C]"
+                        : item.audience === "membre" ? "border-emerald-600 text-emerald-700 dark:text-emerald-400"
+                          : item.audience === "tous" ? "border-border"
+                            : "border-amber-500 text-amber-600"
+                    } bg-background`}
+                  >
+                    <option value="" disabled>À classer</option>
+                    {AUDIENCES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+                  </select>
+                )}
 
                 {!readOnly && (
                   <>
