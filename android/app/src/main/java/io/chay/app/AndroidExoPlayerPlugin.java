@@ -245,6 +245,16 @@ public class AndroidExoPlayerPlugin extends Plugin {
         });
     }
 
+    /** Lecture non-stop (Votre Playlist) : fondu enchaîné de 5 s (ChayMediaSessionService). */
+    @PluginMethod
+    public void setFondu(PluginCall call) {
+        boolean actif = Boolean.TRUE.equals(call.getBoolean("actif", false));
+        mainHandler.post(() -> {
+            ChayMediaSessionService.definirFondu(actif);
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void setRepeatMode(PluginCall call) {
         String mode = call.getString("mode", "off");

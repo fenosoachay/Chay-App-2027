@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { GripVertical, Lock, Unlock, Music, Play, Pause, Trash2 } from "lucide-react";
+import { GripVertical, Lock, Unlock, Music, Play, Pause, Trash2, Infinity as Infini } from "lucide-react";
 import { groupMusicFavorites } from "@/lib/favoritePlaylists";
 import { appliquerOrdre, deplacer } from "@/lib/glisserOrdre";
+import { useNonStop } from "@/lib/nonStop";
 
 // Glisser-déposer : même mécanisme que la réorganisation des vidéos YouTube côté admin
 // (YouTubeSortableList, @hello-pangea/dnd), qui fonctionne au doigt sur Android.
@@ -122,6 +123,7 @@ export default function FavoritesView({
 }) {
   const [locked, setLocked] = useState(true);
   const [orderedItems, setOrderedItems] = useState([]);
+  const [nonStop, definirNonStop] = useNonStop();
   const [searchParams] = useSearchParams();
   const cible = searchParams.get("favori") || (currentTrack?.queueId ?? null);
 
@@ -145,6 +147,30 @@ export default function FavoritesView({
 
   return (
     <div>
+      {/* Lecture non-stop : tout en haut. Activée, les titres s'enchaînent en fondu (5 s) et la playlist recommence. */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={nonStop}
+        onClick={() => definirNonStop(!nonStop)}
+        className={`mb-4 flex w-full items-center gap-3 rounded-[1.25rem] border p-3 text-left transition ${
+          nonStop ? "border-primary bg-primary/10" : "border-border bg-card"
+        }`}
+      >
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${nonStop ? "brand-gradient text-white" : "bg-muted text-foreground/60"}`}>
+          <Infini className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold">Lecture non-stop</span>
+          <span className="block text-xs text-foreground/60">
+            Les chansons s'enchaînent en fondu, sans pause, et la playlist recommence au début.
+          </span>
+        </span>
+        <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${nonStop ? "bg-primary" : "bg-foreground/20"}`} aria-hidden="true">
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${nonStop ? "left-[1.375rem]" : "left-0.5"}`} />
+        </span>
+      </button>
+
       <div className="mb-5 flex items-center justify-between gap-3">
         <p className="text-sm text-foreground/55">
           Vos chansons favorites, classées par playlist d’origine.

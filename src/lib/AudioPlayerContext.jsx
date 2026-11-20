@@ -12,7 +12,9 @@ import {
   stopAndroidExoPlayer,
   subscribeAndroidExoPlayer,
   reorderAndroidExoPlayerQueue,
+  setAndroidFondu,
 } from "@/lib/androidExoPlayer";
+import { doitFondre, useNonStop } from "@/lib/nonStop";
 import { cleFile, reordonnerFile } from "@/lib/fileLecture";
 
 // Valeur par défaut : après une mise à jour de l'app, un composant peut être
@@ -70,9 +72,13 @@ export function AudioPlayerProvider({ children }) {
   const [shuffle, setShuffle] = useState(false);
   const [loop, setLoop] = useState("off"); // "off" | "all" | "one"
   const mediaControlIdRef = useRef(null);
+  // Lecture non-stop (Votre Playlist) : fondu enchaîné de 5 s et retour au début après le dernier titre.
+  const [nonStop] = useNonStop();
+  const fonduFavoris = nonStop && currentTrack?.origine === "favoris";
+  const fonduRef = useRef(null); // navigateur : { a2 (titre suivant), index, timer, enCours }
 
   const stateRef = useRef({});
-  stateRef.current = { queue, order, orderIndex, loop, shuffle, currentTrack, currentTime };
+  stateRef.current = { queue, order, orderIndex, loop, shuffle, currentTrack, currentTime, fonduFavoris };
   const handleEndedRef = useRef(null);
 
   // Machine à états partagée (tamponnage) — musique & prédications.
@@ -186,6 +192,17 @@ export function AudioPlayerProvider({ children }) {
       });
       return;
     }
+    audio.volume = 1;
+    // Relais d'un fondu : le titre suivant (déjà en cours) s'arrête dès que le lecteur principal joue.
+    const relais = fonduRef.current && !fonduRef.current.enCours ? fonduRef.current : null;
+    if (relais) {
+      audio.addEventListener("playing", () => {
+        setTimeout(() => {
+          try { relais.a2.pause(); relais.a2.removeAttribute("src"); } catch { /* ignore */ }
+          if (fonduRef.current === relais) fonduRef.current = null;
+        }, 120);
+      }, { once: true });
+    }
     audio.src = currentTrack.audio_url;
     audio.play().then(() => setIsPlaying(true)).catch((e) => {
       console.warn("[AudioPlayer] lecture impossible (URL media invalide ou bloquée) :", currentTrack.audio_url, e?.name, e?.message);
@@ -213,10 +230,11 @@ export function AudioPlayerProvider({ children }) {
 
   useEffect(() => {
     if (!isNativeAndroidPlayer) return;
-    setAndroidExoPlayerRepeatMode(loop).catch((error) => {
+    // Non-stop : après le dernier titre, la playlist recommence au début.
+    setAndroidExoPlayerRepeatMode(fonduFavoris && loop === "off" ? "all" : loop).catch((error) => {
       console.error("[AudioPlayer] Unable to update ExoPlayer repeat mode.", error);
     });
-  }, [isNativeAndroidPlayer, loop]);
+  }, [isNativeAndroidPlayer, loop, fonduFavoris]);
 
   // Erreur de chargement du média (404/403/format non supporté) → log explicite.
   useEffect(() => {
@@ -244,7 +262,48 @@ export function AudioPlayerProvider({ children }) {
     return () => document.removeEventListener("play", onOtherPlay, true);
   }, []);
 
+  /** Navigateur : arrête un fondu en cours (pause, autre titre, avance…) ; le titre principal revient à plein volume. */
+  const annulerFondu = useCallback(() => {
+    const f = fonduRef.current;
+    if (!f) return;
+    clearInterval(f.timer);
+    try { f.a2.pause(); f.a2.removeAttribute("src"); } catch { /* ignore */ }
+    fonduRef.current = null;
+    if (audioRef.current) audioRef.current.volume = 1;
+  }, []);
+
+  // Navigateur : 5 dernières secondes d'un titre de Votre Playlist (non-stop) -> le titre suivant démarre en
+  // silence et monte pendant que le titre en cours baisse ; à la fin du titre, le suivant prend le relais.
+  useEffect(() => {
+    if (isNativeAndroidPlayer) return;
+    const s = stateRef.current;
+    if (s.loop === "one" || s.order.length < 2) return;
+    if (!doitFondre({ actif: nonStop, origine: currentTrack?.origine, temps: currentTime, duree: duration, fonduEnCours: Boolean(fonduRef.current) })) return;
+    const index = s.orderIndex + 1 < s.order.length ? s.orderIndex + 1 : 0;
+    const track = s.queue[s.order[index]];
+    if (!track?.audio_url) return;
+    const a2 = new globalThis.Audio(track.audio_url);
+    a2.preload = "auto";
+    a2.volume = 0;
+    a2.dataset.chayAnchor = "1";
+    a2.play().catch(() => {});
+    const reste = Math.max(0.5, duration - currentTime);
+    const timer = setInterval(() => {
+      const r = Math.min(1, (a2.currentTime || 0) / reste);
+      a2.volume = r;
+      if (fonduRef.current?.enCours && audioRef.current) audioRef.current.volume = Math.max(0, 1 - r);
+    }, 50);
+    fonduRef.current = { a2, index, timer, enCours: true };
+  }, [currentTime]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // APK : le fondu est fait par le lecteur Android (ChayMediaSessionService) ; la file recommence au début.
+  useEffect(() => {
+    if (!isNativeAndroidPlayer) return;
+    setAndroidFondu(fonduFavoris).catch(() => {});
+  }, [isNativeAndroidPlayer, fonduFavoris]);
+
   const playAt = useCallback((newIndex) => {
+    annulerFondu();
     const { order, queue } = stateRef.current;
     if (!order.length) return;
     const wrapped = ((newIndex % order.length) + order.length) % order.length;
@@ -297,15 +356,16 @@ export function AudioPlayerProvider({ children }) {
     if (!audio) return;
     if (audio.paused) audio.play().then(() => setIsPlaying(true)).catch(() => {});
     else {
+      annulerFondu();
       audio.pause();
       setIsPlaying(false);
     }
   };
 
   const next = useCallback(() => {
-    const { order, orderIndex, loop } = stateRef.current;
+    const { order, orderIndex, loop, fonduFavoris: nonStopActif } = stateRef.current;
     if (orderIndex + 1 < order.length) playAt(orderIndex + 1);
-    else if (loop === "all" && order.length > 0) playAt(0);
+    else if ((loop === "all" || nonStopActif) && order.length > 0) playAt(0);
   }, [playAt]);
   const prev = useCallback(() => {
     const audio = audioRef.current;
@@ -336,10 +396,12 @@ export function AudioPlayerProvider({ children }) {
       seekAndroidExoPlayer(target).catch((error) => console.error("[AudioPlayer] Unable to seek ExoPlayer.", error));
       return true;
     }
+    annulerFondu();
     return optimisticSeek(t);
   };
 
   const stop = () => {
+    annulerFondu();
     const audio = audioRef.current;
     currentTrack?.onStop?.(currentTime);
     if (isNativeAndroidPlayer) {
@@ -461,7 +523,17 @@ export function AudioPlayerProvider({ children }) {
   }, []);
 
   const handleEnded = () => {
-    const { loop, order, orderIndex } = stateRef.current;
+    const { loop, order, orderIndex, queue: file, fonduFavoris: nonStopActif } = stateRef.current;
+    // Fin d'un titre pendant un fondu (navigateur) : le titre suivant, déjà en cours, prend le relais à sa position.
+    if (!isNativeAndroidPlayer && fonduRef.current?.enCours) {
+      const f = fonduRef.current;
+      clearInterval(f.timer);
+      f.enCours = false;
+      f.a2.volume = 1;
+      setOrderIndex(f.index);
+      setCurrentTrack({ ...file[order[f.index]], initialTime: (f.a2.currentTime || 0) + 0.25 });
+      return;
+    }
     if (typeof stateRef.current.currentTrack?.onEnded === "function") {
       stateRef.current.currentTrack.onEnded();
       return;
@@ -484,8 +556,8 @@ export function AudioPlayerProvider({ children }) {
       playAt(orderIndex + 1);
       return;
     }
-    // loop "all" wraps back to the start of the order
-    if (loop === "all" && order.length > 0) {
+    // loop "all" (ou lecture non-stop) : retour au début de la file
+    if ((loop === "all" || nonStopActif) && order.length > 0) {
       playAt(0);
       return;
     }

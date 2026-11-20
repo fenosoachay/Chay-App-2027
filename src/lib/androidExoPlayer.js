@@ -41,6 +41,11 @@ export function reorderAndroidExoPlayerQueue(queueIds) {
   return AndroidExoPlayer.reorderQueue({ queueIds });
 }
 
+/** Lecture non-stop (Votre Playlist) : fondu enchaîné de 5 s entre les titres, fait par le lecteur Android. */
+export function setAndroidFondu(actif) {
+  return AndroidExoPlayer.setFondu({ actif: Boolean(actif) });
+}
+
 export function setAndroidExoPlayerRepeatMode(mode) {
   return AndroidExoPlayer.setRepeatMode({ mode });
 }
