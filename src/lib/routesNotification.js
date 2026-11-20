@@ -20,6 +20,8 @@ export function routeContenu(c) {
   if (id && type === "YouTubeVideo") return `/media?cat=youtube&video=${q(id)}`;
   if (id && type === "Article") return `/media?cat=articles&article=${q(id)}`;
   if (id && type === "GalleryImage") return `/media?cat=gallery&image=${q(id)}`;
+  if (id && type === "Paroles") return `/media?cat=paroles&parole=${q(id)}`;
+  if (id && type === "Verset") return `/media?cat=verset&verset=${q(id)}`;
   if (id && type === "Announcement") return `/?annonce=${q(id)}`;
   return c.id ? `/?contenu=${q(c.id)}` : "/media";
 }

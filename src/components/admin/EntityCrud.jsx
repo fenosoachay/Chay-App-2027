@@ -263,7 +263,7 @@ export default function EntityCrud({
   };
 
   const notifyPlaylistUpload = (item, playlistId) => {
-    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article", YouTubeVideo: "youtube", GalleryImage: "gallery" };
+    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article", YouTubeVideo: "youtube", GalleryImage: "gallery", Paroles: "paroles", Verset: "verset" };
     // Annonce / réunion : notification qui ouvre l'annonce, si elle est déjà visible (date passée ou du jour).
     if (entity === "Announcement") {
       if (item?.id && annonceVisibleMaintenant(item.date)) {

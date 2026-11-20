@@ -88,14 +88,18 @@ export default function VersetCategoryView() {
 // Carte pour un verset
 function VersetCard({ verset }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const open = searchParams.get("verset") === verset.id;
+  // Ouverture gardée ici (et non dans l'adresse) : changer l'adresse rechargeait la page Multimédia et la fenêtre
+  // s'ouvrait puis se refermait aussitôt (clignotement). Un lien ?verset= (notification) l'ouvre une fois.
+  const [open, setOpenLocal] = useState(() => searchParams.get("verset") === verset.id);
   const date = formatDate(verset.date);
 
   const setOpen = (v) => {
-    const next = new URLSearchParams(searchParams);
-    if (v) next.set("verset", verset.id);
-    else next.delete("verset");
-    setSearchParams(next, { replace: !v });
+    setOpenLocal(Boolean(v));
+    if (!v && searchParams.get("verset")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("verset");
+      setSearchParams(next, { replace: true });
+    }
   };
 
   return (

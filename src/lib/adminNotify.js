@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
  * Le lien mène directement vers le contenu dans Multimédia.
  *
  * @param {object} opts
- * @param {"music"|"sermon"|"film"|"youtube"|"article"|"gallery"|"annonce"|"reunion"} opts.kind
+ * @param {"music"|"sermon"|"film"|"youtube"|"article"|"gallery"|"annonce"|"reunion"|"paroles"|"verset"} opts.kind
  * @param {string} opts.title        Titre du contenu
  * @param {string} [opts.artist]     Artiste (musique)
  * @param {string} [opts.playlist]   Nom de la playlist
@@ -71,6 +71,18 @@ export async function notifyAdminUpload({
       linkPath = `/`;
       contentType = "annonce";
       resourceType = "Announcement";
+      break;
+    case "paroles":
+      message = `Nouvelles paroles : « ${title} ».`;
+      linkPath = contentId ? `/media?cat=paroles&parole=${encodeURIComponent(contentId)}` : `/media?cat=paroles`;
+      contentType = "autre";
+      resourceType = "Paroles";
+      break;
+    case "verset":
+      message = `Nouveau verset : « ${title} ».`;
+      linkPath = contentId ? `/media?cat=verset&verset=${encodeURIComponent(contentId)}` : `/media?cat=verset`;
+      contentType = "autre";
+      resourceType = "Verset";
       break;
     case "gallery":
       message = `Une photo a été postée. Visionnez.`;
