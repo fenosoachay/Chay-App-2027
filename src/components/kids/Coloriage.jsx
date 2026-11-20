@@ -107,7 +107,7 @@ export default function Coloriage() {
           <div className="rounded-[1.5rem] border border-dashed border-border p-8 text-center">
             <Palette className="mx-auto mb-2 h-8 w-8 text-primary" />
             <p className="font-semibold">Pas encore de dessin.</p>
-            <p className="mt-1 text-sm text-foreground/60">Choisis un dessin à colorier : il sera gardé ici automatiquement.</p>
+            <p className="mt-1 text-sm text-foreground/60">Colorie un dessin puis touche « Enregistrer » : il sera gardé ici.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

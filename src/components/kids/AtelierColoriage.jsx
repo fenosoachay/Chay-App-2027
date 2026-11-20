@@ -1,15 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Brush, Download, Eraser, Loader2, PaintBucket, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { Brush, Eraser, Loader2, PaintBucket, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useToast } from "@/components/ui/use-toast";
 import { confirmFr } from "@/lib/confirmFr";
 import { COTE, PALETTE, enregistrerDessin, masqueTraits, remplir, versDessin } from "@/lib/coloriage";
 import { enregistrerImageGalerie } from "@/lib/fondsEcran";
+import { estNatif } from "@/lib/chayConversation";
 
 // Atelier de coloriage : l'enfant touche une zone pour la remplir (seau), ou dessine librement (pinceau),
-// gomme, annule. Les traits du dessin restent toujours par-dessus (on ne peut pas les effacer).
-// En quittant, le dessin est gardé dans « Mes dessins » (sur ce téléphone) ; « Enregistrer » le met aussi
-// dans la galerie du téléphone.
+// gomme, annule (flèche en haut à gauche). Les traits du dessin restent toujours par-dessus.
+// Rien n'est gardé tout seul : « Enregistrer » met le dessin dans « Mes dessins » (le même dessin est mis à
+// jour, jamais en double) et dans la galerie du téléphone. Retour du téléphone = quitter (avec une question
+// si le dessin a changé depuis le dernier enregistrement).
 // source : { id, titre, svg } (dessin intégré) ou { id, titre, image_url } (coloriage ajouté par l'admin).
 // reprise : dessin de « Mes dessins » à continuer ({ id, couleurs: Blob }).
 
@@ -210,22 +212,36 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
     return true;
   };
 
-  const fermer = async () => {
-    try {
-      if (await garder()) toast({ title: "Dessin gardé", description: "Tu le retrouveras dans « Mes dessins »." });
-    } catch { /* stockage indisponible : on ferme quand même */ }
+  // Quitter : si le dessin a changé depuis le dernier « Enregistrer », on demande d'abord.
+  // Le retour du téléphone a déjà consommé son entrée d'historique : si l'enfant reste, on la remet.
+  const [ecoute, setEcoute] = useState(true);
+  useEffect(() => { if (!ecoute) setEcoute(true); }, [ecoute]);
+  const quitter = async (parRetour) => {
+    if (pret && modifie.current) {
+      const ok = await confirmFr({
+        title: "Quitter sans enregistrer ?",
+        message: "Ton dessin n'est pas enregistré. Touche « Enregistrer » pour le garder.",
+        confirmLabel: "Quitter",
+        cancelLabel: "Rester",
+      });
+      if (!ok) { if (parRetour) setEcoute(false); return; }
+    }
     onClose();
   };
+  useBackHandler(ecoute, () => quitter(true));
 
-  useBackHandler(true, fermer);
-
-  const enregistrerGalerie = async () => {
+  const enregistrer = async () => {
     setOccupe(true);
     try {
-      await garder().catch(() => {});
+      modifie.current = true; // toujours mettre à jour « Mes dessins », même sans changement depuis l'ouverture
+      await garder();
       const blob = await imageFinale();
-      const ou = await enregistrerImageGalerie(blob, `coloriage-${source.titre || "chay"}`);
-      toast({ title: ou === "galerie" ? "Enregistré dans la galerie" : "Image téléchargée", description: ou === "galerie" ? "Dossier Images › Chay." : undefined });
+      let ou = "";
+      try { ou = await enregistrerImageGalerie(blob, `coloriage-${source.titre || "chay"}`); } catch { ou = ""; }
+      toast({
+        title: "Dessin enregistré",
+        description: ou === "galerie" ? "Dans « Mes dessins » et dans la galerie (Images › Chay)." : "Dans « Mes dessins ».",
+      });
     } catch (e) {
       toast({ title: "Enregistrement impossible", description: e?.message, variant: "destructive" });
     } finally {
@@ -248,19 +264,22 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-background" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex items-center gap-2 px-3 py-2">
-        <button type="button" onClick={fermer} aria-label="Retour" className="grid h-11 w-11 place-items-center rounded-full border border-border">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h2 className="min-w-0 flex-1 truncate font-display text-lg font-extrabold">{source.titre}</h2>
-        <button type="button" onClick={annuler} disabled={!nbAnnuler} aria-label="Annuler" className="grid h-11 w-11 place-items-center rounded-full border border-border disabled:opacity-30">
+        <button type="button" onClick={annuler} disabled={!nbAnnuler} aria-label="Annuler la dernière couleur" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
           <Undo2 className="h-5 w-5" />
         </button>
-        <button type="button" onClick={recommencer} disabled={!pret} aria-label="Tout effacer" className="grid h-11 w-11 place-items-center rounded-full border border-border disabled:opacity-30">
+        <h2 className="min-w-0 flex-1 truncate font-display text-lg font-extrabold">{source.titre}</h2>
+        <button type="button" onClick={recommencer} disabled={!pret} aria-label="Tout effacer" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
           <Trash2 className="h-5 w-5" />
         </button>
-        <button type="button" onClick={enregistrerGalerie} disabled={!pret || occupe} aria-label="Enregistrer dans la galerie" className="grid h-11 w-11 place-items-center rounded-full brand-gradient text-white disabled:opacity-40">
-          {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+        <button type="button" onClick={enregistrer} disabled={!pret || occupe} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full brand-gradient px-4 text-sm font-bold text-white disabled:opacity-40">
+          {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+          Enregistrer
         </button>
+        {!estNatif() && (
+          <button type="button" onClick={() => quitter(false)} aria-label="Fermer" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border">
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <div ref={zoneRef} className="flex min-h-0 flex-1 items-center justify-center px-2">
