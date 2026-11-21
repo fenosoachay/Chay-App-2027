@@ -3,16 +3,11 @@ import { Film, Play } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { clearMediaControl, requestMediaPlayback } from "@/lib/mediaControl";
 
-export default function VideoPlayer({
-  src,
-  poster,
-  title = "Film",
-  queue = [],
-  currentIndex = 0,
-  className = "",
-  onHalfway, // ← 1. AJOUTÉ : On accepte la fonction de rappel
-}) {
-  const startPlayback = () => {
+/**
+ * Lance un film dans le lecteur plein écran de l'app (16:9), avec précédent / suivant dans « queue ».
+ * queue : [{ id, src, title, poster, vue }] ; aussi utilisé par les affiches de films (AffichesFilms).
+ */
+export function lancerFilm({ src, poster, title = "Film", queue = [], currentIndex = 0, onHalfway } = {}) {
     const startAt = (index) => {
       const item = queue[index];
       const source = item?.src || src;
@@ -45,7 +40,18 @@ export default function VideoPlayer({
       }, "video");
     };
     startAt(currentIndex);
-  };
+}
+
+export default function VideoPlayer({
+  src,
+  poster,
+  title = "Film",
+  queue = [],
+  currentIndex = 0,
+  className = "",
+  onHalfway, // ← 1. AJOUTÉ : On accepte la fonction de rappel
+}) {
+  const startPlayback = () => lancerFilm({ src, poster, title, queue, currentIndex, onHalfway });
 
   return (
     <button

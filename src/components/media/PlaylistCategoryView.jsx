@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
-  Film,
   Play,
   Pause,
   Star,
@@ -10,7 +9,7 @@ import {
   Unlock,
   Headphones,
 } from "lucide-react";
-import VideoPlayer from "@/components/player/VideoPlayer";
+import AffichesFilms from "@/components/media/AffichesFilms";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
@@ -324,15 +323,6 @@ export default function PlaylistCategoryView({
 
   if (open) {
     const audioTracks = tracks.filter((t) => !isVideo && t.audio_url);
-    const videoQueue = tracks
-      .filter((track) => track.video_url)
-      .map((track) => ({
-        id: track.id,
-        src: track.video_url,
-        title: track.title,
-        poster: track.cover_url,
-        vue: { type: "piste", id: track.track_id }, // compteur de vues : +1 à la moitié (useCompteurVues)
-      }));
     return (
       <div>
         <div className="flex items-center gap-3 mb-5">
@@ -366,56 +356,13 @@ export default function PlaylistCategoryView({
               </>
             )}
           />
-        ) : tracks.length && isVideo && estVerticale(open) ? ( /* affichage 9:16 façon TikTok (choisi par l'admin) */
+        ) : tracks.length && isVideo && estVerticale(open) ? ( /* défilement façon TikTok (Drôle, Mindset…) */
           <VideosVerticales pistes={tracks} descriptions={descriptions} titre={open.name} cibleId={targetTrackId} />
+        ) : tracks.length && isVideo ? ( /* liste de films : affiches ; chaque vidéo se lit à son format */
+          <AffichesFilms pistes={tracks} descriptions={descriptions} titre={open.name} cibleId={targetTrackId} />
         ) : tracks.length ? (
           <div className="space-y-3">
-            {tracks.map((t, idx) =>
-              isVideo ? (
-                <div
-                  key={t.id}
-                  ref={(node) => {
-                    if (node) trackNodes.current.set(t.track_id, node);
-                    else trackNodes.current.delete(t.track_id);
-                  }}
-                  data-track-id={t.track_id}
-                  className={`rounded-2xl border border-border bg-card overflow-hidden ${
-                    targetTrackId === t.track_id ? "ring-2 ring-primary" : ""
-                  }`}
-                >
-                  {t.video_url ? (
-                    <VideoPlayer
-                      src={t.video_url}
-                      poster={t.cover_url}
-                      title={t.title}
-                      queue={videoQueue}
-                      currentIndex={videoQueue.findIndex((item) => item.id === t.id)}
-                      className="w-full max-h-72"
-                    />
-                  ) : (
-                    <div className="h-40 brand-gradient grid place-items-center">
-                      <Film className="h-10 w-10 text-white/90" />
-                    </div>
-                  )}
-                  <div className="flex items-start gap-3 p-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold truncate">{t.title}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5"><CompteurPiste piste={t} unite="vue" /><BadgeAudience audience={t.audience} /></div>
-                      <Description texte={descriptions.get(t.track_id)} className="mt-2" />
-                    </div>
-                    {favoriteCategory === "music" && (
-                      <button
-                        onClick={() => onToggleFavorite?.(favItem(t), favoriteCategory)}
-                        className={`h-9 w-9 grid place-items-center rounded-full hover:bg-muted ${isFavorite?.(t.track_id, open?.id) ? "text-primary" : "text-foreground/40 hover:text-primary"}`}
-                        title="Ajouter aux favoris"
-                        aria-label={isFavorite?.(t.track_id, open?.id) ? "Déjà dans vos favoris" : "Ajouter aux favoris"}
-                      >
-                        <Star className="h-4 w-4" fill={isFavorite?.(t.track_id, open?.id) ? "currentColor" : "none"} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
+            {tracks.map((t) => (
                 <div
                   key={t.id}
                   ref={(node) => {
@@ -467,8 +414,7 @@ export default function PlaylistCategoryView({
                     </button>
                   )}
                 </div>
-              )
-            )}
+              ))}
           </div>
         ) : (
           <p className="text-foreground/50 text-sm">

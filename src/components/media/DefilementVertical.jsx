@@ -6,6 +6,7 @@ import { compterVue, useCompteur } from "@/hooks/useCompteurVues";
 import { useJaimes } from "@/hooks/useJaimes";
 import { useToast } from "@/components/ui/use-toast";
 import Description from "@/components/media/Description";
+import { infosConnues } from "@/lib/infosVideo";
 
 // Vidéos verticales façon TikTok, à partir de la vidéo touchée (`depart`) jusqu'à la dernière :
 //  - chaque vidéo remplit tout l'écran (bords coupés si elle n'est pas exactement 9:16) ;
@@ -43,6 +44,9 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
   const [muet, setMuet] = useState(false);
   const [enPause, setEnPause] = useState(false);
   const [progression, setProgression] = useState(0); // 0 à 1, vidéo à l'écran
+  // Vidéos 16:9 (paysage) : affichées entières, centrées, au lieu d'être coupées pour remplir l'écran.
+  const [paysages, setPaysages] = useState(() => new Set());
+  const estPaysage = (r) => paysages.has(r.id) || infosConnues(r.video_url)?.portrait === false;
   const conteneurRef = useRef(null);
   const videosRef = useRef([]);
   const vueComptee = useRef(false);
@@ -176,6 +180,10 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
               controlsList="nodownload"
               disablePictureInPicture
               onClick={basculerPause}
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                if (v.videoWidth > v.videoHeight && !paysages.has(r.id)) setPaysages((p) => new Set(p).add(r.id));
+              }}
               onTimeUpdate={(e) => {
                 if (i !== actif) return;
                 const v = e.currentTarget;
@@ -187,7 +195,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
                   compterVue({ type: "piste", id: r.track_id });
                 }
               }}
-              className="h-full w-full object-cover"
+              className={`h-full w-full ${estPaysage(r) ? "object-contain" : "object-cover"}`}
             />
             {i === actif && enPause && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center">

@@ -1,11 +1,12 @@
 // Affichage d'une playlist de la section Vidéo (1.3.23) :
-//  - « film »     : lecture classique 16:9 ;
-//  - « vertical » : plein écran 9:16 façon TikTok (❤️, Partager, Son, Vues à droite).
+//  - « film »     : liste de films, affiches en grille (AffichesFilms) ;
+//  - « vertical » : défilement plein écran façon TikTok (❤️, Partager, Son, Vues à droite).
+// La LECTURE, elle, suit le format de chaque vidéo (lib/infosVideo) : 16:9 -> lecteur film, 9:16 -> vertical.
 // Choisi par l'admin à la création (CreatePlaylistModal). Anciennes playlists sans réglage : « Drôle » et
-// « Mindset » sont verticales (la migration 1.3.23 l'enregistre aussi), les autres en 16:9.
+// « Mindset » défilent (la migration 1.3.23 l'enregistre aussi), les autres en liste de films.
 export const AFFICHAGES = [
-  { value: "film", label: "Film", format: "16:9", description: "Lecture classique, écran large" },
-  { value: "vertical", label: "TikTok", format: "9:16", description: "Plein écran vertical, on fait défiler" },
+  { value: "film", label: "Liste de films", description: "Affiches en grille ; chaque vidéo se lit à son format" },
+  { value: "vertical", label: "Défilement", description: "Plein écran vertical, on fait défiler (TikTok)" },
 ];
 
 const NOMS_VERTICAUX = ["drole", "mindset"];

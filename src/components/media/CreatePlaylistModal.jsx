@@ -31,7 +31,7 @@ export default function CreatePlaylistModal({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  // Section Vidéo : affichage de lecture, Film (16:9) ou TikTok (9:16) — à choisir pour une nouvelle playlist.
+  // Section Vidéo : affichage de la playlist, liste de films (affiches) ou défilement TikTok — à choisir.
   const estVideo = (playlist?.category || category) === "films";
   const [affichage, setAffichage] = useState("");
   const [coverUrl, setCoverUrl] = useState(null);
@@ -278,8 +278,8 @@ export default function CreatePlaylistModal({
 
           {estVideo && (
             <div className="space-y-2">
-              <Label>Affichage de la lecture <span className="text-destructive">*</span></Label>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Affichage de la lecture">
+              <Label>Affichage de la playlist <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Affichage de la playlist">
                 {AFFICHAGES.map((a) => (
                   <button
                     key={a.value}
@@ -289,20 +289,23 @@ export default function CreatePlaylistModal({
                     onClick={() => setAffichage(a.value)}
                     className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-3 text-center transition ${affichage === a.value ? "border-primary bg-primary/10" : "border-border"}`}
                   >
-                    {/* Petit cadre au bon format */}
-                    <span
-                      className={`grid place-items-center rounded-md border-2 border-current text-[0.6rem] font-black ${a.value === "film" ? "h-9 w-16" : "h-14 w-8"}`}
-                      aria-hidden="true"
-                    >
-                      {a.format}
-                    </span>
-                    <span className="text-sm font-bold">{a.label} ({a.format})</span>
+                    {/* Petit dessin : trois affiches, ou un écran vertical */}
+                    {a.value === "film" ? (
+                      <span className="flex h-14 items-center gap-1" aria-hidden="true">
+                        {[0, 1, 2].map((n) => <span key={n} className="h-10 w-7 rounded-[4px] border-2 border-current" />)}
+                      </span>
+                    ) : (
+                      <span className="grid h-14 w-8 place-items-center rounded-md border-2 border-current text-[0.55rem] font-black" aria-hidden="true">
+                        9:16
+                      </span>
+                    )}
+                    <span className="text-sm font-bold">{a.label}</span>
                     <span className="text-[0.7rem] leading-tight text-foreground/60">{a.description}</span>
                   </button>
                 ))}
               </div>
               {validationAttempted && !affichage && (
-                <p className="text-xs text-destructive" role="alert">Choisissez l'affichage de la lecture.</p>
+                <p className="text-xs text-destructive" role="alert">Choisissez l'affichage de la playlist.</p>
               )}
             </div>
           )}
