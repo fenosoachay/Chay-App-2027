@@ -6,7 +6,9 @@
 //  - MemberProfile.systeme : le profil public du compte « Chay » (nom, logo), à qui on ne peut pas répondre ;
 //  - création du compte « Chay » (noreply@chay.fr, mot de passe aléatoire jamais affiché : personne ne s'y connecte)
 //    et de son profil public ;
-//  - le compte dont l'e-mail est donné dans RESPONSABLE_EMAIL devient responsable technique.
+//  - le compte dont l'e-mail est donné dans RESPONSABLE_EMAIL devient responsable technique ;
+//  - Petite Histoire du verset du jour : histoire_type / histoire_titre / histoire_url / histoire_texte sur
+//    Devotional, et users.histoires_vues (versets dont la petite histoire est « Vue / Entendue / Lue »).
 // Idempotente. Usage (tunnel SSH ouvert, identifiants SUPERUSER saisis masqués, RESPONSABLE_EMAIL saisi) :
 //   node pocketbase/scripts/migrer-1-3-22.mjs              -> simulation
 //   node pocketbase/scripts/migrer-1-3-22.mjs --appliquer  -> applique
@@ -24,6 +26,7 @@ const texte = (name, max, extra = {}) => ({
 const booleen = (name) => ({ name, type: 'bool', required: false, hidden: false, system: false });
 const date = (name) => ({ name, type: 'date', required: false, hidden: false, system: false, min: '', max: '' });
 const choix = (name, values) => ({ name, type: 'select', values, maxSelect: 1, required: false, hidden: false, system: false });
+const json = (name, maxSize) => ({ name, type: 'json', maxSize, required: false, hidden: false, system: false });
 const autodate = (name, onCreate, onUpdate) => ({ name, type: 'autodate', onCreate, onUpdate, hidden: false, system: false });
 
 export function nouvellesCollections() {
@@ -50,8 +53,9 @@ export function nouvellesCollections() {
 }
 
 export const CHAMPS_AJOUTES = {
-  users: [booleen('systeme'), booleen('responsable_technique')],
+  users: [booleen('systeme'), booleen('responsable_technique'), json('histoires_vues', 20000)],
   MemberProfile: [booleen('systeme')],
+  Devotional: [choix('histoire_type', ['video', 'audio', 'texte']), texte('histoire_titre', 200), texte('histoire_url', 5000), texte('histoire_texte', 20000)],
 };
 
 const PROTECTION = '@request.body.systeme:isset = false && @request.body.responsable_technique:isset = false';
@@ -88,6 +92,8 @@ async function premier(url, headers, collection, filtre) {
 
 export async function migrer(url, headers, { appliquer = false, log = () => {}, responsableEmail = '' } = {}) {
   const changements = [];
+  // Le compte « Chay » et le responsable ne se lisent qu'une fois le champ « systeme » présent sur users.
+  const champsPrets = appliquer || ((await lire(url, headers, '/api/collections/users')).fields || []).some((f) => f.name === 'systeme');
   const ecrire = async (methode, chemin, corps, quoi) => {
     if (!appliquer) return null;
     const r = await fetch(`${url}${chemin}`, { method: methode, headers, body: JSON.stringify(corps) });
@@ -135,7 +141,6 @@ export async function migrer(url, headers, { appliquer = false, log = () => {}, 
   }
 
   // 4. Compte automatique « Chay » et son profil public (seulement si les champs existent déjà, sinon : simulation).
-  const champsPrets = appliquer || !changements.includes('users');
   let systeme = champsPrets ? await premier(url, headers, 'users', `email = "${SYSTEME_EMAIL}"`) : null;
   if (systeme) log(`  = compte « ${SYSTEME_NOM} » existe déjà`);
   else {
