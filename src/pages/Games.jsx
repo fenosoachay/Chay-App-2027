@@ -18,6 +18,7 @@ import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { JEUX, grouperJeux } from "@/lib/jeuxCategories";
+import ScoreBoard from "@/components/jeux/ScoreBoard";
 
 // Apparence de chaque jeu (identifiants : src/lib/jeuxCategories.js).
 const APPARENCE = {
@@ -29,6 +30,21 @@ const APPARENCE = {
   personality: { icon: Heart, tone: "from-[#C18B33] to-[#A84D70]" },
 };
 const GAMES = JEUX.map((j) => ({ ...j, ...APPARENCE[j.id], live: true }));
+
+/** Catégorie sans jeu pour l'instant (ex. Chay Mobile) : une tuile grisée « Bientôt ». */
+function TuileBientot() {
+  return (
+    <div className="mx-auto grid max-w-5xl grid-cols-2 place-items-center gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
+      <div
+        aria-label="Bientôt"
+        className="flex aspect-square w-full max-w-32 flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-border bg-muted/60 p-3 text-center text-foreground/50"
+      >
+        <span className="text-3xl" aria-hidden="true">⏳</span>
+        <span className="text-base font-bold">Bientôt</span>
+      </div>
+    </div>
+  );
+}
 
 function GrilleJeux({ jeux, onOpen }) {
   return (
@@ -196,19 +212,20 @@ export default function Games() {
         <div className="h-32" aria-busy="true" />
       ) : (
         <div className="space-y-10">
-          {classement.sections.filter((c) => c.jeux.length).map((c) => (
+          {/* 1. Leaderboard ; 2. Chay Game ; 3. Chay Mobile (« Bientôt » tant qu'il n'a pas de jeu). */}
+          <div className="mx-auto max-w-2xl">
+            <ScoreBoard espace="adulte" />
+          </div>
+          {classement.sections.filter((c) => c.slot !== "tous" || c.jeux.length).map((c) => (
             <section key={c.slot} aria-label={c.name || "Jeux"}>
               {c.name && (
                 <h2 className="mb-5 font-display text-2xl font-extrabold">
                   <span className="brand-gradient-text">{c.name}</span>
                 </h2>
               )}
-              <GrilleJeux jeux={c.jeux} onOpen={navigate} />
+              {c.jeux.length ? <GrilleJeux jeux={c.jeux} onOpen={navigate} /> : <TuileBientot />}
             </section>
           ))}
-          {!classement.sections.some((c) => c.jeux.length) && (
-            <p className="text-foreground/60">Les jeux arrivent bientôt.</p>
-          )}
           {/* Jeux pas encore classés : jamais montrés aux membres ; les admins les voient pour les tester. */}
           {isAdmin && classement.nonClasses.length > 0 && (
             <section aria-label="Jeux à classer" className="rounded-[1.5rem] border border-dashed border-amber-500/50 p-5">

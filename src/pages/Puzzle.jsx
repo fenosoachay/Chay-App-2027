@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import usePuzzleGame from "@/hooks/usePuzzleGame";
+import { enregistrerScore } from "@/lib/scoreBoard";
 import {
   getPuzzlesForDifficulty,
   PUZZLE_DIFFICULTIES,
@@ -240,6 +241,8 @@ export default function Puzzle() {
 
   useEffect(() => {
     if (!game.solved) return;
+    // Leaderboard (1.3.22) : 5 points par pièce du puzzle réussi.
+    enregistrerScore("puzzle", { pieces: game.pieces.length });
     confetti({
       particleCount: 85,
       spread: 72,

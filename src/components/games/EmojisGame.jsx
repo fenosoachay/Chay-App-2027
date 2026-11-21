@@ -15,6 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import useGameLogic from "@/hooks/useGameLogic";
+import { enregistrerScore } from "@/lib/scoreBoard";
 
 const gold = "#F6C453";
 
@@ -75,6 +76,11 @@ export default function EmojisGame() {
       colors: [gold, "#FFF1C2", "#E7A936", "#FFFFFF"],
     });
   }, [correct, game.status, questionFinished]);
+
+  // Leaderboard (1.3.22) : le score de la partie, une fois à la fin.
+  useEffect(() => {
+    if (game.status === "finished" && game.score > 0) enregistrerScore("emoji", { score: game.score });
+  }, [game.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goBack = () => navigate("/games");
   const fontFamily = "'Aglio Picasso', var(--font-display), sans-serif";

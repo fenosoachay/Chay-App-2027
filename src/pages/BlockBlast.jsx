@@ -7,6 +7,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { enregistrerScore } from "@/lib/scoreBoard";
 import {
   BLOCK_BLAST_CATEGORIES,
   BLOCK_BLAST_MILESTONE,
@@ -182,6 +183,8 @@ export default function BlockBlast() {
   const finishGame = useCallback(async (finalScore, finalRows, finalColumns, finalBest) => {
     if (gameSavedRef.current) return;
     gameSavedRef.current = true;
+    // Leaderboard (1.3.22) : score de la partie (le serveur compte score ÷ 10).
+    if (finalScore > 0) enregistrerScore("brique", { score: finalScore });
     const playedAt = new Date().toISOString();
     try {
       localStorage.setItem(storageKey, String(finalBest));

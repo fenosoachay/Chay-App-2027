@@ -8,7 +8,8 @@
 //    et de son profil public ;
 //  - le compte dont l'e-mail est donné dans RESPONSABLE_EMAIL devient responsable technique ;
 //  - Petite Histoire du verset du jour : histoire_type / histoire_titre / histoire_url / histoire_texte sur
-//    Devotional, et users.histoires_vues (versets dont la petite histoire est « Vue / Entendue / Lue »).
+//    Devotional, et users.histoires_vues (versets dont la petite histoire est « Vue / Entendue / Lue ») ;
+//  - Score Boards : nouvelle collection ScoreJeu (un point par partie ; routes enregistrerScore et classement).
 // Idempotente. Usage (tunnel SSH ouvert, identifiants SUPERUSER saisis masqués, RESPONSABLE_EMAIL saisi) :
 //   node pocketbase/scripts/migrer-1-3-22.mjs              -> simulation
 //   node pocketbase/scripts/migrer-1-3-22.mjs --appliquer  -> applique
@@ -49,6 +50,25 @@ export function nouvellesCollections() {
       autodate('updated', true, true),
     ],
     indexes: ['CREATE INDEX idx_signalement_statut ON SignalementTechnique (statut, created)'],
+  }, {
+    name: 'ScoreJeu',
+    type: 'base',
+    // Aucune règle : écriture par les routes (enregistrerScore, quizFinish, wsFinish), lecture par « classement ».
+    listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    fields: [
+      texte('user_id', 64, { required: true }),
+      choix('espace', ['adulte', 'enfant']),
+      texte('jeu', 30, { required: true }),
+      { name: 'points', type: 'number', required: false, hidden: false, system: false, onlyInt: true, min: 0, max: 100000 },
+      texte('pseudo', 30),
+      texte('avatar', 16),
+      autodate('created', true, false),
+    ],
+    indexes: [
+      'CREATE INDEX idx_scorejeu_espace ON ScoreJeu (espace, created)',
+      'CREATE INDEX idx_scorejeu_jeu ON ScoreJeu (espace, jeu, created)',
+      'CREATE INDEX idx_scorejeu_user ON ScoreJeu (user_id, created)',
+    ],
   }];
 }
 

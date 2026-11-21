@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw, Star, Timer, Trophy } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { enregistrerScore, lireProfilEnfant } from "@/lib/scoreBoard";
 import {
   NIVEAUX, THEMES, disposition, distribuer, duree, etoiles, lireDisposition, lireRecords, noterDisposition, noterRecord,
 } from "@/lib/memory";
@@ -153,7 +154,13 @@ function Partie({ theme, niveau, onQuitter }) {
   }, [demarre, fini]);
 
   useEffect(() => {
-    if (fini) setRecord(noterRecord(theme.id, niveau.id, essais, secondes));
+    if (!fini) return;
+    setRecord(noterRecord(theme.id, niveau.id, essais, secondes));
+    // Score Board : étoiles de la partie, au nom du pseudo de l'enfant (s'il en a choisi un).
+    const profil = lireProfilEnfant();
+    if (profil) {
+      enregistrerScore("memory", { etoiles: etoiles(essais, niveau.paires), niveau: niveau.id, pseudo: profil.pseudo, avatar: profil.avatar });
+    }
   }, [fini]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const retourner = (carte) => {

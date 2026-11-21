@@ -153,6 +153,13 @@ routerAdd('POST', '/api/fn/quizFinish', (e) => {
       progress.set('session_answered_ids', []);
       progress.set('session_correct', 0);
       txApp.save(progress);
+      // Score Board (1.3.22) : points comptés par le serveur (10 par bonne réponse x niveau).
+      const pointsBoard = require(`${__hooks}/lib/scores.js`).pointsQuiz(correct, difficulty);
+      if (pointsBoard > 0) {
+        try {
+          txApp.save(fn.newRecord(txApp, 'ScoreJeu', { user_id: user.id, espace: 'adulte', jeu: 'trivia', points: pointsBoard }));
+        } catch (_) { /* tableau des scores indisponible : la partie reste enregistrée */ }
+      }
 
       let newlyUnlocked = null;
       let nextUnlocked = nextProgress ? nextProgress.getBool('unlocked') : false;
@@ -474,6 +481,14 @@ routerAdd('POST', '/api/fn/wsFinish', (e) => {
       progress.set('session_word_ids', []);
       progress.set('session_hints', {});
       txApp.save(progress);
+      // Score Board (1.3.22) : le score de la partie, compté par le serveur.
+      const sc = require(`${__hooks}/lib/scores.js`);
+      const pointsBoard = Math.min(sc.PLAFOND, Math.max(0, Math.floor(total)));
+      if (pointsBoard > 0) {
+        try {
+          txApp.save(fn.newRecord(txApp, 'ScoreJeu', { user_id: user.id, espace: 'adulte', jeu: 'scramble', points: pointsBoard }));
+        } catch (_) { /* tableau des scores indisponible : la partie reste enregistrée */ }
+      }
 
       let newlyUnlocked = null;
       const next = g.WS.NEXT_LEVEL[difficulty];
