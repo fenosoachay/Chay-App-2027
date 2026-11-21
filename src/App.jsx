@@ -66,6 +66,7 @@ import { RadioPlayerProvider } from '@/lib/RadioContext';
 import { SplashScreen as CapacitorSplashScreen } from '@capacitor/splash-screen';
 import { CapacitorBackHandler } from './components/CapacitorBackHandler';
 import ConfirmHost from '@/components/ConfirmHost';
+import TelecommandeTv from '@/components/tv/TelecommandeTv';
 
 const AuthenticatedApp = () => {
   const { isLocalMode, isLoggingOut, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
@@ -199,6 +200,7 @@ function App() {
           <Router>
             <CapacitorBackHandler />
             <ConfirmHost />
+            <TelecommandeTv />
             <ScrollToTop />
             <ErrorBoundary>
               <AuthenticatedApp />

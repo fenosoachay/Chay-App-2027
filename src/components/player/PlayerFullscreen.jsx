@@ -16,6 +16,7 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { Image } from "@/components/ui/image";
 import SeekBar from "./SeekBar";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import BoutonTv from "@/components/tv/BoutonTv";
 
 export default function PlayerFullscreen({ onCollapse, cover }) {
   useBackHandler(true, onCollapse);
@@ -34,6 +35,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
     seek,
     playerState,
     bufferedRatio,
+    pause,
   } = useAudioPlayer();
 
   if (!currentTrack) return null;
@@ -53,6 +55,13 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
         <span className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
           En lecture
         </span>
+        <div className="flex items-center">
+        {/* Diffusion sur TV (app Android) : le téléphone devient la télécommande. */}
+        <BoutonTv
+          className="hover:bg-muted"
+          media={() => ({ url: currentTrack.audio_url, titre: currentTrack.title, video: false, direct: false, position: currentTime })}
+          onAvantEnvoi={() => pause?.()}
+        />
         <button
           type="button"
           onClick={onCollapse}
@@ -61,6 +70,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
         >
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 overflow-y-auto">

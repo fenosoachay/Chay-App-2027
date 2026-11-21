@@ -73,6 +73,12 @@
             </intent-filter>
         </service>
 
+        <!-- Diffusion sur TV : relais du téléphone et notification « Diffusion sur … » avec « Arrêter ». -->
+        <service
+            android:name=".ChayTvService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <!-- Mise à jour depuis l'app : réponse d'Android à l'installation, puis « Chay est à jour ». -->
         <receiver
             android:name=".MiseAJourReceiver"
@@ -104,6 +110,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Mise à jour depuis l'app (ChayMiseAJourPlugin) : Android demande l'accord du membre la première fois. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Diffusion sur TV (DLNA, ChayTvPlugin) : trouver les TV du Wi-Fi, garder le relais actif écran éteint. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Fonds d'écran : enregistrement dans la galerie sur Android 5 à 9 seulement (Android 10+ : MediaStore, sans permission). -->

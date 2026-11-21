@@ -8,6 +8,9 @@ export const ChayConversation = registerPlugin("ChayConversation");
 // Mise à jour de l'application depuis l'application (ChayMiseAJourPlugin.java, voir src/lib/miseAJour.js).
 export const ChayMiseAJour = registerPlugin("ChayMiseAJour");
 
+// Diffusion sur TV par DLNA (ChayTvPlugin.java, voir src/lib/tv.js).
+export const ChayTv = registerPlugin("ChayTv");
+
 export function estNatif() {
   try {
     return Capacitor.isNativePlatform();

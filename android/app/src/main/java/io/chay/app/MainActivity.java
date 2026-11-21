@@ -38,6 +38,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ChayConversationPlugin.class);
         registerPlugin(ChayGaleriePlugin.class);
         registerPlugin(ChayMiseAJourPlugin.class);
+        registerPlugin(ChayTvPlugin.class);
         super.onCreate(savedInstanceState);
         WebView webView = getBridge().getWebView();
         if (webView != null) {

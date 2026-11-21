@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2, Maximize, Minimize, RotateCcw, RotateCw } from "lucide-react";
+import { Film, Pause, Play, Radio, SkipBack, SkipForward, Square, X, Loader2, Maximize, Minimize, RotateCcw, RotateCw, Tv } from "lucide-react";
+import BoutonTv from "@/components/tv/BoutonTv";
+import { tvDisponible } from "@/lib/tv";
 import { Image } from "@/components/ui/image";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useKeepAwake } from "@/hooks/useKeepAwake";
@@ -606,14 +608,42 @@ const playVideo = (source) => {
               {isRadio ? "Radio · En direct" : control.subtitle || "Lecture"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            aria-label="Réduire le lecteur"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Diffusion sur TV (app Android) : vidéo et radio par le relais du téléphone ; YouTube par l'app YouTube. */}
+            {(isVideo || isRadio) && control.source && (
+              <BoutonTv
+                media={() => ({ url: control.source, titre: control.title, video: isVideo, direct: isRadio, position: control.currentTime })}
+                onAvantEnvoi={() => {
+                  if (isRadio || control.isPlaying) control.toggle?.();
+                  setExpanded(false);
+                }}
+              />
+            )}
+            {isYouTube && control.source && tvDisponible() && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (control.isPlaying) control.toggle?.();
+                  openExternal(youtubeWatchUrl(control.source)).catch((error) => {
+                    console.error("[MediaPlayer] Impossible d'ouvrir la vidéo dans YouTube.", error);
+                  });
+                }}
+                aria-label="Regarder sur la TV avec l'app YouTube"
+                title="Regarder sur la TV (app YouTube)"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-xs font-bold hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <Tv className="h-5 w-5" /> TV
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-label="Réduire le lecteur"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
 
