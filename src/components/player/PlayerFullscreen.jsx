@@ -59,7 +59,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
         {/* Diffusion sur TV (app Android) : le téléphone devient la télécommande. */}
         <BoutonTv
           className="hover:bg-muted"
-          media={() => ({ url: currentTrack.audio_url, titre: currentTrack.title, video: false, direct: false, position: currentTime })}
+          media={() => ({ url: currentTrack.audio_url, titre: currentTrack.title, video: false, direct: false, position: currentTime, duree: duration })}
           onAvantEnvoi={() => pause?.()}
         />
         <button

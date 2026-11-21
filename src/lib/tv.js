@@ -7,6 +7,23 @@ let etat = null; // { nom, titre, video, direct, etat, position, duree }
 const ecouteurs = new Set();
 let suivi = null;
 let arretDepuis = 0;
+// Horloge du téléphone : certaines TV (Hisense VIDAA) renvoient une position fausse (ex. 18220 h) ou pas de durée.
+// On compte donc nous-mêmes le temps écoulé, et on ne croit la TV que si sa position est plausible.
+let horloge = { base: 0, depuis: 0, joue: false };
+const MAX_PLAUSIBLE = 12 * 3600;
+
+function regler(position, joue) {
+  horloge = { base: Math.max(0, Number(position) || 0), depuis: Date.now(), joue };
+}
+
+function estimer() {
+  return horloge.base + (horloge.joue ? (Date.now() - horloge.depuis) / 1000 : 0);
+}
+
+function plausible(position, duree) {
+  if (!(position >= 0) || position > MAX_PLAUSIBLE) return false;
+  return !(duree > 0) || position <= duree + 30;
+}
 
 function publier(e) {
   etat = e;
@@ -43,7 +60,14 @@ function demarrerSuivi() {
         arretDepuis = arretDepuis || Date.now();
         if (Date.now() - arretDepuis > 6000) { arreterTv(); return; }
       } else arretDepuis = 0;
-      if (etat) publier({ ...etat, etat: r.etat, position: r.position >= 0 ? r.position : etat.position, duree: r.duree > 0 ? r.duree : etat.duree });
+      if (!etat) return;
+      const joue = r.etat === "PLAYING";
+      const dureeTv = r.duree > 0 && r.duree <= MAX_PLAUSIBLE ? r.duree : 0;
+      const duree = etat.duree > 0 ? etat.duree : dureeTv;
+      if (plausible(r.position, duree)) regler(r.position, joue);
+      else if (joue !== horloge.joue) regler(estimer(), joue);
+      const position = duree > 0 ? Math.min(estimer(), duree) : estimer();
+      publier({ ...etat, etat: r.etat, position, duree });
     } catch {
       /* TV momentanément injoignable : on réessaie */
     }
@@ -63,7 +87,7 @@ export async function chercherTv() {
   return Array.isArray(r?.appareils) ? r.appareils : [];
 }
 
-/** media : { url, titre, video, position, direct } */
+/** media : { url, titre, video, position, direct, duree } (duree : celle connue du lecteur du téléphone) */
 export async function envoyerSurTv(appareil, media) {
   await ChayTv.lancer({
     id: appareil.id,
@@ -73,14 +97,22 @@ export async function envoyerSurTv(appareil, media) {
     direct: Boolean(media.direct),
     position: Number(media.position) || 0,
   });
-  publier({ nom: appareil.nom, titre: media.titre || "Chay", video: Boolean(media.video), direct: Boolean(media.direct), etat: "TRANSITIONING", position: Number(media.position) || 0, duree: 0 });
+  const duree = Number(media.duree) > 0 && Number.isFinite(Number(media.duree)) ? Number(media.duree) : 0;
+  regler(media.position, false);
+  publier({ nom: appareil.nom, titre: media.titre || "Chay", video: Boolean(media.video), direct: Boolean(media.direct), etat: "TRANSITIONING", position: Number(media.position) || 0, duree });
   demarrerSuivi();
 }
 
 export async function commandeTv(action, position) {
   await ChayTv.commande({ action, position: Number(position) || 0 });
-  if (etat && (action === "pause" || action === "reprendre")) publier({ ...etat, etat: action === "pause" ? "PAUSED_PLAYBACK" : "PLAYING" });
-  if (etat && action === "aller") publier({ ...etat, position: Number(position) || 0 });
+  if (etat && (action === "pause" || action === "reprendre")) {
+    regler(estimer(), action === "reprendre");
+    publier({ ...etat, etat: action === "pause" ? "PAUSED_PLAYBACK" : "PLAYING", position: estimer() });
+  }
+  if (etat && action === "aller") {
+    regler(position, horloge.joue);
+    publier({ ...etat, position: Number(position) || 0 });
+  }
 }
 
 export async function volumeTv(delta) {

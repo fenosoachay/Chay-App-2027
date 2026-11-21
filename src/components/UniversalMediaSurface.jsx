@@ -612,7 +612,7 @@ const playVideo = (source) => {
             {/* Diffusion sur TV (app Android) : vidéo et radio par le relais du téléphone ; YouTube par l'app YouTube. */}
             {(isVideo || isRadio) && control.source && (
               <BoutonTv
-                media={() => ({ url: control.source, titre: control.title, video: isVideo, direct: isRadio, position: control.currentTime })}
+                media={() => ({ url: control.source, titre: control.title, video: isVideo, direct: isRadio, position: control.currentTime, duree: control.duration })}
                 onAvantEnvoi={() => {
                   if (isRadio || control.isPlaying) control.toggle?.();
                   setExpanded(false);
