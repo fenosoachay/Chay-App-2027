@@ -18,6 +18,7 @@ import { Loader2, Library, Upload } from "lucide-react";
 import ImageCrop from "@/components/media/ImageCrop";
 import PlaylistCover from "@/components/media/PlaylistCover";
 import { isValidPlaylistImageUrl } from "@/lib/playlist";
+import { AFFICHAGES, affichageDe } from "@/lib/affichagePlaylist";
 
 export default function CreatePlaylistModal({
   open,
@@ -30,6 +31,9 @@ export default function CreatePlaylistModal({
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  // Section Vidéo : affichage de lecture, Film (16:9) ou TikTok (9:16) — à choisir pour une nouvelle playlist.
+  const estVideo = (playlist?.category || category) === "films";
+  const [affichage, setAffichage] = useState("");
   const [coverUrl, setCoverUrl] = useState(null);
   const [rawFile, setRawFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -44,6 +48,7 @@ export default function CreatePlaylistModal({
     if (open) {
       setName(playlist?.name || "");
       setDescription(playlist?.description || "");
+      setAffichage(playlist ? affichageDe(playlist) : "");
       setCoverUrl(playlist?.cover_url || null);
       setRawFile(null);
       setUploading(false);
@@ -97,6 +102,7 @@ export default function CreatePlaylistModal({
     setValidationAttempted(true);
     setSaveError("");
     if (!name.trim() || !isValidPlaylistImageUrl(coverUrl)) return;
+    if (estVideo && !affichage) return;
     setSaving(true);
     try {
       const playlistData = {
@@ -106,6 +112,7 @@ export default function CreatePlaylistModal({
         category: playlist?.category || category,
         // Sous-playlist : rattachée à sa playlist (la modification garde le rattachement existant).
         parent_id: playlist ? playlist.parent_id || "" : parent?.id || "",
+        ...(estVideo ? { affichage } : {}),
       };
       const playlistId = playlist?.id || pendingPlaylistIdRef.current;
       let savedPlaylist;
@@ -268,6 +275,37 @@ export default function CreatePlaylistModal({
               placeholder="Quelques mots…"
             />
           </div>
+
+          {estVideo && (
+            <div className="space-y-2">
+              <Label>Affichage de la lecture <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Affichage de la lecture">
+                {AFFICHAGES.map((a) => (
+                  <button
+                    key={a.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={affichage === a.value}
+                    onClick={() => setAffichage(a.value)}
+                    className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-3 text-center transition ${affichage === a.value ? "border-primary bg-primary/10" : "border-border"}`}
+                  >
+                    {/* Petit cadre au bon format */}
+                    <span
+                      className={`grid place-items-center rounded-md border-2 border-current text-[0.6rem] font-black ${a.value === "film" ? "h-9 w-16" : "h-14 w-8"}`}
+                      aria-hidden="true"
+                    >
+                      {a.format}
+                    </span>
+                    <span className="text-sm font-bold">{a.label} ({a.format})</span>
+                    <span className="text-[0.7rem] leading-tight text-foreground/60">{a.description}</span>
+                  </button>
+                ))}
+              </div>
+              {validationAttempted && !affichage && (
+                <p className="text-xs text-destructive" role="alert">Choisissez l'affichage de la lecture.</p>
+              )}
+            </div>
+          )}
 
           <Button
             onClick={save}

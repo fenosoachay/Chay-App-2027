@@ -24,14 +24,12 @@ import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 import Description from "@/components/media/Description";
 import VideosVerticales from "@/components/media/VideosVerticales";
+import { estVerticale } from "@/lib/affichagePlaylist";
 import BadgeAudience from "@/components/media/BadgeAudience";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
 // Entité d'où vient la description d'un titre (champ « Description » de l'admin), par section.
 const ENTITE_DESCRIPTION = { films: "Video", sermons: "Sermon" };
-const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-/** Playlist « Drôle » de la section Vidéo : affichage façon TikTok (« Drôle », « Drôle. », « DRÔLE ! »…). */
-const estDrole = (p) => simplifier(p?.name).replace(/[^a-z0-9]/g, "") === "drole";
 
 /** Compteur discret (écoutes ou vues) d'un titre : PlaylistTrack.listen_count, mis à jour pendant la session. */
 function CompteurPiste({ piste, unite, Icone }) {
@@ -368,7 +366,7 @@ export default function PlaylistCategoryView({
               </>
             )}
           />
-        ) : tracks.length && isVideo && estDrole(open) ? (
+        ) : tracks.length && isVideo && estVerticale(open) ? ( /* affichage 9:16 façon TikTok (choisi par l'admin) */
           <VideosVerticales pistes={tracks} descriptions={descriptions} titre={open.name} cibleId={targetTrackId} />
         ) : tracks.length ? (
           <div className="space-y-3">
