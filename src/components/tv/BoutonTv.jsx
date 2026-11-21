@@ -63,6 +63,7 @@ function ChoixTv({ onFermer, onChoisir }) {
             <p className="font-semibold text-foreground">{erreur || "Aucune TV trouvée."}</p>
             <p>Le téléphone et la TV doivent être sur le <b>même Wi-Fi</b>, et la TV allumée.</p>
             <p>Sur la TV, activez le <b>partage de contenu</b> (« Partage de contenu », « DLNA » ou « Content Sharing » dans les paramètres).</p>
+            <p>Sony : <b>Réseau › Configuration réseau domestique › Fonction de rendu</b>. Google TV, Android TV et Chromecast sont trouvés directement.</p>
           </div>
         ) : (
           <ul className="space-y-2">

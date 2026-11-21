@@ -78,6 +78,9 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer:1.4.1"
     implementation "androidx.media3:media3-ui:1.4.1"
     implementation "androidx.media3:media3-session:1.4.1"
+    // Diffusion sur Chromecast / Google TV / Android TV (ChromecastTv, CastOptionsProvider).
+    implementation "com.google.android.gms:play-services-cast-framework:21.4.0"
+    implementation "androidx.mediarouter:mediarouter:1.6.0"
     // ChayMessagingService (bulles) : même version que le plugin @capacitor/push-notifications.
     implementation "com.google.firebase:firebase-messaging:23.3.1"
     implementation project(':capacitor-android')
