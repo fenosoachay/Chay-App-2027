@@ -25,6 +25,17 @@ function plausible(position, duree) {
   return !(duree > 0) || position <= duree + 30;
 }
 
+// Hisense : « 18220:09:46 » = heures fausses, mais minutes:secondes justes (vu à l'écran de la TV).
+// On garde mm:ss de la TV et on prend l'heure la plus proche de notre estimation (écart < 30 min).
+function corriger(position, duree) {
+  if (plausible(position, duree)) return position;
+  if (!(position >= 0) || !Number.isFinite(position)) return -1;
+  const mmss = position % 3600;
+  const est = estimer();
+  const c = Math.round((est - mmss) / 3600) * 3600 + mmss;
+  return c >= 0 && Math.abs(c - est) < 1800 && plausible(c, duree) ? c : -1;
+}
+
 function publier(e) {
   etat = e;
   ecouteurs.forEach((f) => f(e));
@@ -64,7 +75,8 @@ function demarrerSuivi() {
       const joue = r.etat === "PLAYING";
       const dureeTv = r.duree > 0 && r.duree <= MAX_PLAUSIBLE ? r.duree : 0;
       const duree = etat.duree > 0 ? etat.duree : dureeTv;
-      if (plausible(r.position, duree)) regler(r.position, joue);
+      const vraie = corriger(r.position, duree);
+      if (vraie >= 0) regler(vraie, joue);
       else if (joue !== horloge.joue) regler(estimer(), joue);
       const position = duree > 0 ? Math.min(estimer(), duree) : estimer();
       publier({ ...etat, etat: r.etat, position, duree });
