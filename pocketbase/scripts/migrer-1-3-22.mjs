@@ -9,7 +9,9 @@
 //  - le compte dont l'e-mail est donné dans RESPONSABLE_EMAIL devient responsable technique ;
 //  - Petite Histoire du verset du jour : histoire_type / histoire_titre / histoire_url / histoire_texte sur
 //    Devotional, et users.histoires_vues (versets dont la petite histoire est « Vue / Entendue / Lue ») ;
-//  - Score Boards : nouvelle collection ScoreJeu (un point par partie ; routes enregistrerScore et classement).
+//  - Score Boards : nouvelle collection ScoreJeu (un point par partie ; routes enregistrerScore et classement) ;
+//  - gestion des jeux enfants : JeuEnfantReglage (dessins et catégories intégrés masqués), MemoryTheme et
+//    MemoryCarte (catégories et cartes de Jeux Carte ajoutées par l'admin).
 // Idempotente. Usage (tunnel SSH ouvert, identifiants SUPERUSER saisis masqués, RESPONSABLE_EMAIL saisi) :
 //   node pocketbase/scripts/migrer-1-3-22.mjs              -> simulation
 //   node pocketbase/scripts/migrer-1-3-22.mjs --appliquer  -> applique
@@ -69,6 +71,45 @@ export function nouvellesCollections() {
       'CREATE INDEX idx_scorejeu_jeu ON ScoreJeu (espace, jeu, created)',
       'CREATE INDEX idx_scorejeu_user ON ScoreJeu (user_id, created)',
     ],
+  }, {
+    name: 'JeuEnfantReglage',
+    type: 'base',
+    listRule: MEMBRES, viewRule: MEMBRES, createRule: ADMINS, updateRule: ADMINS, deleteRule: ADMINS,
+    fields: [
+      choix('jeu', ['coloriage', 'memory']),
+      texte('integre_id', 40, { required: true }),
+      booleen('cache'),
+      autodate('created', true, false),
+      autodate('updated', true, true),
+    ],
+  }, {
+    name: 'MemoryTheme',
+    type: 'base',
+    listRule: MEMBRES, viewRule: MEMBRES, createRule: ADMINS, updateRule: ADMINS, deleteRule: ADMINS,
+    fields: [
+      texte('titre', 60, { required: true }),
+      texte('emoji', 16),
+      nombre('ordre'),
+      booleen('actif'),
+      autodate('created', true, false),
+      autodate('updated', true, true),
+    ],
+  }, {
+    name: 'MemoryCarte',
+    type: 'base',
+    listRule: MEMBRES, viewRule: MEMBRES, createRule: ADMINS, updateRule: ADMINS, deleteRule: ADMINS,
+    fields: [
+      texte('theme_id', 64, { required: true }),
+      texte('emoji', 16),
+      texte('image_url', 5000),
+      texte('nom', 40, { required: true }),
+      texte('info', 300),
+      texte('ref', 60),
+      nombre('ordre'),
+      autodate('created', true, false),
+      autodate('updated', true, true),
+    ],
+    indexes: ['CREATE INDEX idx_memorycarte_theme ON MemoryCarte (theme_id)'],
   }];
 }
 
@@ -77,6 +118,10 @@ export const CHAMPS_AJOUTES = {
   MemberProfile: [booleen('systeme')],
   Devotional: [choix('histoire_type', ['video', 'audio', 'texte']), texte('histoire_titre', 200), texte('histoire_url', 5000), texte('histoire_texte', 20000)],
 };
+
+const MEMBRES = '@request.auth.id != ""';
+const ADMINS = '@request.auth.role = "admin"';
+const nombre = (name) => ({ name, type: 'number', required: false, hidden: false, system: false });
 
 const PROTECTION = '@request.body.systeme:isset = false && @request.body.responsable_technique:isset = false';
 const ANCRE = '@request.body.niveau:isset = false';

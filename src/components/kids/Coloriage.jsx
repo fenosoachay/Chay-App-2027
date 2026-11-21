@@ -5,6 +5,7 @@ import { confirmFr } from "@/lib/confirmFr";
 import { listerDessins, supprimerDessin } from "@/lib/coloriage";
 import { DESSINS } from "@/components/kids/dessins";
 import AtelierColoriage from "@/components/kids/AtelierColoriage";
+import { useMasques } from "@/lib/jeuxEnfants";
 
 // Section Enfants › Coloriage : « Dessins à colorier » (dessins intégrés + coloriages ajoutés par l'admin)
 // et « Mes dessins » (dessins commencés, gardés sur ce téléphone, à continuer).
@@ -27,6 +28,7 @@ export default function Coloriage() {
   const [admin, setAdmin] = useState(null); // coloriages ajoutés par l'admin
   const [mes, setMes] = useState(null);
   const [ouvert, setOuvert] = useState(null); // { source, reprise }
+  const masques = useMasques("coloriage"); // dessins intégrés masqués par l'admin
 
   useEffect(() => {
     let vivant = true;
@@ -42,9 +44,9 @@ export default function Coloriage() {
   useEffect(() => { chargerMes(); }, [chargerMes]);
 
   const sources = useMemo(() => [
-    ...DESSINS.map((d) => ({ id: d.id, titre: d.titre, sousTitre: d.histoire, svg: d.svg, image: svgEnImage(d.svg) })),
+    ...DESSINS.filter((d) => !masques?.has(d.id)).map((d) => ({ id: d.id, titre: d.titre, sousTitre: d.histoire, svg: d.svg, image: svgEnImage(d.svg) })),
     ...(admin || []).map((c) => ({ id: `admin-${c.id}`, titre: c.title || "Coloriage", image_url: c.image_url, image: c.thumb_url || c.image_url })),
-  ], [admin]);
+  ], [admin, masques]);
 
   /** Dessin de « Mes dessins » -> sa source (dessin intégré, ou coloriage de l'admin). */
   const sourceDe = (d) => {

@@ -59,6 +59,7 @@ export const ADMIN_NAV = [
     id: "enfants", label: "Enfants", icon: Baby,
     items: [
       { key: "Coloriage", mots: "coloriage dessin enfant colorier", label: "Coloriages", icon: Palette, path: "/admin/coloriages" },
+      { key: "jeux_carte", mots: "memory carte paire enfant jeu", label: "Jeux Carte", icon: LayoutGrid, path: "/admin/jeux-carte" },
     ],
   },
   {

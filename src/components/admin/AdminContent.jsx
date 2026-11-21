@@ -23,6 +23,8 @@ const PanelFallback = () => (
 import AdminListPanel from "@/components/admin/AdminListPanel";
 import GererMembres from "@/components/admin/GererMembres";
 import SignalementsTechniques from "@/components/admin/SignalementsTechniques";
+import AdminJeuxCarte from "@/components/admin/AdminJeuxCarte";
+import DessinsIntegres from "@/components/admin/DessinsIntegres";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import { SECTIONS } from "@/components/admin/adminSections";
@@ -48,6 +50,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "admins") return <AdminListPanel />;
   if (active === "membres") return <GererMembres />;
   if (active === "signalements") return <SignalementsTechniques />;
+  if (active === "jeux_carte") return <AdminJeuxCarte />;
   if (active === "app_update") return <AnnoncerVersion />;
 
   const section = SECTIONS.find((s) => s.key === active);
@@ -70,6 +73,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
         <h2 className="font-display font-extrabold text-xl">{section.label}</h2>
       </div>
       {section.key === "Devotional" && <VersetDuJourSection adminOnly />}
+      {section.key === "Coloriage" && <DessinsIntegres />}
       {section.key === "Announcement" && (
         <ProchaineReunionSection adminOnly onChanged={() => setAnnouncementsKey((k) => k + 1)} />
       )}

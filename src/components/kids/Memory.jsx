@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw, Star, Timer, Trophy } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { enregistrerScore, lireProfilEnfant } from "@/lib/scoreBoard";
+import { lireMasques, lireThemesAdmin, MIN_CARTES } from "@/lib/jeuxEnfants";
 import {
   NIVEAUX, THEMES, disposition, distribuer, duree, etoiles, lireDisposition, lireRecords, noterDisposition, noterRecord,
 } from "@/lib/memory";
@@ -36,7 +37,11 @@ function Carte({ carte, visible, trouvee, largeur, hauteur, onClick }) {
         <span
           className={`absolute inset-0 flex flex-col items-center justify-center gap-[4%] rounded-[14%] border-2 bg-card px-[6%] shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)] ${trouvee ? "border-emerald-500" : "border-border"}`}
         >
-          <span className="leading-none" style={{ fontSize: largeur * (avecNom ? 0.42 : 0.5) }} aria-hidden="true">{carte.emoji}</span>
+          {carte.image ? (
+            <img src={carte.image} alt="" draggable={false} className="w-[78%] rounded-[10%] object-cover" style={{ height: hauteur * (avecNom ? 0.5 : 0.62) }} />
+          ) : (
+            <span className="leading-none" style={{ fontSize: largeur * (avecNom ? 0.42 : 0.5) }} aria-hidden="true">{carte.emoji}</span>
+          )}
           {avecNom && (
             <span className="line-clamp-2 text-center font-bold leading-tight" style={{ fontSize: Math.max(9, Math.min(16, largeur * 0.12)) }}>
               {carte.nom}
@@ -49,12 +54,13 @@ function Carte({ carte, visible, trouvee, largeur, hauteur, onClick }) {
 }
 
 /** Écran 1 : choix de la catégorie. */
-function ChoixTheme({ onChoisir }) {
+function ChoixTheme({ themes, onChoisir }) {
   return (
     <div>
       <p className="mb-4 text-lg font-semibold text-foreground/70">Choisis une catégorie</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {THEMES.map((t) => (
+        {themes === null && <div className="col-span-full h-24" aria-busy="true" />}
+        {(themes || []).map((t) => (
           <button
             key={t.id}
             type="button"
@@ -85,12 +91,14 @@ function ChoixNiveau({ theme, onChoisir }) {
       <div className="mx-auto grid max-w-md gap-3">
         {NIVEAUX.map((n, i) => {
           const r = records[`${theme.id}:${n.id}`];
+          const possible = theme.cartes.length >= n.paires; // catégorie de l'admin : assez de cartes pour ce niveau ?
           return (
             <button
               key={n.id}
               type="button"
+              disabled={!possible}
               onClick={() => onChoisir(n.id)}
-              className="flex items-center gap-4 rounded-[1.5rem] border border-border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex items-center gap-4 rounded-[1.5rem] border border-border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
             >
               <span className="flex shrink-0 gap-0.5" aria-hidden="true">
                 {[0, 1, 2].map((k) => (
@@ -99,7 +107,7 @@ function ChoixNiveau({ theme, onChoisir }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-xl font-extrabold">{n.titre}</span>
-                <span className="block text-sm text-foreground/60">{n.paires} paires</span>
+                <span className="block text-sm text-foreground/60">{possible ? `${n.paires} paires` : "Bientôt"}</span>
               </span>
               {r && (
                 <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-primary">
@@ -257,7 +265,9 @@ function Partie({ theme, niveau, onQuitter }) {
       <div className="h-[4.75rem] shrink-0 px-3 py-2">
         {derniere ? (
           <div className="mx-auto flex h-full max-w-2xl items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-3">
-            <span className="text-3xl" aria-hidden="true">{derniere.emoji}</span>
+            {derniere.image
+              ? <img src={derniere.image} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+              : <span className="text-3xl" aria-hidden="true">{derniere.emoji}</span>}
             <p className="line-clamp-2 min-w-0 text-sm leading-snug text-foreground/85">
               <span className="font-bold">{derniere.nom} : </span>{derniere.info} <span className="font-semibold text-primary">({derniere.ref})</span>
             </p>
@@ -296,14 +306,24 @@ function Partie({ theme, niveau, onQuitter }) {
 export default function Memory() {
   const [themeId, setThemeId] = useState(null);
   const [niveauId, setNiveauId] = useState(null);
-  const theme = THEMES.find((t) => t.id === themeId) || null;
+  // Catégories : intégrées (sauf celles masquées par l'admin) + celles de l'admin qui ont au moins 6 cartes.
+  const [themes, setThemes] = useState(null);
+  useEffect(() => {
+    let vivant = true;
+    Promise.all([lireMasques("memory").catch(() => new Set()), lireThemesAdmin().catch(() => [])]).then(([masques, admin]) => {
+      if (!vivant) return;
+      setThemes([...THEMES.filter((t) => !masques.has(t.id)), ...admin.filter((t) => t.cartes.length >= MIN_CARTES)]);
+    });
+    return () => { vivant = false; };
+  }, []);
+  const theme = (themes || []).find((t) => t.id === themeId) || null;
   const niveau = NIVEAUX.find((n) => n.id === niveauId) || null;
 
   // Retour : le jeu d'abord (-> niveaux), puis les niveaux (-> catégories).
   useBackHandler(Boolean(themeId), () => { setNiveauId(null); setThemeId(null); });
   useBackHandler(Boolean(niveauId), () => setNiveauId(null));
 
-  if (!theme) return <ChoixTheme onChoisir={setThemeId} />;
+  if (!theme) return <ChoixTheme themes={themes} onChoisir={setThemeId} />;
   return (
     <>
       <ChoixNiveau theme={theme} onChoisir={setNiveauId} />
