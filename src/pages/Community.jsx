@@ -371,12 +371,10 @@ export default function Community() {
                       </div>
                     )}
                   </div>
+                  {/* Seulement le nom (ni « Utilisateur » ni « Administrateur »). */}
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm truncate hover:underline">
-                      {[m.first_name, m.last_name].filter(Boolean).join(" ") || m.email || "Utilisateur"}
-                    </div>
-                    <div className="text-xs text-foreground/55">
-                      {m.role === "admin" ? "Administrateur" : "Utilisateur"}
+                      {[m.first_name, m.last_name].filter(Boolean).join(" ") || m.email || "Membre"}
                     </div>
                   </div>
                 </Link>
