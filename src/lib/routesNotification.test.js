@@ -40,6 +40,8 @@ test("chaque type ouvre l'écran précis de son contenu", () => {
   assert.equal(routeCible("theme_answer", "x"), "/requests?tab=theme");
   assert.equal(routeCible("content", "c1"), null);
   assert.equal(routeCible("signalement", "s1"), "/admin/signalements");
+  assert.equal(routeCible("nouveau_membre", "u1"), "/admin/membres?membre=u1");
+  assert.equal(routeCible("nouveau_membre", ""), "/admin/membres");
   assert.equal(routeCible("message", "a&b"), "/messages?c=a%26b");
 });
 

@@ -905,6 +905,10 @@ const playVideo = (source) => {
                 <button type="button" onClick={() => basculerPleinEcran(true)} aria-label="Plein écran" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Maximize /></button>
               </>
             )}
+            {/* Arrêter : coupe la vidéo ET son téléchargement (économise les données mobiles). */}
+            {!isRadio && typeof control.stop === "function" && (
+              <button type="button" onClick={() => control.stop()} aria-label="Arrêter la lecture" title="Arrêter la lecture" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Square fill="currentColor" className="h-5 w-5" /></button>
+            )}
             <button type="button" onClick={() => setExpanded(false)} aria-label="Réduire le lecteur et continuer la lecture" className="grid h-12 w-12 place-items-center rounded-full text-white/70 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><X /></button>
           </div>
         </>

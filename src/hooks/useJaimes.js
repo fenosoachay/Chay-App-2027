@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { REACTION_PAR_DEFAUT, prochaineReaction, resumeReactions } from "@/lib/reactions";
 
 /**
- * « J'aime » des vidéos (playlist Drôle) : collection JaimeVideo { track_id, created_by_id }, une ligne par membre
- * et par vidéo. `ids` : identifiants des contenus (PlaylistTrack.track_id).
- * Renvoie { compte(id), aime(id), basculer(id) } ; l'affichage change tout de suite, puis le serveur confirme.
+ * Réactions des vidéos verticales (Drôle, Mindset…) : collection JaimeVideo { track_id, created_by_id, reaction },
+ * une ligne par membre et par vidéo (👍 like, ❤️ coeur, 😂 haha ; les anciens « J'aime » comptent comme ❤️).
+ * `ids` : identifiants des contenus (PlaylistTrack.track_id).
+ * Renvoie { compte(id), maReaction(id), resume(id), reagir(id, reaction) } ; l'affichage change tout de suite,
+ * puis le serveur confirme (en cas d'échec, l'état d'avant revient).
  */
 export function useJaimes(ids) {
   const { user } = useAuth();
@@ -21,26 +24,38 @@ export function useJaimes(ids) {
     return () => { vivant = false; };
   }, [cle]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const compte = useCallback((id) => lignes.filter((l) => l.track_id === id).length, [lignes]);
-  const aime = useCallback((id) => lignes.some((l) => l.track_id === id && l.created_by_id === user?.id), [lignes, user?.id]);
+  const deLaVideo = useCallback((id) => lignes.filter((l) => l.track_id === id), [lignes]);
+  const compte = useCallback((id) => deLaVideo(id).length, [deLaVideo]);
+  const resume = useCallback((id) => resumeReactions(deLaVideo(id)), [deLaVideo]);
+  const maReaction = useCallback((id) => {
+    const l = lignes.find((x) => x.track_id === id && x.created_by_id === user?.id);
+    return l ? l.reaction || REACTION_PAR_DEFAUT : null;
+  }, [lignes, user?.id]);
 
-  const basculer = useCallback(async (id) => {
+  const reagir = useCallback(async (id, reaction) => {
     if (!user?.id) return;
     const mien = lignes.find((l) => l.track_id === id && l.created_by_id === user.id);
-    if (mien) {
+    const action = prochaineReaction(mien ? mien.reaction || REACTION_PAR_DEFAUT : null, reaction);
+    const avant = lignes;
+    if (action.type === "retirer") {
       setLignes((ls) => ls.filter((l) => l !== mien));
-      try { await base44.entities.JaimeVideo.delete(mien.id); } catch { setLignes((ls) => [...ls, mien]); }
+      try { await base44.entities.JaimeVideo.delete(mien.id); } catch { setLignes(avant); }
       return;
     }
-    const provisoire = { id: `tmp-${id}`, track_id: id, created_by_id: user.id };
+    if (action.type === "changer") {
+      setLignes((ls) => ls.map((l) => (l === mien ? { ...l, reaction } : l)));
+      try { await base44.entities.JaimeVideo.update(mien.id, { reaction }); } catch { setLignes(avant); }
+      return;
+    }
+    const provisoire = { id: `tmp-${id}`, track_id: id, created_by_id: user.id, reaction };
     setLignes((ls) => [...ls, provisoire]);
     try {
-      const r = await base44.entities.JaimeVideo.create({ track_id: id });
-      setLignes((ls) => ls.map((l) => (l === provisoire ? { ...r, track_id: id, created_by_id: r?.created_by_id || user.id } : l)));
+      const r = await base44.entities.JaimeVideo.create({ track_id: id, reaction });
+      setLignes((ls) => ls.map((l) => (l === provisoire ? { ...r, track_id: id, created_by_id: r?.created_by_id || user.id, reaction } : l)));
     } catch {
-      setLignes((ls) => ls.filter((l) => l !== provisoire));
+      setLignes(avant);
     }
   }, [lignes, user?.id]);
 
-  return { compte, aime, basculer };
+  return { compte, resume, maReaction, reagir };
 }

@@ -1,23 +1,22 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChevronLeft, Eye, Heart, Pause, Share2, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, Eye, Heart, Pause, Volume2, VolumeX } from "lucide-react";
 import { subscribeMediaControl } from "@/lib/mediaControl";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { compterVue, useCompteur } from "@/hooks/useCompteurVues";
 import { useJaimes } from "@/hooks/useJaimes";
-import { useToast } from "@/components/ui/use-toast";
 import Description from "@/components/media/Description";
 import { infosConnues } from "@/lib/infosVideo";
+import { REACTIONS, emojiDe } from "@/lib/reactions";
 
 // Vidéos verticales façon TikTok, à partir de la vidéo touchée (`depart`) jusqu'à la dernière :
 //  - chaque vidéo remplit tout l'écran (bords coupés si elle n'est pas exactement 9:16) ;
 //  - on glisse vers le haut / le bas pour passer d'une vidéo à l'autre ; seule la vidéo à l'écran joue, en boucle ;
 //  - un toucher met en pause ou relance ; barre de progression en bas (toucher = aller à cet endroit) ;
-//  - colonne de droite : J'aime, Partager, Son, Vues ; titre et description en bas à gauche ;
+//  - colonne de droite : Réagir (👍 ❤️ 😂), Son, Vues ; titre et description en bas à gauche ;
 //  - une vue est comptée à la moitié de la vidéo (comme les autres vidéos) ;
 //  - retour (bouton ou geste du téléphone) : revient à la grille.
 // items : [{ id, track_id, playlist_id, video_url, cover_url, title, description, listen_count }]
 
-const LIEN_SITE = "https://membres.chay.fr";
 const compact = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".0", "")} M` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(".0", "")} k` : String(n));
 
 function Action({ label, valeur, onClick, children, actif = false }) {
@@ -50,8 +49,8 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
   const conteneurRef = useRef(null);
   const videosRef = useRef([]);
   const vueComptee = useRef(false);
-  const { toast } = useToast();
   const jaimes = useJaimes(items.map((v) => v.track_id).filter(Boolean));
+  const [choixOuvert, setChoixOuvert] = useState(null); // track_id dont le choix 👍 ❤️ 😂 est ouvert
 
   useBackHandler(true, onClose);
 
@@ -106,7 +105,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
     });
   }, [actif, items, muet, enPause]);
 
-  useEffect(() => { setEnPause(false); setProgression(0); vueComptee.current = false; }, [actif]);
+  useEffect(() => { setEnPause(false); setProgression(0); vueComptee.current = false; setChoixOuvert(null); }, [actif]);
 
   const basculerPause = useCallback(() => {
     const v = videosRef.current[actif];
@@ -123,24 +122,6 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
     const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
     v.currentTime = ratio * v.duration;
     setProgression(ratio);
-  };
-
-  const partager = async (item) => {
-    const url = `${LIEN_SITE}/media?cat=films&playlist=${encodeURIComponent(item.playlist_id || "")}&track=${encodeURIComponent(item.track_id || "")}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: item.title || "Vidéo", url });
-        return;
-      }
-    } catch (e) {
-      if (e?.name === "AbortError") return; // partage annulé par la personne
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({ title: "Lien copié", description: "Collez-le dans un message pour partager la vidéo." });
-    } catch {
-      toast({ title: "Partage impossible", description: url });
-    }
   };
 
   return (
@@ -205,19 +186,36 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
               </div>
             )}
 
-            {/* Colonne de droite, comme TikTok */}
+            {/* Colonne de droite, comme TikTok (sans bouton Partager, retiré à la demande). */}
             <div className="absolute right-3 bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] z-10 flex flex-col items-center gap-5">
-              <Action
-                label={jaimes.aime(r.track_id) ? "Je n'aime plus" : "J'aime"}
-                actif={jaimes.aime(r.track_id)}
-                valeur={compact(jaimes.compte(r.track_id))}
-                onClick={() => jaimes.basculer(r.track_id)}
-              >
-                <Heart className={`h-7 w-7 ${jaimes.aime(r.track_id) ? "fill-[#FF2D55] text-[#FF2D55]" : ""}`} />
-              </Action>
-              <Action label="Partager" valeur="Partager" onClick={() => partager(r)}>
-                <Share2 className="h-6 w-6" />
-              </Action>
+              <div className="relative">
+                <Action
+                  label={jaimes.maReaction(r.track_id) ? "Changer ou retirer ma réaction" : "Réagir"}
+                  actif={Boolean(jaimes.maReaction(r.track_id))}
+                  valeur={`${jaimes.resume(r.track_id).slice(0, 2).map((x) => x.emoji).join("")} ${compact(jaimes.compte(r.track_id))}`.trim()}
+                  onClick={() => setChoixOuvert((c) => (c === r.track_id ? null : r.track_id))}
+                >
+                  {jaimes.maReaction(r.track_id)
+                    ? <span className="text-[1.75rem] leading-none" aria-hidden="true">{emojiDe(jaimes.maReaction(r.track_id))}</span>
+                    : <Heart className="h-7 w-7" />}
+                </Action>
+                {choixOuvert === r.track_id && (
+                  <div role="group" aria-label="Choisir une réaction" className="absolute right-full top-0 mr-2 flex items-center gap-1 rounded-full bg-black/70 p-1.5 backdrop-blur animate-float-in">
+                    {REACTIONS.map((x) => (
+                      <button
+                        key={x.value}
+                        type="button"
+                        aria-label={x.label}
+                        aria-pressed={jaimes.maReaction(r.track_id) === x.value}
+                        onClick={() => { jaimes.reagir(r.track_id, x.value); setChoixOuvert(null); }}
+                        className={`grid h-12 w-12 place-items-center rounded-full text-[1.75rem] leading-none transition active:scale-90 ${jaimes.maReaction(r.track_id) === x.value ? "bg-white/25" : "hover:bg-white/15"}`}
+                      >
+                        {x.emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Action label={muet ? "Activer le son" : "Couper le son"} onClick={() => setMuet((m) => !m)}>
                 {muet ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
               </Action>

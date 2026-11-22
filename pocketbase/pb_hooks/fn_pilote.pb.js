@@ -9,7 +9,8 @@ routerAdd('POST', '/api/fn/listCommunityUsers', (e) => {
   return fn.run(e, 'listCommunityUsers', 'Erreur interne', () => {
     fn.requireUser(e, 'Connexion requise');
     const records = $app.findRecordsByFilter('users', 'systeme != true', '-base44_created_date,-created', 100, 0); // sans le compte automatique « Chay »
-    const users = records.map((r) => ({
+    // Sans les inscriptions jamais terminées (ni prénom ni nom) : elles s'affichaient « Membre ».
+    const users = records.filter((r) => (r.getString('first_name') || r.getString('last_name')).trim()).map((r) => ({
       id: r.id,
       first_name: r.getString('first_name') || '',
       last_name: r.getString('last_name') || '',

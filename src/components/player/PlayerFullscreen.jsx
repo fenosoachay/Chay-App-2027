@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Music,
   Loader2,
+  Square,
   X,
 } from "lucide-react";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
@@ -36,6 +37,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
     playerState,
     bufferedRatio,
     pause,
+    stop,
   } = useAudioPlayer();
 
   if (!currentTrack) return null;
@@ -145,6 +147,14 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
             )}
           </button>
         </div>
+        {/* Arrêter : coupe la lecture ET le téléchargement (pause seule continue de charger sur certains téléphones). */}
+        <button
+          type="button"
+          onClick={stop}
+          className="mx-auto mt-6 flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-foreground/80 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Square className="h-4 w-4" fill="currentColor" aria-hidden="true" /> Arrêter la lecture
+        </button>
       </div>
     </div>
   );

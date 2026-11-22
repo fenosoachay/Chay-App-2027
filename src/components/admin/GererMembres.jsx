@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Crown, Loader2, Search, ShieldCheck, UserRound, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Crown, Loader2, Search, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { NIVEAUX } from "@/lib/audience";
@@ -9,6 +10,12 @@ import { NIVEAUX } from "@/lib/audience";
 // Par défaut, tout compte est « Utilisateur ». Les admins voient tout, quel que soit leur niveau.
 const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const nomDe = (m) => [m.prenom, m.nom].filter(Boolean).join(" ") || m.email || "Membre";
+const sansNom = (m) => !String(m.prenom || "").trim() && !String(m.nom || "").trim();
+const QUATORZE_JOURS = 14 * 24 * 3600 * 1000;
+const estNouveau = (m) => {
+  const t = new Date(String(m.cree || "").replace(" ", "T")).getTime();
+  return Number.isFinite(t) && Date.now() - t < QUATORZE_JOURS;
+};
 
 const STYLE_NIVEAU = {
   tous: "border-border bg-card text-foreground",
@@ -22,6 +29,10 @@ export default function GererMembres() {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState("tous-les-comptes");
   const [enCours, setEnCours] = useState(null);
+  // Notification « Nouveau membre » : /admin/membres?membre=<id> -> ce compte en haut, mis en avant.
+  const [params] = useSearchParams();
+  const cibleId = params.get("membre") || "";
+  const noeudCible = useRef(null);
 
   const charger = () => {
     base44.functions.invoke("listerNiveaux", {})
@@ -52,10 +63,17 @@ export default function GererMembres() {
   const visibles = useMemo(() => {
     const mots = simplifier(recherche).split(/\s+/).filter(Boolean);
     return (membres || [])
-      .filter((m) => filtre === "tous-les-comptes" || (m.niveau || "tous") === filtre)
-      .filter((m) => !mots.length || mots.every((w) => simplifier(`${nomDe(m)} ${m.email}`).includes(w)))
-      .sort((a, b) => nomDe(a).localeCompare(nomDe(b), "fr", { sensitivity: "base" }));
-  }, [membres, recherche, filtre]);
+      .filter((m) => m.id === cibleId || filtre === "tous-les-comptes" || (m.niveau || "tous") === filtre)
+      .filter((m) => m.id === cibleId || !mots.length || mots.every((w) => simplifier(`${nomDe(m)} ${m.email}`).includes(w)))
+      .sort((a, b) => (a.id === cibleId ? -1 : b.id === cibleId ? 1 : nomDe(a).localeCompare(nomDe(b), "fr", { sensitivity: "base" })));
+  }, [membres, recherche, filtre, cibleId]);
+  const cible = (membres || []).find((m) => m.id === cibleId) || null;
+
+  useEffect(() => {
+    if (!cible) return undefined;
+    const t = setTimeout(() => noeudCible.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    return () => clearTimeout(t);
+  }, [cible?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (membres === null) return <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
 
@@ -65,6 +83,13 @@ export default function GererMembres() {
         Choisissez le niveau de chaque compte. <b>Utilisateur</b> voit les contenus pour les utilisateurs ;
         <b> Membre</b> voit aussi ceux des membres ; <b>VIP</b> voit tout. Les membres ne voient pas leur niveau.
       </p>
+
+      {cible && (
+        <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <p><b>Nouveau membre : {sansNom(cible) ? cible.email : nomDe(cible)}.</b> Choisissez son niveau ci-dessous (Utilisateur, Membre ou VIP).</p>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {[["tous-les-comptes", `Tous les comptes (${membres.length})`], ["tous", `Utilisateurs (${compte.tous})`], ["membre", `Membres (${compte.membre})`], ["vip", `VIP (${compte.vip})`]].map(([id, label]) => (
@@ -97,7 +122,11 @@ export default function GererMembres() {
 
       <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
         {visibles.map((m) => (
-          <div key={m.id} className="flex flex-wrap items-center gap-3 p-3">
+          <div
+            key={m.id}
+            ref={m.id === cibleId ? noeudCible : undefined}
+            className={`flex flex-wrap items-center gap-3 p-3 ${m.id === cibleId ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
+          >
             {m.photo ? (
               <img src={m.photo} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
             ) : (
@@ -105,11 +134,14 @@ export default function GererMembres() {
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="truncate font-bold">{nomDe(m)}</span>
+                <span className={`truncate font-bold ${sansNom(m) ? "text-foreground/60" : ""}`}>{sansNom(m) ? "Inscription non terminée" : nomDe(m)}</span>
                 {m.role === "admin" && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[0.65rem] font-bold text-primary"><ShieldCheck className="h-3 w-3" /> Admin</span>}
                 {m.niveau === "vip" && <Crown className="h-4 w-4 shrink-0 text-[#C9A227]" aria-label="VIP" />}
               </div>
-              <div className="truncate text-xs text-foreground/55">{m.email}</div>
+              <div className="flex items-center gap-1.5 text-xs text-foreground/55">
+                {estNouveau(m) && !sansNom(m) && <span className="shrink-0 rounded-full bg-emerald-600/15 px-2 py-0.5 text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-400">Nouveau</span>}
+                <span className="truncate">{m.email}</span>
+              </div>
             </div>
             <div className="flex shrink-0 gap-1" role="group" aria-label={`Niveau de ${nomDe(m)}`}>
               {NIVEAUX.map((n) => (

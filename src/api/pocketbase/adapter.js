@@ -335,10 +335,14 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
     },
     // Inscription : le rôle n'est jamais envoyé (imposé à « user » par le serveur). Si l'adresse est déjà
     // utilisée, on ne le révèle pas : le code est envoyé à son propriétaire et l'inscription s'arrête là.
-    async register({ email, password } = {}) {
+    // Prénom et nom enregistrés dès la création (1.3.24) : une inscription interrompue avant le code garde son nom.
+    async register({ email, password, first_name, last_name } = {}) {
       const address = String(email || '').trim();
+      const nom = {};
+      if (typeof first_name === 'string' && first_name.trim()) nom.first_name = first_name.trim().slice(0, 100);
+      if (typeof last_name === 'string' && last_name.trim()) nom.last_name = last_name.trim().slice(0, 100);
       try {
-        await users().create({ email: address, password, passwordConfirm: password, emailVisibility: false });
+        await users().create({ email: address, password, passwordConfirm: password, emailVisibility: false, ...nom });
       } catch (err) {
         const fields = err?.response?.data || {};
         const onlyEmailTaken = err?.status === 400 && fields.email && Object.keys(fields).length === 1;

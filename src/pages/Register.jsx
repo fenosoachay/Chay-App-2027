@@ -220,7 +220,8 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email: email.trim(), password });
+      // Prénom et nom envoyés dès maintenant : ils restent même si l'inscription s'arrête avant le code.
+      await base44.auth.register({ email: email.trim(), password, first_name: firstName.trim(), last_name: lastName.trim() });
       setStep(1);
     } catch (err) {
       const msg = err?.message || "";

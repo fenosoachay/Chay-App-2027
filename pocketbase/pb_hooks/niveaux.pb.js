@@ -18,6 +18,8 @@ routerAdd('POST', '/api/fn/listerNiveaux', (e) => {
         photo: r.getString('profile_photo_url') || '',
         role: r.getString('role') || 'user',
         niveau: r.getString('niveau') || 'tous',
+        cree: r.getString('created') || '',
+        inscription_terminee: r.getBool('consents_accepted'),
       })),
     };
   });

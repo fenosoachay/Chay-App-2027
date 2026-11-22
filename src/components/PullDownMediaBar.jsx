@@ -230,6 +230,18 @@ export default function PullDownMediaBar() {
                     <SkipForward className="h-4 w-4" aria-hidden="true" />
                   </button>
                 )}
+
+                {/* Arrêter (musique, prédication, vidéo) : coupe aussi le téléchargement. La radio s'arrête déjà avec ■. */}
+                {!isRadio && typeof control.stop === "function" && (
+                  <button
+                    type="button"
+                    onClick={() => control.stop()}
+                    aria-label="Arrêter la lecture"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-foreground/70 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
+                  >
+                    <Square className="h-4 w-4" fill="currentColor" aria-hidden="true" />
+                  </button>
+                )}
               </div>
             </div>
           </motion.section>
