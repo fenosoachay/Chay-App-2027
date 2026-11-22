@@ -43,9 +43,21 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
   const [muet, setMuet] = useState(false);
   const [enPause, setEnPause] = useState(false);
   const [progression, setProgression] = useState(0); // 0 à 1, vidéo à l'écran
-  // Vidéos 16:9 (paysage) : affichées entières, centrées, au lieu d'être coupées pour remplir l'écran.
-  const [paysages, setPaysages] = useState(() => new Set());
-  const estPaysage = (r) => paysages.has(r.id) || infosConnues(r.video_url)?.portrait === false;
+  // Règle (toutes les playlists) : une vidéo verticale remplit l'écran façon TikTok ; une vidéo horizontale
+  // est affichée entière, avec des bandes noires en haut et en bas. On ne recadre QUE si la vidéo est
+  // reconnue verticale : format inconnu (métadonnées pas encore lues, ou dimensions 0 sur certains Android)
+  // -> affichée entière, jamais coupée.
+  const [formats, setFormats] = useState(() => new Map()); // id -> "portrait" | "paysage"
+  const estVerticale = (r) => {
+    const f = formats.get(r.id);
+    if (f) return f === "portrait";
+    return infosConnues(r.video_url)?.portrait === true;
+  };
+  const mesurer = (r, v) => {
+    if (!v || !(v.videoWidth > 0) || !(v.videoHeight > 0)) return;
+    const f = v.videoHeight > v.videoWidth ? "portrait" : "paysage";
+    setFormats((m) => (m.get(r.id) === f ? m : new Map(m).set(r.id, f)));
+  };
   const conteneurRef = useRef(null);
   const videosRef = useRef([]);
   const vueComptee = useRef(false);
@@ -161,10 +173,10 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
               controlsList="nodownload"
               disablePictureInPicture
               onClick={basculerPause}
-              onLoadedMetadata={(e) => {
-                const v = e.currentTarget;
-                if (v.videoWidth > v.videoHeight && !paysages.has(r.id)) setPaysages((p) => new Set(p).add(r.id));
-              }}
+              onLoadedMetadata={(e) => mesurer(r, e.currentTarget)}
+              onLoadedData={(e) => mesurer(r, e.currentTarget)}
+              onResize={(e) => mesurer(r, e.currentTarget)}
+              onPlaying={(e) => mesurer(r, e.currentTarget)}
               onTimeUpdate={(e) => {
                 if (i !== actif) return;
                 const v = e.currentTarget;
@@ -176,7 +188,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
                   compterVue({ type: "piste", id: r.track_id });
                 }
               }}
-              className={`h-full w-full ${estPaysage(r) ? "object-contain" : "object-cover"}`}
+              className={`h-full w-full ${estVerticale(r) ? "object-cover" : "object-contain"}`}
             />
             {i === actif && enPause && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center">
