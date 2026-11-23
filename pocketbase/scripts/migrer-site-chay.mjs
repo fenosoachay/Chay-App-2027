@@ -44,14 +44,17 @@ const collection = (name, champs, regles = {}) => ({
   indexes: [`CREATE INDEX idx_${name.toLowerCase()}_order ON ${name} (\`order\`)`],
 });
 
-export const PAGES = ['foi', 'apropos', 'contact', 'association', 'application'];
+// accueil = haut de l'Accueil et titres de ses parties ; pied = bas de page (texte + réseaux) ; copyright = ligne ©.
+export const PAGES = ['foi', 'apropos', 'contact', 'association', 'application', 'accueil', 'pied', 'copyright'];
 export const TYPES_BLOC = [
   'surtitre', 'intro', 'article', 'chapitre', 'paragraphe', 'citation', 'pilier', 'don', 'legal', 'fonction', 'etape',
   'telephone', 'email', 'whatsapp',
+  'titre', 'entete', 'pied', 'reseau', 'copyright', 'bouton',
 ];
 export const ICONES = [
   'musique', 'video', 'micro', 'radio', 'verset', 'message', 'priere', 'communaute', 'bible', 'audio', 'galerie',
   'fond', 'enfant', 'jeu', 'maison', 'ecole', 'soin', 'plante', 'betail', 'monde',
+  'facebook', 'youtube', 'tiktok', 'smartphone', 'instagram', 'whatsapp',
 ];
 
 export function nouvellesCollections() {
@@ -67,6 +70,12 @@ export function nouvellesCollections() {
     ]),
     // Écrit par le serveur seulement (tâche site_direct) : aucune écriture par l'API.
     collection('SiteEtat', [texte('cle', 50, { required: true }), texte('valeur', 2000)], { createRule: null, updateRule: null, deleteRule: null }),
+    // Visites du site, une ligne par jour (écrite par le serveur : POST /api/chay/site/visite) ; lue par les admins.
+    {
+      ...collection('SiteVisite', [texte('jour', 10, { required: true }), nombre('visites')],
+        { listRule: ADMINS, viewRule: ADMINS, createRule: null, updateRule: null, deleteRule: null }),
+      indexes: ['CREATE UNIQUE INDEX idx_sitevisite_jour ON SiteVisite (jour)'],
+    },
   ];
 }
 
@@ -156,6 +165,36 @@ export const BLOCS_DEPART = [
   b('application', 'etape', 'Créer son compte', 'Inscrivez-vous avec votre prénom, votre nom et votre e-mail. Bienvenue !'),
 ];
 
+// Contenus ajoutés après la première version, par groupe. Un groupe n'est ajouté qu'une fois (marqueur dans SiteEtat,
+// cle « graines_site ») : un bloc supprimé dans l'app ne revient jamais.
+const APK = 'https://membres.chay.fr/telechargements/chay.apk';
+export const GROUPES = {
+  'accueil-titres': [
+    b('accueil', 'surtitre', '', 'Fiangonana Chay'),
+    b('accueil', 'titre', '', 'ÉGLISE CHAY'),
+    b('accueil', 'entete', 'Nouveauté', "Ce qui se *vit* à l'Église Chay"),
+    b('accueil', 'entete', 'Cultes', 'Revivez nos *cultes*'),
+  ],
+  pied: [
+    b('pied', 'pied', 'Église Chay', 'Recueil d’enseignement biblique et contrepoids aux vaines idéologies, « CHAY » ne milite ni pour une entité religieuse, ni pour une entité athée quelconque ; met à l’honneur la Parole de Dieu révélée dans la Bible par le Saint-Esprit ; met à la connaissance de tout un chacun le profond et mystérieux message de la Bible. Les vidéos de la chaîne sont mises à la disposition de tous ceux et celles qui ont soif de vérité, « Jésus-Christ ».'),
+    b('pied', 'reseau', 'Facebook', 'https://www.facebook.com/www.chay.fr', '', 'facebook'),
+    b('pied', 'reseau', 'YouTube', 'https://www.youtube.com/@EgliseChay.fr-tv', '', 'youtube'),
+    b('pied', 'reseau', 'TikTok', 'https://www.tiktok.com/@anjahamintsoa', '', 'tiktok'),
+    b('pied', 'reseau', "Télécharger l'application", APK, '', 'smartphone'),
+  ],
+  copyright: [b('copyright', 'copyright', '', '© Église Chay 2026')],
+  'entetes-pages': [
+    b('association', 'entete', 'Notre mission', 'Bâtir *demain* ensemble'),
+    b('association', 'entete', 'Le projet', 'Une commune *autosuffisante*'),
+    b('application', 'entete', "Dans l'application", "Tout ce qu'il faut pour *grandir*"),
+    b('application', 'entete', 'Installation', 'Prêt en *trois* étapes'),
+    b('application', 'bouton', 'Android', 'Télécharger pour', APK),
+    b('contact', 'entete', 'Envoyer un message', "Votre message arrive directement aux responsables de l'Église Chay."),
+    b('contact', 'entete', '', 'Vos coordonnées servent uniquement à vous répondre.'),
+  ],
+};
+export const TOUS_LES_BLOCS = [...BLOCS_DEPART, ...Object.values(GROUPES).flat()];
+
 export async function migrer(url, headers, { appliquer = false, log = () => {} } = {}) {
   const changements = [];
   const ecrire = async (methode, chemin, corps, quoi) => {
@@ -187,6 +226,28 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
     if (appliquer) await ecrire('PATCH', '/api/collections/ContactMessage', { fields: [...cm.fields, texte('source', 20)] }, 'ContactMessage');
   }
 
+  // 2 bis. SiteBloc existant : nouvelles valeurs des listes (page, type, icône)
+  if (!nouvelles.has('SiteBloc')) {
+    const rb = await fetch(`${url}/api/collections/SiteBloc`, { headers });
+    if (!rb.ok) throw new Error(`lecture de SiteBloc impossible (HTTP ${rb.status})`);
+    const sb = await rb.json();
+    const voulu = { page: PAGES, type: TYPES_BLOC, icone: ICONES };
+    let manque = [];
+    const champs = (sb.fields || []).map((f) => {
+      if (!voulu[f.name] || f.type !== 'select') return f;
+      const ajout = voulu[f.name].filter((v) => !(f.values || []).includes(v));
+      if (!ajout.length) return f;
+      manque = manque.concat(ajout.map((v) => `${f.name}:${v}`));
+      return { ...f, values: [...(f.values || []), ...ajout] };
+    });
+    if (!manque.length) log('  = SiteBloc : listes à jour');
+    else {
+      changements.push(`SiteBloc (listes : ${manque.length} valeurs)`);
+      log(`  - SiteBloc : nouvelles valeurs ${manque.join(', ')}`);
+      if (appliquer) await ecrire('PATCH', '/api/collections/SiteBloc', { fields: champs }, 'SiteBloc (listes)');
+    }
+  }
+
   // 3. Contenus de départ (seulement dans une collection vide)
   const vide = async (nom) => {
     if (nouvelles.has(nom)) return true;
@@ -194,7 +255,8 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
     if (!r.ok) throw new Error(`lecture de ${nom} impossible (HTTP ${r.status})`);
     return ((await r.json()).totalItems || 0) === 0;
   };
-  const graines = [['SiteVerset', VERSETS_DEPART], ['SiteBandeau', BANDEAU_DEPART], ['SiteBloc', BLOCS_DEPART]];
+  const blocsVides = await vide('SiteBloc');
+  const graines = [['SiteVerset', VERSETS_DEPART], ['SiteBandeau', BANDEAU_DEPART]];
   for (const [nom, lignes] of graines) {
     if (!(await vide(nom))) { log(`  = ${nom} : contenus déjà présents (rien ajouté)`); continue; }
     changements.push(`${nom} (${lignes.length} contenus de départ)`);
@@ -203,6 +265,37 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
     for (let i = 0; i < lignes.length; i++) {
       await ecrire('POST', `/api/collections/${nom}/records`, { ...lignes[i], order: i }, `${nom} n°${i + 1}`);
     }
+  }
+
+  // 4. Textes des pages (SiteBloc) : tout dans une collection vide, sinon les groupes pas encore ajoutés.
+  let marqueur = null;
+  let faits = [];
+  if (!nouvelles.has('SiteEtat')) {
+    const r = await fetch(`${url}/api/collections/SiteEtat/records?perPage=1&filter=${encodeURIComponent('cle="graines_site"')}`, { headers });
+    if (!r.ok) throw new Error(`lecture de SiteEtat impossible (HTTP ${r.status})`);
+    marqueur = (await r.json()).items?.[0] || null;
+    try { faits = JSON.parse(marqueur?.valeur || '[]'); } catch (_) { faits = []; }
+  }
+  const aAjouter = blocsVides ? [['départ', BLOCS_DEPART], ...Object.entries(GROUPES)] : Object.entries(GROUPES).filter(([g]) => !faits.includes(g));
+  if (!aAjouter.length) log('  = SiteBloc : contenus déjà présents (rien ajouté)');
+  let ordre = 0;
+  if (aAjouter.length && !blocsVides) {
+    const r = await fetch(`${url}/api/collections/SiteBloc/records?perPage=1&sort=-order`, { headers });
+    if (!r.ok) throw new Error(`lecture de SiteBloc impossible (HTTP ${r.status})`);
+    ordre = (Number((await r.json()).items?.[0]?.order) || 0) + 1;
+  }
+  for (const [g, lignes] of aAjouter) {
+    changements.push(`SiteBloc ${g} (${lignes.length})`);
+    log(`  - SiteBloc : ${g} (${lignes.length} contenus)`);
+    if (!appliquer) continue;
+    for (let i = 0; i < lignes.length; i++) {
+      await ecrire('POST', '/api/collections/SiteBloc/records', { ...lignes[i], order: ordre++ }, `SiteBloc ${g} n°${i + 1}`);
+    }
+  }
+  if (aAjouter.length && appliquer) {
+    const valeur = JSON.stringify(Object.keys(GROUPES));
+    if (marqueur) await ecrire('PATCH', `/api/collections/SiteEtat/records/${marqueur.id}`, { valeur }, 'marqueur des contenus');
+    else await ecrire('POST', '/api/collections/SiteEtat/records', { cle: 'graines_site', valeur }, 'marqueur des contenus');
   }
   return changements;
 }

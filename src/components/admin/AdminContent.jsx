@@ -10,6 +10,7 @@ import AdminThemeRequests from "@/components/requests/AdminThemeRequests";
 import JeuxCategoriesAdmin from "@/components/admin/JeuxCategoriesAdmin";
 import AdminMissions from "@/components/admin/AdminMissions";
 import AnnoncerVersion from "@/components/admin/AnnoncerVersion";
+import SiteVisites from "@/components/admin/SiteVisites";
 const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel"));
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
 const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
@@ -52,6 +53,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "signalements") return <SignalementsTechniques />;
   if (active === "jeux_carte") return <AdminJeuxCarte />;
   if (active === "app_update") return <AnnoncerVersion />;
+  if (active === "site_visites") return <SiteVisites />;
 
   const section = SECTIONS.find((s) => s.key === active);
   if (!section) {

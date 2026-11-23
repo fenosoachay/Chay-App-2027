@@ -98,7 +98,21 @@ function preparerCulte(e) {
   return e.next();
 }
 
+/** Dernier dimanche d'un mois (UTC), à 01:00 UTC : changement d'heure européen. */
+function dernierDimanche(annee, mois) {
+  const d = new Date(Date.UTC(annee, mois + 1, 0, 1));
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  return d.getTime();
+}
+/** Date du jour à Paris (AAAA-MM-JJ), heure d'été comprise. */
+function jourParis(ms) {
+  const annee = new Date(ms).getUTCFullYear();
+  const ete = ms >= dernierDimanche(annee, 2) && ms < dernierDimanche(annee, 9);
+  return new Date(ms + (ete ? 2 : 1) * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 module.exports = {
+  jourParis,
   preparerCulte,
   lireContact, notificationMessage, idYoutube, titreOembed, lireDirect,
   SUJETS, DELAI_MIN_MS, PAR_IP_HEURE, PAR_EMAIL_JOUR, MAX,

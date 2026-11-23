@@ -4,7 +4,7 @@ import {
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
   Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
-  Type, Palette, Baby, Crown, Wrench,
+  Type, Palette, Baby, Crown, Wrench, BarChart3, PanelBottom, Copyright, Heading,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin. `key` = identifiant de la page affichée,
@@ -75,20 +75,29 @@ export const ADMIN_NAV = [
       { key: "PageTexte", mots: "foi declaration de foi confession vision but", label: "Vision, But, Confession", icon: FileText, path: "/admin/pages-eglise" },
     ],
   },
+  // Site public chay.fr : contenus lus par le site, dans l'ordre des pages.
+  { key: "site_visites", mots: "site visites statistiques frequentation", label: "Site · Visites", icon: BarChart3, path: "/admin/site-visites" },
   {
-    // Site public chay.fr : contenus lus par le site (versets, photos, cultes, textes des pages).
-    id: "site", label: "Site chay.fr", icon: Globe,
+    id: "site_accueil", label: "Site · Accueil", icon: Globe,
     items: [
       { key: "SiteBandeau", mots: "site texte defile bandeau tongasoa", label: "Texte qui défile", icon: FileText, path: "/admin/site-bandeau" },
-      { key: "SiteVerset", mots: "site verset accueil", label: "Versets de l'Accueil", icon: BookOpen, path: "/admin/site-versets" },
-      { key: "SiteCarrousel", mots: "site nouveaute carrousel photo", label: "Photos « Nouveauté »", icon: ImageIcon, path: "/admin/site-nouveautes" },
-      { key: "SiteCulte", mots: "site culte youtube", label: "Cultes YouTube", icon: Youtube, path: "/admin/site-cultes" },
-      { key: "SiteBloc_foi", mots: "site declaration foi", label: "Page Déclaration de foi", icon: FileText, path: "/admin/site-foi" },
-      { key: "SiteBloc_apropos", mots: "site propos histoire", label: "Page À propos", icon: FileText, path: "/admin/site-apropos" },
-      { key: "SiteBloc_contact", mots: "site contact telephone whatsapp", label: "Page Nous contacter", icon: FileText, path: "/admin/site-contact" },
-      { key: "SiteBloc_association", mots: "site association don madagascar", label: "Page Association Chay", icon: FileText, path: "/admin/site-association" },
+      { key: "SiteBloc_accueil", mots: "site titre eglise chay fiangonana", label: "Haut de page et titres", icon: Heading, path: "/admin/site-titres" },
+      { key: "SiteVerset", mots: "site verset accueil", label: "Versets", icon: BookOpen, path: "/admin/site-versets" },
+      { key: "SiteCarrousel", mots: "site nouveaute carrousel photo", label: "Nouveauté (photos)", icon: ImageIcon, path: "/admin/site-nouveautes" },
+      { key: "SiteCulte", mots: "site culte youtube lien", label: "Cultes YouTube", icon: Youtube, path: "/admin/site-cultes" },
+      { key: "SiteBloc_pied", mots: "site bas de page reseaux facebook tiktok", label: "Bas de page", icon: PanelBottom, path: "/admin/site-bas-de-page" },
+      { key: "SiteBloc_copyright", mots: "site copyright", label: "Copyright", icon: Copyright, path: "/admin/site-copyright" },
+    ],
+  },
+  {
+    id: "site_pages", label: "Site · Pages", icon: Globe,
+    items: [
+      { key: "SiteBloc_foi", mots: "site declaration foi", label: "Déclaration de foi", icon: FileText, path: "/admin/site-foi" },
+      { key: "SiteBloc_apropos", mots: "site propos histoire", label: "À propos", icon: FileText, path: "/admin/site-apropos" },
+      { key: "SiteBloc_application", mots: "site application apk fonction", label: "Application Chay", icon: Smartphone, path: "/admin/site-application" },
+      { key: "SiteBloc_association", mots: "site association don madagascar", label: "Association Chay", icon: Heart, path: "/admin/site-association" },
       { key: "SiteAssoPhoto", mots: "site association photo", label: "Photos de l'association", icon: ImageIcon, path: "/admin/site-association-photos" },
-      { key: "SiteBloc_application", mots: "site application apk fonction", label: "Page Application Chay", icon: FileText, path: "/admin/site-application" },
+      { key: "SiteBloc_contact", mots: "site contact telephone whatsapp", label: "Nous contacter", icon: Mail, path: "/admin/site-contact" },
     ],
   },
   {

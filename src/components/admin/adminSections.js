@@ -18,8 +18,13 @@ const ICONES_SITE = [
   ["audio", "Casque audio"], ["galerie", "Photo"], ["fond", "Téléphone"], ["enfant", "Enfant"], ["jeu", "Manette"],
   ["maison", "Maison"], ["ecole", "École"], ["soin", "Soin"], ["plante", "Plante"], ["betail", "Bétail"], ["monde", "Monde"],
 ].map(([value, label]) => ({ value, label }));
+const ICONES_RESEAUX = [
+  ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"], ["instagram", "Instagram"],
+  ["whatsapp", "WhatsApp"], ["smartphone", "Smartphone (application)"],
+].map(([value, label]) => ({ value, label }));
+const AIDE_ETOILES = "Astuce : entourez un mot d'étoiles pour l'écrire en doré et en italique, ex. Revivez nos *cultes*.";
 const choixTypes = (liste) => liste.map(([value, label]) => ({ value, label }));
-const pageSite = (page, label, types, { reference, icone } = {}) => ({
+const pageSite = (page, label, types, { reference, icone, icones, titre = "Titre", texte = "Texte", aide } = {}) => ({
   key: `SiteBloc_${page}`,
   entity: "SiteBloc",
   fixe: { page },
@@ -30,10 +35,10 @@ const pageSite = (page, label, types, { reference, icone } = {}) => ({
   detailField: "texte",
   fields: [
     { name: "type", label: "Genre de bloc", type: "select", required: true, options: choixTypes(types) },
-    { name: "titre", label: "Titre", type: "text" },
-    { name: "texte", label: "Texte", type: "textarea" },
+    { name: "titre", label: titre, type: "text" },
+    { name: "texte", label: texte, type: "textarea", ...(aide ? { help: aide } : {}) },
     ...(reference ? [{ name: "reference", label: reference, type: "text" }] : []),
-    ...(icone ? [{ name: "icone", label: "Icône", type: "select", options: ICONES_SITE }] : []),
+    ...(icone ? [{ name: "icone", label: "Icône", type: "select", options: icones || ICONES_SITE }] : []),
   ],
 });
 
@@ -48,7 +53,7 @@ export const SECTIONS_SITE = [
   },
   {
     key: "SiteVerset",
-    label: "Versets de l'Accueil",
+    label: "Versets",
     icon: BookOpen,
     sort: "order",
     listColumns: ["reference"],
@@ -60,7 +65,7 @@ export const SECTIONS_SITE = [
   },
   {
     key: "SiteCarrousel",
-    label: "Photos « Nouveauté »",
+    label: "Nouveauté (photos)",
     icon: ImageIcon,
     sort: "order",
     listColumns: ["titre"],
@@ -88,9 +93,9 @@ export const SECTIONS_SITE = [
     { reference: "Références bibliques, séparées par des virgules (ex. Jean 14.6, Romains 3.23)" }),
   pageSite("apropos", "Page À propos", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["chapitre", "Titre de chapitre"], ["paragraphe", "Paragraphe"], ["citation", "Citation"]],
     { reference: "Référence de la citation (ex. Osée 4:6)" }),
-  pageSite("contact", "Page Nous contacter", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["telephone", "Téléphone"], ["email", "E-mail"], ["whatsapp", "WhatsApp (numéro)"]]),
-  pageSite("association", "Page Association Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["paragraphe", "Paragraphe (le 1er titre devient le titre de la partie)"], ["pilier", "Projet (carte)"], ["citation", "Citation"], ["don", "Texte des dons"], ["legal", "Information légale"]],
-    { reference: "Référence (citation) ou numéro WhatsApp (dons)", icone: true }),
+  pageSite("contact", "Page Nous contacter", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["telephone", "Téléphone"], ["email", "E-mail"], ["whatsapp", "WhatsApp (numéro)"], ["entete", "Formulaire (1er : titre + phrase ; 2e : petite mention sous le bouton)"]]),
+  pageSite("association", "Page Association Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["entete", "Titre de partie (1er : mission ; 2e : projet)"], ["paragraphe", "Paragraphe de la mission"], ["pilier", "Projet (carte)"], ["citation", "Citation"], ["don", "Texte des dons (Titre = texte du bouton)"], ["legal", "Information légale"]],
+    { reference: "Référence (citation) ou numéro WhatsApp (dons)", icone: true, aide: AIDE_ETOILES }),
   {
     key: "SiteAssoPhoto",
     label: "Photos de l'association",
@@ -103,8 +108,13 @@ export const SECTIONS_SITE = [
       { name: "legende", label: "Légende (facultatif)", type: "text" },
     ],
   },
-  pageSite("application", "Page Application Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["fonction", "Fonction de l'app"], ["etape", "Étape d'installation"]],
-    { icone: true }),
+  pageSite("application", "Page Application Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["entete", "Titre de partie (1er : fonctions ; 2e : installation)"], ["bouton", "Bouton de téléchargement (Titre = gros texte, Texte = petit texte, lien = APK)"], ["fonction", "Fonction de l'app"], ["etape", "Étape d'installation"]],
+    { icone: true, reference: "Lien (bouton de téléchargement)", aide: AIDE_ETOILES }),
+  pageSite("accueil", "Haut de page et titres", [["surtitre", "Petit texte au-dessus du grand titre"], ["titre", "Grand titre (ÉGLISE CHAY)"], ["entete", "Titre de partie (1er : Nouveauté ; 2e : Cultes)"]],
+    { titre: "Petit titre (ex. Nouveauté) — pour les titres de partie", texte: "Texte", aide: AIDE_ETOILES }),
+  pageSite("pied", "Bas de page", [["pied", "Texte du bas de page"], ["reseau", "Lien (réseau social ou application)"]],
+    { titre: "Titre (ex. Église Chay) ou nom du réseau", texte: "Texte du bas de page, ou adresse du lien (https://…)", icone: true, icones: ICONES_RESEAUX }),
+  pageSite("copyright", "Copyright", [["copyright", "Ligne de copyright"]], { texte: "Texte (ex. © Église Chay 2026)" }),
 ];
 
 export const SECTIONS = [

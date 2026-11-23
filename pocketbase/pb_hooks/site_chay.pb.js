@@ -5,6 +5,7 @@
 //    par heure, 5 par adresse e-mail et par jour.
 //  - SiteCulte : le lien YouTube collé par l'admin est vérifié ; l'identifiant est rangé dans youtube_id et, si le
 //    titre est vide, il est repris de YouTube (oEmbed, sans clé).
+//  - POST /api/chay/site/visite (public) : compteur de visites (SiteVisite, une ligne par jour).
 //  - tâche planifiée site_direct (toutes les 5 minutes) : la chaîne YouTube est-elle en direct ? Résultat dans
 //    SiteEtat (cle « direct ») ; le site affiche alors le bandeau « Culte en direct ».
 // Collections : pocketbase/scripts/migrer-site-chay.mjs. Règles : lib/siteChay.js.
@@ -47,6 +48,28 @@ routerAdd('POST', '/api/chay/site/contact', (e) => {
       $app.logger().error('[siteContact] message enregistré, notification des admins impossible');
     }
     return { envoye: true };
+  });
+});
+
+// Visites du site : POST /api/chay/site/visite (public). Le site l'appelle une fois par visite (30 minutes) ;
+// le serveur ne compte qu'une visite par adresse IP et par 30 minutes. Une ligne SiteVisite par jour (heure de Paris).
+routerAdd('POST', '/api/chay/site/visite', (e) => {
+  const fn = require(`${__hooks}/lib/fn.js`);
+  return fn.run(e, 'siteVisite', 'Visite non comptée', () => {
+    const site = require(`${__hooks}/lib/siteChay.js`);
+    const notif = require(`${__hooks}/lib/notifications.js`);
+    let ip = '';
+    try { ip = e.realIP() || ''; } catch (_) { ip = ''; }
+    if (!notif.hit(`site_visite:${ip || 'inconnue'}`, 1, 30 * 60 * 1000)) return { compte: false };
+    const jour = site.jourParis(Date.now());
+    const rec = fn.findOne($app, 'SiteVisite', 'jour = {:j}', '', { j: jour });
+    if (rec) {
+      rec.set('visites', (Number(rec.get('visites')) || 0) + 1);
+      $app.save(rec);
+    } else {
+      $app.save(fn.newRecord($app, 'SiteVisite', { jour, visites: 1 }));
+    }
+    return { compte: true };
   });
 });
 
