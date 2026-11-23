@@ -81,6 +81,8 @@ export default function EntityCrud({
   thumbField,
   playlistField = "cover_url",
   showPlaylist = false,
+  // Valeurs fixes (ex. { page: "foi" }) : seuls ces contenus sont listés, et chaque création les reçoit.
+  fixe = null,
 }) {
   const { toast } = useToast();
   const [items, setItems] = useState([]);
@@ -118,7 +120,10 @@ export default function EntityCrud({
   const load = async () => {
     setLoading(true);
     const [res, tracks] = await Promise.all([
-      base44.entities[entity].list(sort || "-created_date", LIMITE_LISTE).catch(() => []),
+      (fixe
+        ? base44.entities[entity].filter(fixe, sort || "-created_date", LIMITE_LISTE)
+        : base44.entities[entity].list(sort || "-created_date", LIMITE_LISTE)
+      ).catch(() => []),
       showPlaylist ? base44.entities.PlaylistTrack.list("-created_date", 20000).catch(() => []) : [],
     ]);
     setItems(Array.isArray(res) ? res : []);
@@ -326,6 +331,11 @@ export default function EntityCrud({
     setSaving(true);
     try {
       const { playlist_id: submittedPlaylistId, ...rest } = data;
+      if (fixe) Object.assign(rest, fixe);
+      // Site chay.fr : un nouveau contenu se place à la fin de la liste (ordre réglable au cadenas).
+      if (!editing && entity.startsWith("Site") && sort === "order" && rest.order === undefined) {
+        rest.order = items.reduce((m, i) => Math.max(m, Number(i.order) || 0), -1) + 1;
+      }
       const playlist_id = resolveSelectedPlaylistId(
         selectedPlaylistRef.current,
         submittedPlaylistId

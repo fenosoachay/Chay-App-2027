@@ -8,6 +8,7 @@ export const DATE_ONLY_FIELDS = {
   Devotional: ['reading_date'],
   QuestionLogique: ['date'],
   Sermon: ['date'],
+  SiteCulte: ['date'],
   User: ['birth_date', 'conversion_date', 'baptism_date'],
 };
 

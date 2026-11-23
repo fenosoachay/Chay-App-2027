@@ -42,12 +42,13 @@ test("chaque type ouvre l'écran précis de son contenu", () => {
   assert.equal(routeCible("signalement", "s1"), "/admin/signalements");
   assert.equal(routeCible("nouveau_membre", "u1"), "/admin/membres?membre=u1");
   assert.equal(routeCible("nouveau_membre", ""), "/admin/membres");
+  assert.equal(routeCible("message_site", "m1"), "/admin/messages");
   assert.equal(routeCible("message", "a&b"), "/messages?c=a%26b");
 });
 
 test("parité : le serveur (pb_hooks/lib/cibles.js) applique exactement les mêmes règles", () => {
   for (const c of CONTENUS) assert.equal(serveur.routeContenu(c), routeContenu(c));
-  for (const t of ["message", "community", "daily_verse", "announcement", "theme_request", "theme_answer", "prayer", "app_update", "content", "inconnu", ""]) {
+  for (const t of ["message", "community", "daily_verse", "announcement", "theme_request", "theme_answer", "prayer", "app_update", "content", "signalement", "nouveau_membre", "message_site", "inconnu", ""]) {
     for (const id of ["x1", "", "a&b"]) assert.equal(serveur.routeCible(t, id), routeCible(t, id), `${t}/${id}`);
   }
   for (const r of ["/media?cat=music&track=1", "//evil.example", "https://x", "/a b", "/" + "x".repeat(250), null, "/messages?c=a%26b"]) {

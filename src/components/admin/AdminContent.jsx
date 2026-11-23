@@ -81,7 +81,8 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
       {section.key !== "Devotional" && (
         <EntityCrud
           key={section.key === "Announcement" ? `Announcement-${announcementsKey}` : section.key}
-          entity={section.key}
+          entity={section.entity || section.key}
+          fixe={section.fixe}
           fields={section.fields}
           listColumns={section.listColumns}
           sort={section.sort}

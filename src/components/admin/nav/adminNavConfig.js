@@ -76,6 +76,21 @@ export const ADMIN_NAV = [
     ],
   },
   {
+    // Site public chay.fr : contenus lus par le site (versets, photos, cultes, textes des pages).
+    id: "site", label: "Site chay.fr", icon: Globe,
+    items: [
+      { key: "SiteVerset", mots: "site verset accueil", label: "Versets de l'Accueil", icon: BookOpen, path: "/admin/site-versets" },
+      { key: "SiteCarrousel", mots: "site nouveaute carrousel photo", label: "Photos « Nouveauté »", icon: ImageIcon, path: "/admin/site-nouveautes" },
+      { key: "SiteCulte", mots: "site culte youtube", label: "Cultes YouTube", icon: Youtube, path: "/admin/site-cultes" },
+      { key: "SiteBloc_foi", mots: "site declaration foi", label: "Page Déclaration de foi", icon: FileText, path: "/admin/site-foi" },
+      { key: "SiteBloc_apropos", mots: "site propos histoire", label: "Page À propos", icon: FileText, path: "/admin/site-apropos" },
+      { key: "SiteBloc_contact", mots: "site contact telephone whatsapp", label: "Page Nous contacter", icon: FileText, path: "/admin/site-contact" },
+      { key: "SiteBloc_association", mots: "site association don madagascar", label: "Page Association Chay", icon: FileText, path: "/admin/site-association" },
+      { key: "SiteAssoPhoto", mots: "site association photo", label: "Photos de l'association", icon: ImageIcon, path: "/admin/site-association-photos" },
+      { key: "SiteBloc_application", mots: "site application apk fonction", label: "Page Application Chay", icon: FileText, path: "/admin/site-application" },
+    ],
+  },
+  {
     id: "team", label: "Équipe", icon: Shield,
     items: [
       { key: "invite", label: "Inviter un admin", icon: UserPlus, path: "/admin/invite" },

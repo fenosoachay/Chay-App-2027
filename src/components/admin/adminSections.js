@@ -10,6 +10,95 @@ const LANGS = [
   { value: "mg", label: "Malagasy" },
 ];
 
+// ── Site public chay.fr (Administration › Site chay.fr) ─────────────────────────────────────────────────────
+// Lecture publique par le site ; collections créées par pocketbase/scripts/migrer-site-chay.mjs.
+const ICONES_SITE = [
+  ["musique", "Musique"], ["video", "Vidéo"], ["micro", "Micro"], ["radio", "Radio"], ["verset", "Verset"],
+  ["message", "Message"], ["priere", "Prière (cœur)"], ["communaute", "Communauté"], ["bible", "Bible"],
+  ["audio", "Casque audio"], ["galerie", "Photo"], ["fond", "Téléphone"], ["enfant", "Enfant"], ["jeu", "Manette"],
+  ["maison", "Maison"], ["ecole", "École"], ["soin", "Soin"], ["plante", "Plante"], ["betail", "Bétail"], ["monde", "Monde"],
+].map(([value, label]) => ({ value, label }));
+const choixTypes = (liste) => liste.map(([value, label]) => ({ value, label }));
+const pageSite = (page, label, types, { reference, icone } = {}) => ({
+  key: `SiteBloc_${page}`,
+  entity: "SiteBloc",
+  fixe: { page },
+  label,
+  icon: FileText,
+  sort: "order",
+  listColumns: ["type", "titre"],
+  detailField: "texte",
+  fields: [
+    { name: "type", label: "Genre de bloc", type: "select", required: true, options: choixTypes(types) },
+    { name: "titre", label: "Titre", type: "text" },
+    { name: "texte", label: "Texte", type: "textarea" },
+    ...(reference ? [{ name: "reference", label: reference, type: "text" }] : []),
+    ...(icone ? [{ name: "icone", label: "Icône", type: "select", options: ICONES_SITE }] : []),
+  ],
+});
+
+export const SECTIONS_SITE = [
+  {
+    key: "SiteVerset",
+    label: "Versets de l'Accueil",
+    icon: BookOpen,
+    sort: "order",
+    listColumns: ["reference"],
+    detailField: "texte",
+    fields: [
+      { name: "texte", label: "Verset", type: "textarea", required: true },
+      { name: "reference", label: "Référence (ex. Matthieu 6:33)", type: "text", required: true },
+    ],
+  },
+  {
+    key: "SiteCarrousel",
+    label: "Photos « Nouveauté »",
+    icon: ImageIcon,
+    sort: "order",
+    listColumns: ["titre"],
+    detailField: "sous_titre",
+    thumbField: "image_url",
+    fields: [
+      { name: "image_url", label: "Photo (format 16:9, paysage)", type: "file", accept: "image/*", required: true },
+      { name: "titre", label: "Titre", type: "text", required: true },
+      { name: "sous_titre", label: "Petite ligne sous le titre (facultatif, ex. Lundi et mercredi · 8h30)", type: "text" },
+    ],
+  },
+  {
+    key: "SiteCulte",
+    label: "Cultes YouTube",
+    icon: Youtube,
+    sort: "-date",
+    listColumns: ["titre", "date"],
+    fields: [
+      { name: "youtube_url", label: "Lien YouTube du culte", type: "text", required: true, help: "Collez le lien de la vidéo (youtube.com/watch?v=…, youtu.be/…, youtube.com/live/…)." },
+      { name: "titre", label: "Titre (laisser vide : repris de YouTube)", type: "text" },
+      { name: "date", label: "Date du culte", type: "date" },
+    ],
+  },
+  pageSite("foi", "Page Déclaration de foi", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["article", "Article de foi"], ["citation", "Citation (fin de page)"]],
+    { reference: "Références bibliques, séparées par des virgules (ex. Jean 14.6, Romains 3.23)" }),
+  pageSite("apropos", "Page À propos", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["chapitre", "Titre de chapitre"], ["paragraphe", "Paragraphe"], ["citation", "Citation"]],
+    { reference: "Référence de la citation (ex. Osée 4:6)" }),
+  pageSite("contact", "Page Nous contacter", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["telephone", "Téléphone"], ["email", "E-mail"], ["whatsapp", "WhatsApp (numéro)"]]),
+  pageSite("association", "Page Association Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["paragraphe", "Paragraphe (le 1er titre devient le titre de la partie)"], ["pilier", "Projet (carte)"], ["citation", "Citation"], ["don", "Texte des dons"], ["legal", "Information légale"]],
+    { reference: "Référence (citation) ou numéro WhatsApp (dons)", icone: true }),
+  {
+    key: "SiteAssoPhoto",
+    label: "Photos de l'association",
+    icon: ImageIcon,
+    sort: "order",
+    listColumns: ["legende"],
+    thumbField: "image_url",
+    fields: [
+      { name: "image_url", label: "Photo", type: "file", accept: "image/*", required: true },
+      { name: "legende", label: "Légende (facultatif)", type: "text" },
+    ],
+  },
+  pageSite("application", "Page Application Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["fonction", "Fonction de l'app"], ["etape", "Étape d'installation"]],
+    { icone: true }),
+];
+
 export const SECTIONS = [
   {
     key: "Devotional",
@@ -290,7 +379,7 @@ export const SECTIONS = [
     label: "Messages",
     icon: Mail,
     sort: "-created_date",
-    listColumns: ["name", "subject"],
+    listColumns: ["name", "subject", "source"],
     detailField: "message",
     readOnly: true,
     fields: [],
@@ -353,4 +442,5 @@ export const SECTIONS = [
     ],
     readOnly: false,
   },
+  ...SECTIONS_SITE,
 ];
