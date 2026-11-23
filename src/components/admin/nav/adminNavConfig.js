@@ -79,6 +79,7 @@ export const ADMIN_NAV = [
     // Site public chay.fr : contenus lus par le site (versets, photos, cultes, textes des pages).
     id: "site", label: "Site chay.fr", icon: Globe,
     items: [
+      { key: "SiteBandeau", mots: "site texte defile bandeau tongasoa", label: "Texte qui défile", icon: FileText, path: "/admin/site-bandeau" },
       { key: "SiteVerset", mots: "site verset accueil", label: "Versets de l'Accueil", icon: BookOpen, path: "/admin/site-versets" },
       { key: "SiteCarrousel", mots: "site nouveaute carrousel photo", label: "Photos « Nouveauté »", icon: ImageIcon, path: "/admin/site-nouveautes" },
       { key: "SiteCulte", mots: "site culte youtube", label: "Cultes YouTube", icon: Youtube, path: "/admin/site-cultes" },

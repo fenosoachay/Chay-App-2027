@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chargerLib } from './charger-cjs.mjs';
-import { migrer, nouvellesCollections, BLOCS_DEPART, VERSETS_DEPART, PAGES, TYPES_BLOC, ICONES } from '../scripts/migrer-site-chay.mjs';
+import { migrer, nouvellesCollections, BLOCS_DEPART, VERSETS_DEPART, BANDEAU_DEPART, PAGES, TYPES_BLOC, ICONES } from '../scripts/migrer-site-chay.mjs';
 
 const site = chargerLib('siteChay.js');
 
@@ -56,7 +56,7 @@ test('titre oEmbed et détection du direct', () => {
 
 test('schéma : lecture publique, écriture admins ; SiteEtat écrit par le serveur seulement', () => {
   const cols = Object.fromEntries(nouvellesCollections().map((c) => [c.name, c]));
-  for (const nom of ['SiteVerset', 'SiteCarrousel', 'SiteCulte', 'SiteAssoPhoto', 'SiteBloc']) {
+  for (const nom of ['SiteVerset', 'SiteBandeau', 'SiteCarrousel', 'SiteCulte', 'SiteAssoPhoto', 'SiteBloc']) {
     assert.equal(cols[nom].listRule, '');
     assert.equal(cols[nom].createRule, '@request.auth.role = "admin"');
     assert.ok(cols[nom].fields.some((f) => f.name === 'base44_created_date'), `${nom} : tri par date possible`);
@@ -110,6 +110,7 @@ test('migration : simulation sans écriture, puis application idempotente', asyn
     await migrer('http://pb', {}, { appliquer: true });
     assert.equal(etat.lignes.get('SiteBloc').length, BLOCS_DEPART.length);
     assert.equal(etat.lignes.get('SiteVerset')[1].order, 1);
+    assert.equal(etat.lignes.get('SiteBandeau').length, BANDEAU_DEPART.length);
     assert.ok(etat.collections.get('ContactMessage').fields.some((f) => f.name === 'source'));
     const avant = etat.ecritures;
     const encore = await migrer('http://pb', {}, { appliquer: true });

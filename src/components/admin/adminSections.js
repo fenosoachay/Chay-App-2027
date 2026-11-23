@@ -39,6 +39,14 @@ const pageSite = (page, label, types, { reference, icone } = {}) => ({
 
 export const SECTIONS_SITE = [
   {
+    key: "SiteBandeau",
+    label: "Texte qui défile",
+    icon: FileText,
+    sort: "order",
+    listColumns: ["texte"],
+    fields: [{ name: "texte", label: "Texte (en haut de toutes les pages du site)", type: "text", required: true }],
+  },
+  {
     key: "SiteVerset",
     label: "Versets de l'Accueil",
     icon: BookOpen,

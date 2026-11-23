@@ -2,6 +2,7 @@
 // Migration « site chay.fr » (refonte 2026) : contenus du site public gérés depuis l'app
 // (Administration › Site chay.fr). Lecture publique (le site n'a pas de compte), écriture admins seulement.
 //   SiteVerset    versets de l'Accueil (texte, référence), dans l'ordre choisi ;
+//   SiteBandeau   textes qui défilent en haut de toutes les pages ;
 //   SiteCarrousel photos 16:9 de « Nouveauté » (titre obligatoire, petite ligne facultative) ;
 //   SiteCulte     cultes YouTube (lien collé ; titre repris de YouTube s'il est vide : hook site_chay.pb.js) ;
 //   SiteAssoPhoto photos de la page Association Chay ;
@@ -56,6 +57,7 @@ export const ICONES = [
 export function nouvellesCollections() {
   return [
     collection('SiteVerset', [texte('texte', 1000, { required: true }), texte('reference', 100, { required: true })]),
+    collection('SiteBandeau', [texte('texte', 300, { required: true })]),
     collection('SiteCarrousel', [texte('image_url', 5000, { required: true }), texte('titre', 200, { required: true }), texte('sous_titre', 200)]),
     collection('SiteCulte', [texte('youtube_url', 300, { required: true }), texte('youtube_id', 20), texte('titre', 200), date('date')]),
     collection('SiteAssoPhoto', [texte('image_url', 5000, { required: true }), texte('legende', 200)]),
@@ -73,6 +75,10 @@ const b = (page, type, titre, texte, reference = '', icone = '') => ({ page, typ
 export const VERSETS_DEPART = [
   { texte: 'Cherchez premièrement le royaume et la justice de Dieu ; et toutes ces choses vous seront données par-dessus.', reference: 'Matthieu 6:33' },
   { texte: 'Vous connaîtrez la vérité, et la vérité vous affranchira.', reference: 'Jean 8:32' },
+];
+export const BANDEAU_DEPART = [
+  { texte: "Tongasoa eto amin'ny Fiangonana Chay izay mitory ny Fanjakan'Andriamanitra." },
+  { texte: "Bienvenue à l'Église Chay qui prêche le Royaume de Dieu." },
 ];
 export const BLOCS_DEPART = [
   // Déclaration de foi
@@ -111,7 +117,7 @@ export const BLOCS_DEPART = [
   b('contact', 'telephone', 'Téléphone', '+33 7 49 77 06 74'),
   b('contact', 'telephone', 'Téléphone', '+33 7 49 92 94 33'),
   b('contact', 'email', 'E-mail', 'chay@chay.fr'),
-  b('contact', 'whatsapp', 'WhatsApp', '+33 7 49 92 94 33'),
+  b('contact', 'whatsapp', 'WhatsApp', '+33 7 49 92 74 33'),
   // Association Chay
   b('association', 'surtitre', '', 'Madagascar · Solidarité'),
   b('association', 'intro', '', 'Nous avons tous reçu le cadeau de la vie, et derrière chaque vie se cache une richesse, une culture, un passé, un présent, mais surtout un avenir.'),
@@ -124,7 +130,7 @@ export const BLOCS_DEPART = [
   b('association', 'pilier', 'Élevage', "Du bétail pour l'élevage et des revenus durables.", '', 'betail'),
   b('association', 'pilier', 'Commune autosuffisante', 'Le but : que chaque habitant puisse subvenir à ses besoins fondamentaux.', '', 'monde'),
   b('association', 'citation', '', "Il y a plus de bonheur à donner qu'à recevoir.", 'Actes 20:35'),
-  b('association', 'don', '', "Vos dons et vos contributions sont les bienvenus. Pour soutenir l'Association Chay, écrivez-nous sur WhatsApp : nous vous expliquerons comment participer.", '+33 7 49 92 94 33'),
+  b('association', 'don', '', "Vos dons et vos contributions sont les bienvenus. Pour soutenir l'Association Chay, écrivez-nous sur WhatsApp : nous vous expliquerons comment participer.", '+33 7 49 92 74 33'),
   b('association', 'legal', 'Publiée au Journal officiel le', '17/10/2020'),
   b('association', 'legal', 'SIREN', '923 180 426'),
   b('association', 'legal', 'SIRET (siège)', '923 180 426 00010'),
@@ -188,7 +194,7 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
     if (!r.ok) throw new Error(`lecture de ${nom} impossible (HTTP ${r.status})`);
     return ((await r.json()).totalItems || 0) === 0;
   };
-  const graines = [['SiteVerset', VERSETS_DEPART], ['SiteBloc', BLOCS_DEPART]];
+  const graines = [['SiteVerset', VERSETS_DEPART], ['SiteBandeau', BANDEAU_DEPART], ['SiteBloc', BLOCS_DEPART]];
   for (const [nom, lignes] of graines) {
     if (!(await vide(nom))) { log(`  = ${nom} : contenus déjà présents (rien ajouté)`); continue; }
     changements.push(`${nom} (${lignes.length} contenus de départ)`);
