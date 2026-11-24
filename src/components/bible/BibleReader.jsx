@@ -13,12 +13,15 @@ import {
   StickyNote,
   Highlighter,
   Copy,
+  Link2,
+  Undo2,
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { HIGHLIGHT_COLORS, LANGUAGES, VERSIONS, highlightHex } from "@/lib/bibleConstants";
 import { useTheme } from "@/hooks/useTheme";
 import VerseActionsSheet from "@/components/bible/VerseActionsSheet";
+import ReferencesSheet from "@/components/bible/ReferencesSheet";
 import ReaderSearchBox from "@/components/bible/ReaderSearchBox";
 import DrawerSelect from "@/components/DrawerSelect";
 import {
@@ -83,6 +86,17 @@ export default function BibleReader({ onBack }) {
   const [annotations, setAnnotations] = useState({});
   const [selected, setSelected] = useState([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Références croisées (1.3.26) : fenêtre ouverte, et passage d'où l'on vient (bouton « Revenir à … »).
+  const [refsOuvert, setRefsOuvert] = useState(false);
+  const [retourRef, setRetourRef] = useState(null);
+  // Saut vers un passage : le verset n'est visé qu'une fois SON chapitre chargé (sinon il viserait l'ancien).
+  const [saut, setSaut] = useState(null);
+  const [charge, setCharge] = useState(""); // « livre:chapitre » dont les versets sont affichés
+  useEffect(() => {
+    if (!saut || chapterStatus !== "ready" || charge !== `${saut.bookId}:${saut.chapter}`) return;
+    setPendingVerse(saut.verse);
+    setSaut(null);
+  }, [saut, chapterStatus, charge]);
   // Sheet (modal) du sélecteur de chapitres : même pattern que le sélecteur de livre.
   const [chapterPickerOpen, setChapterPickerOpen] = useState(false);
 
@@ -179,6 +193,7 @@ export default function BibleReader({ onBack }) {
         if (!alive) return;
         if (loaded.length === 0) throw new Error("Aucun verset trouvé pour ce chapitre.");
         setVerses(loaded);
+        setCharge(`${selectedBookId}:${selectedChapter}`);
         setChapterStatus("ready");
       } catch (e) {
         if (!alive) return;
@@ -602,6 +617,40 @@ export default function BibleReader({ onBack }) {
         </div>
       </section>
 
+      <ReferencesSheet
+        open={refsOuvert} onOpenChange={setRefsOuvert} lang={lang} books={books} livre={selectedBook}
+        chapitre={selectedChapter} versets={selectedVerses.map((v) => v.number)}
+        onOuvrir={(r) => {
+          const cible = books.find((b) => b.order === r.b);
+          if (!cible) return;
+          const v0 = selectedVerses[0]?.number || 1;
+          setRetourRef({ bookId: selectedBookId, chapter: selectedChapter, verse: v0, label: `${selectedBook?.name || ""} ${selectedChapter}:${v0}` });
+          setRefsOuvert(false);
+          setSelected([]);
+          setSelectedBookId(cible.id);
+          setSelectedChapter(r.c);
+          setSaut({ bookId: cible.id, chapter: r.c, verse: r.v });
+        }}
+      />
+
+      {retourRef && selected.length === 0 && (
+        <div className="fixed left-0 right-0 z-30 flex justify-center px-4 bottom-[88px] md:bottom-6">
+          <button
+            type="button"
+            onClick={() => {
+              const r = retourRef;
+              setRetourRef(null);
+              setSelectedBookId(r.bookId);
+              setSelectedChapter(r.chapter);
+              setSaut({ bookId: r.bookId, chapter: r.chapter, verse: r.verse });
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-background/95 px-4 py-2.5 text-sm font-bold shadow-lg backdrop-blur-xl"
+          >
+            <Undo2 className="h-4 w-4 text-primary" /> Revenir à {retourRef.label}
+          </button>
+        </div>
+      )}
+
       <VerseActionsSheet
         open={sheetOpen} onOpenChange={setSheetOpen} verses={selectedVerses} annotations={annotations}
         onHighlight={onHighlight} onNote={onNote} onRemove={onRemove}
@@ -609,17 +658,20 @@ export default function BibleReader({ onBack }) {
 
       {selected.length > 0 && (
         <div className="fixed left-0 right-0 z-30 px-4 bottom-[88px] md:bottom-6">
-          <div className="mx-auto max-w-sm flex items-center justify-center gap-2 rounded-[1.5rem] border border-border bg-background/95 backdrop-blur-xl shadow-lg px-3 py-2.5">
-            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl brand-gradient text-white shadow-sm hover:scale-105 transition">
+          <div className="mx-auto max-w-md flex items-center justify-center gap-1.5 rounded-[1.5rem] border border-border bg-background/95 backdrop-blur-xl shadow-lg px-2 py-2.5">
+            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-3 py-2 rounded-2xl brand-gradient text-white shadow-sm hover:scale-105 transition">
               <Highlighter className="h-5 w-5" /><span className="text-[0.6875rem] font-bold">{isLocalMode ? 'Connexion requise' : 'Surligner'}</span>
             </button>
-            <button onClick={copySelected} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
+            <button onClick={() => setRefsOuvert(true)} className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border border-border hover:bg-muted transition">
+              <Link2 className="h-5 w-5 text-primary" /><span className="text-[0.6875rem] font-bold">Références</span>
+            </button>
+            <button onClick={copySelected} className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border border-border hover:bg-muted transition">
               <Copy className="h-5 w-5 text-primary" /><span className="text-[0.6875rem] font-bold">Copier</span>
             </button>
-            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
+            <button disabled={isLocalMode} title={isLocalMode ? 'Connexion requise' : undefined} onClick={() => setSheetOpen(true)} className="disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border border-border hover:bg-muted transition">
               <StickyNote className="h-5 w-5 text-primary" /><span className="text-[0.6875rem] font-bold">{isLocalMode ? 'Connexion requise' : 'Notes'}</span>
             </button>
-            <button onClick={() => setSelected([])} className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl border border-border hover:bg-muted transition">
+            <button onClick={() => setSelected([])} className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border border-border hover:bg-muted transition">
               <X className="h-5 w-5 text-foreground/60" /><span className="text-[0.6875rem] font-bold">Annuler</span>
             </button>
           </div>
