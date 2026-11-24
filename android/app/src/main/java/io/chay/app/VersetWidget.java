@@ -8,6 +8,19 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.Shader;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.os.Build;
 import android.widget.RemoteViews;
 import java.io.BufferedReader;
@@ -25,6 +38,9 @@ import org.json.JSONObject;
  *    mémoire pour rester visible hors connexion. Nouveau verset juste après minuit (heure de Paris, ~0 h 05, réveil
  *    d'Android) ; contrôles de secours toutes les 3 heures et à chaque ouverture de l'app (connexion revenue…).
  *  - Le toucher ouvre l'app sur l'accueil (même chemin que la notification de lecture : RouteMedia, route « / »).
+ *  - Design « Nuit dorée » : carte marine-violet à liseré doré (drawable/widget_verset_fond), et dessus une image
+ *    dessinée ici avec les polices du site (assets/polices : Instrument Serif, Poppins) : logo et « VERSET DU
+ *    JOUR » dorés, ligne dorée, verset en italique blanc (taille ajustée à la place), ligne, référence dorée.
  */
 public class VersetWidget extends AppWidgetProvider {
     static final String ADRESSE = "https://api.chay.fr/api/chay/verset-du-jour";
@@ -105,17 +121,146 @@ public class VersetWidget extends AppWidgetProvider {
         return PendingIntent.getBroadcast(context, CODE_MINUIT, i, PendingIntent.FLAG_UPDATE_CURRENT | immuable);
     }
 
+    @Override
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int id, Bundle options) {
+        afficher(context, manager, new int[] { id }); // widget agrandi ou réduit : image redessinée à la bonne taille
+    }
+
     private static void afficher(Context context, AppWidgetManager manager, int[] ids) {
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String texte = p.getString("texte", TEXTE_DEFAUT);
         String ref = p.getString("reference", REF_DEFAUT);
         for (int id : ids) {
             RemoteViews vue = new RemoteViews(context.getPackageName(), R.layout.widget_verset);
-            vue.setTextViewText(R.id.widget_verset_texte, "« " + texte + " »");
-            vue.setTextViewText(R.id.widget_verset_reference, "— " + ref);
+            try {
+                Bundle o = manager.getAppWidgetOptions(id);
+                int largeur = o != null ? o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0) : 0;
+                int hauteur = o != null ? o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0) : 0;
+                vue.setImageViewBitmap(R.id.widget_verset_image,
+                    dessiner(context, texte, ref, largeur > 0 ? largeur : 300, hauteur > 0 ? hauteur : 150));
+            } catch (Exception erreur) {
+                // Dessin impossible : l'aperçu fixe (drawable/widget_verset_apercu) reste affiché.
+            }
             vue.setOnClickPendingIntent(R.id.widget_verset_racine, ouvrirAccueil(context));
             manager.updateAppWidget(id, vue);
         }
+    }
+
+    private static Typeface police(Context context, String fichier, Typeface secours) {
+        try {
+            return Typeface.createFromAsset(context.getAssets(), "polices/" + fichier);
+        } catch (Exception erreur) {
+            return secours;
+        }
+    }
+
+    /** Ligne dorée qui s'estompe sur les bords. */
+    private static void ligne(Canvas c, float x0, float x1, float y, float epaisseur, int alpha) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        int or = (alpha << 24) | 0xE8C478;
+        p.setShader(new LinearGradient(x0, y, x1, y, new int[] { 0x00E8C478, or, or, 0x00E8C478 },
+            new float[] { 0f, 0.25f, 0.75f, 1f }, Shader.TileMode.CLAMP));
+        c.drawRect(x0, y, x1, y + epaisseur, p);
+    }
+
+    /** Image du widget (transparente : la carte est le fond de la vue), à la taille du widget posé. */
+    static Bitmap dessiner(Context context, String texte, String ref, int largeurDp, int hauteurDp) {
+        float d = context.getResources().getDisplayMetrics().density;
+        // Taille plafonnée (mémoire limitée des widgets) : l'image est ensuite agrandie par l'écran.
+        float echelle = Math.min(1f, Math.min(1100f / (largeurDp * d), 700f / (hauteurDp * d)));
+        float u = d * echelle; // 1 dp en pixels de l'image
+        int w = Math.max(1, Math.round(largeurDp * u));
+        int h = Math.max(1, Math.round(hauteurDp * u));
+        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bmp);
+        final int OR = 0xFFE8C478;
+
+        Typeface italique = police(context, "instrument_serif_italique.ttf", Typeface.create(Typeface.SERIF, Typeface.ITALIC));
+        Typeface droite = police(context, "instrument_serif.ttf", Typeface.SERIF);
+        Typeface poppins = police(context, "poppins_medium.ttf", Typeface.DEFAULT_BOLD);
+
+        float marge = 18 * u;
+        float largeurTexte = w - 2 * marge;
+
+        // En-tête : logo + « VERSET DU JOUR »
+        TextPaint titre = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        titre.setTypeface(poppins);
+        titre.setColor(OR);
+        titre.setTextSize(10 * u);
+        titre.setLetterSpacing(0.22f);
+        String enTete = "VERSET DU JOUR";
+        float logo = 14 * u;
+        float largeurTitre = titre.measureText(enTete);
+        float hauteurTitre = Math.max(logo, 12 * u);
+
+        // Référence
+        TextPaint pRef = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        pRef.setTypeface(droite);
+        pRef.setColor(OR);
+        pRef.setTextSize(12 * u);
+        pRef.setLetterSpacing(0.25f);
+        String reference = ref.toUpperCase(java.util.Locale.FRENCH);
+        float hauteurRef = 15 * u;
+
+        float ecart = 9 * u;
+        float fixe = hauteurTitre + ecart + 1 * u + ecart + ecart + 1 * u + ecart + hauteurRef;
+        float placeVerset = Math.max(20 * u, h - 2 * 14 * u - fixe);
+
+        // Verset : la plus grande taille (20 à 12 dp) qui tient dans la place ; sinon coupé avec « … ».
+        TextPaint pVerset = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        pVerset.setTypeface(italique);
+        pVerset.setColor(0xFFFFFFFF);
+        String corps = "« " + texte + " »";
+        StaticLayout verset = null;
+        for (float taille = 20; taille >= 12; taille -= 1) {
+            pVerset.setTextSize(taille * u);
+            verset = new StaticLayout(corps, pVerset, (int) largeurTexte, Layout.Alignment.ALIGN_CENTER, 1.08f, 0f, false);
+            if (verset.getHeight() <= placeVerset) break;
+        }
+        String coupe = texte;
+        while (verset != null && verset.getHeight() > placeVerset && coupe.length() > 20) {
+            coupe = coupe.substring(0, coupe.lastIndexOf(' ') > 10 ? coupe.lastIndexOf(' ') : coupe.length() - 10);
+            verset = new StaticLayout("« " + coupe + "… »", pVerset, (int) largeurTexte, Layout.Alignment.ALIGN_CENTER, 1.08f, 0f, false);
+        }
+        float hauteurVerset = verset != null ? verset.getHeight() : 0;
+
+        float total = fixe + hauteurVerset;
+        float y = Math.max(10 * u, (h - total) / 2f);
+
+        // Logo doré + titre, centrés ensemble
+        float xTitre = (w - (logo + 8 * u + largeurTitre)) / 2f;
+        try {
+            Drawable dLogo = context.getResources().getDrawable(R.drawable.ic_stat_chay, null);
+            dLogo.setColorFilter(new PorterDuffColorFilter(OR, PorterDuff.Mode.SRC_IN));
+            int ly = Math.round(y + (hauteurTitre - logo) / 2f);
+            dLogo.setBounds(Math.round(xTitre), ly, Math.round(xTitre + logo), Math.round(ly + logo));
+            dLogo.draw(c);
+        } catch (Exception erreur) {
+            xTitre -= (logo + 8 * u) / 2f;
+        }
+        Paint.FontMetrics fm = titre.getFontMetrics();
+        c.drawText(enTete, xTitre + logo + 8 * u, y + hauteurTitre / 2f - (fm.ascent + fm.descent) / 2f, titre);
+        y += hauteurTitre + ecart;
+
+        ligne(c, marge + 24 * u, w - marge - 24 * u, y, 1 * u, 170);
+        y += 1 * u + ecart;
+
+        if (verset != null) {
+            c.save();
+            c.translate(marge, y);
+            verset.draw(c);
+            c.restore();
+        }
+        y += hauteurVerset + ecart;
+
+        float courte = Math.min(largeurTexte * 0.35f, 120 * u);
+        ligne(c, (w - courte) / 2f, (w + courte) / 2f, y, 1 * u, 200);
+        y += 1 * u + ecart;
+
+        Paint.FontMetrics fr = pRef.getFontMetrics();
+        float largeurRef = pRef.measureText(reference);
+        c.drawText(reference, (w - largeurRef) / 2f, y + hauteurRef / 2f - (fr.ascent + fr.descent) / 2f, pRef);
+        return bmp;
     }
 
     private static PendingIntent ouvrirAccueil(Context context) {

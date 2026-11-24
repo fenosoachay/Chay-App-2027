@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget « Verset du jour » : 4 × 2 cases, redimensionnable ; mise à jour toutes les 3 heures (et à l'ouverture de l'app). -->
+<!-- Widget « Verset du jour » : 4 × 2 cases, redimensionnable ; nouveau verset après minuit (contrôles de secours toutes les 3 heures). -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"

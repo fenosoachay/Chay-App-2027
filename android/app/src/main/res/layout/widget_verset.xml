@@ -1,74 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget « Verset du jour » (VersetWidget.java) : dégradé de l'app, texte blanc, petit logo Chay. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Widget « Verset du jour » (VersetWidget.java), design « Nuit dorée » : la carte (fond marine-violet, liseré
+     doré) et, dessus, une image dessinée par l'app avec les polices du site (Instrument Serif, Poppins). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_verset_racine"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@drawable/widget_verset_fond">
 
-  <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
-    android:background="@drawable/widget_verset_fond"
-    android:orientation="vertical"
-    android:padding="16dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="✦  VERSET DU JOUR"
-            android:textColor="#E6FFFFFF"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.12" />
-
-        <ImageView
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:contentDescription="Église Chay"
-            android:src="@drawable/ic_stat_chay" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_verset_texte"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:ellipsize="end"
-        android:gravity="center_vertical"
-        android:maxLines="6"
-        android:text="« Je puis tout par celui qui me fortifie. »"
-        android:textColor="#FFFFFFFF"
-        android:textSize="15sp" />
-
-    <TextView
-        android:id="@+id/widget_verset_reference"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="— Philippiens 4:13"
-        android:textColor="#D9FFFFFF"
-        android:textSize="13sp"
-        android:textStyle="bold" />
-  </LinearLayout>
-
-    <!-- Ligne en dégradé sous le widget. -->
     <ImageView
+        android:id="@+id/widget_verset_image"
         android:layout_width="match_parent"
-        android:layout_height="5dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="8dp"
-        android:contentDescription="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_verset_ligne" />
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:contentDescription="Verset du jour"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_verset_apercu" />
+</FrameLayout>
