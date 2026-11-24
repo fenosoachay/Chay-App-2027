@@ -3,8 +3,8 @@ import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { totauxVisites } from "@/lib/visitesSite";
 
-// Admin › Site · Visites : nombre de visites de chay.fr (une visite = une personne, comptée à nouveau
-// après 30 minutes d'absence). Une ligne SiteVisite par jour, écrite par le serveur.
+// Admin › Site chay.fr › « Tableau de bord » : nombre de visites de chay.fr (une personne = 1 visite par jour, même
+// si elle revient plusieurs fois). Une ligne SiteVisite par jour, écrite par le serveur.
 export default function SiteVisites() {
   const [lignes, setLignes] = useState(null);
   const [erreur, setErreur] = useState(false);
@@ -31,7 +31,7 @@ export default function SiteVisites() {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-bold">Visites du site chay.fr</h2>
-        <p className="text-sm text-foreground/60">Une visite = une personne ; elle est comptée à nouveau après 30 minutes d'absence.</p>
+        <p className="text-sm text-foreground/60">Une personne compte pour 1 visite par jour, même si elle revient plusieurs fois.</p>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {cartes.map(([libelle, n]) => (

@@ -56,11 +56,23 @@ export function optionsSousPlaylists(arbre) {
 /** Identifiants des sous-playlists valides d'une section. */
 export const idsSousPlaylists = (arbre) => new Set((arbre || []).flatMap((p) => (p.sous || []).map((s) => s.id)));
 
-/** Liens (PlaylistTrack) d'une playlist, dans l'ordre choisi par l'admin. */
+/**
+ * Rang d'un lien de playlist. Les contenus ajoutés reçoivent order = Date.now() (≈ 1,7·10¹²) ; tant que l'admin ne
+ * les a pas rangés à la main, ils passent EN TÊTE, le plus récent d'abord (1.3.25). Les rangs choisis à la main
+ * (0, 1, 2…) suivent. Sans rang : à la fin.
+ */
+export function rangOrdre(order) {
+  if (order === null || order === undefined || order === "") return Number.MAX_SAFE_INTEGER;
+  const n = Number(order);
+  if (!Number.isFinite(n)) return Number.MAX_SAFE_INTEGER;
+  return n >= 1e11 ? -n : n;
+}
+
+/** Liens (PlaylistTrack) d'une playlist : nouveaux contenus en tête, puis l'ordre choisi par l'admin. */
 export function liensDe(playlistId, playlistTracks) {
   return (Array.isArray(playlistTracks) ? playlistTracks : [])
     .filter((t) => t && t.playlist_id === playlistId)
-    .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999));
+    .sort((a, b) => rangOrdre(a.order) - rangOrdre(b.order));
 }
 
 /** Playlist ou sous-playlist actuelle d'un contenu (pour pré-remplir le formulaire en modification), sinon "". */

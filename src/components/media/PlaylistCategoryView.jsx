@@ -19,7 +19,7 @@ import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { filePlaylist } from "@/lib/fileLecture";
 import ListeTriable from "@/components/media/ListeTriable";
 import GrillePlaylists from "@/components/media/GrillePlaylists";
-import { arbrePlaylists, liensDe } from "@/lib/playlistsArbre";
+import { arbrePlaylists, liensDe, rangOrdre } from "@/lib/playlistsArbre";
 import { requestOpenAudioPlayer } from "@/lib/playerUi";
 import Description from "@/components/media/Description";
 import VideosVerticales from "@/components/media/VideosVerticales";
@@ -122,7 +122,7 @@ export default function PlaylistCategoryView({
     }
     const filtered = playlistTracks
       .filter((t) => t.playlist_id === open.id)
-      .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999));
+      .sort((a, b) => rangOrdre(a.order) - rangOrdre(b.order));
     setOrderedTracks(filtered);
   }, [open, playlistTracks]);
 
@@ -182,7 +182,7 @@ export default function PlaylistCategoryView({
         setOrderedTracks(
           playlistTracks
             .filter((track) => track.playlist_id === open?.id)
-            .sort((a, b) => (a.order ?? 99999) - (b.order ?? 99999))
+            .sort((a, b) => rangOrdre(a.order) - rangOrdre(b.order))
         );
         toast({
           title: "Réorganisation non enregistrée",

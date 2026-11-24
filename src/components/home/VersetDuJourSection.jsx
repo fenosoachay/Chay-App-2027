@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { getPublicOrigin } from "@/lib/publicOrigin";
+import { partagerTexte, texteVerset } from "@/lib/partage";
 import { useToast } from "@/components/ui/use-toast";
-import { BookOpen, ArrowRight, Share2, Pencil, Plus, X, Loader2, Sparkles, Upload } from "lucide-react";
+import { BookOpen, ArrowRight, Share2, Pencil, Plus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,18 +26,6 @@ import {
 import PeriodPlanner from "@/components/home/PeriodPlanner";
 import useStagedPublish from "@/hooks/useStagedPublish";
 import { confirmFr } from "@/lib/confirmFr";
-import { uploadToBase44 } from "@/lib/upload";
-import HistoireVerset from "@/components/home/HistoireVerset";
-import { dejaVue, noterVueLocale } from "@/lib/histoireVerset";
-
-// Petite Histoire (1.3.22) : champs du brouillon, vides par défaut.
-const HISTOIRE_VIDE = { histoire_type: "", histoire_titre: "", histoire_url: "", histoire_texte: "" };
-const histoireDuBrouillon = (e) => ({
-  histoire_type: e?.histoire_type || "",
-  histoire_titre: e?.histoire_titre || "",
-  histoire_url: e?.histoire_url || "",
-  histoire_texte: e?.histoire_texte || "",
-});
 
 // Nombre d'entrées lues pour alimenter le planning (une par jour au maximum).
 const PLANNING_LIMIT = 2000;
@@ -62,12 +50,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
     scripture_reference: "",
     verse_text: "",
     reading_date: toISODate(),
-    ...HISTOIRE_VIDE,
   });
-  const [envoiHistoire, setEnvoiHistoire] = useState(null); // pourcentage pendant l'envoi du fichier
-  // Petite Histoire côté membre : ouverte en touchant le verset, jusqu'à « Vu / Entendu / Lu ».
-  const [histoireOuverte, setHistoireOuverte] = useState(false);
-  const [histoireVue, setHistoireVue] = useState(true);
 
   // File « à publier » : on enregistre plusieurs versets dans la fenêtre,
   // rien ne part au serveur, puis un seul « Publier » les écrit tous.
@@ -77,7 +60,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
     build: (p) => {
       const ref = (p.scripture_reference || "").trim();
       const verse = (p.verse_text || "").trim();
-      const type = ["video", "audio", "texte"].includes(p.histoire_type) ? p.histoire_type : "";
       return {
         title: ref,
         scripture_reference: ref,
@@ -85,11 +67,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
         content: verse,
         reading_date: p.reading_date,
         language: "fr",
-        // Petite Histoire : seuls les champs du type choisi sont gardés.
-        histoire_type: type,
-        histoire_titre: type ? (p.histoire_titre || "").trim() : "",
-        histoire_url: type === "video" || type === "audio" ? (p.histoire_url || "").trim() : "",
-        histoire_texte: type === "texte" ? (p.histoire_texte || "").trim() : "",
       };
     },
     // Une seule entrée par date : l'entrée déjà programmée à ce jour est
@@ -143,31 +120,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
     load();
   }, [refreshKey, isLocalMode]);
 
-  useEffect(() => {
-    setHistoireVue(!devotional?.id || dejaVue(devotional.id, user));
-  }, [devotional?.id, user]);
-
-  const terminerHistoire = () => {
-    const id = devotional?.id;
-    setHistoireOuverte(false);
-    setHistoireVue(true);
-    if (!id) return;
-    noterVueLocale(id);
-    base44.functions.invoke("histoireVue", { devotional_id: id }).catch(() => {});
-  };
-
-  const envoyerFichierHistoire = async (file) => {
-    if (!file) return;
-    setEnvoiHistoire(0);
-    try {
-      const url = await uploadToBase44(file, { onProgress: (p) => setEnvoiHistoire(Math.round(Number(p) || 0)) });
-      setDraft((d) => ({ ...d, histoire_url: url }));
-    } catch (e) {
-      toast({ title: "Fichier non envoyé", description: e?.message, variant: "destructive" });
-    } finally {
-      setEnvoiHistoire(null);
-    }
-  };
 
   const openEdit = () => {
     // On repart du verset affiché mais on cible AUJOURD'HUI : enregistrer
@@ -180,7 +132,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
       scripture_reference: base?.scripture_reference || "",
       verse_text: base?.verse_text || base?.title || "",
       reading_date: toISODate(),
-      ...histoireDuBrouillon(todayDev),
     });
     setEditing(true);
     loadPlanning();
@@ -193,7 +144,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
       scripture_reference: entry?.scripture_reference || "",
       verse_text: entry?.verse_text || entry?.title || "",
       reading_date: day,
-      ...histoireDuBrouillon(entry),
     });
   };
 
@@ -211,18 +161,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
       toast({ title: "Date invalide", variant: "destructive" });
       return;
     }
-    if ((draft.histoire_type === "video" || draft.histoire_type === "audio") && !draft.histoire_url) {
-      toast({ title: "Petite histoire : ajoutez le fichier (ou choisissez « Aucune »)", variant: "destructive" });
-      return;
-    }
-    if (draft.histoire_type === "texte" && !draft.histoire_texte.trim()) {
-      toast({ title: "Petite histoire : écrivez le texte (ou choisissez « Aucune »)", variant: "destructive" });
-      return;
-    }
-    if (envoiHistoire !== null) {
-      toast({ title: "Attendez la fin de l'envoi du fichier", variant: "destructive" });
-      return;
-    }
     const res = stage(draft, all);
     if (!res.ok) {
       toast({ title: res.error, variant: "destructive" });
@@ -237,7 +175,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
       scripture_reference: "",
       verse_text: "",
       reading_date: addDaysISO(day, 1),
-      ...HISTOIRE_VIDE,
     });
   };
 
@@ -295,32 +232,13 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
     }
   };
 
+  // Partager : fenêtre de partage du téléphone (toutes ses applications), texte aéré et lien de l'APK (1.3.25).
   const shareVerse = async () => {
-    const url = getPublicOrigin();
-    let text;
-    if (devotional) {
-      const ref = devotional.scripture_reference || "";
-      const colon = ref.lastIndexOf(":");
-      const verseNum = colon >= 0 ? ref.slice(colon + 1).trim() : "";
-      const verseText = devotional.verse_text || devotional.title || "";
-      text = `${ref} LSG\n${verseNum ? `[${verseNum}] ` : ""}${verseText}\n${url}`;
-    } else {
-      text = `Philippiens 4:13 LSG\n[13] Je puis tout par celui qui me fortifie.\n${url}`;
-    }
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Verset du jour", text });
-      } catch {
-        /* cancelled */
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text);
-        toast({ title: "Verset copié" });
-      } catch {
-        /* ignore */
-      }
-    }
+    const texte = devotional
+      ? texteVerset(devotional.scripture_reference, devotional.verse_text || devotional.title)
+      : texteVerset("Philippiens 4:13", "Je puis tout par celui qui me fortifie.");
+    const r = await partagerTexte({ titre: "Partager le verset", texte });
+    if (r === "copie") toast({ title: "Verset copié" });
   };
 
   const chapterLink = devotional?.scripture_reference
@@ -391,28 +309,12 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
             </div>
           ) : devotional ? (
             <>
-              {/* Toucher le verset ouvre la Petite Histoire, jusqu'à « Vu / Entendu / Lu ». */}
-              <p
-                role={histoireVue ? undefined : "button"}
-                tabIndex={histoireVue ? undefined : 0}
-                onClick={() => { if (!histoireVue) setHistoireOuverte(true); }}
-                onKeyDown={(e) => { if (!histoireVue && (e.key === "Enter" || e.key === " ")) setHistoireOuverte(true); }}
-                className={`selectable mt-3 text-sm md:text-base font-light leading-snug font-body ${histoireVue ? "" : "cursor-pointer"}`}
-              >
+              <p className="selectable mt-3 text-sm md:text-base font-light leading-snug font-body">
                 « {devotional.verse_text || devotional.title} »
               </p>
               <p className="mt-1.5 text-xs font-medium text-white/75 font-body">
                 — {devotional.scripture_reference}
               </p>
-              {!histoireVue && (
-                <button
-                  type="button"
-                  onClick={() => setHistoireOuverte(true)}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold hover:bg-white/25 transition"
-                >
-                  <Sparkles className="h-3.5 w-3.5" /> Touche le verset
-                </button>
-              )}
               {/* Rappel admin : la carte montre un verset antérieur faute
                   d'entrée pour aujourd'hui. */}
               {isAdmin && !todayDev && isISODate(devotional.reading_date) && (
@@ -436,14 +338,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
         </div>
       </div>
 
-      {!adminOnly && devotional && (
-        <HistoireVerset
-          devotional={devotional}
-          open={histoireOuverte}
-          onOpenChange={setHistoireOuverte}
-          onTermine={terminerHistoire}
-        />
-      )}
 
       <Dialog open={editing} onOpenChange={closeDialog}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -499,67 +393,6 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
                 placeholder="Je puis tout par celui qui me fortifie."
                 className="selectable"
               />
-            </div>
-
-            {/* Petite Histoire (facultatif) : vidéo, audio ou texte, ouverte quand le membre touche le verset. */}
-            <div className="space-y-2 rounded-xl border border-border p-3">
-              <Label>Petite histoire (facultatif)</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {[["", "Aucune"], ["video", "Vidéo"], ["audio", "Audio"], ["texte", "Texte"]].map(([v, l]) => (
-                  <button
-                    key={v || "aucune"}
-                    type="button"
-                    onClick={() => setDraft((d) => ({ ...d, histoire_type: v, histoire_url: v === d.histoire_type ? d.histoire_url : "" }))}
-                    className={`rounded-full px-3 py-1 text-sm font-semibold ${draft.histoire_type === v ? "bg-primary text-primary-foreground" : "border border-border"}`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
-              {draft.histoire_type ? (
-                <>
-                  <Input
-                    value={draft.histoire_titre}
-                    onChange={(e) => setDraft((d) => ({ ...d, histoire_titre: e.target.value }))}
-                    placeholder="Titre de l'histoire (facultatif)"
-                    className="selectable"
-                  />
-                  {draft.histoire_type === "texte" ? (
-                    <Textarea
-                      value={draft.histoire_texte}
-                      onChange={(e) => setDraft((d) => ({ ...d, histoire_texte: e.target.value }))}
-                      rows={6}
-                      placeholder="Il était une fois…"
-                      className="selectable"
-                    />
-                  ) : (
-                    <div className="space-y-1.5">
-                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold">
-                        {envoiHistoire !== null ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        {envoiHistoire !== null
-                          ? `Envoi… ${envoiHistoire} %`
-                          : draft.histoire_url ? "Remplacer le fichier" : draft.histoire_type === "video" ? "Choisir la vidéo" : "Choisir l'audio"}
-                        <input
-                          type="file"
-                          accept={draft.histoire_type === "video" ? "video/*" : "audio/*"}
-                          className="hidden"
-                          disabled={envoiHistoire !== null}
-                          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; envoyerFichierHistoire(f); }}
-                        />
-                      </label>
-                      {draft.histoire_url && envoiHistoire === null && (
-                        draft.histoire_type === "video"
-                          ? <video src={draft.histoire_url} controls playsInline preload="metadata" className="max-h-40 w-full rounded-lg bg-black" />
-                          : <audio src={draft.histoire_url} controls preload="metadata" className="w-full" />
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Sans histoire, le membre verra « Une petite histoire vous attend la prochaine fois. » (une seule fois).
-                </p>
-              )}
             </div>
 
             <Button

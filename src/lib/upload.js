@@ -19,8 +19,8 @@ const MO = 1024 * 1024;
 export const MAX_AUDIO = 1024 * MO; // 1 Go
 export const MAX_IMAGE = 200 * MO; // 200 Mo
 export const MAX_VIDEO = 5 * 1024 * MO; // 5 Go
-const AUDIO_EXT = ["mp3", "m4a", "aac", "wav", "ogg", "oga", "opus", "flac"];
-const IMAGE_EXT = ["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "avif"];
+const AUDIO_EXT = ["mp3", "m4a", "m4b", "aac", "wav", "ogg", "oga", "opus", "flac", "wma", "amr", "aiff", "aif", "3ga", "mka", "weba", "ac3", "mp2", "caf"];
+const IMAGE_EXT = ["jpg", "jpeg", "jfif", "png", "webp", "gif", "heic", "heif", "avif", "bmp", "tif", "tiff"];
 const extOf = (file) => ((/\.([a-z0-9]{1,5})$/i.exec(String(file?.name || "")) || [])[1] || "").toLowerCase();
 
 /** Famille d'un fichier (« video », « audio », « image » ou null), d'après son type puis son extension. */
@@ -45,7 +45,7 @@ export function refusTaille(file) {
 }
 
 // Le serveur reconnaît la famille à l'extension : un fichier audio ou image sans extension connue en reçoit une.
-const EXT_PAR_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/flac": "flac", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic", "image/avif": "avif" };
+const EXT_PAR_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/flac": "flac", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic", "image/avif": "avif", "audio/x-ms-wma": "wma", "audio/amr": "amr", "audio/aiff": "aiff", "audio/x-aiff": "aiff", "audio/3gpp": "3ga", "audio/webm": "weba", "image/bmp": "bmp", "image/tiff": "tiff" };
 function avecExtension(file, famille) {
   const connues = famille === "audio" ? AUDIO_EXT : IMAGE_EXT;
   if (connues.includes(extOf(file))) return file;
@@ -67,8 +67,8 @@ export function sessionIdOf(file) {
 
 // Politique (mode PocketBase) : TOUTES les vidéos vont sur R2, quelle que soit leur taille ; PocketBase ne garde
 // que les images, l'audio et les petits documents (sauvegardes petites). Mêmes extensions que le serveur.
-export const VIDEO_EXT = ["mp4", "m4v", "mov", "webm", "mkv"];
-const VIDEO_EXT_BY_TYPE = { "video/mp4": "mp4", "video/x-m4v": "m4v", "video/quicktime": "mov", "video/webm": "webm", "video/x-matroska": "mkv" };
+export const VIDEO_EXT = ["mp4", "m4v", "mov", "webm", "mkv", "3gp", "3g2", "avi", "wmv", "asf", "flv", "mpeg", "mpg", "ts", "mts", "m2ts"];
+const VIDEO_EXT_BY_TYPE = { "video/mp4": "mp4", "video/x-m4v": "m4v", "video/quicktime": "mov", "video/webm": "webm", "video/x-matroska": "mkv", "video/3gpp": "3gp", "video/3gpp2": "3g2", "video/x-msvideo": "avi", "video/avi": "avi", "video/x-ms-wmv": "wmv", "video/x-ms-asf": "asf", "video/x-flv": "flv", "video/mpeg": "mpeg", "video/mp2t": "ts" };
 export function isVideoFile(file) {
   const type = String(file?.type || "").toLowerCase();
   if (type.startsWith("video/")) return true;

@@ -6,13 +6,9 @@ import { useDonationAlerts } from "@/hooks/useDonationAlerts";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import AdminSidebarNav from "@/components/admin/nav/AdminSidebarNav";
 import AdminBreadcrumb from "@/components/admin/nav/AdminBreadcrumb";
-import { ADMIN_NAV, findNavByPath } from "@/components/admin/nav/adminNavConfig";
+import { PATH_BY_KEY, findNavByPath } from "@/components/admin/nav/adminNavConfig";
 import AdminContent from "@/components/admin/AdminContent";
 import InviteAdminDialog from "@/components/admin/InviteAdminDialog";
-
-const PATH_BY_KEY = Object.fromEntries(
-  ADMIN_NAV.flatMap((e) => (e.items ? e.items : [e])).map((i) => [i.key, i.path])
-);
 
 export default function Admin() {
   const { user } = useAuth();
@@ -63,11 +59,11 @@ export default function Admin() {
         </button>
         <div>
           <h1 className="display-fluid"><span className="brand-gradient-text">Administration</span></h1>
-          <p className="mt-1 text-foreground/60">Gérez tout le contenu de l'application CHAY.</p>
+          <p className="mt-1 text-foreground/60">Application, site chay.fr et équipe.</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
         <aside className="hidden lg:block sticky top-6 self-start">
           <div className="rounded-[1.5rem] border border-border bg-card p-3">{nav}</div>
         </aside>
@@ -81,7 +77,7 @@ export default function Admin() {
       </div>
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="left" className="w-[280px] overflow-y-auto p-3 pt-12">
+        <SheetContent side="left" className="w-[320px] max-w-[88vw] overflow-y-auto p-3 pt-12">
           <SheetTitle className="sr-only">Menu d'administration</SheetTitle>
           {nav}
         </SheetContent>

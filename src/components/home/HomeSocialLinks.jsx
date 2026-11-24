@@ -1,18 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Youtube, Shield, Globe } from "lucide-react";
+import { Facebook, Youtube, Shield, Globe, Instagram, MessageCircle } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { LIENS_PAR_DEFAUT, liensAffiches } from "@/lib/liensAccueil";
 import { useAuth } from "@/lib/AuthContext";
 import ExternalLink from "@/components/ExternalLink";
 
 const RING = "inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-foreground transition-all duration-300 hover:scale-110 active:scale-95";
 
-const LINKS = [
-  { href: "http://www.chay.fr/", label: "Site Web Église Chay", ring: "border border-[#4A6CFE] shadow-[0_0_14px_rgba(74,108,254,0.55)]", icon: <Globe className="h-5 w-5" /> },
-  { href: "https://www.facebook.com/www.chay.fr", label: "Facebook", ring: "border border-[#8A56E2] shadow-[0_0_14px_rgba(138,86,226,0.55)]", icon: <Facebook className="h-5 w-5" /> },
-  { href: "https://www.youtube.com/@EgliseChay.fr-tv", label: "YouTube", ring: "border border-[#FF57B2] shadow-[0_0_14px_rgba(255,87,178,0.55)]", icon: <Youtube className="h-5 w-5" /> },
-  {
-    href: "https://www.tiktok.com/@anjahamintsoa",
-    label: "TikTok",
+// Couleur et icône de chaque sorte de lien.
+const STYLE = {
+  site: { ring: "border border-[#4A6CFE] shadow-[0_0_14px_rgba(74,108,254,0.55)]", icon: <Globe className="h-5 w-5" /> },
+  facebook: { ring: "border border-[#8A56E2] shadow-[0_0_14px_rgba(138,86,226,0.55)]", icon: <Facebook className="h-5 w-5" /> },
+  youtube: { ring: "border border-[#FF57B2] shadow-[0_0_14px_rgba(255,87,178,0.55)]", icon: <Youtube className="h-5 w-5" /> },
+  instagram: { ring: "border border-[#E1306C] shadow-[0_0_14px_rgba(225,48,108,0.55)]", icon: <Instagram className="h-5 w-5" /> },
+  whatsapp: { ring: "border border-[#25D366] shadow-[0_0_14px_rgba(37,211,102,0.55)]", icon: <MessageCircle className="h-5 w-5" /> },
+  tiktok: {
     ring: "border border-[#F59E0B] shadow-[0_0_14px_rgba(245,158,11,0.55)]",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className="h-5 w-5">
@@ -20,23 +23,32 @@ const LINKS = [
       </svg>
     ),
   },
-];
+};
 
-// Liens sociaux (+ accès admin) de l'accueil, encadrés de lignes lumineuses.
+// Liens sociaux (+ accès admin) de l'accueil, encadrés de lignes lumineuses. Liste modifiable par les admins
+// (LienAccueil, 1.3.25) ; hors connexion ou en attendant : les liens par défaut.
 export default function HomeSocialLinks() {
   const { user } = useAuth();
+  const [liens, setLiens] = useState(LIENS_PAR_DEFAUT);
+  useEffect(() => {
+    let vivant = true;
+    base44.entities.LienAccueil.list("order", 20)
+      .then((rows) => { if (vivant && Array.isArray(rows) && rows.length) setLiens(liensAffiches(rows)); })
+      .catch(() => {});
+    return () => { vivant = false; };
+  }, []);
   return (
     <footer className="mt-12 pb-6 flex items-center justify-center gap-4">
       <span className="hidden sm:block h-px w-24 bg-gradient-to-r from-transparent to-white/30" />
       <div className="flex items-center justify-center gap-4">
-        {LINKS.map((l) => (
+        {liens.map((l) => (
           <ExternalLink
-            key={l.label}
-            href={l.href}
+            key={`${l.icone}-${l.url}`}
+            href={l.url}
             label={l.label}
-            className={`${RING} ${l.ring}`}
+            className={`${RING} ${(STYLE[l.icone] || STYLE.site).ring}`}
           >
-            {l.icon}
+            {(STYLE[l.icone] || STYLE.site).icon}
           </ExternalLink>
         ))}
         {user?.role === "admin" && (

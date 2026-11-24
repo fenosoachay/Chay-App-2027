@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget « Verset du jour » : 4 × 2 cases, redimensionnable ; mise à jour toutes les 3 heures (et à l'ouverture de l'app). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="90dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="10800000"
+    android:initialLayout="@layout/widget_verset"
+    android:previewLayout="@layout/widget_verset"
+    android:description="@string/widget_verset_description"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />

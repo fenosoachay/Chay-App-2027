@@ -117,10 +117,44 @@ export const SECTIONS_SITE = [
   pageSite("copyright", "Copyright", [["copyright", "Ligne de copyright"]], { texte: "Texte (ex. © Église Chay 2026)" }),
 ];
 
+// Menu de l'Église : une fiche par page (Vision, But, Confession de foi).
+const pageTexte = (cle, label) => ({
+  key: `PageTexte_${cle}`,
+  entity: "PageTexte",
+  fixe: { cle },
+  label,
+  icon: FileText,
+  sort: "-updated_date",
+  listColumns: ["title"],
+  fields: [
+    { name: "title", label: "Titre", type: "text", required: true },
+    { name: "body", label: "Texte", type: "rich-text", required: true },
+    { name: "photos", label: "Photos", type: "images" },
+  ],
+});
+
+// Accueil de l'app › liens ronds en bas (site, réseaux) : modifiables (1.3.25), collection LienAccueil.
+export const ICONES_LIEN_ACCUEIL = [
+  ["site", "Site web (globe)"], ["facebook", "Facebook"], ["youtube", "YouTube"], ["tiktok", "TikTok"],
+  ["instagram", "Instagram"], ["whatsapp", "WhatsApp"],
+].map(([value, label]) => ({ value, label }));
+const SECTION_LIENS_ACCUEIL = {
+  key: "LienAccueil",
+  label: "Liens des sites en bas",
+  icon: Globe,
+  sort: "order",
+  listColumns: ["label", "url"],
+  fields: [
+    { name: "label", label: "Nom (ex. Facebook)", type: "text", required: true },
+    { name: "url", label: "Adresse (https://…)", type: "text", required: true },
+    { name: "icone", label: "Icône", type: "select", required: true, options: ICONES_LIEN_ACCUEIL },
+  ],
+};
+
 export const SECTIONS = [
   {
     key: "Devotional",
-    label: "Dévotionnels",
+    label: "Verset du jour",
     icon: BookOpen,
     sort: "-reading_date",
     listColumns: ["title", "reading_date"],
@@ -136,7 +170,7 @@ export const SECTIONS = [
   },
   {
     key: "Sermon",
-    label: "Prédications",
+    label: "Prédication",
     icon: Headphones,
     sort: "-created_date",
     listColumns: ["title", "speaker"],
@@ -151,7 +185,7 @@ export const SECTIONS = [
   },
   {
     key: "Announcement",
-    label: "Annonces",
+    label: "Prochaine réunion",
     icon: Bell,
     sort: "-date",
     listColumns: ["title", "date"],
@@ -345,23 +379,25 @@ export const SECTIONS = [
   },
   // ── Nouvelles sections 1.3.11 ──────────────────────────────────────────────
   {
-    // Multimédia › « Paroles » : paroles de chansons, affichées par ordre alphabétique (pas de date).
+    // Multimédia › « Parole » : paroles de chansons ; la plus récente en haut (1.3.25).
     key: "Paroles",
-    label: "Paroles",
+    label: "Parole",
     icon: Type,
-    sort: "title",
+    sort: "-created_date",
     listColumns: ["title"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
       { name: "body", label: "Texte", type: "rich-text", required: true },
+      // Facultatif : petit bouton lecture/pause en haut à droite de la parole (1.3.25).
+      { name: "musique_id", label: "Musique liée (facultatif)", type: "musique" },
     ],
   },
   {
     // Multimédia › « Verset » : versets prêchés, identique à Paroles + champ référence
     key: "Verset",
-    label: "Verset",
+    label: "Versets",
     icon: BookOpen,
-    sort: "order",
+    sort: "-date",
     listColumns: ["title", "date", "reference"],
     fields: [
       { name: "title", label: "Titre", type: "text", required: true },
@@ -370,31 +406,14 @@ export const SECTIONS = [
       { name: "reference", label: "Référence (ex. Jean 3:16)", type: "text" },
     ],
   },
-  {
-    // Menu ☰ de l'Église › « Vision de l'Église », « But de l'Église », « Confession de foi » : une fiche par page.
-    key: "PageTexte",
-    label: "Vision, But, Confession",
-    icon: FileText,
-    sort: "cle",
-    listColumns: ["cle", "title"],
-    fields: [
-      {
-        name: "cle", label: "Page", type: "select", required: true,
-        options: [
-          { value: "vision", label: "Vision de l'Église" },
-          { value: "but", label: "But de l'Église" },
-          { value: "confession", label: "Confession de foi" },
-        ],
-      },
-      { name: "title", label: "Titre", type: "text", required: true },
-      { name: "body", label: "Texte", type: "rich-text", required: true },
-      { name: "photos", label: "Photos", type: "images" },
-    ],
-    readOnly: false, // Admin gère via EntityCrud
-  },
+  // Menu ☰ de l'Église › « Vision de l'Église », « But de l'Église », « Confession de foi » : une page d'admin
+  // chacune (même collection PageTexte, champ `cle` imposé).
+  pageTexte("vision", "Vision de l'église"),
+  pageTexte("but", "But de l'église"),
+  pageTexte("confession", "Confession de foi"),
   {
     key: "ContactMessage",
-    label: "Messages",
+    label: "Message",
     icon: Mail,
     sort: "-created_date",
     listColumns: ["name", "subject", "source"],
@@ -460,5 +479,6 @@ export const SECTIONS = [
     ],
     readOnly: false,
   },
+  SECTION_LIENS_ACCUEIL,
   ...SECTIONS_SITE,
 ];

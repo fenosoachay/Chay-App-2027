@@ -14,6 +14,8 @@ import OfflineBanner from "@/components/OfflineBanner";
 import { useAuth } from "@/lib/AuthContext";
 import { usePreferences } from "@/lib/PreferencesContext";
 import { usePresenceHeartbeat } from "@/hooks/usePresence";
+import useSuiviActivite from "@/hooks/useSuiviActivite";
+import PetiteHistoirePopup from "@/components/home/PetiteHistoirePopup";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -48,6 +50,7 @@ export default function Layout() {
   useEffect(() => subscribeMediaControl(setActiveMedia), []);
   useMediaSessionSync(activeMedia);
   usePresenceHeartbeat(user);
+  useSuiviActivite(user);
   const unread = useUnreadMessages(user);
   const notifUnread = useUnreadNotifications(user);
   const [lastParams, setLastParams] = useState({});
@@ -254,6 +257,7 @@ export default function Layout() {
         <AnimatedOutlet />
         {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
         <AProposDepuisNotification />
+        <PetiteHistoirePopup user={user} />
       </main>
 
       {/* Mobile bottom nav */}

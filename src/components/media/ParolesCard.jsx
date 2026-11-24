@@ -10,6 +10,7 @@ import { useLectureMinimale } from "@/hooks/useCompteurVues";
 import CompteurVues from "@/components/media/CompteurVues";
 import { ChevronRight, Music } from "lucide-react";
 import TexteRiche from "./TexteRiche";
+import LecteurParole from "./LecteurParole";
 
 
 function Body({ body }) {
@@ -63,10 +64,11 @@ export default function ParolesCard({ texte, variante = "carte" }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto sm:rounded-3xl">
           <div className="pr-7">
-            <DialogHeader className="gap-0">
-              <DialogTitle className="font-display text-2xl md:text-3xl font-extrabold leading-[1.15] tracking-normal text-foreground">
+            <DialogHeader className="flex-row items-start gap-3 space-y-0">
+              <DialogTitle className="min-w-0 flex-1 font-display text-2xl md:text-3xl font-extrabold leading-[1.15] tracking-normal text-foreground">
                 {texte.title}
               </DialogTitle>
+              {texte.musique_id && <LecteurParole musiqueId={texte.musique_id} titreParole={texte.title} />}
             </DialogHeader>
 
             <div className="my-5 h-px bg-border" />

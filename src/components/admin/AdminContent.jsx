@@ -11,6 +11,9 @@ import JeuxCategoriesAdmin from "@/components/admin/JeuxCategoriesAdmin";
 import AdminMissions from "@/components/admin/AdminMissions";
 import AnnoncerVersion from "@/components/admin/AnnoncerVersion";
 import SiteVisites from "@/components/admin/SiteVisites";
+import AdminPetiteHistoire from "@/components/admin/AdminPetiteHistoire";
+import AdminRequetes from "@/components/admin/AdminRequetes";
+import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
 const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel"));
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
 const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
@@ -54,6 +57,26 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "jeux_carte") return <AdminJeuxCarte />;
   if (active === "app_update") return <AnnoncerVersion />;
   if (active === "site_visites") return <SiteVisites />;
+  if (active === "petite_histoire" || active === "requetes" || active === "question_logique") {
+    const { item } = findNav(active);
+    const Icon = item.icon;
+    return (
+      <section className="rounded-[2rem] border border-border bg-background/40 p-5 md:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Icon className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-extrabold text-xl">{item.label}</h2>
+        </div>
+        {active === "petite_histoire" && <AdminPetiteHistoire />}
+        {active === "requetes" && <AdminRequetes />}
+        {active === "question_logique" && (
+          <>
+            <p className="mb-3 text-sm text-foreground/60">La question du jour telle que les membres la voient sur l'accueil : touchez « Modifier » pour la changer ou programmer les suivantes.</p>
+            <div className="-mt-6"><QuestionLogiqueSection /></div>
+          </>
+        )}
+      </section>
+    );
+  }
 
   const section = SECTIONS.find((s) => s.key === active);
   if (!section) {

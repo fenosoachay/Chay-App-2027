@@ -9,4 +9,5 @@
     <string name="external_link_confirmation_message">Voulez-vous ouvrir %1$s dans votre navigateur ?</string>
     <string name="external_link_confirmation_open">Ouvrir</string>
     <string name="external_link_confirmation_cancel">Annuler</string>
+    <string name="widget_verset_description">Le verset du jour, toujours sur votre écran d\'accueil</string>
 </resources>

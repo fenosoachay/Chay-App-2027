@@ -5,7 +5,7 @@
 //    par heure, 5 par adresse e-mail et par jour.
 //  - SiteCulte : le lien YouTube collé par l'admin est vérifié ; l'identifiant est rangé dans youtube_id et, si le
 //    titre est vide, il est repris de YouTube (oEmbed, sans clé).
-//  - POST /api/chay/site/visite (public) : compteur de visites (SiteVisite, une ligne par jour).
+//  - POST /api/chay/site/visite (public) : compteur de visites (SiteVisite, une ligne par jour ; 1 par personne et par jour).
 //  - tâche planifiée site_direct (toutes les 5 minutes) : la chaîne YouTube est-elle en direct ? Résultat dans
 //    SiteEtat (cle « direct ») ; le site affiche alors le bandeau « Culte en direct ».
 // Collections : pocketbase/scripts/migrer-site-chay.mjs. Règles : lib/siteChay.js.
@@ -51,8 +51,9 @@ routerAdd('POST', '/api/chay/site/contact', (e) => {
   });
 });
 
-// Visites du site : POST /api/chay/site/visite (public). Le site l'appelle une fois par visite (30 minutes) ;
-// le serveur ne compte qu'une visite par adresse IP et par 30 minutes. Une ligne SiteVisite par jour (heure de Paris).
+// Visites du site : POST /api/chay/site/visite (public). Une personne = 1 visite par jour, même si elle revient
+// plusieurs fois (1.3.25) : le site ne l'appelle qu'une fois par jour et le serveur ne compte qu'une visite par
+// adresse IP et par jour. Une ligne SiteVisite par jour (heure de Paris).
 routerAdd('POST', '/api/chay/site/visite', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   return fn.run(e, 'siteVisite', 'Visite non comptée', () => {
@@ -60,8 +61,8 @@ routerAdd('POST', '/api/chay/site/visite', (e) => {
     const notif = require(`${__hooks}/lib/notifications.js`);
     let ip = '';
     try { ip = e.realIP() || ''; } catch (_) { ip = ''; }
-    if (!notif.hit(`site_visite:${ip || 'inconnue'}`, 1, 30 * 60 * 1000)) return { compte: false };
     const jour = site.jourParis(Date.now());
+    if (!notif.hit(`site_visite:${jour}:${ip || 'inconnue'}`, 1, 24 * 3600 * 1000)) return { compte: false };
     const rec = fn.findOne($app, 'SiteVisite', 'jour = {:j}', '', { j: jour });
     if (rec) {
       rec.set('visites', (Number(rec.get('visites')) || 0) + 1);

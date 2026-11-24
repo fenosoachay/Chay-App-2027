@@ -1,6 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import '@/index.css'
+import { installerAttenteMedia } from '@/lib/attenteMedia'
+
+// Image d'attente Chay sur les photos et vidéos qui chargent (1.3.25).
+installerAttenteMedia()
 
 // Message discret si l'application ne peut pas démarrer (jamais d'écran de diagnostic).
 function showStartupError() {

@@ -333,7 +333,7 @@ export default function EntityCrud({
       const { playlist_id: submittedPlaylistId, ...rest } = data;
       if (fixe) Object.assign(rest, fixe);
       // Site chay.fr : un nouveau contenu se place à la fin de la liste (ordre réglable au cadenas).
-      if (!editing && entity.startsWith("Site") && sort === "order" && rest.order === undefined) {
+      if (!editing && (entity.startsWith("Site") || entity === "LienAccueil") && sort === "order" && rest.order === undefined) {
         rest.order = items.reduce((m, i) => Math.max(m, Number(i.order) || 0), -1) + 1;
       }
       const playlist_id = resolveSelectedPlaylistId(

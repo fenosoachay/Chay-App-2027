@@ -39,7 +39,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ChayGaleriePlugin.class);
         registerPlugin(ChayMiseAJourPlugin.class);
         registerPlugin(ChayTvPlugin.class);
+        registerPlugin(ChayPartagePlugin.class);
         super.onCreate(savedInstanceState);
+        // Widget « Verset du jour » : rafraîchi à chaque ouverture de l'app.
+        VersetWidget.toutRafraichir(getApplicationContext());
         WebView webView = getBridge().getWebView();
         if (webView != null) {
             // Lecture sans geste utilisateur (enchaînement des vidéos/musiques).

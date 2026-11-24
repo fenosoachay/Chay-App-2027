@@ -496,3 +496,8 @@ html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) {
 html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1 {
   min-width: min(60vw, 100%);
 }
+
+/* Image d'attente Chay (1.3.25, src/lib/attenteMedia.js) : photo ou vidéo en cours de chargement. */
+.chay-attente {
+  background: #2f3239 url("/branding/attente-chay.jpg") center / cover no-repeat !important;
+}

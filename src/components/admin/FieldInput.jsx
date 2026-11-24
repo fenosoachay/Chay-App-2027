@@ -98,6 +98,47 @@ function ImagesField({ value, onChange, onUploadingChange }) {
   );
 }
 
+// Parole › « Musique liée » (1.3.25, facultatif) : une musique de Multimédia › Musique, choisie par son titre.
+function MusiqueSelect({ value, onChange, cls }) {
+  const [musiques, setMusiques] = useState(null);
+  const [filtre, setFiltre] = useState("");
+
+  useEffect(() => {
+    base44.entities.MusicTrack.list("title", 2000)
+      .then((data) => setMusiques(Array.isArray(data) ? data : []))
+      .catch(() => setMusiques([]));
+  }, []);
+
+  if (musiques === null) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement des musiques…
+      </div>
+    );
+  }
+  const f = filtre.trim().toLowerCase();
+  const liste = musiques.filter((m) => m.id === value || !f || `${m.title || ""} ${m.artist || ""}`.toLowerCase().includes(f));
+  return (
+    <div className="space-y-2">
+      <input
+        type="search"
+        value={filtre}
+        onChange={(e) => setFiltre(e.target.value)}
+        placeholder="Chercher une musique…"
+        className={cls}
+      />
+      <select value={value || ""} onChange={(e) => onChange(e.target.value)} className={cls}>
+        <option value="">— Aucune musique —</option>
+        {liste.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.title || "Sans titre"}{m.artist ? ` · ${m.artist}` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function FileUploadField({ field, value, onChange, onUploadingChange, onChangeChamp }) {
   const [status, setStatus] = useState(() => value ? "done" : "idle");
   const [fileName, setFileName] = useState("");
@@ -350,6 +391,8 @@ export default function FieldInput({ field, value, onChange, onUploadingChange, 
           ))}
         </select>
       );
+    case "musique":
+      return <MusiqueSelect value={value} onChange={onChange} cls={cls} />;
     case "playlist":
       return (
         <PlaylistSelect

@@ -29,10 +29,24 @@ const MIN_PART = 5 * MIO;
 const MAX_PARTS = 10000;
 const SESSION_TTL_MS = 24 * 3600 * 1000;
 const PRESIGN_TTL_SEC = 900;
-const VIDEO_EXT = ['mp4', 'm4v', 'mov', 'webm', 'mkv'];
-const VIDEO_TYPES = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska' };
-const AUDIO_TYPES = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac' };
-const IMAGE_TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', heif: 'image/heif', avif: 'image/avif' };
+// Vidéos acceptées (1.3.25 : tous les formats courants). mp4, m4v, mov, webm, mkv et 3gp se lisent sur les téléphones ;
+// avi, wmv, flv, mpeg et ts sont acceptés mais ne se lisent pas partout (l'admin en est averti à l'envoi).
+const VIDEO_EXT = ['mp4', 'm4v', 'mov', 'webm', 'mkv', '3gp', '3g2', 'avi', 'wmv', 'asf', 'flv', 'mpeg', 'mpg', 'ts', 'mts', 'm2ts'];
+const VIDEO_TYPES = {
+  mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska',
+  '3gp': 'video/3gpp', '3g2': 'video/3gpp2', avi: 'video/x-msvideo', wmv: 'video/x-ms-wmv', asf: 'video/x-ms-asf',
+  flv: 'video/x-flv', mpeg: 'video/mpeg', mpg: 'video/mpeg', ts: 'video/mp2t', mts: 'video/mp2t', m2ts: 'video/mp2t',
+};
+// Audio et images (1.3.25 : tous les formats courants ; wma, amr et aiff ne se lisent pas sur tous les téléphones).
+const AUDIO_TYPES = {
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', m4b: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg',
+  opus: 'audio/ogg', flac: 'audio/flac', wma: 'audio/x-ms-wma', amr: 'audio/amr', aiff: 'audio/aiff', aif: 'audio/aiff',
+  '3ga': 'audio/3gpp', mka: 'audio/x-matroska', weba: 'audio/webm', ac3: 'audio/ac3', mp2: 'audio/mpeg', caf: 'audio/x-caf',
+};
+const IMAGE_TYPES = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', jfif: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic',
+  heif: 'image/heif', avif: 'image/avif', bmp: 'image/bmp', tif: 'image/tiff', tiff: 'image/tiff',
+};
 const SESSIONS = 'UploadSession';
 const FILE_COLLECTIONS = ['Fichier', 'FichierAdmin'];
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -198,10 +212,21 @@ const commencePar = (bytes, sig, at) => sig.every((b, i) => bytes[(at || 0) + i]
 const FTYP = [0x66, 0x74, 0x79, 0x70];
 const RIFF = [0x52, 0x49, 0x46, 0x46];
 
-/** Vrai si les premiers octets sont ceux d'une vidéo (ISO-BMFF « ftyp » : mp4 / mov / m4v ; EBML : webm / mkv). */
+/**
+ * Vrai si les premiers octets sont ceux d'une vidéo : ISO-BMFF « ftyp » (mp4, mov, m4v, 3gp), EBML (webm, mkv),
+ * RIFF….AVI (avi), ASF (wmv), « FLV », MPEG-PS (00 00 01 BA / B3), MPEG-TS (0x47 tous les 188 octets, ou 192 en m2ts).
+ */
 function looksLikeVideo(bytes) {
   if (!bytes || bytes.length < 12) return false;
-  return commencePar(bytes, FTYP, 4) || commencePar(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
+  return commencePar(bytes, FTYP, 4)
+    || commencePar(bytes, [0x1a, 0x45, 0xdf, 0xa3])
+    || (commencePar(bytes, RIFF) && commencePar(bytes, [0x41, 0x56, 0x49, 0x20], 8))
+    || commencePar(bytes, [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11])
+    || commencePar(bytes, [0x46, 0x4c, 0x56, 0x01])
+    || commencePar(bytes, [0x00, 0x00, 0x01, 0xba])
+    || commencePar(bytes, [0x00, 0x00, 0x01, 0xb3])
+    || bytes[0] === 0x47
+    || bytes[4] === 0x47;
 }
 
 /** Audio : mp3 (ID3 ou trame MPEG), AAC brut (ADTS), FLAC, Ogg / Opus, WAV, m4a (ISO-BMFF « ftyp »). */
@@ -212,17 +237,25 @@ function looksLikeAudio(bytes) {
     || commencePar(bytes, [0x66, 0x4c, 0x61, 0x43]) // « fLaC »
     || commencePar(bytes, [0x4f, 0x67, 0x67, 0x53]) // « OggS »
     || (commencePar(bytes, RIFF) && commencePar(bytes, [0x57, 0x41, 0x56, 0x45], 8)) // « RIFF….WAVE »
-    || commencePar(bytes, FTYP, 4);
+    || commencePar(bytes, FTYP, 4)
+    || commencePar(bytes, [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11]) // wma (ASF)
+    || commencePar(bytes, [0x23, 0x21, 0x41, 0x4d, 0x52]) // « #!AMR »
+    || (commencePar(bytes, [0x46, 0x4f, 0x52, 0x4d]) && (commencePar(bytes, [0x41, 0x49, 0x46, 0x46], 8) || commencePar(bytes, [0x41, 0x49, 0x46, 0x43], 8))) // aiff
+    || commencePar(bytes, [0x1a, 0x45, 0xdf, 0xa3]) // mka / weba (EBML)
+    || commencePar(bytes, [0x0b, 0x77]) // ac3
+    || commencePar(bytes, [0x63, 0x61, 0x66, 0x66]); // « caff »
 }
 
-/** Image : JPEG, PNG, GIF, WebP, HEIC / AVIF (ISO-BMFF « ftyp »). */
+/** Image : JPEG, PNG, GIF, WebP, HEIC / AVIF (ISO-BMFF « ftyp »), BMP, TIFF. */
 function looksLikeImage(bytes) {
   if (!bytes || bytes.length < 12) return false;
   return commencePar(bytes, [0xff, 0xd8, 0xff])
     || commencePar(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
     || commencePar(bytes, [0x47, 0x49, 0x46, 0x38])
     || (commencePar(bytes, RIFF) && commencePar(bytes, [0x57, 0x45, 0x42, 0x50], 8))
-    || commencePar(bytes, FTYP, 4);
+    || commencePar(bytes, FTYP, 4)
+    || commencePar(bytes, [0x42, 0x4d]) // « BM »
+    || commencePar(bytes, [0x49, 0x49, 0x2a, 0x00]) || commencePar(bytes, [0x4d, 0x4d, 0x00, 0x2a]); // TIFF
 }
 
 const FAMILLES = {

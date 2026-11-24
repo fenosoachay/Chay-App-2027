@@ -28,6 +28,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { partagerTexte } from "@/lib/partage";
+
 // Partage de l'application : le fichier d'installation Android (APK), pas le site.
 const APP_SHARE_URL = "https://membres.chay.fr/telechargements/chay.apk";
 const APP_SHARE_TEXTE = "Installe l'application de l'Église Chay (Android) :";
@@ -396,22 +398,9 @@ export default function AboutDialog({ open, onOpenChange }) {
                 variant="outline"
                 className="w-full"
                 onClick={async () => {
-                  const url = APP_SHARE_URL;
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({ title: "Application Église Chay", text: APP_SHARE_TEXTE, url });
-                      return;
-                    } catch {
-                      // L'utilisateur a annulé ou erreur -> fallback
-                    }
-                  }
-                  // Fallback : copie dans le presse-papiers
-                  try {
-                    await navigator.clipboard.writeText(`${APP_SHARE_TEXTE} ${url}`);
-                    toast({ title: "Lien copié dans le presse-papiers" });
-                  } catch {
-                    toast({ title: "Impossible de copier", variant: "destructive" });
-                  }
+                  // Fenêtre de partage du téléphone (toutes ses applications), sinon copie du lien.
+                  const r = await partagerTexte({ titre: "Partager l'application", texte: `${APP_SHARE_TEXTE}\n\n${APP_SHARE_URL}` });
+                  if (r === "copie") toast({ title: "Lien copié dans le presse-papiers" });
                 }}
               >
                 <Share2 className="h-4 w-4 mr-2" /> Partager l'application (Android)
