@@ -6,6 +6,7 @@ import { compterVue, useCompteur } from "@/hooks/useCompteurVues";
 import { useJaimes } from "@/hooks/useJaimes";
 import Description from "@/components/media/Description";
 import { infosConnues } from "@/lib/infosVideo";
+import { IMAGE_ATTENTE } from "@/lib/attenteMedia";
 import { REACTIONS, emojiDe } from "@/lib/reactions";
 
 // Vidéos verticales façon TikTok, à partir de la vidéo touchée (`depart`) jusqu'à la dernière :
@@ -166,7 +167,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
             <video
               ref={(el) => { videosRef.current[i] = el; }}
               src={Math.abs(i - actif) <= 1 ? r.video_url : undefined}
-              poster={r.cover_url || undefined}
+              poster={r.cover_url || IMAGE_ATTENTE}
               loop
               playsInline
               preload={i === actif ? "auto" : "metadata"}

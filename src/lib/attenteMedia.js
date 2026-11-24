@@ -39,6 +39,9 @@ function suivreImage(img) {
 function suivreVideo(video) {
   if (video.__chayAttente) return;
   video.__chayAttente = true;
+  // 1.3.28 : toute vidéo sans couverture montre l'image d'attente Chay (et jamais l'image grise « lecture » du
+  // téléphone, que l'app Android affiche tant qu'une vidéo n'a pas d'image) : miniatures, lecteurs, futures vidéos.
+  if (!video.getAttribute("poster")) video.setAttribute("poster", IMAGE_ATTENTE);
   const fini = () => video.classList.remove(CLASSE);
   if (video.readyState < 2) video.classList.add(CLASSE);
   // 1.3.27 : un même lecteur sert à plusieurs vidéos (lecteur de l'app) : à chaque nouvelle vidéo, l'image

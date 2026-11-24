@@ -6,6 +6,7 @@ import { lancerFilm } from "@/components/player/VideoPlayer";
 import { formatDuree, infosConnues, infosVideo, useInfosVideo } from "@/lib/infosVideo";
 import { formatVues } from "@/lib/vues";
 import { useCompteur } from "@/hooks/useCompteurVues";
+import { IMAGE_ATTENTE } from "@/lib/attenteMedia";
 
 // Playlists « liste de films » de la section Vidéo (Film chrétien, À voir…) : affiches en grille,
 // 3 par ligne sur téléphone, 6 sur ordinateur. Sous chaque affiche : titre, durée, vues.
@@ -37,7 +38,7 @@ function Affiche({ v, cible, chargement, onOuvrir, refNoeud }) {
           <img src={v.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
         ) : (
           // Sans miniature : une image de la vidéo.
-          <video src={`${v.video_url}#t=5`} preload="metadata" muted playsInline className="pointer-events-none h-full w-full object-cover" />
+          <video src={`${v.video_url}#t=5`} poster={IMAGE_ATTENTE} preload="metadata" muted playsInline className="pointer-events-none h-full w-full object-cover" />
         )}
         <span className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover:bg-black/30">
           <span className={`grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white transition ${chargement ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>

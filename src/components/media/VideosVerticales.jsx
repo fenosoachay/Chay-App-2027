@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import DefilementVertical from "@/components/media/DefilementVertical";
 import BadgeAudience from "@/components/media/BadgeAudience";
+import { IMAGE_ATTENTE } from "@/lib/attenteMedia";
 
 // Playlist « Drôle » (section Vidéo) : toutes les vidéos d'abord, en grille de vignettes verticales 9:16 ;
 // toucher une vidéo l'ouvre en plein écran façon TikTok, et on fait défiler jusqu'à la dernière.
@@ -53,7 +54,7 @@ export default function VideosVerticales({ pistes, descriptions, titre, cibleId 
               <img src={v.cover_url} alt="" loading="lazy" className="h-full w-full object-cover" />
             ) : (
               // Sans image d'aperçu : première image de la vidéo.
-              <video src={`${v.video_url}#t=0.1`} preload="metadata" muted playsInline className="pointer-events-none h-full w-full object-cover" />
+              <video src={`${v.video_url}#t=0.1`} poster={IMAGE_ATTENTE} preload="metadata" muted playsInline className="pointer-events-none h-full w-full object-cover" />
             )}
             <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pb-1.5 pt-6 text-left">
               <Play className="mb-0.5 h-3.5 w-3.5 text-white" fill="currentColor" aria-hidden="true" />
