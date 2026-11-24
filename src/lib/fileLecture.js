@@ -41,6 +41,7 @@ export function filePlaylist(pistes, category) {
       audio_url: a.audio_url,
       cover_url: a.cover_url,
       mediaType: category === "sermons" ? "sermons" : "music",
+      playlist_id: a.playlist_id, // texte qui défile sur la photo du lecteur (src/lib/texteDefilant.js)
       // Toucher la notification de lecture : ce titre, dans sa playlist.
       route: routeTitre(category === "sermons" ? "sermons" : "music", a.playlist_id, a.track_id),
       // Compteur de vues (src/lib/vues.js) : +1 à la moitié de l'écoute.

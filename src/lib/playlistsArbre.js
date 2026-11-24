@@ -7,6 +7,7 @@ export const CATEGORIE_PLAYLIST = {
   MusicTrack: "music",
   Sermon: "sermons",
   Video: "films",
+  VideoEnfant: "enfants", // 1.3.26 : vidéos de Chay Enfants
   YouTubeVideo: "youtube",
   Article: "articles",
   GalleryImage: "gallery",

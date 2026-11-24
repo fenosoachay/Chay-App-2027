@@ -1,7 +1,9 @@
 // Score Boards (1.3.22) : côté app. Les points sont calculés et bornés par le serveur (pb_hooks/lib/scores.js).
-//  - enregistrerScore : fin d'une partie d'Émojis, Brique, Puzzle (adultes) ou de Jeux Carte (enfants) ;
+//  - enregistrerScore : fin d'une partie d'Émojis, Brique (adultes), de Jeux Carte ou de Puzzle (enfants) ;
 //    Quiz et Mots mélangés : rien à faire, le serveur compte lui-même ;
-//  - profil enfant : pseudo + avatar dessiné, gardés sur ce téléphone (les enfants jouent sur le compte d'un parent).
+//  - profil enfant : pseudo + avatar dessiné (les enfants jouent sur le compte d'un parent). Depuis 1.3.26, les
+//    enfants sont enregistrés sur le compte (src/lib/profilsEnfants.js) ; l'ancien profil gardé sur le téléphone
+//    (lireProfilEnfant) n'est plus lu que pour être recopié sur le compte.
 import { base44 } from "@/api/base44Client";
 
 export const PERIODES = [
@@ -16,9 +18,9 @@ export const JEUX_ADULTES = [
   { id: "scramble", label: "Mots mélangés" },
   { id: "emoji", label: "Émojis" },
   { id: "brique", label: "Brique" },
-  { id: "puzzle", label: "Puzzle" },
 ];
-export const JEUX_ENFANTS = [{ id: "general", label: "Général" }, { id: "memory", label: "Jeux Carte" }];
+// 1.3.26 : le Puzzle est un jeu des enfants (Chay Enfants › Jeux).
+export const JEUX_ENFANTS = [{ id: "general", label: "Général" }, { id: "memory", label: "Jeux Carte" }, { id: "puzzle", label: "Puzzle" }];
 
 // Même liste que le serveur (pb_hooks/lib/scores.js).
 export const AVATARS = ["🦁", "🐑", "🕊️", "🐟", "🐘", "🦒", "🐻", "🐰", "🦊", "🐢", "🐝", "🦋", "🐳", "🐧", "🦉", "🐞"];

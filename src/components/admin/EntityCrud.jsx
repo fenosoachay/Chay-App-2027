@@ -37,7 +37,7 @@ import {
 } from "@/lib/playlistAttachment";
 
 /** Champ PlaylistTrack qui porte le média (vérifié après l'ajout à la playlist), selon l'entité. */
-const CHAMP_MEDIA = { MusicTrack: "audio_url", Sermon: "audio_url", Video: "video_url" };
+const CHAMP_MEDIA = { MusicTrack: "audio_url", Sermon: "audio_url", Video: "video_url", VideoEnfant: "video_url" };
 
 /** Liste admin : nombre maximum de contenus chargés (tout, en pratique). */
 const LIMITE_LISTE = 1000;
@@ -275,7 +275,7 @@ export default function EntityCrud({
   };
 
   const notifyPlaylistUpload = (item, playlistId) => {
-    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", Article: "article", YouTubeVideo: "youtube", GalleryImage: "gallery", Paroles: "paroles", Verset: "verset" };
+    const kindMap = { MusicTrack: "music", Sermon: "sermon", Video: "film", VideoEnfant: "film_enfant", Article: "article", YouTubeVideo: "youtube", GalleryImage: "gallery", Paroles: "paroles", Verset: "verset" };
     // Annonce / réunion : notification qui ouvre l'annonce, si elle est déjà visible (date passée ou du jour).
     if (entity === "Announcement") {
       if (item?.id && annonceVisibleMaintenant(item.date)) {

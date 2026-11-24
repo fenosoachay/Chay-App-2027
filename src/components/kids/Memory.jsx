@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw, Star, Timer, Trophy } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { enregistrerScore, lireProfilEnfant } from "@/lib/scoreBoard";
+import { enregistrerScore } from "@/lib/scoreBoard";
 import { lireMasques, lireThemesAdmin, MIN_CARTES } from "@/lib/jeuxEnfants";
 import {
   NIVEAUX, THEMES, disposition, distribuer, duree, etoiles, lireDisposition, lireRecords, noterDisposition, noterRecord,
@@ -123,7 +123,7 @@ function ChoixNiveau({ theme, onChoisir }) {
 }
 
 /** Écran 3 : la partie, en plein écran. */
-function Partie({ theme, niveau, onQuitter }) {
+function Partie({ theme, niveau, onQuitter, profil }) {
   const [cartes, setCartes] = useState([]);
   const [retournees, setRetournees] = useState([]); // clés des cartes visibles (2 au plus)
   const [trouvees, setTrouvees] = useState(() => new Set()); // identifiants des paires trouvées
@@ -164,8 +164,7 @@ function Partie({ theme, niveau, onQuitter }) {
   useEffect(() => {
     if (!fini) return;
     setRecord(noterRecord(theme.id, niveau.id, essais, secondes));
-    // Score Board : étoiles de la partie, au nom du pseudo de l'enfant (s'il en a choisi un).
-    const profil = lireProfilEnfant();
+    // Score Board : étoiles de la partie, au nom de l'enfant qui joue (« Qui joue ? », Chay Enfants › Jeux).
     if (profil) {
       enregistrerScore("memory", { etoiles: etoiles(essais, niveau.paires), niveau: niveau.id, pseudo: profil.pseudo, avatar: profil.avatar });
     }
@@ -303,7 +302,7 @@ function Partie({ theme, niveau, onQuitter }) {
   );
 }
 
-export default function Memory() {
+export default function Memory({ profil = null }) {
   const [themeId, setThemeId] = useState(null);
   const [niveauId, setNiveauId] = useState(null);
   // Catégories : intégrées (sauf celles masquées par l'admin) + celles de l'admin qui ont au moins 6 cartes.
@@ -327,7 +326,7 @@ export default function Memory() {
   return (
     <>
       <ChoixNiveau theme={theme} onChoisir={setNiveauId} />
-      {niveau && <Partie key={`${theme.id}:${niveau.id}`} theme={theme} niveau={niveau} onQuitter={() => window.history.back()} />}
+      {niveau && <Partie key={`${theme.id}:${niveau.id}`} theme={theme} niveau={niveau} onQuitter={() => window.history.back()} profil={profil} />}
     </>
   );
 }

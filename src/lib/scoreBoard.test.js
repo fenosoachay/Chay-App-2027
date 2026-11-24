@@ -42,3 +42,12 @@ test("score board : classement avec ex aequo", () => {
   ]);
   assert.deepEqual(l.map((x) => [x.cle, x.points, x.rang]), [["a", 50, 1], ["b", 50, 1], ["c", 10, 3]]);
 });
+
+test("score board 1.3.26 : le Puzzle est un jeu d'enfant (sauf ancienne app sans pseudo)", () => {
+  assert.deepEqual(sc.JEUX.enfant, ["memory", "puzzle"]);
+  assert.equal(sc.JEUX.adulte.includes("puzzle"), false);
+  assert.equal(sc.espaceDe("memory", "Mickael"), "enfant");
+  assert.equal(sc.espaceDe("puzzle", "Mickael"), "enfant");
+  assert.equal(sc.espaceDe("puzzle", ""), "adulte");
+  assert.equal(sc.espaceDe("emoji", "Mickael"), "adulte");
+});

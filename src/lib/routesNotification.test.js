@@ -19,6 +19,14 @@ const CONTENUS = [
   { id: "c8", type: "annonce" },
   { id: "c9", resource_type: "MusicTrack", resource_id: "t9" },
 ];
+const ENFANTS = { id: "c10", resource_type: "VideoEnfant", resource_id: "ve1", playlist_id: "pe1" };
+
+test("vidéo des enfants (1.3.26) : Chay Enfants › Vidéos, même route côté serveur", () => {
+  assert.equal(routeContenu(ENFANTS), "/kids?vue=videos&playlist=pe1&track=ve1");
+  assert.equal(serveur.routeContenu(ENFANTS), routeContenu(ENFANTS));
+  assert.equal(routeContenu({ ...ENFANTS, playlist_id: "" }), "/kids?vue=videos&track=ve1");
+  assert.equal(routeValide(routeContenu(ENFANTS)), true);
+});
 
 test("chaque type ouvre l'écran précis de son contenu", () => {
   const r = CONTENUS.map(routeContenu);

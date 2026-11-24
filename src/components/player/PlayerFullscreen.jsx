@@ -18,6 +18,7 @@ import { Image } from "@/components/ui/image";
 import SeekBar from "./SeekBar";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import BoutonTv from "@/components/tv/BoutonTv";
+import TexteDefilantCouverture from "@/components/player/TexteDefilantCouverture";
 
 export default function PlayerFullscreen({ onCollapse, cover }) {
   useBackHandler(true, onCollapse);
@@ -76,7 +77,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 overflow-y-auto">
-        <div className="w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl">
+        <div className="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl">
           {cover ? (
             <Image src={cover} fittingType="fill" className="w-full h-full" />
           ) : (
@@ -84,6 +85,8 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
               <Music className="h-16 w-16 text-white/90" />
             </div>
           )}
+          {/* Texte qui défile sur la photo (Admin › Multimédia › Texte qui défile, 1.3.26). */}
+          <TexteDefilantCouverture piste={currentTrack} />
         </div>
         <div className="text-center w-full max-w-sm">
           <div className="font-display font-extrabold text-2xl truncate">

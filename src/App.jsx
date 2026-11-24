@@ -36,7 +36,6 @@ const Home = lazy(homeImport);
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
-const Puzzle = lazy(() => import("@/pages/Puzzle"));
 const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
 const PersonalityQuiz = lazy(() => import("@/pages/PersonalityQuiz"));
 const BlockBlast = lazy(() => import("@/pages/BlockBlast"));
@@ -124,7 +123,8 @@ const AuthenticatedApp = () => {
           <Route path="/bible" element={<Bible />} />
           <Route path="/media" element={<Media />} />
           <Route path="/games" element={<Games />} />
-          <Route path="/puzzle" element={<Puzzle />} />
+          {/* 1.3.26 : le Puzzle est dans Chay Enfants › Jeux (anciens liens redirigés). */}
+          <Route path="/puzzle" element={<Navigate to="/kids?vue=jeux&jeu=puzzle" replace />} />
           <Route path="/games/emojis" element={<EmojisGame />} />
           <Route path="/personality-quiz" element={<PersonalityQuiz />} />
           <Route path="/block-blast" element={<BlockBlast />} />

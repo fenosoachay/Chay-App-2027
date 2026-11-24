@@ -270,6 +270,58 @@ export const SECTIONS = [
     showPlaylist: true,
   },
   {
+    // Chay Enfants › Vidéos (1.3.26) : comme Multimédia › Vidéo, dans des playlists de la catégorie « enfants ».
+    key: "VideoEnfant",
+    label: "Vidéos des enfants",
+    icon: Film,
+    sort: "-created_date",
+    listColumns: ["title"],
+    playlistField: "cover_url",
+    fields: [
+      { name: "audience", label: "C'est pour", type: "select", required: true, options: AUDIENCES },
+      { name: "title", label: "Titre", type: "text", required: true },
+      { name: "video_url", label: "Vidéo", type: "file", accept: "video/*", required: true },
+      { name: "description", label: "Description", type: "textarea" },
+      { name: "category", label: "Catégorie", type: "text" },
+      { name: "language", label: "Langue", type: "select", options: LANGS },
+      { name: "cover_url", label: "Couverture", type: "file", accept: "image/*" },
+      { name: "duration_seconds", label: "Durée (s)", type: "number" },
+    ],
+    showPlaylist: true,
+  },
+  {
+    // Texte qui défile sur la photo des lecteurs (1.3.26) : Musique, Prédication, Bible en audio.
+    key: "TexteDefilant",
+    label: "Texte qui défile",
+    icon: Type,
+    sort: "order",
+    listColumns: ["texte", "ou"],
+    fields: [
+      { name: "texte", label: "Texte", type: "textarea", required: true },
+      { name: "direction", label: "Direction du texte", type: "select", required: true, options: [
+        { value: "monte", label: "Monte (de bas en haut)" },
+        { value: "gauche", label: "De droite à gauche (comme sur le site)" },
+      ] },
+      { name: "ou", label: "Apparaît où ?", type: "select", required: true, options: [
+        { value: "partout", label: "Partout (Musique, Prédication et Bible en audio)" },
+        { value: "musique", label: "Musique" },
+        { value: "predication", label: "Prédication" },
+        { value: "bible", label: "Bible en audio" },
+      ] },
+      { name: "playlist_id", label: "Seulement dans cette playlist (sinon : toutes)", type: "playlist_lecteur" },
+      { name: "track_id", label: "Seulement sur ce titre (sinon : tous)", type: "titre_lecteur" },
+      { name: "debut", label: "À partir du (facultatif)", type: "date" },
+      { name: "fin", label: "Jusqu'au (facultatif, inclus)", type: "date" },
+      { name: "vitesse", label: "Vitesse", type: "select", options: [
+        { value: "lent", label: "Lente" }, { value: "normal", label: "Normale" }, { value: "rapide", label: "Rapide" },
+      ] },
+      { name: "couleur", label: "Couleur", type: "select", options: [
+        { value: "blanc", label: "Blanc" }, { value: "dore", label: "Doré" }, { value: "jaune", label: "Jaune" },
+        { value: "rose", label: "Rose" }, { value: "bleu", label: "Bleu clair" },
+      ] },
+    ],
+  },
+  {
     key: "Article",
     label: "Articles",
     icon: FileText,
@@ -501,7 +553,7 @@ export const SECTIONS = [
     fields: [
       { name: "name", label: "Nom", type: "text", required: true },
       { name: "description", label: "Description", type: "textarea" },
-      { name: "category", label: "Catégorie", type: "select", options: [{ value: "music", label: "Musique" }, { value: "sermons", label: "Prédications" }, { value: "films", label: "Films" }, { value: "youtube", label: "YouTube" }, { value: "articles", label: "Articles" }, { value: "gallery", label: "Galerie" }, { value: "other", label: "Autre" }] },
+      { name: "category", label: "Catégorie", type: "select", options: [{ value: "music", label: "Musique" }, { value: "sermons", label: "Prédications" }, { value: "films", label: "Films" }, { value: "enfants", label: "Vidéos des enfants" }, { value: "youtube", label: "YouTube" }, { value: "articles", label: "Articles" }, { value: "gallery", label: "Galerie" }, { value: "other", label: "Autre" }] },
       { name: "cover_url", label: "Couverture", type: "file", accept: "image/*" },
     ],
     readOnly: false,

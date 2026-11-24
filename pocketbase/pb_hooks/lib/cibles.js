@@ -18,6 +18,7 @@ function routeContenu(c) {
   if (id && PISTES[type]) {
     return `/media?cat=${PISTES[type]}${c.playlist_id ? `&playlist=${q(c.playlist_id)}` : ''}&track=${q(id)}`;
   }
+  if (id && type === 'VideoEnfant') return `/kids?vue=videos${c.playlist_id ? `&playlist=${q(c.playlist_id)}` : ''}&track=${q(id)}`;
   if (id && type === 'YouTubeVideo') return `/media?cat=youtube&video=${q(id)}`;
   if (id && type === 'Article') return `/media?cat=articles&article=${q(id)}`;
   if (id && type === 'GalleryImage') return `/media?cat=gallery&image=${q(id)}`;

@@ -1,12 +1,14 @@
 // Score Boards (1.3.22) : calcul des points et des classements (routes : pb_hooks/scores.pb.js ; Quiz et Mots
 // mélangés : fn_jeux.pb.js, points calculés par le serveur). Pur : testé par src/lib/scoreBoard.test.js.
 //  - adultes : classement par compte (nom et photo du profil) ; enfants : par pseudo (+ avatar dessiné) sur le compte ;
+//  - 1.3.26 : le Puzzle passe dans l'espace Enfants (les points Puzzle déjà gagnés par les adultes restent dans
+//    leur total « Général ») ;
 //  - périodes : semaine (depuis lundi 0 h, heure de Paris), mois (depuis le 1er, 0 h), toujours ;
 //  - général (tous les jeux additionnés) ou un seul jeu.
 
 const JEUX = {
-  adulte: ['trivia', 'scramble', 'emoji', 'brique', 'puzzle'],
-  enfant: ['memory'],
+  adulte: ['trivia', 'scramble', 'emoji', 'brique'],
+  enfant: ['memory', 'puzzle'],
 };
 const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory']; // scores envoyés par l'app (bornés ici)
 const MULT = { easy: 1, medium: 2, hard: 3, ultra_hard: 4, facile: 1, moyen: 2, difficile: 3 };
@@ -52,6 +54,16 @@ function pseudoValide(p) {
 }
 function avatarValide(a) { return AVATARS.indexOf(a) !== -1 ? a : AVATARS[0]; }
 
+/**
+ * Espace d'une partie envoyée par l'app : « enfant » pour Jeux Carte, et pour le Puzzle joué au nom d'un enfant
+ * (pseudo) ; un Puzzle sans pseudo vient d'une ancienne version de l'app (Puzzle adulte) : compté chez les adultes.
+ */
+function espaceDe(jeu, pseudo) {
+  if (jeu === 'memory') return 'enfant';
+  if (jeu === 'puzzle') return pseudoValide(pseudo) ? 'enfant' : 'adulte';
+  return 'adulte';
+}
+
 /** Début de période en ms (UTC) ; `decalage` = minutes d'avance de Paris sur UTC à cet instant. */
 function debutPeriode(periode, maintenant, decalage) {
   if (periode !== 'semaine' && periode !== 'mois') return 0;
@@ -91,5 +103,5 @@ function classer(lignes) {
 module.exports = {
   JEUX, JEUX_CLIENT, AVATARS, PLAFOND,
   pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsClient,
-  pseudoValide, avatarValide, debutPeriode, datePb, classer,
+  pseudoValide, avatarValide, espaceDe, debutPeriode, datePb, classer,
 };

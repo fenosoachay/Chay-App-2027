@@ -32,7 +32,8 @@ export default function CreatePlaylistModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   // Section Vidéo : affichage de la playlist, liste de films (affiches) ou défilement TikTok — à choisir.
-  const estVideo = (playlist?.category || category) === "films";
+  // Vidéos des enfants (1.3.26) : mêmes choix que la section Vidéo.
+  const estVideo = ["films", "enfants"].includes(playlist?.category || category);
   const [affichage, setAffichage] = useState("");
   const [coverUrl, setCoverUrl] = useState(null);
   const [rawFile, setRawFile] = useState(null);

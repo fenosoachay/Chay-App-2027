@@ -13,7 +13,7 @@ routerAdd('POST', '/api/fn/enregistrerScore', (e) => {
     const b = fn.readBody(e);
     const jeu = typeof b.jeu === 'string' ? b.jeu : '';
     if (sc.JEUX_CLIENT.indexOf(jeu) === -1) throw new fn.HttpError(400, 'Jeu inconnu');
-    const enfant = sc.JEUX.enfant.indexOf(jeu) !== -1;
+    const enfant = sc.espaceDe(jeu, b.pseudo) === 'enfant';
     const pseudo = enfant ? sc.pseudoValide(b.pseudo) : '';
     if (enfant && !pseudo) throw new fn.HttpError(400, 'Pseudo invalide');
     const points = sc.pointsClient(jeu, b);
@@ -26,6 +26,13 @@ routerAdd('POST', '/api/fn/enregistrerScore', (e) => {
       pseudo, avatar: enfant ? sc.avatarValide(b.avatar) : '',
     });
     $app.save(rec);
+    // 1.3.26 : l'enfant est gardé dans les profils du compte (« Qui joue ? »), même s'il a été créé ailleurs.
+    if (enfant) {
+      try {
+        const deja = $app.findRecordsByFilter('ProfilEnfant', 'user_id = {:u} && pseudo = {:p}', '', 1, 0, { u: caller.id, p: pseudo });
+        if (!deja.length) $app.save(fn.newRecord($app, 'ProfilEnfant', { user_id: caller.id, pseudo, avatar: sc.avatarValide(b.avatar), progres: {} }));
+      } catch (_) { /* collection absente (migration 1.3.26 pas encore faite) : le score reste enregistré */ }
+    }
     return { points };
   });
 });

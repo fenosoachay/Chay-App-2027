@@ -37,6 +37,7 @@ export const ADMIN_NAV = [
             id: "app_media", label: "Multimédia", icon: Film,
             items: [
               { key: "MusicTrack", mots: "chant chanson louange", label: "Musique", icon: Music, path: "/admin/music" },
+              { key: "TexteDefilant", mots: "texte defile defilant lecteur photo musique predication bible audio", label: "Texte qui défile", icon: Type, path: "/admin/texte-defilant" },
               { key: "Sermon", mots: "predication sermon message audio", label: "Prédication", icon: Headphones, path: "/admin/sermons" },
               { key: "Video", mots: "film drole tiktok court", label: "Vidéo", icon: Video, path: "/admin/videos" },
               { key: "YouTubeVideo", mots: "culte celebration", label: "YouTube", icon: Youtube, path: "/admin/youtube" },
@@ -66,8 +67,10 @@ export const ADMIN_NAV = [
               {
                 id: "chay_kids", label: "Chay Kids", icon: Baby,
                 items: [
+                  { key: "VideoEnfant", mots: "video film dessin anime enfant kids", label: "Vidéos", icon: Video, path: "/admin/videos-enfants" },
                   { key: "Coloriage", mots: "coloriage dessin enfant colorier", label: "Coloriages", icon: Palette, path: "/admin/coloriages" },
                   { key: "jeux_carte", mots: "memory carte paire enfant jeu", label: "Jeux Carte", icon: LayoutGrid, path: "/admin/jeux-carte" },
+                  { key: "puzzles", mots: "puzzle image enfant", label: "Puzzles", icon: Puzzle, path: "/admin/puzzles" },
                 ],
               },
               {
@@ -77,7 +80,6 @@ export const ADMIN_NAV = [
                   { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },
                   { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
                   { key: "emojis", mots: "emoji devine", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
-                  { key: "puzzles", label: "Gestion des puzzles", icon: Puzzle, path: "/admin/puzzles" },
                   { key: "personalityquiz", mots: "personnalite", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
                   { key: "blockblast", mots: "brique block", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
                 ],

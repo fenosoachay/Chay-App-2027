@@ -15,6 +15,7 @@ export function buildFavoriteAudioQueue(playlist, selectedFavoriteId) {
       audio_url: favorite.audio_url,
       cover_url: favorite.cover_url,
       mediaType: "music",
+      playlist_id: favorite.source_playlist_id, // texte qui défile (playlist d'origine)
       origine: "favoris", // lecture non-stop (fondu enchaîné) : seulement pour Votre Playlist
       // Toucher la notification de lecture : « Votre Playlist », sur ce titre.
       route: `/media?cat=playlist&favori=${encodeURIComponent(favorite.id)}`,

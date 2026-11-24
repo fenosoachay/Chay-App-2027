@@ -26,6 +26,7 @@ export const ARRAY_FIELDS = {
   QuizUserProgress: ['session_question_ids', 'session_answered_ids'],
   UploadSession: ['uploaded_indices'],
   Video: ['viewed_by'],
+  VideoEnfant: ['viewed_by'],
   WordScrambleImport: ['category_values'],
   WordScrambleProgress: ['session_word_ids'],
 };

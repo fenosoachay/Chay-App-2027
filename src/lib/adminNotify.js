@@ -47,6 +47,12 @@ export async function notifyAdminUpload({
       contentType = "video";
       resourceType = "Video";
       break;
+    case "film_enfant":
+      message = `La vidéo « ${title} » a été ajoutée dans Chay Enfants${playlist ? ` (« ${playlist} »)` : ""}.`;
+      linkPath = "/kids?vue=videos";
+      contentType = "video";
+      resourceType = "VideoEnfant";
+      break;
     case "youtube": {
       const sectionLabels = { culte: "Culte", louange: "Louange", celebration: "Célébration" };
       message = `La vidéo « ${title} » a été ajoutée dans « ${sectionLabels[section] || section || "YouTube"} ».`;

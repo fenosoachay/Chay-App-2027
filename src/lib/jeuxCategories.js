@@ -2,13 +2,15 @@
 // et classement de chaque jeu dans UNE catégorie (collection GameClassement). Un jeu non classé n'est pas montré
 // aux membres ; le panneau admin affiche une demande de classement pour chacun.
 
-/** Jeux de l'app (identifiant fixe = GameClassement.game_id). Les icônes sont dans src/pages/Games.jsx. */
+/**
+ * Jeux de l'app (identifiant fixe = GameClassement.game_id). Les icônes sont dans src/pages/Games.jsx.
+ * 1.3.26 : le Puzzle a quitté les jeux des adultes pour Chay Enfants › Jeux (src/pages/Kids.jsx).
+ */
 export const JEUX = [
   { id: "trivia", name: "Quiz", path: "/quiz" },
   { id: "brique", name: "Brique", path: "/block-blast" },
   { id: "emoji", name: "Émojis", path: "/games/emojis" },
   { id: "scramble", name: "Mots mélangés", path: "/word-scramble" },
-  { id: "puzzle", name: "Puzzle", path: "/puzzle" },
   { id: "personality", name: "Personnalité biblique", path: "/personality-quiz" },
 ];
 

@@ -289,9 +289,16 @@ export function duree(secondes) {
   return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`;
 }
 
-/* Meilleurs scores (sur ce téléphone) : { "animaux:facile": { essais, secondes } }. */
+/*
+ * Meilleurs scores : { "animaux:facile": { essais, secondes } }. Depuis 1.3.26, ceux de l'enfant qui joue,
+ * enregistrés sur le compte (src/lib/profilsEnfants.js) : Chay Enfants « branche » ses records ici. Sans enfant
+ * choisi : sur ce téléphone, comme avant.
+ */
 const CLE = "chay_memory_records";
+let magasin = null; // { lire: () => records, ecrire: (records) => void }
+export function brancherRecords(m) { magasin = m || null; }
 export function lireRecords() {
+  if (magasin) return { ...(magasin.lire() || {}) };
   try { return JSON.parse(localStorage.getItem(CLE) || "{}") || {}; } catch { return {}; }
 }
 /** Enregistre si c'est mieux (moins d'essais, puis plus rapide). Renvoie true si c'est un nouveau record. */
@@ -302,7 +309,10 @@ export function noterRecord(themeId, niveauId, essais, secondes) {
   const mieux = !r || essais < r.essais || (essais === r.essais && secondes < r.secondes);
   if (mieux) {
     records[k] = { essais, secondes };
-    try { localStorage.setItem(CLE, JSON.stringify(records)); } catch { /* stockage indisponible */ }
+    if (magasin) magasin.ecrire(records);
+    else {
+      try { localStorage.setItem(CLE, JSON.stringify(records)); } catch { /* stockage indisponible */ }
+    }
   }
   return mieux;
 }

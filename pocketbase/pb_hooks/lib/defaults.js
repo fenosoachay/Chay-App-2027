@@ -115,6 +115,12 @@ module.exports = {
     "view_count": 0,
     "viewed_by": []
   },
+  "VideoEnfant": {
+    "language": "fr",
+    "created_by_admin": false,
+    "view_count": 0,
+    "viewed_by": []
+  },
   "WebPushSubscription": {
     "is_active": true
   },

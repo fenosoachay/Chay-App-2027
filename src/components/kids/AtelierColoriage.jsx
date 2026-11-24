@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Brush, Eraser, Loader2, PaintBucket, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
+import { Brush, Eraser, Images, Loader2, PaintBucket, RotateCcw, Save, Trash2, Undo2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useToast } from "@/components/ui/use-toast";
-import { confirmFr } from "@/lib/confirmFr";
 import { COTE, PALETTE, enregistrerDessin, masqueTraits, remplir, versDessin } from "@/lib/coloriage";
 import { enregistrerImageGalerie } from "@/lib/fondsEcran";
-import { estNatif } from "@/lib/chayConversation";
 
 // Atelier de coloriage : l'enfant touche une zone pour la remplir (seau), ou dessine librement (pinceau),
-// gomme, annule (flèche en haut à gauche). Les traits du dessin restent toujours par-dessus.
-// Rien n'est gardé tout seul : « Enregistrer » met le dessin dans « Mes dessins » (le même dessin est mis à
-// jour, jamais en double) et dans la galerie du téléphone. Retour du téléphone = quitter (avec une question
-// si le dessin a changé depuis le dernier enregistrement).
+// gomme. Les traits du dessin restent toujours par-dessus.
+// 1.3.26 : deux boutons bien différents en haut à gauche, avec leur nom écrit dessous :
+//  - « Images » (vignettes) : retour à la liste des images ;
+//  - « Annuler » (flèche courbe) : enlève la dernière couleur.
+// Le retour du téléphone revient TOUJOURS à la liste des images, sans question : le dessin commencé est gardé
+// tout seul dans « Mes dessins » (le même dessin est mis à jour, jamais en double), pour le continuer plus tard.
+// « Enregistrer » le met aussi dans la galerie du téléphone.
 // source : { id, titre, svg } (dessin intégré) ou { id, titre, image_url } (coloriage ajouté par l'admin).
 // reprise : dessin de « Mes dessins » à continuer ({ id, couleurs: Blob }).
 
@@ -212,23 +213,16 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
     return true;
   };
 
-  // Quitter : si le dessin a changé depuis le dernier « Enregistrer », on demande d'abord.
-  // Le retour du téléphone a déjà consommé son entrée d'historique : si l'enfant reste, on la remet.
-  const [ecoute, setEcoute] = useState(true);
-  useEffect(() => { if (!ecoute) setEcoute(true); }, [ecoute]);
-  const quitter = async (parRetour) => {
-    if (pret && modifie.current) {
-      const ok = await confirmFr({
-        title: "Quitter sans enregistrer ?",
-        message: "Ton dessin n'est pas enregistré. Touche « Enregistrer » pour le garder.",
-        confirmLabel: "Quitter",
-        cancelLabel: "Rester",
-      });
-      if (!ok) { if (parRetour) setEcoute(false); return; }
-    }
+  // Retour à la liste des images (bouton « Images » ou retour du téléphone) : le dessin commencé est gardé dans
+  // « Mes dessins », sans rien demander ; en cas d'échec, on quitte quand même (rien ne bloque l'enfant).
+  const quitte = useRef(false);
+  const quitter = async () => {
+    if (quitte.current) return;
+    quitte.current = true;
+    try { await garder(); } catch { /* dessin non gardé : on quitte quand même */ }
     onClose();
   };
-  useBackHandler(ecoute, () => quitter(true));
+  useBackHandler(true, quitter);
 
   const enregistrer = async () => {
     setOccupe(true);
@@ -264,22 +258,33 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-background" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex items-center gap-2 px-3 py-2">
-        <button type="button" onClick={annuler} disabled={!nbAnnuler} aria-label="Annuler la dernière couleur" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
-          <Undo2 className="h-5 w-5" />
+        <button
+          type="button"
+          onClick={() => window.history.back()}
+          aria-label="Retour à la liste des images"
+          className="flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-2xl bg-muted px-1 py-1.5 text-[0.7rem] font-bold text-foreground/80"
+        >
+          <Images className="h-6 w-6" />
+          Images
+        </button>
+        <button
+          type="button"
+          onClick={annuler}
+          disabled={!nbAnnuler}
+          aria-label="Annuler la dernière couleur"
+          className="flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-2xl border-2 border-primary/60 px-1 py-1 text-[0.7rem] font-bold text-primary disabled:border-border disabled:text-foreground/30"
+        >
+          <Undo2 className="h-6 w-6" />
+          Annuler
         </button>
         <h2 className="min-w-0 flex-1 truncate font-display text-lg font-extrabold">{source.titre}</h2>
         <button type="button" onClick={recommencer} disabled={!pret} aria-label="Tout effacer" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
           <Trash2 className="h-5 w-5" />
         </button>
-        <button type="button" onClick={enregistrer} disabled={!pret || occupe} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full brand-gradient px-4 text-sm font-bold text-white disabled:opacity-40">
+        <button type="button" onClick={enregistrer} disabled={!pret || occupe} aria-label="Enregistrer" className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full brand-gradient px-3 text-sm font-bold text-white disabled:opacity-40 sm:px-4">
           {occupe ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          Enregistrer
+          <span className="hidden sm:inline">Enregistrer</span>
         </button>
-        {!estNatif() && (
-          <button type="button" onClick={() => quitter(false)} aria-label="Fermer" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border">
-            <X className="h-5 w-5" />
-          </button>
-        )}
       </div>
 
       <div ref={zoneRef} className="flex min-h-0 flex-1 items-center justify-center px-2">

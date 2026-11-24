@@ -28,7 +28,7 @@ import BadgeAudience from "@/components/media/BadgeAudience";
 import { useBackHandler } from "@/hooks/useBackHandler";
 
 // Entité d'où vient la description d'un titre (champ « Description » de l'admin), par section.
-const ENTITE_DESCRIPTION = { films: "Video", sermons: "Sermon" };
+const ENTITE_DESCRIPTION = { films: "Video", enfants: "VideoEnfant", sermons: "Sermon" };
 
 /** Compteur discret (écoutes ou vues) d'un titre : PlaylistTrack.listen_count, mis à jour pendant la session. */
 function CompteurPiste({ piste, unite, Icone }) {
@@ -73,6 +73,7 @@ export default function PlaylistCategoryView({
   onToggleFavorite,
   isFavorite,
   favoriteCategory,
+  intro = "Les contenus sont organisés en playlist. Ajoutez vos chansons préférées dans vos favoris.",
 }) {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -214,7 +215,7 @@ export default function PlaylistCategoryView({
       (playlist) => playlist.id === targetPlaylistIdForTrack
     );
 
-    const mediaUrl = category === "films" ? target?.video_url : target?.audio_url;
+    const mediaUrl = isVideo ? target?.video_url : target?.audio_url;
     if (
       !target ||
       !targetPlaylist ||
@@ -230,7 +231,7 @@ export default function PlaylistCategoryView({
     setTargetUnavailable(false);
     setParent(targetPlaylist.parent_id ? playlists.find((p) => p.id === targetPlaylist.parent_id) || null : null);
     setOpen(targetPlaylist);
-  }, [category, targetTrackId, targetPlaylistId, playlistTracks, playlists]);
+  }, [category, isVideo, targetTrackId, targetPlaylistId, playlistTracks, playlists]);
 
   useEffect(() => {
     if (!targetTrackId || !open) return undefined;
@@ -435,7 +436,7 @@ export default function PlaylistCategoryView({
       )}
       <div className="flex items-center justify-between mb-5 gap-3">
         <p className="text-sm text-foreground/55">
-          Les contenus sont organisés en playlist. Ajoutez vos chansons préférées dans vos favoris.
+          {intro}
         </p>
         {isAdmin && cats.length > 1 && (
           <LockToggle

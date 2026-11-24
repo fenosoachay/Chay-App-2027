@@ -25,7 +25,15 @@ const DELETE_ROWS = [
   ['ThemeRequest', ['user_id']],
   ['DonationRequest', ['userId']],
   ['ContactMessage', ['created_by_id']],
+  // 1.3.26 : enfants du compte et leurs scores (collections absentes avant la migration 1.3.26 : ignorées).
+  ['ProfilEnfant', ['user_id']],
+  ['ScoreJeu', ['user_id']],
 ];
+const FACULTATIVES = ['ProfilEnfant', 'ScoreJeu'];
+
+function existe(app, nom) {
+  try { app.findCollectionByNameOrId(nom); return true; } catch (_) { return false; }
+}
 
 // Contenus conservés mais anonymisés : [collection, champ auteur (id), champ nom à remplacer].
 const ANONYMIZE = [
@@ -40,6 +48,7 @@ const ARRAY_FIELDS = [
   ['Message', ['participant_ids', 'read_by']],
   ['Conversation', ['participant_ids', 'pinned_by', 'muted_by']],
   ['Video', ['viewed_by']],
+  ['VideoEnfant', ['viewed_by']],
 ];
 
 // Valeur mise à la place d'un identifiant OBLIGATOIRE (ex. PrayerRequest.requester_id) :
@@ -76,6 +85,7 @@ function deleteAccount(app, userId) {
   const p = { u: userId, q: `"${userId}"` };
 
   for (const [collection, fields] of DELETE_ROWS) {
+    if (FACULTATIVES.indexOf(collection) !== -1 && !existe(app, collection)) continue;
     const filter = fields.map((f) => `${f} = {:u}`).join(' || ');
     each(app, collection, filter, p, (r) => { app.delete(r); summary.supprimes++; return true; });
   }
@@ -93,6 +103,7 @@ function deleteAccount(app, userId) {
   }
 
   for (const [collection, fields] of ARRAY_FIELDS) {
+    if (collection === 'VideoEnfant' && !existe(app, collection)) continue;
     for (const field of fields) {
       each(app, collection, `${field} ~ {:q}`, p, (r) => {
         const list = JSON.parse(JSON.stringify(r))[field] || [];

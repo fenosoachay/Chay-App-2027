@@ -29,7 +29,7 @@ export function buildPlaylistTrackRecord({
       (item.youtube_id ? `https://img.youtube.com/vi/${item.youtube_id}/hqdefault.jpg` : null) ||
       null,
     // audio / video : pistes (Musique, Prédication, Films) ; vide pour YouTube, Articles, Galerie.
-    kind: entity === "Video" ? "video" : entity === "MusicTrack" || entity === "Sermon" ? "audio" : "",
+    kind: entity === "Video" || entity === "VideoEnfant" ? "video" : entity === "MusicTrack" || entity === "Sermon" ? "audio" : "",
     order: Date.now(),
     // Qui voit ce titre (Tout le monde / Membre / VIP) : comme le contenu lui-même (règles du serveur).
     ...((item.audience || submittedData.audience) ? { audience: item.audience || submittedData.audience } : {}),

@@ -13,9 +13,12 @@ test("jeux : deux catégories, noms de l'admin ou de départ, dans l'ordre", () 
 });
 
 test("jeux : un jeu non classé n'est dans aucune section ; un classement vers une catégorie inconnue est ignoré", () => {
-  const g = grouperJeux([], [{ game_id: "trivia", slot: "game" }, { game_id: "puzzle", slot: "playmobile" }, { game_id: "brique", slot: "autre" }]);
-  assert.deepEqual(g.sections.map((s) => s.jeux.map((j) => j.id)), [["trivia"], ["puzzle"]]);
-  assert.deepEqual(g.nonClasses.map((j) => j.id), ["brique", "emoji", "scramble", "personality"]);
+  const g = grouperJeux([], [{ game_id: "trivia", slot: "game" }, { game_id: "emoji", slot: "playmobile" }, { game_id: "brique", slot: "autre" }]);
+  assert.deepEqual(g.sections.map((s) => s.jeux.map((j) => j.id)), [["trivia"], ["emoji"]]);
+  assert.deepEqual(g.nonClasses.map((j) => j.id), ["brique", "scramble", "personality"]);
+  // 1.3.26 : le Puzzle est dans Chay Enfants, plus dans les jeux des adultes (un ancien classement est ignoré).
+  assert.equal(JEUX.some((j) => j.id === "puzzle"), false);
+  assert.deepEqual(grouperJeux([], [{ game_id: "puzzle", slot: "game" }]).sections[0].jeux, []);
   assert.equal(classementParJeu(null).size, 0);
   assert.equal(new Set(JEUX.map((j) => j.id)).size, JEUX.length);
 });

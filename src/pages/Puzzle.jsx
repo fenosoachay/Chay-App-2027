@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import usePuzzleGame from "@/hooks/usePuzzleGame";
 import { enregistrerScore } from "@/lib/scoreBoard";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import {
   getPuzzlesForDifficulty,
   PUZZLE_DIFFICULTIES,
@@ -202,7 +203,9 @@ function PuzzleBoard({ imageUrl, size, game }) {
   );
 }
 
-export default function Puzzle() {
+// 1.3.26 : le Puzzle est un jeu de Chay Enfants (Enfants › Jeux › Puzzle) : `profil` = l'enfant qui joue (ses
+// points vont au Score Board des enfants). `integre` : affiché dans Chay Enfants (sans grand titre ni marges).
+export default function Puzzle({ profil = null, integre = false }) {
   const [puzzles, setPuzzles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -241,8 +244,8 @@ export default function Puzzle() {
 
   useEffect(() => {
     if (!game.solved) return;
-    // Leaderboard (1.3.22) : 5 points par pièce du puzzle réussi.
-    enregistrerScore("puzzle", { pieces: game.pieces.length });
+    // Score Board des enfants (1.3.26) : 5 points par pièce du puzzle réussi, au nom de l'enfant qui joue.
+    if (profil) enregistrerScore("puzzle", { pieces: game.pieces.length, pseudo: profil.pseudo, avatar: profil.avatar });
     confetti({
       particleCount: 85,
       spread: 72,
@@ -272,12 +275,14 @@ export default function Puzzle() {
     setSelectedPuzzle(null);
     setDifficulty(null);
   };
+  // Retour du téléphone pendant une partie : retour au choix du niveau (pas à l'écran précédent).
+  useBackHandler(integre && playing, quitPuzzle);
 
   const formatTitle = (puzzle) => puzzle.title || "Puzzle biblique";
 
   if (playing && selectedPuzzle) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
+      <main className={integre ? "" : "mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10"}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={quitPuzzle} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-bold text-foreground/75 hover:bg-muted">
             <ArrowLeft className="h-4 w-4" /> Quitter
@@ -361,8 +366,8 @@ export default function Puzzle() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
-      <header className="mb-7">
+    <main className={integre ? "" : "mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12"}>
+      <header className={integre ? "hidden" : "mb-7"}>
         <h1 className="display-fluid">Puzzle <span className="brand-gradient-text">biblique</span></h1>
         <p className="mt-3 max-w-2xl text-foreground/60">
           Reconstituez une image biblique pièce par pièce. L’administrateur attribue un niveau à chaque image; vous choisissez seulement votre difficulté. Une image de ce niveau vous sera proposée au hasard.

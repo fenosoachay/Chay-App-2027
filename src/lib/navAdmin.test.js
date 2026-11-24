@@ -12,9 +12,12 @@ test("menu admin : 3 grandes parties, dans l'ordre demandé", () => {
   const contenu = app[1].items;
   assert.deepEqual(contenu.map((g) => g.label), ["Accueil", "Multimédia", "Jeux", "Menu", "Communauté"]);
   assert.deepEqual(contenu[0].items.map((i) => i.label), ["Verset du jour", "Prochaine réunion", "Requêtes", "Question logique", "Petite histoire", "Liens des sites en bas"]);
-  assert.deepEqual(contenu[1].items.map((i) => i.label), ["Musique", "Prédication", "Vidéo", "YouTube", "Galerie", "Article", "Actualité chrétienne", "Parole", "Verset", "Playlists"]);
-  assert.deepEqual(contenu[1].items[4].items.map((i) => i.label), ["Photos", "Fonds d'écran"]);
+  assert.deepEqual(contenu[1].items.map((i) => i.label), ["Musique", "Texte qui défile", "Prédication", "Vidéo", "YouTube", "Galerie", "Article", "Actualité chrétienne", "Parole", "Verset", "Playlists"]);
+  assert.deepEqual(contenu[1].items[5].items.map((i) => i.label), ["Photos", "Fonds d'écran"]);
   assert.deepEqual(contenu[2].items.map((i) => i.label), ["Chay Kids", "Chay Game"]);
+  // 1.3.26 : Vidéos des enfants ; le Puzzle passe de Chay Game à Chay Kids.
+  assert.deepEqual(contenu[2].items[0].items.map((i) => i.label), ["Vidéos", "Coloriages", "Jeux Carte", "Puzzles"]);
+  assert.equal(contenu[2].items[1].items.some((i) => i.key === "puzzles"), false);
   assert.deepEqual(contenu[3].items.map((i) => i.label), ["Histoire de l'église", "Vision de l'église", "But de l'église", "Confession de foi", "En service", "FAQ"]);
   assert.deepEqual(contenu[4].items.map((i) => i.label).slice(0, 5), ["Message", "Demande de don", "Demande de thème", "Se missionner", "Problème technique"]);
   const site = ADMIN_NAV[1].items;

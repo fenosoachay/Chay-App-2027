@@ -98,6 +98,60 @@ function ImagesField({ value, onChange, onUploadingChange }) {
   );
 }
 
+// Texte qui défile (1.3.26) : choix facultatif d'une playlist (Musique ou Prédication, avec ses sous-playlists),
+// ou d'un titre (musique ou prédication). Vide = partout.
+function ChoixLecteur({ value, onChange, cls, mode }) {
+  const [options, setOptions] = useState(null);
+  const [filtre, setFiltre] = useState("");
+
+  useEffect(() => {
+    let vivant = true;
+    (async () => {
+      let liste = [];
+      if (mode === "playlist") {
+        const pl = await base44.entities.Playlist.list("-created_date", 2000).catch(() => []);
+        const rows = (Array.isArray(pl) ? pl : []).filter((p) => ["music", "sermons"].includes(p.category || "music"));
+        const noms = new Map(rows.map((p) => [p.id, p.name]));
+        liste = rows.map((p) => ({
+          value: p.id,
+          label: `${p.category === "sermons" ? "Prédication" : "Musique"} › ${p.parent_id && noms.get(p.parent_id) ? `${noms.get(p.parent_id)} › ` : ""}${p.name || "Sans nom"}`,
+        }));
+      } else {
+        const [m, s] = await Promise.all([
+          base44.entities.MusicTrack.list("title", 2000).catch(() => []),
+          base44.entities.Sermon.list("title", 2000).catch(() => []),
+        ]);
+        liste = [
+          ...(Array.isArray(m) ? m : []).map((t) => ({ value: t.id, label: `Musique · ${t.title || "Sans titre"}${t.artist ? ` · ${t.artist}` : ""}` })),
+          ...(Array.isArray(s) ? s : []).map((t) => ({ value: t.id, label: `Prédication · ${t.title || "Sans titre"}` })),
+        ];
+      }
+      liste.sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base" }));
+      if (vivant) setOptions(liste);
+    })();
+    return () => { vivant = false; };
+  }, [mode]);
+
+  if (options === null) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement…
+      </div>
+    );
+  }
+  const f = filtre.trim().toLowerCase();
+  const visibles = options.filter((o) => o.value === value || !f || o.label.toLowerCase().includes(f));
+  return (
+    <div className="space-y-2">
+      <input type="search" value={filtre} onChange={(e) => setFiltre(e.target.value)} placeholder="Chercher…" className={cls} />
+      <select value={value || ""} onChange={(e) => onChange(e.target.value)} className={cls}>
+        <option value="">{mode === "playlist" ? "— Toutes les playlists —" : "— Tous les titres —"}</option>
+        {visibles.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
 // Parole › « Musique liée » (1.3.25, facultatif) : une musique de Multimédia › Musique, choisie par son titre.
 function MusiqueSelect({ value, onChange, cls }) {
   const [musiques, setMusiques] = useState(null);
@@ -393,6 +447,10 @@ export default function FieldInput({ field, value, onChange, onUploadingChange, 
       );
     case "musique":
       return <MusiqueSelect value={value} onChange={onChange} cls={cls} />;
+    case "playlist_lecteur":
+      return <ChoixLecteur mode="playlist" value={value} onChange={onChange} cls={cls} />;
+    case "titre_lecteur":
+      return <ChoixLecteur mode="titre" value={value} onChange={onChange} cls={cls} />;
     case "playlist":
       return (
         <PlaylistSelect
