@@ -7,7 +7,6 @@ import RadioPlayer from "@/components/radio/RadioPlayer";
 import PlaylistCategoryView from "@/components/media/PlaylistCategoryView";
 import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
-import ActualiteChretienne from "@/components/media/ActualiteChretienne";
 import FondsEcran from "@/components/media/FondsEcran";
 import BadgeAudience from "@/components/media/BadgeAudience";
 import GalleryViewer from "@/components/media/GalleryViewer";
@@ -34,7 +33,6 @@ const TITLES = {
   articles: "Articles",
   gallery: "Galerie",
   playlist: "Votre Playlist",
-  actualite: "Actualité chrétienne",
   fonds: "Fond d'écran",
   paroles: "Paroles",
   verset: "Verset",
@@ -613,9 +611,6 @@ export default function MediaCategory({
         </NavigationPlaylists>
       )}
 
-      {cat === "actualite" && (
-        <ActualiteChretienne cibleId={searchParams.get("news")} onFermerCible={() => clearTarget("news")} />
-      )}
 
       {cat === "fonds" && <FondsEcran />}
 

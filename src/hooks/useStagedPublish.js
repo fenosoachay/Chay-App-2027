@@ -102,35 +102,50 @@ export default function useStagedPublish({
     return { ok: (drafts || []).length - refusees.length, refusees, pendingCount: next.length };
   };
 
-  // Écrit toute la file d'un coup. Les écritures partent en parallèle ; celles
-  // qui échouent restent dans la file pour être retentées.
+  // Écrit toute la file. Le serveur accepte au plus 20 créations par 5 secondes (limite PocketBase « *:create ») :
+  // 4 écritures à la fois, et une écriture refusée pour cette raison (429) est retentée après une courte attente
+  // (1.3.28 : 50 versets d'un coup donnaient « 20 publié(s), 30 en échec »). Les autres échecs restent dans la file.
   const publish = async (serverEntries) => {
     const list = [...pending];
     if (!list.length) return { ok: 0, failed: 0 };
     setPublishing(true);
-    try {
-      const results = await Promise.allSettled(
-        list.map(async (entry) => {
-          const server = allowMultiplePerDate
-            ? (entry.id && serverEntries?.find((item) => item.id === entry.id)) || null
-            : atDate(serverEntries, entry[dateField]);
-          const id = resolveId(entry, null, server);
-          if (id === null) {
-            throw new Error("Date déjà occupée par une autre entrée");
-          }
-          const payload = build(entry);
+    const attendre = (ms) => new Promise((r) => globalThis.setTimeout(r, ms));
+    const ecrire = async (entry) => {
+      const server = allowMultiplePerDate
+        ? (entry.id && serverEntries?.find((item) => item.id === entry.id)) || null
+        : atDate(serverEntries, entry[dateField]);
+      const id = resolveId(entry, null, server);
+      if (id === null) {
+        throw new Error("Date déjà occupée par une autre entrée");
+      }
+      const payload = build(entry);
+      for (let essai = 0; ; essai += 1) {
+        try {
           if (id) await entity.update(id, payload);
           else {
             const created = await entity.create(payload);
             // Après une création réussie seulement (ex. notification de la nouvelle réunion) ; jamais bloquant.
             try { onCreated?.(created, payload); } catch { /* best-effort */ }
           }
-        })
-      );
-      const failed = results
-        .map((r, i) => (r.status === "rejected" ? i : -1))
-        .filter((i) => i >= 0)
-        .map((i) => list[i]);
+          return;
+        } catch (e) {
+          if (e?.status !== 429 || essai >= 8) throw e;
+          await attendre(5500);
+        }
+      }
+    };
+    try {
+      const echecs = new Set();
+      let suivant = 0;
+      const travailleur = async () => {
+        while (suivant < list.length) {
+          const i = suivant;
+          suivant += 1;
+          try { await ecrire(list[i]); } catch { echecs.add(i); }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(4, list.length) }, travailleur));
+      const failed = list.filter((_, i) => echecs.has(i));
       setPending(failed);
       return { ok: list.length - failed.length, failed: failed.length };
     } finally {

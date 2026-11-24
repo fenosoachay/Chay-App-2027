@@ -3,7 +3,6 @@
 //                est `listen_count` de chaque ligne PlaylistTrack de ce contenu (déjà affiché dans les listes) ;
 //  - youtube   : YouTubeVideo.view_count ;
 //  - article   : Article.view_count ;
-//  - actualite : ChristianNews.view_count ;
 //  - parole    : Paroles.view_count ; verset : Verset.view_count (champs ajoutés par migrer-1-3-21).
 // Anti-doublon : une nouvelle vue du même membre sur le même contenu est ignorée pendant 30 minutes (journal
 // MediaVue, purgé au fil de l'eau : les entrées de plus de 24 h du membre sont supprimées à chaque vue comptée).
@@ -12,7 +11,6 @@ const CIBLES = {
   piste: { collection: 'PlaylistTrack', champ: 'listen_count', parChamp: 'track_id' },
   youtube: { collection: 'YouTubeVideo', champ: 'view_count' },
   article: { collection: 'Article', champ: 'view_count' },
-  actualite: { collection: 'ChristianNews', champ: 'view_count' },
   parole: { collection: 'Paroles', champ: 'view_count' },
   verset: { collection: 'Verset', champ: 'view_count' },
 };

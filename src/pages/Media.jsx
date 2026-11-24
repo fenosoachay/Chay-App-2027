@@ -23,6 +23,10 @@ export default function Media() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const activeCat = searchParams.get("cat");
+  // 1.3.28 : « Actualité chrétienne » supprimée ; un ancien lien (notification, favori) ramène au Multimédia.
+  useEffect(() => {
+    if (activeCat === "actualite") setSearchParams({}, { replace: true });
+  }, [activeCat, setSearchParams]);
   const targetTrackId = searchParams.get("track");
   const targetPlaylistId = searchParams.get("playlist");
   const targetVideoId = searchParams.get("video");

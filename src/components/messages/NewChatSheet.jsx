@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/drawer";
 import { Search, Check, Camera, Loader2, Users, MessageSquare } from "lucide-react";
 import Avatar from "@/components/messages/Avatar";
+import RognerPhotoGroupe from "@/components/messages/RognerPhotoGroupe";
 import { isOnline } from "@/hooks/usePresence";
 
 export default function NewChatSheet({
@@ -27,6 +28,7 @@ export default function NewChatSheet({
   const [selected, setSelected] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [groupPhoto, setGroupPhoto] = useState(null);
+  const [photoARogner, setPhotoARogner] = useState(null); // 1.3.28 : recadrage carré avant de garder la photo
   const [creating, setCreating] = useState(false);
 
   // Sans le compte automatique « Chay » (messages automatiques, on ne lui écrit pas).
@@ -143,6 +145,12 @@ export default function NewChatSheet({
 
         {mode === "group" && (
           <div className="px-4 pb-3 space-y-3">
+            <RognerPhotoGroupe
+              enLigne
+              file={photoARogner}
+              onCancel={() => setPhotoARogner(null)}
+              onConfirm={(blob) => { setGroupPhoto(new File([blob], "groupe.jpg", { type: "image/jpeg" })); setPhotoARogner(null); }}
+            />
             <div className="flex items-center gap-3">
               <label className="h-12 w-12 rounded-full border border-border grid place-items-center cursor-pointer overflow-hidden relative shrink-0">
                 {groupPhoto ? (
@@ -158,7 +166,7 @@ export default function NewChatSheet({
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => setGroupPhoto(e.target.files?.[0] || null)}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setPhotoARogner(f); }}
                 />
               </label>
               <input

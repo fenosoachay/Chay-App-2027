@@ -97,8 +97,11 @@ export default function UniversalMediaSurface() {
   const previousControlRef = useRef(null);
   controlRef.current = control;
   const youtubePlayingRef = useRef(false);
+  const ytAttenteDelaiRef = useRef(null);
   // Échec de lecture intégrée ({ source, code }) : message + « Ouvrir dans YouTube ».
   const [erreurYoutube, setErreurYoutube] = useState(null);
+  // 1.3.28 : image d'attente Chay au-dessus du lecteur YouTube jusqu'à la lecture (source en cours de chargement).
+  const [ytEnAttente, setYtEnAttente] = useState(null);
   const relaisDelaiRef = useRef(null);
   useEffect(() => () => clearTimeout(relaisDelaiRef.current), []);
   // Source réellement chargée dans <video> : sert d'idempotence pour éviter
@@ -121,7 +124,13 @@ export default function UniversalMediaSurface() {
       return;
     }
     setErreurYoutube(null);
-    if (iframe.src !== url) iframe.src = url;
+    if (iframe.src !== url) {
+      iframe.src = url;
+      setYtEnAttente(source);
+      clearTimeout(ytAttenteDelaiRef.current);
+      // Jamais bloquée : si YouTube ne dit rien (lecture auto refusée), l'image s'efface après 8 s.
+      ytAttenteDelaiRef.current = setTimeout(() => setYtEnAttente(null), 8000);
+    }
     youtubePlayingRef.current = true;
     // APK : si la page relais ne répond pas (hors ligne, page absente, en-têtes bloquants) -> repli.
     if (LECTEUR_YT.relais) {
@@ -371,6 +380,7 @@ const playVideo = (source) => {
       }
       if (data?.event === "onError") {
         clearTimeout(relaisDelaiRef.current);
+        setYtEnAttente(null);
         setErreurYoutube({ source: active.source, code: data.info });
         updateMediaControl(active.id, { isPlaying: false, isBuffering: false });
         return;
@@ -378,6 +388,7 @@ const playVideo = (source) => {
       if (data?.event === "onStateChange") {
         clearTimeout(relaisDelaiRef.current);
         const playerState = Number(data.info);
+        if ([0, 1, 2, 5].includes(playerState)) setYtEnAttente(null);
         updateMediaControl(active.id, {
           ...(playerState === 1 ? { isPlaying: true, isBuffering: false } : {}),
           ...(playerState === 2 || playerState === 0 ? { isPlaying: false, isBuffering: false } : {}),
@@ -390,6 +401,7 @@ const playVideo = (source) => {
       const currentTime = Number(data.info.currentTime);
       const duration = Number(data.info.duration);
       const playerState = data.info.playerState;
+      if (playerState === 1 || currentTime > 0) setYtEnAttente(null);
       updateMediaControl(active.id, {
         ...(Number.isFinite(currentTime) ? { currentTime } : {}),
         ...(Number.isFinite(duration) ? { duration } : {}),
@@ -679,7 +691,12 @@ const playVideo = (source) => {
       >
         {/* Conteneur positionné : permet de superposer le poster custom et
             l'indicateur de buffering custom au-dessus des contrôles natifs. */}
-        <div className="relative h-full w-full">
+        {/* 1.3.28 : application Android, la vidéo est dessinée par ExoPlayer par-dessus ; en attendant qu'il
+            apparaisse, l'image d'attente Chay (ou la couverture) au lieu d'un fond noir. */}
+        <div
+          className="relative h-full w-full bg-cover bg-center"
+          style={isNativeAndroidPlayer && isVideo ? { backgroundImage: `url("${control?.artwork || IMAGE_ATTENTE}")` } : undefined}
+        >
         <video
   ref={videoRef}
           className={`h-full w-full bg-black object-contain ${classeVideoLecteur({ isNativeAndroidPlayer, isVideo })}`}
@@ -812,6 +829,10 @@ const playVideo = (source) => {
             );
           }}
         />
+
+        {isYouTube && ytEnAttente && ytEnAttente === control?.source && (
+          <img src={IMAGE_ATTENTE} alt="" aria-hidden="true" data-sans-attente className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover" />
+        )}
 
         {/* Lecture intégrée impossible (intégration interdite par la chaîne, vidéo absente, relais injoignable). */}
         {isYouTube && erreurYoutube && erreurYoutube.source === control?.source && (

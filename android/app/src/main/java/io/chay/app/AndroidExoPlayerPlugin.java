@@ -463,7 +463,8 @@ public class AndroidExoPlayerPlugin extends Plugin {
             imageAttente = new ImageView(getContext());
             imageAttente.setScaleType(ImageView.ScaleType.CENTER_CROP);
             imageAttente.setImageResource(R.drawable.attente_chay);
-            imageAttente.setVisibility(View.GONE);
+            // Visible dès le départ (1.3.28) : la première vidéo ouverte montre aussi l'image d'attente.
+            imageAttente.setVisibility(View.VISIBLE);
             cadreVideo.addView(imageAttente, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }

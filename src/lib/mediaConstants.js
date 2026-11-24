@@ -9,7 +9,6 @@ import {
   ListMusic,
   Home,
   Lightbulb,
-  Newspaper,
   Type,
   BookOpen,
 } from "lucide-react";
@@ -33,7 +32,6 @@ export const CATEGORIES = [
   { id: "paroles", label: "Paroles", icon: Type, tone: "from-[#FF4D2D] to-[#8A56E2]" },
   { id: "verset", label: "Verset", icon: BookOpen, tone: "from-[#2E6F40] to-[#C18B33]" },
   { id: "playlist", label: "Votre Playlist", icon: ListMusic, tone: "from-[#8A56E2] to-[#4A6CFE]" },
-  { id: "actualite", label: "Actualité chrétienne", icon: Newspaper, tone: "from-[#2E6F40] to-[#C18B33]" },
 ];
 // « Fond d'écran » est rangé dans la Galerie (bouton en haut de la Galerie) ; « Reels » est supprimé :
 // les vidéos courtes vont dans la playlist « Drôle » de la section Vidéo (affichage façon TikTok).

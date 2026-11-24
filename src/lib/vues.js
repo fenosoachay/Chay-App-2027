@@ -5,7 +5,7 @@
 //    membre sur le même contenu pendant 30 minutes (ouvertures courtes répétées).
 // Ce fichier est pur (testé par node --test) ; l'appel serveur est dans src/hooks/useCompteurVues.js.
 
-export const TYPES_VUE = ["piste", "youtube", "article", "actualite", "parole", "verset"];
+export const TYPES_VUE = ["piste", "youtube", "article", "parole", "verset"];
 export const LECTURE_MIN_MS = 2 * 60 * 1000;
 
 export const cleVue = (vue) => (vue && TYPES_VUE.includes(vue.type) && vue.id ? `${vue.type}:${vue.id}` : null);

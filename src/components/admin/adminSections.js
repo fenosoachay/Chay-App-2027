@@ -402,22 +402,6 @@ export const SECTIONS = [
     ],
   },
   {
-    // Multimédia › « Actualité chrétienne » : visible des membres dès maintenant, même vide.
-    key: "ChristianNews",
-    label: "Actualité chrétienne",
-    icon: Globe,
-    sort: "order",
-    listColumns: ["title"],
-    thumbField: "cover_url",
-    fields: [
-      { name: "title", label: "Titre", type: "text", required: true },
-      { name: "summary", label: "Résumé", type: "textarea" },
-      { name: "body", label: "Texte", type: "rich-text" },
-      { name: "cover_url", label: "Image", type: "file", accept: "image/*" },
-      { name: "link_url", label: "Lien vers la source (https://…)", type: "text" },
-    ],
-  },
-  {
     // Menu ☰ > « Histoire de l'église » : la page affiche la fiche la plus récente.
     key: "ChurchHistory",
     label: "Histoire de l'église",

@@ -14,8 +14,7 @@ const MEDIA_TYPES = [
   "youtube",
   "article",
   "gallery",
-  "wallpaper",
-  "christian_news"
+  "wallpaper"
 ];
 
 // Panneau (gauche « Préc. » ou droite « Nouv. ») du widget de nouveautés.
@@ -61,7 +60,7 @@ function Pane({ label, icon: Icon, item, isLatest, blink = false, onOpen }) {
 /**
  * Widget Nouveauté / Précédemment : affichage côte à côte des deux derniers contenus publiés.
  * Inclut toutes les sections multimédia : Musique, Prédication, Films, YouTube, Galerie,
- * Articles, Vidéos, Fonds d'écran, Actualité chrétienne — y compris contenus datés dans le futur.
+ * Articles, Vidéos, Fonds d'écran — y compris contenus datés dans le futur.
  */
 export default function NouveauteWidget() {
   const navigate = useNavigate();

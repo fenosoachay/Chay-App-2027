@@ -12,7 +12,7 @@ test("menu admin : 3 grandes parties, dans l'ordre demandé", () => {
   const contenu = app[1].items;
   assert.deepEqual(contenu.map((g) => g.label), ["Accueil", "Multimédia", "Jeux", "Menu", "Communauté"]);
   assert.deepEqual(contenu[0].items.map((i) => i.label), ["Verset du jour", "Prochaine réunion", "Requêtes", "Question logique", "Petite histoire", "Liens des sites en bas"]);
-  assert.deepEqual(contenu[1].items.map((i) => i.label), ["Musique", "Texte qui défile", "Prédication", "Vidéo", "YouTube", "Galerie", "Article", "Actualité chrétienne", "Parole", "Verset", "Playlists"]);
+  assert.deepEqual(contenu[1].items.map((i) => i.label), ["Musique", "Texte qui défile", "Prédication", "Vidéo", "YouTube", "Galerie", "Article", "Parole", "Verset", "Playlists"]);
   assert.deepEqual(contenu[1].items[5].items.map((i) => i.label), ["Photos", "Fonds d'écran"]);
   assert.deepEqual(contenu[2].items.map((i) => i.label), ["Chay Kids", "Chay Game"]);
   // 1.3.26 : Vidéos des enfants ; le Puzzle passe de Chay Game à Chay Kids.

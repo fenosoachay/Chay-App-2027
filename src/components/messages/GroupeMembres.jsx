@@ -5,6 +5,7 @@ import { uploadToBase44 } from "@/lib/upload";
 import { confirmFr } from "@/lib/confirmFr";
 import { useToast } from "@/components/ui/use-toast";
 import Avatar from "@/components/messages/Avatar";
+import RognerPhotoGroupe from "@/components/messages/RognerPhotoGroupe";
 import { isOnline } from "@/hooks/usePresence";
 
 const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -15,6 +16,7 @@ export function EnteteGroupe({ conversation, peutGerer, onUpdated }) {
   const [edition, setEdition] = useState(false);
   const [nom, setNom] = useState(conversation?.name || "");
   const [envoi, setEnvoi] = useState(false);
+  const [aRogner, setARogner] = useState(null); // photo choisie, en attente du recadrage carré
 
   const enregistrer = async (champs) => {
     setEnvoi(true);
@@ -31,6 +33,7 @@ export function EnteteGroupe({ conversation, peutGerer, onUpdated }) {
   };
   const changerPhoto = async (fichier) => {
     if (!fichier) return;
+    setARogner(null);
     setEnvoi(true);
     try {
       const photo_url = await uploadToBase44(fichier);
@@ -54,7 +57,7 @@ export function EnteteGroupe({ conversation, peutGerer, onUpdated }) {
         {peutGerer && (
           <label className="absolute -bottom-1 -right-1 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow" aria-label="Changer la photo du groupe">
             {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => changerPhoto(e.target.files?.[0])} />
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) setARogner(f); }} />
           </label>
         )}
       </div>
@@ -88,6 +91,7 @@ export function EnteteGroupe({ conversation, peutGerer, onUpdated }) {
         </div>
       )}
       <p className="text-sm text-foreground/60">{(conversation?.participant_ids || []).length} membres</p>
+      <RognerPhotoGroupe file={aRogner} onCancel={() => setARogner(null)} onConfirm={changerPhoto} />
     </div>
   );
 }

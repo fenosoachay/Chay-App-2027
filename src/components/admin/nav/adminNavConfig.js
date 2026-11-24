@@ -49,7 +49,6 @@ export const ADMIN_NAV = [
                 ],
               },
               { key: "Article", label: "Article", icon: FileText, path: "/admin/articles" },
-              { key: "ChristianNews", mots: "news nouvelles", label: "Actualité chrétienne", icon: Globe, path: "/admin/actualite" },
               { key: "Paroles", mots: "chant lyrics", label: "Parole", icon: Type, path: "/admin/paroles" },
               {
                 id: "app_verset", label: "Verset", icon: BookOpen,

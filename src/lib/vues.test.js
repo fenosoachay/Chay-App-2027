@@ -48,7 +48,6 @@ test("chaque lecteur porte son identifiant de vue ; articles et actualités : 2 
   assert.match(lire("src/components/player/VideoPlayer.jsx"), /vue: item\?\.vue \|\| null/);
   assert.match(lire("src/components/media/PlaylistCategoryView.jsx"), /vue: \{ type: "piste", id: track\.track_id \}/);
   assert.match(lire("src/components/media/ArticleCard.jsx"), /useLectureMinimale\(vue, open\)/);
-  assert.match(lire("src/components/media/ActualiteChretienne.jsx"), /useLectureMinimale\(ouverte \? \{ type: "actualite"/);
   assert.match(lire("src/components/Layout.jsx"), /useCompteurVues\(\);/);
   assert.equal(LECTURE_MIN_MS, 120000);
 });

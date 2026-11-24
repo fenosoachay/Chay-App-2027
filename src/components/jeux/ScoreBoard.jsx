@@ -7,6 +7,12 @@ import { JEUX_ADULTES, JEUX_ENFANTS, PERIODES, rangTexte } from "@/lib/scoreBoar
 // Onglets Semaine / Mois / Toujours, classement général et par jeu, 5 premiers + sa propre place.
 const MEDAILLES = ["🥇", "🥈", "🥉"];
 
+/** « 1er décembre » : début du mois prochain, quand le classement du mois repart à zéro. */
+function prochainMois(maintenant = new Date()) {
+  const d = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
+  return `1er ${d.toLocaleDateString("fr-FR", { month: "long" })}`;
+}
+
 function Initiales({ nom }) {
   const t = String(nom || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
   return <span className="grid h-full w-full place-items-center bg-primary/15 text-xs font-bold text-primary">{t || "?"}</span>;
@@ -14,8 +20,9 @@ function Initiales({ nom }) {
 
 export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
   const jeux = espace === "enfant" ? JEUX_ENFANTS : JEUX_ADULTES;
-  // 1.3.27 : « Toujours » d'abord (tous les joueurs, y compris ceux d'avant le Score Board).
-  const [periode, setPeriode] = useState("toujours");
+  // 1.3.28 : le classement du mois d'abord (il repart à zéro le 1er, annoncé en haut) ; « Toujours » garde
+  // tous les points, y compris ceux d'avant le Score Board.
+  const [periode, setPeriode] = useState("mois");
   const [jeu, setJeu] = useState("general");
   const [data, setData] = useState(null);
   const [erreur, setErreur] = useState(false);
@@ -41,7 +48,10 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
         <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[#F2C94C] to-[#B8860B] text-white shadow">
           <Trophy className="h-5 w-5" />
         </span>
-        <h2 className="font-display text-xl font-extrabold">{titre || (enfant ? "Score Board" : "Leaderboard")}</h2>
+        <span className="min-w-0">
+          <h2 className="font-display text-xl font-extrabold leading-tight">{titre || (enfant ? "Score Board" : "Leaderboard")}</h2>
+          <p className="text-xs text-foreground/50">Remis à zéro le {prochainMois()}</p>
+        </span>
       </div>
 
       <div className="mb-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
