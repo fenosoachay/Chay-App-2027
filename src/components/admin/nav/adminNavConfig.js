@@ -6,7 +6,7 @@ import {
   Smile, Puzzle, Blocks, Landmark, UserSquare, LayoutGrid, Globe, Smartphone, Compass, Rocket,
   Type, Palette, Baby, Crown, Wrench, BarChart3, PanelBottom, Copyright, Heading,
   Layers, Home, Menu as MenuIcon, Sparkles, Link2, Lightbulb, HandHeart, Target, Flag, ScrollText,
-  Images, Film, PanelsTopLeft,
+  Images, Film, PanelsTopLeft, Phone,
 } from "lucide-react";
 
 // Hiérarchie de la navigation admin : 3 grandes parties (Application, Site chay.fr, Équipe), chacune avec ses
@@ -135,12 +135,19 @@ export const ADMIN_NAV = [
             items: [
               { key: "SiteBloc_foi", mots: "site declaration foi", label: "Déclaration de foi", icon: FileText, path: "/admin/site-foi" },
               { key: "SiteBloc_apropos", mots: "site propos histoire", label: "À propos", icon: FileText, path: "/admin/site-apropos" },
-              { key: "SiteBloc_application", mots: "site application apk fonction", label: "Application Chay", icon: Smartphone, path: "/admin/site-application" },
+              {
+                id: "site_application", label: "Application Chay", icon: Smartphone,
+                items: [
+                  { key: "SiteBloc_application", mots: "site application apk fonction", label: "Textes", icon: FileText, path: "/admin/site-application" },
+                  { key: "SiteCapture", mots: "site application capture ecran defilement", label: "Captures d'écran", icon: Images, path: "/admin/site-application-captures" },
+                ],
+              },
               {
                 id: "site_association", label: "Association Chay", icon: Heart,
                 items: [
                   { key: "SiteBloc_association", mots: "site association don madagascar", label: "Textes", icon: FileText, path: "/admin/site-association" },
                   { key: "SiteAssoPhoto", mots: "site association photo", label: "Photos", icon: ImageIcon, path: "/admin/site-association-photos" },
+                  { key: "SiteNumeroAsso", mots: "site association numero telephone whatsapp contacter", label: "Numéro WhatsApp", icon: Phone, path: "/admin/site-association-numero" },
                 ],
               },
               { key: "SiteBloc_contact", mots: "site contact telephone whatsapp", label: "Nous contacter", icon: Mail, path: "/admin/site-contact" },

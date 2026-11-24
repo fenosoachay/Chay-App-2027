@@ -6,6 +6,7 @@
 //   SiteCarrousel photos 16:9 de « Nouveauté » (titre obligatoire, petite ligne facultative) ;
 //   SiteCulte     cultes YouTube (lien collé ; titre repris de YouTube s'il est vide : hook site_chay.pb.js) ;
 //   SiteAssoPhoto photos de la page Association Chay ;
+//   SiteCapture   captures d'écran qui défilent sur la page Application Chay (rangée haut / bas, 1.3.26) ;
 //   SiteBloc      textes des 5 pages du menu (un bloc = un paragraphe, un article, une citation…) ;
 //   SiteEtat      état calculé par le serveur (cle « direct » : chaîne YouTube en direct ?) ;
 //   ContactMessage : champ « source » (site / app) pour les messages du formulaire du site.
@@ -51,6 +52,7 @@ export const TYPES_BLOC = [
   'telephone', 'email', 'whatsapp',
   'titre', 'entete', 'pied', 'reseau', 'copyright', 'bouton',
 ];
+export const RANGEES = ['haut', 'bas'];
 export const ICONES = [
   'musique', 'video', 'micro', 'radio', 'verset', 'message', 'priere', 'communaute', 'bible', 'audio', 'galerie',
   'fond', 'enfant', 'jeu', 'maison', 'ecole', 'soin', 'plante', 'betail', 'monde',
@@ -64,6 +66,7 @@ export function nouvellesCollections() {
     collection('SiteCarrousel', [texte('image_url', 5000, { required: true }), texte('titre', 200, { required: true }), texte('sous_titre', 200)]),
     collection('SiteCulte', [texte('youtube_url', 300, { required: true }), texte('youtube_id', 20), texte('titre', 200), date('date')]),
     collection('SiteAssoPhoto', [texte('image_url', 5000, { required: true }), texte('legende', 200)]),
+    collection('SiteCapture', [texte('image_url', 5000, { required: true }), choix('rangee', RANGEES, { required: true }), texte('legende', 200)]),
     collection('SiteBloc', [
       choix('page', PAGES, { required: true }), choix('type', TYPES_BLOC, { required: true }),
       texte('titre', 200), texte('texte', 8000), texte('reference', 300), choix('icone', ICONES),
@@ -193,6 +196,11 @@ export const GROUPES = {
     b('contact', 'entete', '', 'Vos coordonnées servent uniquement à vous répondre.'),
   ],
 };
+// Numéro de départ du bloc « Numéro WhatsApp de l'association » : celui du bloc « don » s'il en a un.
+export function numeroDepart(reference) {
+  const r = String(reference || '').trim();
+  return /\d{6,}/.test(r.replace(/\D/g, '')) ? r : '+33 7 49 92 74 33';
+}
 export const TOUS_LES_BLOCS = [...BLOCS_DEPART, ...Object.values(GROUPES).flat()];
 
 export async function migrer(url, headers, { appliquer = false, log = () => {} } = {}) {
@@ -292,8 +300,30 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
       await ecrire('POST', '/api/collections/SiteBloc/records', { ...lignes[i], order: ordre++ }, `SiteBloc ${g} n°${i + 1}`);
     }
   }
-  if (aAjouter.length && appliquer) {
-    const valeur = JSON.stringify(Object.keys(GROUPES));
+  // 5. Numéro WhatsApp de l'association (1.3.26) : un bloc à part, modifiable dans l'app (Site › Pages › Association
+  //    Chay › Numéro WhatsApp). Créé une seule fois, avec le numéro qui était rangé dans le bloc « don ».
+  const NUMERO = 'association-numero';
+  let numeroAjoute = false;
+  if (!faits.includes(NUMERO)) {
+    const filtre = encodeURIComponent('page="association" && (type="whatsapp" || type="don")');
+    const r = await fetch(`${url}/api/collections/SiteBloc/records?perPage=50&filter=${filtre}`, { headers });
+    if (!r.ok) throw new Error(`lecture de SiteBloc impossible (HTTP ${r.status})`);
+    const items = ((await r.json()).items || []).filter((x) => x.page === 'association');
+    const don = items.find((x) => x.type === 'don');
+    const numero = numeroDepart(don?.reference);
+    if (items.some((x) => x.type === 'whatsapp')) log("  = SiteBloc : numéro WhatsApp de l'association déjà présent");
+    else {
+      changements.push(`SiteBloc numéro de l'association (${numero})`);
+      log(`  - SiteBloc : numéro WhatsApp de l'association (${numero}, à corriger dans l'app si besoin)`);
+      if (appliquer) {
+        await ecrire('POST', '/api/collections/SiteBloc/records',
+          { ...b('association', 'whatsapp', 'WhatsApp', numero), order: (Number(don?.order) || 0) + 0.5 }, "numéro de l'association");
+      }
+    }
+    numeroAjoute = true;
+  }
+  if ((aAjouter.length || numeroAjoute) && appliquer) {
+    const valeur = JSON.stringify([...Object.keys(GROUPES), NUMERO]);
     if (marqueur) await ecrire('PATCH', `/api/collections/SiteEtat/records/${marqueur.id}`, { valeur }, 'marqueur des contenus');
     else await ecrire('POST', '/api/collections/SiteEtat/records', { cle: 'graines_site', valeur }, 'marqueur des contenus');
   }

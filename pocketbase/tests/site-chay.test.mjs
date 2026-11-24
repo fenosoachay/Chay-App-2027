@@ -122,10 +122,13 @@ test('migration : base neuve, simulation sans écriture, puis application idempo
     assert.equal(etat.ecritures, 0);
     assert.ok(sim.includes('SiteBloc') && sim.includes('SiteVisite') && sim.includes('ContactMessage (source)'));
     await migrer('http://pb', {}, { appliquer: true });
-    assert.equal(etat.lignes.get('SiteBloc').length, TOUS_LES_BLOCS.length);
+    assert.equal(etat.lignes.get('SiteBloc').length, TOUS_LES_BLOCS.length + 1);
+    const numero = etat.lignes.get('SiteBloc').filter((x) => x.page === 'association' && x.type === 'whatsapp');
+    assert.equal(numero.length, 1, "un seul numéro pour l'association");
+    assert.equal(numero[0].texte, BLOCS_DEPART.find((x) => x.type === 'don').reference);
     assert.equal(etat.lignes.get('SiteVerset')[1].order, 1);
     assert.equal(etat.lignes.get('SiteBandeau').length, BANDEAU_DEPART.length);
-    assert.deepEqual(JSON.parse(etat.lignes.get('SiteEtat').find((x) => x.cle === 'graines_site').valeur), Object.keys(GROUPES));
+    assert.deepEqual(JSON.parse(etat.lignes.get('SiteEtat').find((x) => x.cle === 'graines_site').valeur), [...Object.keys(GROUPES), 'association-numero']);
     const avant = etat.ecritures;
     assert.deepEqual(await migrer('http://pb', {}, { appliquer: true }), []);
     assert.equal(etat.ecritures, avant);
@@ -162,12 +165,13 @@ test('migration : base en ligne (1re version) -> listes élargies, nouveaux grou
     const pages = bloc.fields.find((f) => f.name === 'page').values;
     assert.ok(pages.includes('pied') && pages.includes('copyright') && pages.includes('accueil'));
     const lignes = etat.lignes.get('SiteBloc');
-    assert.equal(lignes.length, TOUS_LES_BLOCS.length);
-    assert.equal(lignes.at(-1).order, TOUS_LES_BLOCS.length - 1, 'les nouveaux blocs se placent après les anciens');
-    // Un bloc supprimé dans l'app ne revient pas au passage suivant.
-    etat.lignes.set('SiteBloc', lignes.filter((x) => x.type !== 'copyright'));
+    assert.equal(lignes.length, TOUS_LES_BLOCS.length + 1);
+    assert.ok(lignes.filter((x) => x.type !== 'whatsapp' || x.page !== 'association').every((x, i) => x.order === i), 'les nouveaux blocs se placent après les anciens');
+    assert.ok(sim.some((c) => c.startsWith("SiteBloc numéro de l'association")));
+    // Un bloc supprimé dans l'app (copyright, numéro) ne revient pas au passage suivant.
+    etat.lignes.set('SiteBloc', lignes.filter((x) => x.type !== 'copyright' && !(x.page === 'association' && x.type === 'whatsapp')));
     assert.deepEqual(await migrer('http://pb', {}, { appliquer: true }), []);
-    assert.ok(!etat.lignes.get('SiteBloc').some((x) => x.type === 'copyright'));
+    assert.ok(!etat.lignes.get('SiteBloc').some((x) => x.type === 'copyright' || (x.page === 'association' && x.type === 'whatsapp')));
   } finally {
     globalThis.fetch = vrai;
   }

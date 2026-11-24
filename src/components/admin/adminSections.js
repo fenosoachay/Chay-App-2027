@@ -1,6 +1,6 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette, Phone,
 } from "lucide-react";
 import { AUDIENCES } from "@/lib/audience";
 
@@ -94,8 +94,21 @@ export const SECTIONS_SITE = [
   pageSite("apropos", "Page À propos", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["chapitre", "Titre de chapitre"], ["paragraphe", "Paragraphe"], ["citation", "Citation"]],
     { reference: "Référence de la citation (ex. Osée 4:6)" }),
   pageSite("contact", "Page Nous contacter", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["telephone", "Téléphone"], ["email", "E-mail"], ["whatsapp", "WhatsApp (numéro)"], ["entete", "Formulaire (1er : titre + phrase ; 2e : petite mention sous le bouton)"]]),
-  pageSite("association", "Page Association Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["entete", "Titre de partie (1er : mission ; 2e : projet)"], ["paragraphe", "Paragraphe de la mission"], ["pilier", "Projet (carte)"], ["citation", "Citation"], ["don", "Texte des dons (Titre = texte du bouton)"], ["legal", "Information légale"]],
-    { reference: "Référence (citation) ou numéro WhatsApp (dons)", icone: true, aide: AIDE_ETOILES }),
+  pageSite("association", "Page Association Chay", [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Introduction"], ["entete", "Titre de partie (1er : mission ; 2e : projet)"], ["paragraphe", "Paragraphe de la mission"], ["pilier", "Projet (carte)"], ["citation", "Citation"], ["don", "Texte des dons (Titre = texte du bouton)"], ["whatsapp", "Numéro WhatsApp de l'association"], ["legal", "Information légale"]],
+    { reference: "Référence de la citation (ex. Actes 20:35)", icone: true, aide: AIDE_ETOILES }),
+  {
+    // Numéro du bouton « Contacter l'association » (1.3.26) : le bouton ouvre WhatsApp sur ce numéro, affiché dessous.
+    key: "SiteNumeroAsso",
+    entity: "SiteBloc",
+    fixe: { page: "association", type: "whatsapp" },
+    label: "Numéro WhatsApp de l'association",
+    icon: Phone,
+    sort: "order",
+    listColumns: ["texte"],
+    fields: [
+      { name: "texte", label: "Numéro WhatsApp (ex. +33 7 49 92 94 33)", type: "text", required: true, help: "Le bouton « Contacter l'association » ouvre WhatsApp sur ce numéro. Gardez une seule fiche." },
+    ],
+  },
   {
     key: "SiteAssoPhoto",
     label: "Photos de l'association",
@@ -105,6 +118,20 @@ export const SECTIONS_SITE = [
     thumbField: "image_url",
     fields: [
       { name: "image_url", label: "Photo", type: "file", accept: "image/*", required: true },
+      { name: "legende", label: "Légende (facultatif)", type: "text" },
+    ],
+  },
+  {
+    // Captures d'écran qui défilent sur la page Application Chay (1.3.26), en deux rangées de sens opposés.
+    key: "SiteCapture",
+    label: "Captures de l'application",
+    icon: ImageIcon,
+    sort: "order",
+    listColumns: ["rangee", "legende"],
+    thumbField: "image_url",
+    fields: [
+      { name: "image_url", label: "Capture d'écran (photo en hauteur)", type: "file", accept: "image/*", required: true },
+      { name: "rangee", label: "Rangée", type: "select", required: true, options: [{ value: "haut", label: "Rangée du haut (défile vers la gauche)" }, { value: "bas", label: "Rangée du bas (défile vers la droite)" }] },
       { name: "legende", label: "Légende (facultatif)", type: "text" },
     ],
   },
