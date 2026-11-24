@@ -26,8 +26,33 @@ export const BLOCK_BLAST_SHAPES = [
   { id: "square-nine", cells: Array.from({ length: 9 }, (_, index) => [Math.floor(index / 3), index % 3]) },
 ];
 
-export function createEmptyBlockBlastBoard() {
-  return Array.from({ length: BLOCK_BLAST_SIZE }, () => Array(BLOCK_BLAST_SIZE).fill(null));
+export function createEmptyBlockBlastBoard(size = BLOCK_BLAST_SIZE) {
+  return Array.from({ length: size }, () => Array(size).fill(null));
+}
+
+// Brique dans Chay Enfants (1.3.29) : deux modes. Facile : grille 8 × 8 et petites pièces simples ;
+// Normal : grille 10 × 10 et toutes les pièces.
+const FORMES_FACILES = ["single", "domino", "trio-line", "trio-column", "square", "t", "l"];
+export const BRIQUE_MODES = {
+  facile: { id: "facile", label: "Facile", taille: 8, formes: BLOCK_BLAST_SHAPES.filter((f) => FORMES_FACILES.includes(f.id)) },
+  normal: { id: "normal", label: "Normal", taille: 10, formes: BLOCK_BLAST_SHAPES },
+};
+
+/**
+ * Points d'une pose : 1 par bloc ; chaque ligne/colonne effacée 10, multipliée par le nombre de lignes effacées
+ * d'un coup (2 lignes = 40, 3 = 90) ; combo (poses qui effacent à la suite) : +10 par combo.
+ */
+export function pointsPose(nbBlocs, lignes, combo = 0) {
+  if (!lignes) return nbBlocs;
+  return nbBlocs + lignes * 10 * lignes + Math.max(0, combo) * 10;
+}
+
+/** Lignes et colonnes qui seraient complètes si la forme était posée là (aperçu) : { rows, columns }. */
+export function lignesCompletees(board, shape, row, column) {
+  const pose = placeBlockBlastShape(board, shape, row, column, "x");
+  if (!pose) return { rows: [], columns: [] };
+  const { rows, columns } = clearCompletedBlockBlastLines(pose);
+  return { rows, columns };
 }
 
 export function canPlaceBlockBlastShape(board, shape, row, column) {
@@ -77,11 +102,11 @@ export function calculateBlockBlastPoints(shape, clearedRows, clearedColumns) {
   return shape.cells.length + (clearedRows + clearedColumns) * 10;
 }
 
-export function generateBlockBlastPieces(random = Math.random) {
+export function generateBlockBlastPieces(random = Math.random, formes = BLOCK_BLAST_SHAPES) {
   return Array.from({ length: 3 }, (_, index) => {
-    const shape = BLOCK_BLAST_SHAPES[Math.min(
-      BLOCK_BLAST_SHAPES.length - 1,
-      Math.floor(Math.max(0, random()) * BLOCK_BLAST_SHAPES.length)
+    const shape = formes[Math.min(
+      formes.length - 1,
+      Math.floor(Math.max(0, random()) * formes.length)
     )];
     return { id: `${Date.now().toString(36)}-${index}-${Math.floor(random() * 1e9).toString(36)}`, shapeId: shape.id };
   });

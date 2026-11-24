@@ -100,7 +100,7 @@ export const RUBRIQUES = [
   { titre: "Votre playlist", mots: "playlist favoris ma playlist", route: "/media?cat=playlist" },
   { titre: "Jeux", mots: "jeux jouer", route: "/games" },
   { titre: "Quiz", mots: "quiz questions jeu", route: "/quiz" },
-  { titre: "Brique", mots: "brique block blast jeu", route: "/block-blast" },
+  { titre: "Brique", mots: "brique block blast jeu", route: "/kids?vue=jeux&jeu=brique" },
   { titre: "Émojis", mots: "emojis jeu", route: "/games/emojis" },
   { titre: "Mots mélangés", mots: "mots melanges jeu lettres", route: "/word-scramble" },
   { titre: "Puzzle", mots: "puzzle jeu enfants", route: "/kids?vue=jeux&jeu=puzzle" },

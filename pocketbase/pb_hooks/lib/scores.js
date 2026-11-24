@@ -7,8 +7,8 @@
 //  - général (tous les jeux additionnés) ou un seul jeu.
 
 const JEUX = {
-  adulte: ['trivia', 'scramble', 'emoji', 'brique'],
-  enfant: ['memory', 'puzzle'],
+  adulte: ['trivia', 'scramble', 'emoji'],
+  enfant: ['memory', 'puzzle', 'brique'], // 1.3.29 : Brique passe chez les enfants
 };
 const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory']; // scores envoyés par l'app (bornés ici)
 const MULT = { easy: 1, medium: 2, hard: 3, ultra_hard: 4, facile: 1, moyen: 2, difficile: 3 };
@@ -60,7 +60,8 @@ function avatarValide(a) { return AVATARS.indexOf(a) !== -1 ? a : AVATARS[0]; }
  */
 function espaceDe(jeu, pseudo) {
   if (jeu === 'memory') return 'enfant';
-  if (jeu === 'puzzle') return pseudoValide(pseudo) ? 'enfant' : 'adulte';
+  // Puzzle (1.3.26) et Brique (1.3.29) : au nom d'un enfant (pseudo) ; sans pseudo = ancienne version de l'app.
+  if (jeu === 'puzzle' || jeu === 'brique') return pseudoValide(pseudo) ? 'enfant' : 'adulte';
   return 'adulte';
 }
 

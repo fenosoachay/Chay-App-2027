@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clapperboard, Gamepad2, Grid3x3, Palette, Puzzle as IconePuzzle } from "lucide-react";
+import { ArrowLeft, Blocks, Clapperboard, Gamepad2, Grid3x3, Palette, Puzzle as IconePuzzle } from "lucide-react";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import Coloriage from "@/components/kids/Coloriage";
 import Memory from "@/components/kids/Memory";
 import Puzzle from "@/pages/Puzzle";
+import Brique from "@/components/kids/Brique";
 import ScoreBoard from "@/components/jeux/ScoreBoard";
 import QuiJoue from "@/components/kids/QuiJoue";
 import VideosEnfants from "@/components/kids/VideosEnfants";
@@ -19,16 +20,18 @@ import {
 //  - Vidéos : comme Multimédia › Vidéo (Admin › Chay Kids › Vidéos) ;
 //  - Jeux : « Qui joue ? » (enfants enregistrés sur le compte), le Score Board, puis Coloriage, Jeux Carte et
 //    Puzzle. Les points et les records vont à l'enfant choisi.
-// Adresse : /kids, /kids?vue=videos, /kids?vue=jeux, /kids?vue=jeux&jeu=coloriage|memory|puzzle (liens directs,
+// Adresse : /kids, /kids?vue=videos, /kids?vue=jeux, /kids?vue=jeux&jeu=coloriage|memory|puzzle|brique (liens directs,
 // recherche, notifications) ; le retour du téléphone remonte d'un niveau à la fois.
 const ESPACES = [
   { id: "videos", titre: "Vidéos", desc: "Des vidéos pour grandir avec Dieu", icon: Clapperboard, tone: "from-[#FF4D2D] to-[#FFB800]" },
-  { id: "jeux", titre: "Jeux", desc: "Coloriage, Jeux Carte et Puzzle", icon: Gamepad2, tone: "from-[#4A6CFE] to-[#8A56E2]" },
+  { id: "jeux", titre: "Jeux", desc: "Coloriage, Jeux Carte, Puzzle et Brique", icon: Gamepad2, tone: "from-[#4A6CFE] to-[#8A56E2]" },
 ];
 const JEUX = [
   { id: "coloriage", titre: "Coloriage", desc: "Colorie les histoires de la Bible", icon: Palette, tone: "from-[#FF4D2D] to-[#FF57B2]" },
   { id: "memory", titre: "Jeux Carte", desc: "Retrouve les paires et apprends la Bible", icon: Grid3x3, tone: "from-[#4A6CFE] to-[#8A56E2]", points: true },
   { id: "puzzle", titre: "Puzzle", desc: "Reconstitue une image de la Bible", icon: IconePuzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", points: true },
+  // 1.3.29 : Brique quitte les jeux des adultes.
+  { id: "brique", titre: "Brique", desc: "Remplis les lignes avec les pièces", icon: Blocks, tone: "from-[#44916F] to-[#4A6CFE]", points: true },
 ];
 
 /** Case d'une section, comme les sections du Multimédia (carré coloré + nom dessous) (1.3.27). */
@@ -202,6 +205,7 @@ export default function Kids() {
       {jeu?.id === "coloriage" && <Coloriage />}
       {jeu?.id === "memory" && <Memory profil={enfants.actif} />}
       {jeu?.id === "puzzle" && <Puzzle profil={enfants.actif} integre />}
+      {jeu?.id === "brique" && <Brique profil={enfants.actif} />}
     </div>
   );
 }

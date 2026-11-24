@@ -4,11 +4,10 @@
 
 /**
  * Jeux de l'app (identifiant fixe = GameClassement.game_id). Les icônes sont dans src/pages/Games.jsx.
- * 1.3.26 : le Puzzle a quitté les jeux des adultes pour Chay Enfants › Jeux (src/pages/Kids.jsx).
+ * 1.3.26 : le Puzzle a quitté les jeux des adultes pour Chay Enfants › Jeux (src/pages/Kids.jsx) ; Brique aussi en 1.3.29.
  */
 export const JEUX = [
   { id: "trivia", name: "Quiz", path: "/quiz" },
-  { id: "brique", name: "Brique", path: "/block-blast" },
   { id: "emoji", name: "Émojis", path: "/games/emojis" },
   { id: "scramble", name: "Mots mélangés", path: "/word-scramble" },
   { id: "personality", name: "Personnalité biblique", path: "/personality-quiz" },
