@@ -4,7 +4,8 @@ import { confirmFr } from "@/lib/confirmFr";
 import ProfilEnfant from "@/components/kids/ProfilEnfant";
 
 // « Qui joue ? » (1.3.26) : les enfants enregistrés sur le compte, en grosses pastilles (animal + prénom).
-// On touche son prénom pour jouer à son nom ; « Ajouter » pour un nouvel enfant ; « Gérer » pour en retirer un.
+// On touche son prénom pour jouer à son nom ; « Ajouter » pour un nouvel enfant ; « Gérer » pour en effacer un
+// (avec tous ses points du Score Board).
 export default function QuiJoue({ profils, actifId, chargement, erreur, onChoisir, onAjouter, onSupprimer, onReessayer, attire }) {
   const [ajout, setAjout] = useState(false);
   const [gerer, setGerer] = useState(false);
@@ -22,9 +23,9 @@ export default function QuiJoue({ profils, actifId, chargement, erreur, onChoisi
 
   const retirer = async (p) => {
     const ok = await confirmFr({
-      title: `Retirer ${p.pseudo} ?`,
-      message: "Ses points restent au classement. Tu pourras le rajouter plus tard avec le même prénom.",
-      confirmLabel: "Retirer",
+      title: `Effacer ${p.pseudo} ?`,
+      message: "Son prénom et tous ses points du Score Board seront effacés. On ne pourra pas les récupérer.",
+      confirmLabel: "Effacer",
       cancelLabel: "Garder",
     });
     if (ok) await onSupprimer(p);
@@ -74,7 +75,7 @@ export default function QuiJoue({ profils, actifId, chargement, erreur, onChoisi
                   <button
                     type="button"
                     onClick={() => retirer(p)}
-                    aria-label={`Retirer ${p.pseudo}`}
+                    aria-label={`Effacer ${p.pseudo}`}
                     className="absolute -right-1.5 -top-1.5 grid h-7 w-7 place-items-center rounded-full bg-destructive text-white shadow"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

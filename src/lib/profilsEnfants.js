@@ -91,8 +91,9 @@ export async function changerAvatar(profil, avatar) {
   return { ...profil, avatar: a };
 }
 
+/** Efface l'enfant du compte ET ses points du Score Board (route serveur : les scores ne sont pas modifiables). */
 export async function supprimerProfil(profil) {
-  await base44.entities.ProfilEnfant.delete(profil.id);
+  await base44.functions.invoke("supprimerEnfant", { id: profil.id });
   if (lireEnfantActif() === profil.id) choisirEnfantActif(null);
 }
 

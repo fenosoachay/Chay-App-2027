@@ -93,3 +93,30 @@ routerAdd('POST', '/api/fn/classement', (e) => {
     };
   });
 });
+
+// 1.3.26 : effacer un enfant du compte (« Qui joue ? › Gérer ») : son profil ET ses points du Score Board.
+// POST /api/fn/supprimerEnfant { id } -> { ok, scores } ; seulement un enfant du compte connecté.
+routerAdd('POST', '/api/fn/supprimerEnfant', (e) => {
+  const fn = require(`${__hooks}/lib/fn.js`);
+  return fn.run(e, 'supprimerEnfant', 'Enfant non effacé', () => {
+    const caller = fn.requireUser(e, 'Connexion requise');
+    const id = fn.requireString(fn.readBody(e), 'id', 'id requis', 40);
+    let profil = null;
+    try { profil = $app.findRecordById('ProfilEnfant', id); } catch (_) { profil = null; }
+    if (!profil || profil.getString('user_id') !== caller.id) throw new fn.HttpError(404, 'Enfant introuvable');
+    const pseudo = profil.getString('pseudo');
+    let scores = 0;
+    $app.runInTransaction((txApp) => {
+      // Même prénom à la casse près (« Mickael » et « mickael » sont le même enfant).
+      const cible = pseudo.toLowerCase();
+      const rows = txApp.findRecordsByFilter('ScoreJeu', "user_id = {:u} && espace = 'enfant'", '', 0, 0, { u: caller.id });
+      for (const r of rows) {
+        if (r.getString('pseudo').toLowerCase() !== cible) continue;
+        txApp.delete(r);
+        scores += 1;
+      }
+      txApp.delete(profil);
+    });
+    return { ok: true, scores };
+  });
+});

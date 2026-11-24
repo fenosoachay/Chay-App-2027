@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clapperboard, Gamepad2, Grid3x3, Palette, Puzzle as IconePuzzle } from "lucide-react";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 import Coloriage from "@/components/kids/Coloriage";
 import Memory from "@/components/kids/Memory";
 import Puzzle from "@/pages/Puzzle";
@@ -51,7 +52,9 @@ function GrandeCase({ item, onClick }) {
 
 /** Enfants du compte + enfant choisi ; les records de Jeux Carte suivent l'enfant choisi. */
 function useEnfants(userId) {
+  const { toast } = useToast();
   const [profils, setProfils] = useState([]);
+  const [version, setVersion] = useState(0); // Score Board rechargé après un enfant effacé
   const [actifId, setActifId] = useState(() => lireEnfantActif());
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState(false);
@@ -90,11 +93,18 @@ function useEnfants(userId) {
     choisir(p);
   };
   const supprimer = async (p) => {
-    await supprimerProfil(p);
+    try {
+      await supprimerProfil(p);
+    } catch (e) {
+      toast({ title: "Effacement impossible", description: e?.message || "Vérifie la connexion.", variant: "destructive" });
+      return;
+    }
     setProfils((l) => l.filter((x) => x.id !== p.id));
     if (actifId === p.id) setActifId(null);
+    setVersion((v) => v + 1);
+    toast({ title: `${p.pseudo} a été effacé`, description: "Son prénom et ses points ne sont plus au Score Board." });
   };
-  return { profils, actif, chargement, erreur, charger, choisir, ajouter, supprimer };
+  return { profils, actif, chargement, erreur, charger, choisir, ajouter, supprimer, version };
 }
 
 export default function Kids() {
@@ -182,7 +192,7 @@ export default function Kids() {
           </div>
           {enfants.actif && (
             <div className="mb-6">
-              <ScoreBoard espace="enfant" pseudo={enfants.actif.pseudo} />
+              <ScoreBoard key={enfants.version} espace="enfant" pseudo={enfants.actif.pseudo} />
             </div>
           )}
           <div className="grid gap-4 sm:grid-cols-3 md:gap-5">
