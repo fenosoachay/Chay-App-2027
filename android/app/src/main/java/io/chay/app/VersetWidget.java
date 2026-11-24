@@ -10,10 +10,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.BlurMaskFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RadialGradient;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -163,6 +166,59 @@ public class VersetWidget extends AppWidgetProvider {
         c.drawRect(x0, y, x1, y + epaisseur, p);
     }
 
+    /** Lueur douce (couleur ARGB au centre, transparente au bord), étirée en ovale. */
+    private static void lueur(Canvas c, float cx, float cy, float rx, float ry, int couleur) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setShader(new RadialGradient(0, 0, 1f, new int[] { couleur, couleur & 0x00FFFFFF }, null, Shader.TileMode.CLAMP));
+        c.save();
+        c.translate(cx, cy);
+        c.scale(rx, ry);
+        c.drawCircle(0, 0, 1f, p);
+        c.restore();
+    }
+
+    /** Point doré lumineux (comme les points qui flottent sur chay.fr). */
+    private static void point(Canvas c, float x, float y, float r, int alpha) {
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        halo.setColor((Math.min(255, alpha) * 2 / 5 << 24) | 0xFFB800);
+        halo.setMaskFilter(new BlurMaskFilter(r * 2.6f, BlurMaskFilter.Blur.NORMAL));
+        c.drawCircle(x, y, r * 2.2f, halo);
+        Paint coeur = new Paint(Paint.ANTI_ALIAS_FLAG);
+        coeur.setColor((alpha << 24) | 0xFFD66E);
+        c.drawCircle(x, y, r, coeur);
+    }
+
+    /**
+     * Décor « Reflet doré » (1.3.26), sous le texte : lueurs violette, bleue et dorée, quelques points dorés et un
+     * reflet en diagonale (comme les affiches « Nouveauté » de chay.fr, mais fixe : un widget ne s'anime pas).
+     * Dessiné dans la carte aux coins arrondis du fond (drawable/widget_verset_fond).
+     */
+    static void decor(Canvas c, int w, int h, float u) {
+        c.save();
+        android.graphics.Path coins = new android.graphics.Path();
+        coins.addRoundRect(new RectF(0, 0, w, h), 24 * u, 24 * u, android.graphics.Path.Direction.CW);
+        c.clipPath(coins);
+        lueur(c, w * 0.10f, -h * 0.05f, w * 0.42f, h * 0.62f, 0x8C8A56E2);
+        lueur(c, w * 1.00f, h * 1.02f, w * 0.40f, h * 0.62f, 0x734A6CFE);
+        lueur(c, w * 0.50f, h * 1.12f, w * 0.30f, h * 0.36f, 0x47FFB800);
+        point(c, w * 0.09f, h * 0.68f, 2.0f * u, 230);
+        point(c, w * 0.88f, h * 0.23f, 1.6f * u, 220);
+        point(c, w * 0.74f, h * 0.86f, 1.5f * u, 170);
+        point(c, w * 0.20f, h * 0.17f, 1.1f * u, 140);
+        // Reflet : bande claire à 115° (même angle que le reflet des affiches du site).
+        double a = Math.toRadians(115);
+        float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
+        float longueur = Math.abs(w * dx) + Math.abs(h * dy);
+        float x0 = w / 2f - dx * longueur / 2f, y0 = h / 2f - dy * longueur / 2f;
+        float x1 = w / 2f + dx * longueur / 2f, y1 = h / 2f + dy * longueur / 2f;
+        Paint reflet = new Paint(Paint.ANTI_ALIAS_FLAG);
+        reflet.setShader(new LinearGradient(x0, y0, x1, y1,
+            new int[] { 0x00FFFFFF, 0x00FFFFFF, 0x29FFFFFF, 0x0AFFFFFF, 0x00FFFFFF, 0x00FFFFFF },
+            new float[] { 0f, 0.30f, 0.45f, 0.52f, 0.60f, 1f }, Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, w, h, reflet);
+        c.restore();
+    }
+
     /** Image du widget (transparente : la carte est le fond de la vue), à la taille du widget posé. */
     static Bitmap dessiner(Context context, String texte, String ref, int largeurDp, int hauteurDp) {
         float d = context.getResources().getDisplayMetrics().density;
@@ -174,6 +230,7 @@ public class VersetWidget extends AppWidgetProvider {
         Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         final int OR = 0xFFE8C478;
+        decor(c, w, h, u);
 
         Typeface italique = police(context, "instrument_serif_italique.ttf", Typeface.create(Typeface.SERIF, Typeface.ITALIC));
         Typeface droite = police(context, "instrument_serif.ttf", Typeface.SERIF);

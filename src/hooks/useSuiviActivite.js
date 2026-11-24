@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { appelChay } from "@/api/chayApi";
 import { IS_POCKETBASE } from "@/api/backendConfig";
-import { usePreferences } from "@/lib/PreferencesContext";
 import { arrondirCoord, creerCompteur, notePositionEnvoyee, positionAEnvoyer } from "@/lib/suiviActivite";
 
 const INTERVALLE_MS = 60 * 1000;
@@ -27,10 +26,7 @@ export default function useSuiviActivite(user) {
   const compteur = useRef(null);
   if (!compteur.current) compteur.current = creerCompteur();
   const actif = IS_POCKETBASE && Boolean(user?.id);
-  // Réglages › Confidentialité › « Apparaître sur la carte des membres » (activé par défaut).
-  const { prefs } = usePreferences();
-  const surCarte = useRef(true);
-  surCarte.current = prefs?.carte_membres !== false;
+  // Carte des membres (admins) : tous les membres y figurent, à la ville près (1.3.26 : plus d'option pour s'en retirer).
 
   useEffect(() => {
     if (actif) compteur.current.page(location.pathname);
@@ -46,21 +42,20 @@ export default function useSuiviActivite(user) {
       if (envoiEnCours || (arrete && !keepalive)) return;
       const donnees = c.lire();
       const jour = jourLocal();
-      // Une fois par jour : la ville (ou, si le membre a retiré « Apparaître sur la carte », l'effacement).
+      // Une fois par jour : la ville (position arrondie à ~5 km).
       const carteDuJour = positionAEnvoyer(jour);
       if (!donnees.secondes && !Object.keys(donnees.sections).length && !carteDuJour) return;
       envoiEnCours = true;
       try {
         const corps = { ...donnees };
-        if (carteDuJour && !surCarte.current) corps.sansPosition = true;
-        if (carteDuJour && surCarte.current && !keepalive) {
+        if (carteDuJour && !keepalive) {
           const pos = await lirePosition();
           if (pos?.lat !== null && pos?.lat !== undefined) Object.assign(corps, pos);
         }
         const r = await appelChay("/api/chay/activite", { methode: "POST", corps, keepalive });
         if (r && !r.ignore) {
           c.confirmer(donnees);
-          if (corps.lat !== undefined || corps.sansPosition) notePositionEnvoyee(jour);
+          if (corps.lat !== undefined) notePositionEnvoyee(jour);
         }
       } catch {
         /* hors connexion : réessai au prochain envoi */

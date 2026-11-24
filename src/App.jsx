@@ -31,6 +31,7 @@ const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
+const Recherche = lazy(() => import("@/pages/Recherche"));
 const Home = lazy(homeImport);
 const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
@@ -150,6 +151,7 @@ const AuthenticatedApp = () => {
           <Route path="/messages" element={<RequiresOnline><Messages /></RequiresOnline>} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/recherche" element={<Recherche />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

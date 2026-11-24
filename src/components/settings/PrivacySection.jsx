@@ -6,7 +6,6 @@ import PrefSwitch from "@/components/settings/PrefSwitch";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
-import { oublierPositionDuJour } from "@/lib/suiviActivite";
 
 export default function PrivacySection() {
   const { user } = useAuth();
@@ -84,12 +83,6 @@ export default function PrivacySection() {
         onChange={setLocationPersonalization}
       />
 
-      <PrefSwitch
-        label="Apparaître sur la carte des membres"
-        description="Votre ville (position arrondie à environ 5 km, jamais votre adresse) est visible des seuls administrateurs, avec votre nom et votre photo. Si désactivé, elle est effacée."
-        checked={prefs.carte_membres !== false}
-        onChange={(v) => { setPref("carte_membres", v); oublierPositionDuJour(); }}
-      />
       <div className="border-t border-border my-2" />
       <div className="py-2">
         <p className="text-sm font-semibold">Contrôle de la localisation</p>
