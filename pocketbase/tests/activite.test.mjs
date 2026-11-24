@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chargerLib } from './charger-cjs.mjs';
-import { COLLECTIONS, LIENS_DEPART, TYPES_EN_PLUS, migrer } from '../scripts/migrer-1-3-25.mjs';
+import { COLLECTIONS, LIENS_DEPART, TYPES_EN_PLUS, TYPES_ADMIN_SEULEMENT, migrer } from '../scripts/migrer-1-3-25.mjs';
 
 const act = chargerLib('activite.js');
 
@@ -100,7 +100,8 @@ test('migration 1.3.25 : crée les 4 collections et les 4 liens ; deuxième pass
   assert.deepEqual(ch, ['ActiviteJour (création)', 'PositionMembre (création)', 'PetiteHistoire (création)', 'LienAccueil (création)', ...LIENS_DEPART.map((l) => `lien ${l.label}`), 'Paroles (musique_id)', 'FichierAdmin (types de fichiers)']);
   assert.ok(f.schemas.Paroles.fields.some((x) => x.name === 'musique_id'));
   const types = f.schemas.FichierAdmin.fields[0].mimeTypes;
-  assert.ok(types.includes('image/jpeg') && TYPES_EN_PLUS.every((t) => types.includes(t)));
+  assert.ok(types.includes('image/jpeg') && [...TYPES_EN_PLUS, ...TYPES_ADMIN_SEULEMENT].every((t) => types.includes(t)));
+  assert.ok(!TYPES_EN_PLUS.includes('application/octet-stream'));
   const liens = f.appels.filter(([m, p]) => m === 'POST' && p === '/api/collections/LienAccueil/records').map(([, , b]) => b.url);
   assert.ok(liens.every((u) => u.startsWith('https://')));
   assert.deepEqual(await migrer('http://pb', {}, { appliquer: true }), []);

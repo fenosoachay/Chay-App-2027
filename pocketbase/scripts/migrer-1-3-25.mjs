@@ -74,8 +74,9 @@ export const TYPES_EN_PLUS = [
   'image/bmp', 'image/x-ms-bmp', 'image/tiff', 'image/heic', 'image/heif', 'image/avif',
   'audio/x-ms-wma', 'audio/amr', 'audio/aiff', 'audio/x-aiff', 'audio/3gpp', 'audio/webm', 'audio/x-matroska',
   'audio/ac3', 'audio/x-caf', 'audio/mp4', 'audio/ogg', 'audio/flac', 'audio/x-flac', 'audio/wav', 'audio/x-wav', 'audio/aac',
-  'video/x-ms-asf', 'application/octet-stream',
 ];
+// Admins seulement : wma reconnu comme « asf » ; formats rares reconnus comme binaires. Jamais pour les membres.
+export const TYPES_ADMIN_SEULEMENT = ['video/x-ms-asf', 'application/octet-stream'];
 
 export async function migrer(url, headers, { appliquer = false, log = () => {} } = {}) {
   const changements = [];
@@ -130,7 +131,8 @@ export async function migrer(url, headers, { appliquer = false, log = () => {} }
     const champ = (col.fields || []).find((f) => f.type === 'file');
     const avant = Array.isArray(champ?.mimeTypes) ? champ.mimeTypes : [];
     if (!champ || !avant.length) { log(`  = ${nom} : tous les types sont déjà acceptés`); continue; }
-    const manquants = TYPES_EN_PLUS.filter((t) => !avant.includes(t));
+    const voulus = nom === 'FichierAdmin' ? [...TYPES_EN_PLUS, ...TYPES_ADMIN_SEULEMENT] : TYPES_EN_PLUS;
+    const manquants = voulus.filter((t) => !avant.includes(t));
     if (!manquants.length) { log(`  = ${nom} : types déjà élargis`); continue; }
     changements.push(`${nom} (types de fichiers)`);
     log(`  - ${nom} : ${manquants.length} type(s) de fichier en plus`);
