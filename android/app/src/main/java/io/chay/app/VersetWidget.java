@@ -53,6 +53,15 @@ public class VersetWidget extends AppWidgetProvider {
     static final String ACTION_MINUIT = "io.chay.app.WIDGET_VERSET_MINUIT";
     private static final String TEXTE_DEFAUT = "Je puis tout par celui qui me fortifie.";
     private static final String REF_DEFAUT = "Philippiens 4:13";
+    /**
+     * Animation (1.3.26) : 12 images du décor qui s'enchaînent en fondu, une par seconde (ViewFlipper de
+     * layout/widget_verset.xml) : cycle calme de 12 s. Un widget ne peut pas faire mieux qu'un tel diaporama.
+     */
+    static final int[] CADRES = {
+        R.id.widget_verset_cadre0, R.id.widget_verset_cadre1, R.id.widget_verset_cadre2, R.id.widget_verset_cadre3,
+        R.id.widget_verset_cadre4, R.id.widget_verset_cadre5, R.id.widget_verset_cadre6, R.id.widget_verset_cadre7,
+        R.id.widget_verset_cadre8, R.id.widget_verset_cadre9, R.id.widget_verset_cadre10, R.id.widget_verset_cadre11,
+    };
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -139,10 +148,13 @@ public class VersetWidget extends AppWidgetProvider {
                 Bundle o = manager.getAppWidgetOptions(id);
                 int largeur = o != null ? o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0) : 0;
                 int hauteur = o != null ? o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0) : 0;
-                vue.setImageViewBitmap(R.id.widget_verset_image,
-                    dessiner(context, texte, ref, largeur > 0 ? largeur : 300, hauteur > 0 ? hauteur : 150));
-            } catch (Exception erreur) {
-                // Dessin impossible : l'aperçu fixe (drawable/widget_verset_apercu) reste affiché.
+                int l = largeur > 0 ? largeur : 300, ht = hauteur > 0 ? hauteur : 150;
+                vue.setImageViewBitmap(R.id.widget_verset_image, dessiner(context, texte, ref, l, ht));
+                for (int k = 0; k < CADRES.length; k++) {
+                    vue.setImageViewBitmap(CADRES[k], cadre(context, l, ht, k / (float) CADRES.length));
+                }
+            } catch (Throwable erreur) {
+                // Dessin impossible (ou mémoire) : l'aperçu fixe (drawable/widget_verset_apercu) reste affiché.
             }
             vue.setOnClickPendingIntent(R.id.widget_verset_racine, ouvrirAccueil(context));
             manager.updateAppWidget(id, vue);
@@ -189,37 +201,66 @@ public class VersetWidget extends AppWidgetProvider {
     }
 
     /**
-     * Décor « Reflet doré » (1.3.26), sous le texte : lueurs violette, bleue et dorée, quelques points dorés et un
-     * reflet en diagonale (comme les affiches « Nouveauté » de chay.fr, mais fixe : un widget ne s'anime pas).
-     * Dessiné dans la carte aux coins arrondis du fond (drawable/widget_verset_fond).
+     * Une image du décor animé « Reflet doré » (1.3.26), au moment t du cycle (0 à 1) : fond de la carte, lueurs
+     * violette, bleue et dorée qui dérivent, points dorés qui montent en brillant, reflet en diagonale qui traverse
+     * la carte pendant la première moitié du cycle (comme les affiches « Nouveauté » de chay.fr).
+     * Image opaque (coins arrondis exceptés) pour que le fondu d'une image à l'autre ne fasse pas clignoter.
+     * Petite taille (480 px de large au plus) : 12 images doivent tenir dans la mémoire du widget.
      */
-    static void decor(Canvas c, int w, int h, float u) {
+    static Bitmap cadre(Context context, int largeurDp, int hauteurDp, float t) {
+        float d = context.getResources().getDisplayMetrics().density;
+        float echelle = Math.min(1f, Math.min(480f / (largeurDp * d), 300f / (hauteurDp * d)));
+        float u = d * echelle;
+        int w = Math.max(1, Math.round(largeurDp * u));
+        int h = Math.max(1, Math.round(hauteurDp * u));
+        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bmp);
         c.save();
         android.graphics.Path coins = new android.graphics.Path();
         coins.addRoundRect(new RectF(0, 0, w, h), 24 * u, 24 * u, android.graphics.Path.Direction.CW);
         c.clipPath(coins);
-        lueur(c, w * 0.10f, -h * 0.05f, w * 0.42f, h * 0.62f, 0x8C8A56E2);
-        lueur(c, w * 1.00f, h * 1.02f, w * 0.40f, h * 0.62f, 0x734A6CFE);
-        lueur(c, w * 0.50f, h * 1.12f, w * 0.30f, h * 0.36f, 0x47FFB800);
-        point(c, w * 0.09f, h * 0.68f, 2.0f * u, 230);
-        point(c, w * 0.88f, h * 0.23f, 1.6f * u, 220);
-        point(c, w * 0.74f, h * 0.86f, 1.5f * u, 170);
-        point(c, w * 0.20f, h * 0.17f, 1.1f * u, 140);
-        // Reflet : bande claire à 115° (même angle que le reflet des affiches du site).
-        double a = Math.toRadians(115);
-        float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
-        float longueur = Math.abs(w * dx) + Math.abs(h * dy);
-        float x0 = w / 2f - dx * longueur / 2f, y0 = h / 2f - dy * longueur / 2f;
-        float x1 = w / 2f + dx * longueur / 2f, y1 = h / 2f + dy * longueur / 2f;
-        Paint reflet = new Paint(Paint.ANTI_ALIAS_FLAG);
-        reflet.setShader(new LinearGradient(x0, y0, x1, y1,
-            new int[] { 0x00FFFFFF, 0x00FFFFFF, 0x29FFFFFF, 0x0AFFFFFF, 0x00FFFFFF, 0x00FFFFFF },
-            new float[] { 0f, 0.30f, 0.45f, 0.52f, 0.60f, 1f }, Shader.TileMode.CLAMP));
-        c.drawRect(0, 0, w, h, reflet);
+        // Fond (identique à drawable/widget_verset_fond : marine vers violet, de gauche à droite)
+        Paint fond = new Paint();
+        fond.setShader(new LinearGradient(0, 0, w, 0, new int[] { 0xFF0C0E2C, 0xFF1E1448, 0xFF2E1A5C }, null, Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, w, h, fond);
+        float S = (float) Math.sin(2 * Math.PI * t), C = (float) Math.cos(2 * Math.PI * t);
+        lueur(c, w * (0.12f + 0.10f * S), h * (-0.02f + 0.14f * C), w * 0.42f * (1 + 0.08f * S), h * 0.62f * (1 + 0.08f * S), 0x8C8A56E2);
+        lueur(c, w * (0.98f - 0.10f * S), h * (1.00f - 0.14f * C), w * 0.40f * (1 - 0.08f * S), h * 0.62f * (1 - 0.08f * S), 0x734A6CFE);
+        int alphaOr = Math.round(255 * 0.28f * (0.85f + 0.25f * S));
+        lueur(c, w * (0.50f + 0.06f * C), h * 1.12f, w * 0.30f, h * 0.36f, (alphaOr << 24) | 0xFFB800);
+        // Points : x, y de départ, rayon (dp), décalage dans le cycle ; ils montent et s'estompent aux extrémités.
+        float[][] points = { { 0.09f, 0.80f, 2.0f, 0f }, { 0.88f, 0.45f, 1.6f, 0.35f }, { 0.74f, 0.95f, 1.5f, 0.6f },
+            { 0.20f, 0.40f, 1.1f, 0.8f }, { 0.55f, 0.85f, 1.3f, 0.15f } };
+        for (float[] pt : points) {
+            float f = (t + pt[3]) % 1f;
+            int alpha = Math.round(242 * (float) Math.sin(Math.PI * f));
+            if (alpha > 0) point(c, w * pt[0], h * (pt[1] - 0.35f * f), pt[2] * u, alpha);
+        }
+        if (t < 0.5f) {
+            double a = Math.toRadians(115);
+            float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
+            float L = Math.abs(w * dx) + Math.abs(h * dy);
+            float decalage = (-0.75f + 1.5f * (t / 0.5f)) * L;
+            float x0 = w / 2f - dx * L / 2f + dx * decalage, y0 = h / 2f - dy * L / 2f + dy * decalage;
+            float x1 = w / 2f + dx * L / 2f + dx * decalage, y1 = h / 2f + dy * L / 2f + dy * decalage;
+            Paint reflet = new Paint(Paint.ANTI_ALIAS_FLAG);
+            reflet.setShader(new LinearGradient(x0, y0, x1, y1,
+                new int[] { 0x00FFFFFF, 0x00FFFFFF, 0x38FFFFFF, 0x00FFFFFF, 0x00FFFFFF },
+                new float[] { 0f, 0.40f, 0.50f, 0.60f, 1f }, Shader.TileMode.CLAMP));
+            c.drawRect(0, 0, w, h, reflet);
+        }
         c.restore();
+        // Liseré doré (comme drawable/widget_verset_fond)
+        Paint bord = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bord.setStyle(Paint.Style.STROKE);
+        bord.setStrokeWidth(Math.max(1f, u));
+        bord.setColor(0x8CC9A052);
+        float m = bord.getStrokeWidth() / 2f;
+        c.drawRoundRect(new RectF(m, m, w - m, h - m), 24 * u, 24 * u, bord);
+        return bmp;
     }
 
-    /** Image du widget (transparente : la carte est le fond de la vue), à la taille du widget posé. */
+    /** Texte du widget (image transparente posée sur le décor animé), à la taille du widget posé. */
     static Bitmap dessiner(Context context, String texte, String ref, int largeurDp, int hauteurDp) {
         float d = context.getResources().getDisplayMetrics().density;
         // Taille plafonnée (mémoire limitée des widgets) : l'image est ensuite agrandie par l'écran.
@@ -230,7 +271,7 @@ public class VersetWidget extends AppWidgetProvider {
         Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         final int OR = 0xFFE8C478;
-        decor(c, w, h, u);
+        // Le décor (fond, lueurs, points, reflet) est dans les images animées, sous ce texte : voir cadre().
 
         Typeface italique = police(context, "instrument_serif_italique.ttf", Typeface.create(Typeface.SERIF, Typeface.ITALIC));
         Typeface droite = police(context, "instrument_serif.ttf", Typeface.SERIF);

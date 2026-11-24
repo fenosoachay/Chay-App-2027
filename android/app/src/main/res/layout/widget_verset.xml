@@ -1,11 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Widget « Verset du jour » (VersetWidget.java), design « Nuit dorée » : la carte (fond marine-violet, liseré
-     doré) et, dessus, une image dessinée par l'app avec les polices du site (Instrument Serif, Poppins). -->
+     doré) ; dessus, le décor animé « Reflet doré » (1.3.26 : 12 images en fondu, une par seconde, dessinées par
+     l'app) ; tout en haut, le texte dessiné avec les polices du site (Instrument Serif, Poppins). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_verset_racine"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_verset_fond">
+
+    <ViewFlipper
+        android:id="@+id/widget_verset_anim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoStart="true"
+        android:flipInterval="1000"
+        android:animateFirstView="false"
+        android:inAnimation="@anim/widget_fondu_entree"
+        android:outAnimation="@anim/widget_fondu_sortie">
+        <ImageView
+            android:id="@+id/widget_verset_cadre0"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre5"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre6"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre7"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre8"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre9"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre10"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+        <ImageView
+            android:id="@+id/widget_verset_cadre11"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="fitXY" />
+    </ViewFlipper>
 
     <ImageView
         android:id="@+id/widget_verset_image"
