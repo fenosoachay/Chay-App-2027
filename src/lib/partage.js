@@ -26,16 +26,17 @@ export async function partagerTexte({ titre = "Partager", texte }) {
       /* ancienne APK sans le plugin : on essaie la suite */
     }
   }
-  if (typeof navigator !== "undefined" && navigator.share) {
+  const nav = globalThis.navigator;
+  if (nav?.share) {
     try {
-      await navigator.share({ title: titre, text: texte });
+      await nav.share({ title: titre, text: texte });
       return "partage";
     } catch (e) {
       if (e?.name === "AbortError") return "annule";
     }
   }
   try {
-    await navigator.clipboard.writeText(texte);
+    await nav.clipboard.writeText(texte);
     return "copie";
   } catch {
     return "annule";

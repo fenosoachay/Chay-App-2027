@@ -53,10 +53,11 @@ function suivre(el) {
 }
 
 /** À appeler une fois au démarrage : suit toutes les photos et vidéos ajoutées à la page. */
-export function installerAttenteMedia(racine = typeof document !== "undefined" ? document : null) {
-  if (!racine || typeof MutationObserver === "undefined") return () => {};
+export function installerAttenteMedia(racine = globalThis.document || null) {
+  const Observateur = globalThis.MutationObserver;
+  if (!racine || typeof Observateur !== "function") return () => {};
   racine.querySelectorAll("img, video").forEach(suivre);
-  const obs = new MutationObserver((changements) => {
+  const obs = new Observateur((changements) => {
     for (const c of changements) {
       if (c.type === "attributes") {
         // Nouvelle adresse sur une image déjà suivie : elle recharge.
