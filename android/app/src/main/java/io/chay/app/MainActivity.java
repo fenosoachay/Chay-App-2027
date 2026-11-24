@@ -40,6 +40,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ChayMiseAJourPlugin.class);
         registerPlugin(ChayTvPlugin.class);
         registerPlugin(ChayPartagePlugin.class);
+        registerPlugin(ChayWidgetPlugin.class);
         super.onCreate(savedInstanceState);
         // Widget « Verset du jour » : rafraîchi à chaque ouverture de l'app.
         VersetWidget.toutRafraichir(getApplicationContext());

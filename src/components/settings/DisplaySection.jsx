@@ -1,6 +1,7 @@
 import React from "react";
 import { usePreferences } from "@/lib/PreferencesContext";
 import PrefSwitch from "@/components/settings/PrefSwitch";
+import BoutonWidget from "@/components/settings/BoutonWidget";
 import { TAILLES_POLICE, enregistrerTaillePolice, lireTaillePolice } from "@/lib/taillePolice";
 
 function Segmented({ options, value, onChange, labels, ariaLabel }) {
@@ -134,6 +135,8 @@ export default function DisplaySection() {
         checked={prefs.autoplay_video}
         onChange={(v) => setPref("autoplay_video", v)}
       />
+
+      <BoutonWidget />
     </div>
   );
 }
