@@ -3,7 +3,6 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle, Search } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
 import AnimatedOutlet from "@/components/AnimatedOutlet";
 import AProposDepuisNotification from "@/components/home/AProposDepuisNotification";
 import AutoOpenAudioPlayer from "@/components/player/AutoOpenAudioPlayer";
@@ -168,7 +167,9 @@ export default function Layout() {
           </nav>
 
           <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
-            <ThemeToggle />
+            <Link to="/recherche" className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Rechercher">
+              <Search className="h-4 w-4" />
+            </Link>
             <Link to={navTarget("/messages")} className="relative h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Messages">
               <MessageCircle className="h-4 w-4" />
               {unread > 0 && (
@@ -182,9 +183,6 @@ export default function Layout() {
               {notifUnread > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.625rem] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
               )}
-            </Link>
-            <Link to="/recherche" className="h-11 w-11 grid place-items-center rounded-full border border-border hover:bg-muted transition" aria-label="Rechercher">
-              <Search className="h-4 w-4" />
             </Link>
             <MenuEglise className="h-11 w-11 hover:bg-muted transition" />
             <Link to="/settings" className="h-11 w-11 grid place-items-center rounded-full brand-gradient text-white shadow-sm" aria-label="Paramètres">
@@ -226,7 +224,9 @@ export default function Layout() {
           </div>
           {/* Grande police : boutons plafonnés à la largeur de l'écran (src/index.css, data-barre-icones). */}
           <div data-barre-icones className="flex items-center gap-1.5 min-w-0">
-            <ThemeToggle />
+            <Link to="/recherche" className="h-9 w-9 grid place-items-center rounded-full border border-border" aria-label="Rechercher">
+              <Search className="h-[17px] w-[17px]" />
+            </Link>
             <Link to={navTarget("/messages")} className="relative h-9 w-9 grid place-items-center rounded-full border border-border" aria-label="Messages">
               <MessageCircle className="h-[17px] w-[17px]" />
               {unread > 0 && (
@@ -240,9 +240,6 @@ export default function Layout() {
               {notifUnread > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[0.5625rem] font-bold border-2 border-background">{notifUnread > 9 ? "9+" : notifUnread}</span>
               )}
-            </Link>
-            <Link to="/recherche" className="h-9 w-9 grid place-items-center rounded-full border border-border" aria-label="Rechercher">
-              <Search className="h-[17px] w-[17px]" />
             </Link>
             {/* ☰ : Histoire de l'église, Personnel */}
             <MenuEglise />

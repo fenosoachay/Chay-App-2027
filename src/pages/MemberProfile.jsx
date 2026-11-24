@@ -152,6 +152,8 @@ export default function MemberProfile() {
           <img
             src={member.cover_photo_url}
             alt=""
+            data-photo-profil
+            draggable={false}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -177,6 +179,8 @@ export default function MemberProfile() {
               <img
                 src={member.profile_photo_url}
                 alt=""
+                data-photo-profil
+                draggable={false}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -275,6 +279,9 @@ export default function MemberProfile() {
                 : member.profile_photo_url
             }
             alt=""
+            data-photo-profil
+            data-sans-zoom
+            draggable={false}
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />

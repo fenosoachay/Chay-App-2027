@@ -87,6 +87,21 @@ export default function useStagedPublish({
     return removed;
   };
 
+  // Plusieurs entrées d'un coup (1.3.27 : 50 versets du jour importés), une par date : même règle que `stage`,
+  // appliquée en chaîne (un seul changement d'état). Les dates refusées (resolveId -> null) sont renvoyées.
+  const stageMany = (drafts, serverEntries) => {
+    let next = [...pending];
+    const refusees = [];
+    for (const draft of drafts || []) {
+      const day = draft[dateField];
+      const id = resolveId(draft, atDate(next, day), atDate(serverEntries, day));
+      if (id === null) { refusees.push(day); continue; }
+      next = [...next.filter((p) => p[dateField] !== day), { ...draft, id, __pending: true }];
+    }
+    setPending(next);
+    return { ok: (drafts || []).length - refusees.length, refusees, pendingCount: next.length };
+  };
+
   // Écrit toute la file d'un coup. Les écritures partent en parallèle ; celles
   // qui échouent restent dans la file pour être retentées.
   const publish = async (serverEntries) => {
@@ -123,5 +138,5 @@ export default function useStagedPublish({
     }
   };
 
-  return { pending, publishing, stage, discard, publish };
+  return { pending, publishing, stage, stageMany, discard, publish };
 }

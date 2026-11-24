@@ -14,7 +14,8 @@ function Initiales({ nom }) {
 
 export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
   const jeux = espace === "enfant" ? JEUX_ENFANTS : JEUX_ADULTES;
-  const [periode, setPeriode] = useState("semaine");
+  // 1.3.27 : « Toujours » d'abord (tous les joueurs, y compris ceux d'avant le Score Board).
+  const [periode, setPeriode] = useState("toujours");
   const [jeu, setJeu] = useState("general");
   const [data, setData] = useState(null);
   const [erreur, setErreur] = useState(false);

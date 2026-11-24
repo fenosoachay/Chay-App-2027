@@ -11,6 +11,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
@@ -21,6 +22,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 import androidx.media3.ui.AspectRatioFrameLayout;
@@ -62,6 +64,9 @@ public class AndroidExoPlayerPlugin extends Plugin {
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
     private PlayerView playerView;
+    // Image d'attente Chay (1.3.27) : visible sur la fenêtre vidéo jusqu'à la première image de chaque vidéo
+    // (res/drawable-nodpi/attente_chay.jpg, la même que public/branding/attente-chay.jpg). Jamais d'écran noir.
+    private ImageView imageAttente;
     // Plein écran vidéo : le lecteur Android couvre tout l'écran, en paysage, avec ses propres commandes.
     private boolean pleinEcran = false;
     private FrameLayout.LayoutParams derniereFenetre = null;
@@ -81,13 +86,25 @@ public class AndroidExoPlayerPlugin extends Plugin {
                     controller = controllerFuture.get();
                     controller.addListener(new Player.Listener() {
                         @Override
+                        public void onRenderedFirstFrame() {
+                            montrerAttente(false);
+                        }
+
+                        @Override
+                        public void onVideoSizeChanged(VideoSize videoSize) {
+                            cacherAttenteSiVideoPrete();
+                        }
+
+                        @Override
                         public void onIsPlayingChanged(boolean isPlaying) {
+                            cacherAttenteSiVideoPrete();
                             emitPlaybackState(null);
                             scheduleProgressUpdates();
                         }
 
                         @Override
                         public void onPlaybackStateChanged(int playbackState) {
+                            cacherAttenteSiVideoPrete();
                             emitPlaybackState(null);
                             scheduleProgressUpdates();
                         }
@@ -97,6 +114,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                             MediaItem mediaItem,
                             int reason
                         ) {
+                            montrerAttente(true);
                             emitPlaybackState(null);
                         }
 
@@ -168,6 +186,7 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 sameQueue(mediaController, mediaItems);
 
             if (!alreadyAtRequestedItem) {
+                montrerAttente(true);
                 mediaController.setMediaItems(mediaItems, currentIndex, startPositionMs);
                 mediaController.prepare();
             } else if (mediaController.getPlaybackState() == Player.STATE_ENDED) {
@@ -438,6 +457,16 @@ public class AndroidExoPlayerPlugin extends Plugin {
         playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         playerView.setPlayer(controller);
         playerView.setVisibility(View.GONE);
+        // Image d'attente posée au-dessus de la vidéo (et de son fond noir), sous l'indicateur de chargement.
+        ViewGroup cadreVideo = playerView.findViewById(androidx.media3.ui.R.id.exo_content_frame);
+        if (cadreVideo != null) {
+            imageAttente = new ImageView(getContext());
+            imageAttente.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            imageAttente.setImageResource(R.drawable.attente_chay);
+            imageAttente.setVisibility(View.GONE);
+            cadreVideo.addView(imageAttente, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         ViewGroup content = getActivity().findViewById(android.R.id.content);
         if (content != null) {
             content.addView(
@@ -445,6 +474,23 @@ public class AndroidExoPlayerPlugin extends Plugin {
                 new FrameLayout.LayoutParams(1, 1, Gravity.TOP | Gravity.START)
             );
         }
+    }
+
+    /** Vidéo prête (taille connue et lecteur prêt) : l'image d'attente disparaît, même sans « première image ». */
+    private void cacherAttenteSiVideoPrete() {
+        if (controller == null) return;
+        VideoSize taille = controller.getVideoSize();
+        if (taille.width > 0 && taille.height > 0 && controller.getPlaybackState() == Player.STATE_READY) {
+            montrerAttente(false);
+        }
+    }
+
+    /** Image d'attente : montrée au lancement d'une vidéo, cachée dès sa première image. */
+    private void montrerAttente(boolean visible) {
+        if (imageAttente == null || getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            if (imageAttente != null) imageAttente.setVisibility(visible ? View.VISIBLE : View.GONE);
+        });
     }
 
     private void withController(PluginCall call, ControllerCommand command) {

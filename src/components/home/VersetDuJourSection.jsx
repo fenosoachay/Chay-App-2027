@@ -24,6 +24,7 @@ import {
   addDaysISO,
 } from "@/lib/localDate";
 import PeriodPlanner from "@/components/home/PeriodPlanner";
+import ImportVersets from "@/components/home/ImportVersets";
 import useStagedPublish from "@/hooks/useStagedPublish";
 import { confirmFr } from "@/lib/confirmFr";
 
@@ -45,6 +46,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [planningLoading, setPlanningLoading] = useState(false);
+  const [enMasse, setEnMasse] = useState(false); // 1.3.27 : plusieurs versets d'un coup
   const [draft, setDraft] = useState({
     id: undefined, // id de l'entrée serveur que le formulaire modifie
     scripture_reference: "",
@@ -54,7 +56,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
 
   // File « à publier » : on enregistre plusieurs versets dans la fenêtre,
   // rien ne part au serveur, puis un seul « Publier » les écrit tous.
-  const { pending, publishing, stage, discard, publish } = useStagedPublish({
+  const { pending, publishing, stage, stageMany, discard, publish } = useStagedPublish({
     entity: base44.entities.Devotional,
     dateField: "reading_date",
     build: (p) => {
@@ -349,6 +351,30 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
             </DialogDescription>
           </DialogHeader>
 
+          {/* 1.3.27 : un verset (comme avant) ou jusqu'à 50 d'un coup ; ensuite, chaque jour reste modifiable. */}
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+            <button type="button" onClick={() => setEnMasse(false)} className={`rounded-full py-1.5 text-sm font-bold ${!enMasse ? "bg-background shadow" : "text-foreground/60"}`}>
+              Un verset
+            </button>
+            <button type="button" onClick={() => setEnMasse(true)} className={`rounded-full py-1.5 text-sm font-bold ${enMasse ? "bg-background shadow" : "text-foreground/60"}`}>
+              Plusieurs (jusqu'à 50)
+            </button>
+          </div>
+
+          {enMasse ? (
+            <ImportVersets
+              depart={addDaysISO(today, 1)}
+              occupes={new Set([...all, ...pending].map((e) => e.reading_date).filter(Boolean))}
+              onAjouter={(drafts) => {
+                const res = stageMany(drafts, all);
+                toast({
+                  title: `${res.ok} verset(s) ajouté(s) à la liste`,
+                  description: "Vérifie le planning, puis touche « Publier ». Chaque jour reste modifiable.",
+                });
+                setEnMasse(false);
+              }}
+            />
+          ) : (
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="vd-date">Date d'affichage</Label>
@@ -404,6 +430,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
               <Plus className="h-4 w-4 mr-1.5" /> Enregistrer dans la liste
             </Button>
           </div>
+          )}
 
           <PeriodPlanner
             today={today}

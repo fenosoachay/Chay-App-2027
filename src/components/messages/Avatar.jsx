@@ -4,7 +4,7 @@ import { Image } from "@/components/ui/image";
 export default function Avatar({ name, src, size = 44, online }) {
   const initial = (name || "?")[0]?.toUpperCase();
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }} data-photo-profil>
       {src ? (
         <Image
           src={src}

@@ -519,3 +519,11 @@ html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1
   animation: chay-defile-haut 12s linear infinite;
   will-change: transform;
 }
+
+/* Photos de profil (1.3.27) : pas de menu « Enregistrer l'image » à l'appui long (src/components/VisionneusePhoto.jsx). */
+[data-photo-profil],
+[data-photo-profil] img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

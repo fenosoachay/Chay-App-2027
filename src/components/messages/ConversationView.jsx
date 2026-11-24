@@ -13,7 +13,6 @@ import {
   Image as ImageIcon,
   X,
   Smile,
-  Settings,
   Camera,
   Info,
 } from "lucide-react";
@@ -23,7 +22,6 @@ import MemberName from "@/components/messages/MemberName";
 import useMemberDirectory from "@/hooks/useMemberDirectory";
 import { Image } from "@/components/ui/image";
 import { isOnline, lastSeenLabel } from "@/hooks/usePresence";
-import GroupSettingsSheet from "@/components/messages/GroupSettingsSheet";
 import EmojiPicker from "@/components/messages/EmojiPicker";
 import MessageActionMenu from "@/components/messages/MessageActionMenu";
 import PhotoViewer from "@/components/messages/PhotoViewer";
@@ -41,6 +39,8 @@ function fmtTime(d) {
   return formatTimestamp(d, { date: false });
 }
 
+const LIKE = "👍";
+
 export default function ConversationView({
   conversation,
   messages,
@@ -55,7 +55,6 @@ export default function ConversationView({
   const [typing, setTyping] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [infosOuvertes, setInfosOuvertes] = useState(false);
   const [surligne, setSurligne] = useState(null); // message trouvé par la recherche (mis en évidence)
   const [menu, setMenu] = useState(null);
@@ -230,11 +229,12 @@ export default function ConversationView({
     if (!draft && champRef.current) champRef.current.style.height = "auto";
   }, [draft]);
 
-  const send = async () => {
-    const text = draft.trim();
+  // `force` : texte envoyé sans passer par le champ (bouton 👍 quand le champ est vide).
+  const send = async (force) => {
+    const text = typeof force === "string" ? force : draft.trim();
     if (!text || sending || !conversation) return;
     setSending(true);
-    setDraft("");
+    if (typeof force !== "string") setDraft("");
     setShowEmoji(false);
     clearTimeout(typingTimer.current);
     isTypingSent.current = false;
@@ -259,7 +259,7 @@ export default function ConversationView({
       setReplyTo(null);
     } catch (e) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
-      setDraft(text);
+      if (typeof force !== "string") setDraft(text);
     }
     setSending(false);
   };
@@ -405,15 +405,6 @@ image_url: uploadedUrl,
         >
           <Info className="h-5 w-5" />
         </button>
-        {isGroup && (
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="h-9 w-9 grid place-items-center rounded-full border border-border hover:bg-muted shrink-0"
-            aria-label="Paramètres du groupe"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {/* Messages */}
@@ -428,6 +419,8 @@ image_url: uploadedUrl,
         ) : messages.filter(isRenderableMessage).map((m, i, visibleMessages) => {
           const mine = m.sender_id === user.id;
           const imageOnly = !!m.image_url && !m.text;
+          // « Like » (1.3.27) : un message fait d'un seul pouce 👍 s'affiche en grand, sans bulle (comme Messenger).
+          const like = !m.image_url && String(m.text || "").trim() === LIKE;
           const repliedMessage = m.reply_to_id
             ? repliedOf(m.reply_to_id)
             : null;
@@ -511,7 +504,7 @@ image_url: uploadedUrl,
                   onPointerCancel={cancelPress}
                   onContextMenu={(e) => onContextMenuMenu(e, m)}
                   className={`w-fit max-w-full rounded-[12px] cursor-pointer select-none transition active:scale-[0.99] ${editing?.id === m.id ? "hidden" : ""} ${
-                    imageOnly
+                    imageOnly || like
                       ? "p-0 bg-transparent border-0 shadow-none"
                       : `px-3.5 py-2 ${mine ? "brand-gradient text-white rounded-br-[4px]" : "bg-card border border-border rounded-bl-[4px]"}`
                   }`}
@@ -536,7 +529,9 @@ image_url: uploadedUrl,
                       />
                     </button>
                   )}
-                  {m.text ? (
+                  {like ? (
+                    <div className="text-5xl leading-none" role="img" aria-label="J'aime">{LIKE}</div>
+                  ) : m.text ? (
                     <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                       <TexteAvecLiens texte={m.text} clair={mine} />
                     </div>
@@ -663,19 +658,25 @@ image_url: uploadedUrl,
             className="flex-1 min-w-0 max-h-36 resize-none rounded-3xl border border-border bg-card px-4 py-2.5 text-sm leading-5 outline-none focus:border-primary shadow-inner"
           />
 
-          {/* Bouton Envoyer Compact (Icône seule) */}
-          <button
-            onClick={send}
-            disabled={(!draft.trim() && !sending) || sending}
-            className="h-10 w-10 shrink-0 grid place-items-center rounded-full brand-gradient text-white disabled:opacity-50 active:scale-95 transition shadow-lg"
-            aria-label="Envoyer"
-          >
-            {sending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5 ml-0.5" /> 
-            )}
-          </button>
+          {/* Champ vide : 👍 (envoyé aussitôt, en grand) ; dès qu'on écrit : Envoyer (1.3.27). */}
+          {draft.trim() || sending ? (
+            <button
+              onClick={() => send()}
+              disabled={sending}
+              className="h-10 w-10 shrink-0 grid place-items-center rounded-full brand-gradient text-white disabled:opacity-50 active:scale-95 transition shadow-lg"
+              aria-label="Envoyer"
+            >
+              {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-0.5" />}
+            </button>
+          ) : (
+            <button
+              onClick={() => send(LIKE)}
+              className="h-10 w-10 shrink-0 grid place-items-center rounded-full text-[1.65rem] leading-none active:scale-90 transition"
+              aria-label="Envoyer un pouce"
+            >
+              <span aria-hidden="true">{LIKE}</span>
+            </button>
+          )}
         </div>
       </div>
       </>
@@ -702,16 +703,6 @@ image_url: uploadedUrl,
         />
       )}
 
-      {isGroup && (
-        <GroupSettingsSheet
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          conversation={conversation}
-          user={user}
-          profiles={profiles}
-          onUpdated={onRefresh}
-        />
-      )}
 
       {viewer && (
         <PhotoViewer
@@ -731,6 +722,14 @@ image_url: uploadedUrl,
           onFermer={() => setInfosOuvertes(false)}
           onAllerAuMessage={allerAuMessage}
           onVoirPhoto={openPhoto}
+          groupe={isGroup ? {
+            conversation,
+            user,
+            profiles,
+            // Gestion du groupe : son admin, ou un admin de l'app (même règle que le serveur).
+            peutGerer: conversation?.admin_id === user?.id || user?.role === "admin",
+            onUpdated: onRefresh,
+          } : null}
         />
       )}
 

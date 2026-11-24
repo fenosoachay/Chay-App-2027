@@ -31,20 +31,18 @@ const JEUX = [
   { id: "puzzle", titre: "Puzzle", desc: "Reconstitue une image de la Bible", icon: IconePuzzle, tone: "from-[#2E6F40] to-[#4A6CFE]", points: true },
 ];
 
-function GrandeCase({ item, onClick }) {
+/** Case d'une section, comme les sections du Multimédia (carré coloré + nom dessous) (1.3.27). */
+function CaseSection({ item, onClick }) {
   const Icon = item.icon;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-4 rounded-[1.75rem] bg-gradient-to-br ${item.tone} p-6 text-left text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl`}
-    >
-      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white/20">
-        <Icon className="h-9 w-9" />
+    <button type="button" onClick={onClick} className="group flex flex-col items-center gap-2">
+      <span
+        className={`relative grid aspect-square w-full place-items-center rounded-[1.5rem] bg-gradient-to-br ${item.tone} text-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg`}
+      >
+        <Icon className="h-9 w-9 md:h-10 md:w-10" />
       </span>
-      <span className="min-w-0">
-        <span className="block font-display text-2xl font-extrabold">{item.titre}</span>
-        <span className="block text-sm text-white/85">{item.desc}</span>
+      <span className="max-w-full text-center text-[0.9375rem] font-semibold leading-tight text-foreground/70 md:text-[1.3125rem]">
+        {item.titre}
       </span>
     </button>
   );
@@ -168,8 +166,8 @@ export default function Kids() {
       )}
 
       {!vue && (
-        <div className="grid gap-4 sm:grid-cols-2 md:gap-5">
-          {ESPACES.map((e) => <GrandeCase key={e.id} item={e} onClick={() => ouvrir({ vue: e.id })} />)}
+        <div className="grid grid-cols-3 gap-4 md:grid-cols-6 md:gap-6 lg:grid-cols-8">
+          {ESPACES.map((e) => <CaseSection key={e.id} item={e} onClick={() => ouvrir({ vue: e.id })} />)}
         </div>
       )}
 
@@ -195,8 +193,8 @@ export default function Kids() {
               <ScoreBoard key={enfants.version} espace="enfant" pseudo={enfants.actif.pseudo} />
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-3 md:gap-5">
-            {JEUX.map((j) => <GrandeCase key={j.id} item={j} onClick={() => ouvrirJeu(j)} />)}
+          <div className="grid grid-cols-3 gap-4 md:grid-cols-6 md:gap-6 lg:grid-cols-8">
+            {JEUX.map((j) => <CaseSection key={j.id} item={j} onClick={() => ouvrirJeu(j)} />)}
           </div>
         </>
       )}

@@ -52,7 +52,13 @@ routerAdd('POST', '/api/fn/classement', (e) => {
 
     let filtre = 'espace = {:e}';
     const params = { e: espace, d: sc.datePb(debut), j: jeu };
-    if (debut > 0) filtre += ' && created >= {:d}';
+    if (debut > 0) {
+      filtre += ' && created >= {:d}';
+      // 1.3.27 : les scores repris d'avant le Score Board (migration 1.3.27) ne comptent que dans « Toujours ».
+      let historique = false;
+      try { historique = Boolean($app.findCollectionByNameOrId('ScoreJeu').fields.getByName('historique')); } catch (_) { historique = false; }
+      if (historique) filtre += ' && historique != true';
+    }
     if (jeu !== 'general') filtre += ' && jeu = {:j}';
     const rows = $app.findRecordsByFilter('ScoreJeu', filtre, '', 50000, 0, params);
 

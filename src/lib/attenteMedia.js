@@ -41,6 +41,9 @@ function suivreVideo(video) {
   video.__chayAttente = true;
   const fini = () => video.classList.remove(CLASSE);
   if (video.readyState < 2) video.classList.add(CLASSE);
+  // 1.3.27 : un même lecteur sert à plusieurs vidéos (lecteur de l'app) : à chaque nouvelle vidéo, l'image
+  // d'attente revient jusqu'à la première image.
+  video.addEventListener("loadstart", () => { if (video.readyState < 2) video.classList.add(CLASSE); });
   video.addEventListener("loadeddata", fini);
   video.addEventListener("playing", fini);
   video.addEventListener("error", () => { if (!video.poster) video.poster = IMAGE_ATTENTE; });

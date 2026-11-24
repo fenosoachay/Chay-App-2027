@@ -50,6 +50,7 @@ import {
 } from "@/lib/mediaSurfaceRules";
 import { Capacitor } from "@capacitor/core";
 import { openExternal } from "@/lib/openExternal";
+import { IMAGE_ATTENTE } from "@/lib/attenteMedia";
 
 // YouTube : iframe directe sur le site ; dans l'APK Android, page relais sur membres.chay.fr (vrai domaine).
 const LECTEUR_YT = lecteurYoutube({
@@ -690,7 +691,8 @@ const playVideo = (source) => {
   // d'amorcer le téléchargement des premières images → démarrage perçu lent.
   preload="auto"
   // Image de couverture native : masque le fond noir pendant le chargement.
-  poster={!videoReady && isVideo ? control?.artwork || "" : undefined}
+  // 1.3.27 : sans couverture, image d'attente Chay (jamais d'écran noir pendant le chargement).
+  poster={!videoReady && isVideo ? control?.artwork || IMAGE_ATTENTE : undefined}
   onPlay={() => {
     const active = controlRef.current;
     if (active?.type === "video") updateMediaControl(active.id, { isPlaying: true });

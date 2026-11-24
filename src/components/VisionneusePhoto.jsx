@@ -13,6 +13,20 @@ import { ZOOM_DOUBLE, adresseGrande, bornerEchelle, limiter, photoZoomable, zoom
 
 const INTERACTIF = "button, a, [role='button'], label, summary, input, select, textarea, [contenteditable='true'], [data-sans-zoom]";
 
+/**
+ * Photo de profil (1.3.27) : jamais téléchargeable (ni bouton, ni appui long / clic droit « Enregistrer »).
+ * Repérée par data-photo-profil (avatars, profil d'un membre), ou par sa forme ronde (avatars des listes).
+ */
+export function estPhotoProfil(img) {
+  if (!img || !img.closest) return false;
+  if (img.closest("[data-photo-profil]")) return true;
+  let n = img;
+  for (let i = 0; i < 3 && n; i += 1, n = n.parentElement) {
+    if (n.classList?.contains("rounded-full")) return true;
+  }
+  return false;
+}
+
 function ZoomImage({ src }) {
   const cadre = useRef(null);
   const img = useRef(null);
@@ -133,7 +147,7 @@ function ZoomImage({ src }) {
   );
 }
 
-function Visionneuse({ src, onClose }) {
+function Visionneuse({ src, telechargeable = true, onClose }) {
   const { toast } = useToast();
   const [telechargement, setTelechargement] = useState(false);
   const [aide, setAide] = useState(true);
@@ -176,7 +190,7 @@ function Visionneuse({ src, onClose }) {
       <button type="button" onPointerUp={onClose} onClick={(e) => { if (e.detail === 0) onClose(); }} aria-label="Fermer" className={bouton} style={{ top: "max(1rem, env(safe-area-inset-top))", right: "1rem" }}>
         <X className="h-6 w-6" />
       </button>
-      {/^https?:\/\//i.test(src) && (
+      {telechargeable && /^https?:\/\//i.test(src) && (
         <button type="button" onClick={telecharger} disabled={telechargement} aria-label="Télécharger" className={`${bouton} disabled:opacity-50`} style={{ top: "max(1rem, env(safe-area-inset-top))", left: "1rem" }}>
           {telechargement ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
         </button>
@@ -193,6 +207,16 @@ function Visionneuse({ src, onClose }) {
 
 export default function VisionneusePhoto() {
   const [src, setSrc] = useState(null);
+  const [telechargeable, setTelechargeable] = useState(true);
+
+  // Appui long / clic droit sur une photo de profil : pas de menu « Enregistrer l'image ».
+  useEffect(() => {
+    const menu = (e) => {
+      if (e.target instanceof HTMLImageElement && estPhotoProfil(e.target)) e.preventDefault();
+    };
+    document.addEventListener("contextmenu", menu, true);
+    return () => document.removeEventListener("contextmenu", menu, true);
+  }, []);
 
   useEffect(() => {
     // Phase de capture : décidé avant les gestionnaires des écrans, qui ne verront pas ce toucher si la photo s'ouvre.
@@ -210,11 +234,12 @@ export default function VisionneusePhoto() {
       if (!ok) return;
       e.preventDefault();
       e.stopPropagation();
+      setTelechargeable(!estPhotoProfil(cible));
       setSrc(adresseGrande(cible.currentSrc || cible.src));
     };
     document.addEventListener("click", clic, true);
     return () => document.removeEventListener("click", clic, true);
   }, []);
 
-  return src ? <Visionneuse src={src} onClose={() => setSrc(null)} /> : null;
+  return src ? <Visionneuse src={src} telechargeable={telechargeable} onClose={() => setSrc(null)} /> : null;
 }

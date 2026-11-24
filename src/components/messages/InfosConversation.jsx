@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ExternalLink, Image as ImageIcon, Link2, Search, UserRound, X } from "lucide-react";
+import { ChevronLeft, ExternalLink, Image as ImageIcon, Link2, Search, UserRound, Users, X } from "lucide-react";
+import GroupeMembres, { EnteteGroupe } from "@/components/messages/GroupeMembres";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { confirmFr } from "@/lib/confirmFr";
 import { openExternal } from "@/lib/openExternal";
 
 // Bouton « i » d'une conversation (façon Messenger) : profil de la personne, recherche dans la conversation,
 // photos échangées, liens échangés. Plein écran, au-dessus de la conversation ; retour = conversation.
+// Groupe (1.3.27) : `groupe` = { conversation, user, profiles, peutGerer, onUpdated } : nom et photo du groupe,
+// onglet « Membres » (liste pour tous ; ajout et retrait par l'admin du groupe).
 const LIEN = /((?:https?:\/\/|www\.)[^\s<>"]+)/gi;
 const simplifier = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const dateCourte = (d) => {
@@ -14,9 +17,9 @@ const dateCourte = (d) => {
   return Number.isNaN(x.getTime()) ? "" : x.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 };
 
-export default function InfosConversation({ titre, avatar, autreId, messages, nomDe, onFermer, onAllerAuMessage, onVoirPhoto }) {
+export default function InfosConversation({ titre, avatar, autreId, messages, nomDe, onFermer, onAllerAuMessage, onVoirPhoto, groupe = null }) {
   const navigate = useNavigate();
-  const [onglet, setOnglet] = useState("photos");
+  const [onglet, setOnglet] = useState(groupe ? "membres" : "photos");
   const [recherche, setRecherche] = useState("");
   useBackHandler(true, onFermer);
 
@@ -42,7 +45,7 @@ export default function InfosConversation({ titre, avatar, autreId, messages, no
     <button
       type="button"
       onClick={() => setOnglet(id)}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold transition ${onglet === id ? "bg-primary text-primary-foreground" : "text-foreground/70"}`}
+      className={`flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-2 text-sm font-bold transition ${onglet === id ? "bg-primary text-primary-foreground" : "text-foreground/70"}`}
     >
       <Icone className="h-4 w-4" /> {label}{n ? ` (${n})` : ""}
     </button>
@@ -58,7 +61,10 @@ export default function InfosConversation({ titre, avatar, autreId, messages, no
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Personne */}
+        {groupe ? (
+          <EnteteGroupe conversation={groupe.conversation} peutGerer={groupe.peutGerer} onUpdated={groupe.onUpdated} />
+        ) : (
+        /* Personne */
         <div className="flex flex-col items-center gap-2 px-4 pb-4 pt-6 text-center">
           {avatar ? (
             <img src={avatar} alt="" className="h-24 w-24 rounded-full object-cover ring-2 ring-border" />
@@ -78,6 +84,7 @@ export default function InfosConversation({ titre, avatar, autreId, messages, no
             </button>
           )}
         </div>
+        )}
 
         {/* Recherche dans la conversation */}
         <div className="px-4">
@@ -124,9 +131,20 @@ export default function InfosConversation({ titre, avatar, autreId, messages, no
         ) : (
           <div className="px-4 py-4">
             <div className="mb-3 flex gap-1 rounded-full border border-border bg-card p-1">
+              {groupe && <Onglet id="membres" label="Membres" Icone={Users} n={(groupe.conversation?.participant_ids || []).length} />}
               <Onglet id="photos" label="Photos" Icone={ImageIcon} n={photos.length} />
               <Onglet id="liens" label="Liens" Icone={Link2} n={liens.length} />
             </div>
+
+            {onglet === "membres" && groupe && (
+              <GroupeMembres
+                conversation={groupe.conversation}
+                user={groupe.user}
+                profiles={groupe.profiles}
+                peutGerer={groupe.peutGerer}
+                onUpdated={groupe.onUpdated}
+              />
+            )}
 
             {onglet === "photos" && (
               photos.length ? (
