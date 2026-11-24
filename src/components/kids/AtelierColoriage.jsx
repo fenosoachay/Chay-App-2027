@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Brush, Eraser, Images, Loader2, PaintBucket, RotateCcw, Save, Trash2, Undo2 } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useToast } from "@/components/ui/use-toast";
+import { confirmFr } from "@/lib/confirmFr";
 import { COTE, PALETTE, enregistrerDessin, masqueTraits, remplir, versDessin } from "@/lib/coloriage";
 import { enregistrerImageGalerie } from "@/lib/fondsEcran";
 
