@@ -32,8 +32,8 @@ test("100 % à 150 % par paliers de 5 %, enregistré sur l'appareil, appliqué �
   assert.equal(lireTaillePolice({ getItem: () => { throw new Error("bloqué"); } }), 100);
 });
 
-test("avant le premier rendu (index.html) et réglage dans Paramètres > Affichage", () => {
-  const html = lire("index.html");
+test("avant le premier rendu (public/demarrage.js) et réglage dans Paramètres > Affichage", () => {
+  const html = lire("public/demarrage.js");
   assert.match(html, /localStorage\.getItem\("chay-taille-police"\)/);
   assert.match(html, /t = t >= 150 \? 150 : Math\.round\(t \/ 5\) \* 5;/);
   assert.match(html, /if \(t >= 150\) h\.setAttribute\("data-police-grande", ""\);/);

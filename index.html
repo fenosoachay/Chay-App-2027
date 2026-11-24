@@ -18,50 +18,13 @@
     <meta name="description" content="ÉGLISE CHAY — Communauté chrétienne : Bible, multimédia, radio, jeux, espace enfants et dons." />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <title>ÉGLISE CHAY</title>
-    <script>
-      // Anti-flash : applique le thème AVANT le premier rendu React.
-      //
-      // Règle : la préférence enregistrée ("chay-theme") est prioritaire ;
-      // sans préférence (nouvelle installation), le mode SOMBRE est le défaut.
-      // Ce script est en LECTURE SEULE — il n'écrase jamais la préférence.
-      (function () {
-        var KEY = "chay-theme"; // doit rester synchronisé avec src/lib/theme.js
-        var theme = null;
-        try {
-          theme = localStorage.getItem(KEY);
-        } catch (e) {}
-        if (theme !== "light" && theme !== "dark" && theme !== "auto") {
-          theme = "dark"; // aucune préférence / valeur invalide => défaut sombre
-        }
-        var dark =
-          theme === "dark" ||
-          (theme === "auto" &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.classList.toggle("dark", dark);
-      })();
-      // Taille de police réglée sur cet appareil (src/lib/taillePolice.js), avant le premier rendu.
-      (function () {
-        try {
-          var t = Number(localStorage.getItem("chay-taille-police"));
-          if (!(t > 100)) return;
-          t = t >= 150 ? 150 : Math.round(t / 5) * 5;
-          var h = document.documentElement;
-          h.style.fontSize = "calc(var(--chay-base, 16px) * " + t / 100 + ")";
-          h.style.setProperty("--chay-zoom", String(t / 100));
-          h.setAttribute("data-police", String(t));
-          if (t >= 150) h.setAttribute("data-police-grande", "");
-        } catch (e) {}
-      })();
-    </script>
+    <script src="/demarrage.js"></script>
   </head>
   <body class="bg-black">
     <!-- Fond de démarrage : même dégradé que le lancement natif Android et l'animation de départ,
          affiché avant le chargement du code (sinon : écran noir entre les deux). Retiré par l'app. -->
     <div id="chay-boot-splash" aria-hidden="true" style="position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg, #4A6CFE 0%, #8A56E2 50%, #FF57B2 100%)"></div>
-    <script>
-      // Animation déjà vue dans cette session (rechargement) : pas de fond de démarrage.
-      try { if (sessionStorage.getItem("chay_splash_shown") === "1") document.getElementById("chay-boot-splash").remove(); } catch (e) { /* ignore */ }
-    </script>
+    <script src="/demarrage-fond.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

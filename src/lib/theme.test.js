@@ -130,16 +130,21 @@ test("utilisateur choisit sombre, ferme, rouvre => sombre restauré", () => {
   assert.equal(appliedDark, true);
 });
 
-// --- Script anti-flash inline de index.html -------------------------------
+// --- Script anti-flash (public/demarrage.js, chargé en <head> par index.html) ---
+const racine = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 function extractInlineThemeScript() {
-  const html = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), "../../index.html"),
-    "utf8"
-  );
-  const match = html.match(/<script>([\s\S]*?)<\/script>/);
-  assert.ok(match, "le script inline du thème doit exister dans index.html");
-  return match[1];
+  const html = readFileSync(path.join(racine, "index.html"), "utf8");
+  assert.match(html, /<head>[\s\S]*<script src="\/demarrage\.js"><\/script>[\s\S]*<\/head>/, "demarrage.js chargé dans <head>");
+  return readFileSync(path.join(racine, "public/demarrage.js"), "utf8");
 }
+
+test("index.html : aucun script écrit dans la page (protection CSP de membres.chay.fr)", () => {
+  const html = readFileSync(path.join(racine, "index.html"), "utf8");
+  const scripts = html.match(/<script\b[^>]*>/g) || [];
+  assert.ok(scripts.length >= 3);
+  for (const s of scripts) assert.match(s, /\ssrc="/, `script sans fichier : ${s}`);
+  assert.doesNotMatch(html, /\son[a-z]+="/, "pas de onclick=… dans la page");
+});
 
 function runInlineScript({ storedTheme, systemDark }) {
   const store = new Map();
