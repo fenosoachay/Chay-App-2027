@@ -7,8 +7,9 @@ const lire = () => typeof document !== "undefined" && document.documentElement.c
 export default function useSombre() {
   const [sombre, setSombre] = useState(lire);
   useEffect(() => {
-    if (typeof MutationObserver === "undefined") return undefined;
-    const obs = new MutationObserver(() => setSombre(lire()));
+    const Observateur = globalThis.MutationObserver;
+    if (typeof Observateur === "undefined") return undefined;
+    const obs = new Observateur(() => setSombre(lire()));
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     setSombre(lire());
     return () => obs.disconnect();
