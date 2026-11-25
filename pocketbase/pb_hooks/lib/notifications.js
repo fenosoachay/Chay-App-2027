@@ -319,7 +319,9 @@ function newContentNotify(contentRecord, sendEmail) {
   const c = fn.plain(contentRecord);
   const notifId = `content_${c.id}`;
   if (notificationExists(notifId)) return { skipped: 'already_notified' };
-  const title = `Nouveau : ${c.title || 'Contenu'}`;
+  // 1.3.34 : notification manuelle « Chay attire ton attention sur… » (playlists Mindset) : titre « Chay ».
+  const attention = String(c.description || '').startsWith('Chay attire ton attention sur');
+  const title = attention ? (c.title || 'Chay') : `Nouveau : ${c.title || 'Contenu'}`;
   const messageText = String(c.description || '').slice(0, 160);
   // Contenu réservé (Membre / VIP) : seuls ceux qui peuvent le voir sont prévenus.
   const users = activeUsers().filter((u) => peutVoir(u, c.audience));
@@ -350,7 +352,7 @@ function newContentNotify(contentRecord, sendEmail) {
     }
   }
   const t = pushIds.length
-    ? pushTotals(push.sendToUsers(pushIds, { title, body: String(c.description || c.title || '').slice(0, 60), target_type: 'content', target_id: c.id, route: cibles.routeContenu(c) }, 'notifyNewContent'))
+    ? pushTotals(push.sendToUsers(pushIds, { title, body: String(c.description || c.title || '').slice(0, attention ? 160 : 60), target_type: 'content', target_id: c.id, route: cibles.routeContenu(c) }, 'notifyNewContent'))
     : { pushSent: 0, pushFailed: 0 };
   return { recipients: rows.length, created, emailsSent, emailsSkipped, pushSent: t.pushSent, pushFailed: t.pushFailed, sendEmail };
 }

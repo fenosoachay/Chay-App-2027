@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import useDictionaryDb from "@/hooks/useDictionaryDb";
 import useDictionaryFavorites from "@/hooks/useDictionaryFavorites";
 import { getLetters, getWordsByLetter } from "@/lib/dictionaryDb";
-import ConcordanceBreadcrumb from "@/components/bible/concordance/ConcordanceBreadcrumb";
+import { BarreNuit, CadreNuit, FilNuit, OR, TitreNuit } from "@/components/bible/NuitDoree";
 import DictionaryLetterGrid from "@/components/bible/dictionary/DictionaryLetterGrid";
 import DictionaryWordList from "@/components/bible/dictionary/DictionaryWordList";
 import DictionaryDefinition from "@/components/bible/dictionary/DictionaryDefinition";
@@ -74,35 +74,36 @@ export default function BibleDictionary({ onBack }) {
   const screen = mot ? `mot-${mot}` : showFavorites ? "fav" : letter ? `lettre-${letter}` : "home";
 
   return (
-    <main className="mx-auto min-h-[80vh] max-w-3xl bg-black text-white md:my-6 md:overflow-hidden md:rounded-3xl">
-      <div className="flex items-center gap-2 bg-zinc-800 px-3 py-3">
-        <button onClick={back} aria-label="Retour" className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10">
-          <ArrowLeft className="h-6 w-6" />
-        </button>
+    // 1.3.34 : habillage « Nuit dorée » de Chay Game.
+    <CadreNuit>
+      <BarreNuit
+        onBack={back}
+        droite={(
+          <button
+            type="button"
+            onClick={() => {
+              setShowFavorites((s) => !s);
+              setMot(null);
+              setQuery("");
+            }}
+            aria-label="Mes favoris"
+            aria-pressed={showFavorites}
+            className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10"
+          >
+            <Star className="h-6 w-6" style={{ color: OR, fill: showFavorites ? OR : "transparent" }} />
+          </button>
+        )}
+      >
         {mot ? (
-          <h1 className="min-w-0 flex-1 truncate text-lg text-slate-300">{mot}</h1>
+          <TitreNuit>{mot}</TitreNuit>
         ) : letter && !showFavorites && !query ? (
-          <h1 className="min-w-0 flex-1 truncate text-lg text-slate-300">Lettre {letter}</h1>
+          <TitreNuit>Lettre {letter}</TitreNuit>
         ) : (
           <DictionarySearchBox db={db} query={query} onChange={setQuery} onPick={goWord} />
         )}
-        <button
-          onClick={() => {
-            setShowFavorites((s) => !s);
-            setMot(null);
-            setQuery("");
-          }}
-          aria-label="Mes favoris"
-          aria-pressed={showFavorites}
-          className="rounded-lg p-1.5 hover:bg-white/10"
-        >
-          <Star className={`h-6 w-6 ${showFavorites ? "fill-slate-300 text-slate-300" : "text-slate-400"}`} />
-        </button>
-      </div>
+      </BarreNuit>
 
-      <div className="border-b border-zinc-800">
-        <ConcordanceBreadcrumb crumbs={crumbs} />
-      </div>
+      <FilNuit crumbs={crumbs} />
 
       {status !== "ready" ? (
         <DictionaryLoading status={status} progress={progress} error={error} onRetry={retry} />
@@ -131,6 +132,6 @@ export default function BibleDictionary({ onBack }) {
           </motion.div>
         </AnimatePresence>
       )}
-    </main>
+    </CadreNuit>
   );
 }

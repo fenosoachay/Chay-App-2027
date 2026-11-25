@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus, Search, X, BellRing } from "lucide-react";
+import { ENTITES_ATTENTION, estMindset, notifierAutomatiquement, texteAttention } from "@/lib/notificationAttention";
 import { Image } from "@/components/ui/image";
 import { AUDIENCES } from "@/lib/audience";
 import EntityForm from "@/components/admin/EntityForm";
@@ -285,6 +286,10 @@ export default function EntityCrud({
     }
     const kind = kindMap[entity];
     if (!kind) return;
+    // 1.3.34 : Mindset (Vidéo, Galerie) : pas de notification automatique ; l'admin l'envoie s'il le veut (🔔).
+    const pl = playlists.find((p) => p.id === playlistId);
+    const parent = pl?.parent_id ? playlists.find((p) => p.id === pl.parent_id) : null;
+    if (!notifierAutomatiquement(entity, [parent?.name, pl?.name].filter(Boolean).join(" › "))) return;
     notifyAdminUpload({
       kind,
       title: item.title,
@@ -336,7 +341,12 @@ export default function EntityCrud({
       if (!editing && (entity.startsWith("Site") || entity === "LienAccueil") && sort === "order" && rest.order === undefined) {
         rest.order = items.reduce((m, i) => Math.max(m, Number(i.order) || 0), -1) + 1;
       }
-      const playlist_id = resolveSelectedPlaylistId(
+      // 1.3.34 : un champ « playlist_lecteur » (Texte qui défile : « Seulement dans cette playlist ») est un
+      // simple réglage du contenu, enregistré tel quel ; ce n'est pas un rangement dans la playlist (avant : le
+      // texte était enregistré sans sa playlist et l'app tentait un ajout à la playlist, refusé).
+      const playlistReglage = fields.some((f) => f.name === "playlist_id" && f.type === "playlist_lecteur");
+      if (playlistReglage) rest.playlist_id = submittedPlaylistId || "";
+      const playlist_id = playlistReglage ? null : resolveSelectedPlaylistId(
         selectedPlaylistRef.current,
         submittedPlaylistId
       );
@@ -518,6 +528,23 @@ export default function EntityCrud({
     setRetryingPlaylistAttachment(false);
     setFormKey(`edit-${item.id}-${actuelle || ""}`);
     setOpen(true);
+  };
+
+  /** 1.3.34 : notification manuelle d'un contenu Mindset : « Chay attire ton attention sur… ». */
+  const [attentionEnvoi, setAttentionEnvoi] = useState(null);
+  const envoyerAttention = async (item) => {
+    const texte = texteAttention(entity, item.title);
+    if (!(await confirmFr({ title: "Envoyer la notification ?", message: texte, confirmLabel: "Envoyer" }))) return;
+    setAttentionEnvoi(item.id);
+    const ok = await notifyAdminUpload({
+      kind: ENTITES_ATTENTION[entity] === "photo" ? "gallery" : "film",
+      title: item.title,
+      contentId: item.id,
+      audience: item.audience,
+      attention: texte,
+    });
+    setAttentionEnvoi(null);
+    toast(ok ? { title: "Notification envoyée" } : { title: "Notification non envoyée", description: "Vérifiez la connexion et réessayez.", variant: "destructive" });
   };
 
   const remove = async (item) => {
@@ -832,6 +859,18 @@ export default function EntityCrud({
 
                 {!readOnly && (
                   <>
+                    {ENTITES_ATTENTION[entity] && estMindset(playlistParContenu.get(item.id)) && (
+                      <button
+                        type="button"
+                        onClick={() => envoyerAttention(item)}
+                        disabled={attentionEnvoi === item.id}
+                        className="h-8 w-8 grid place-items-center rounded-full hover:bg-muted text-primary shrink-0 disabled:opacity-50"
+                        title="Envoyer une notification"
+                        aria-label={`Envoyer une notification pour ${item.title || "ce contenu"}`}
+                      >
+                        {attentionEnvoi === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellRing className="h-4 w-4" />}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => ouvrirModification(item)}

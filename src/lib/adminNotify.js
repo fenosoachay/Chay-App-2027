@@ -12,6 +12,7 @@ import { base44 } from "@/api/base44Client";
  * @param {string} [opts.playlistId] Identifiant de la playlist
  * @param {string} [opts.section]    Section YouTube (culte/louange/celebration)
  * @param {string} [opts.contentId]  ID du contenu créé (pour lien direct)
+ * @param {string} [opts.attention]  1.3.34 : notification manuelle (Mindset) ; ce texte remplace le message
  */
 export async function notifyAdminUpload({
   kind,
@@ -22,6 +23,7 @@ export async function notifyAdminUpload({
   section,
   contentId,
   audience,
+  attention,
 }) {
   let message = "";
   let linkPath = "/media";
@@ -100,6 +102,8 @@ export async function notifyAdminUpload({
     default:
       message = `Nouveau contenu : « ${title} ».`;
   }
+  // 1.3.34 : « Chay attire ton attention sur… » (envoyée à la main par un admin, playlists Mindset).
+  if (attention) message = attention;
 
   try {
     // Crée une entrée Content visible dans NewContentsSection
@@ -107,7 +111,7 @@ export async function notifyAdminUpload({
       status: "published",
       published_at: new Date().toISOString(),
       type: contentType,
-      title,
+      title: attention ? "Chay" : title,
       // Texte de la notification (in-app et push) : notifyNewContent lit la description du Content.
       description: message,
       resource_id: contentId || null,
@@ -122,13 +126,15 @@ export async function notifyAdminUpload({
     // Fan-out notifications in-app via la fonction backend existante.
     // La fonction attend l'identifiant de l'entrée Content (content_id) : sans lui, elle répond
     // 400 « content_id required » et personne n'est notifié (bogue hérité de Base44).
-    if (!content?.id) return;
-    await base44.functions.invoke("notifyNewContent", {
+    if (!content?.id) return false;
+    const envoi = await base44.functions.invoke("notifyNewContent", {
       content_id: content.id,
       send_email: false,
-    }).catch((e) => console.warn("[notifyNewContent]", e?.message || e));
+    }).catch((e) => { console.warn("[notifyNewContent]", e?.message || e); return null; });
+    return Boolean(envoi);
   } catch {
     // Silencieux — l'upload a réussi, la notif est best-effort
+    return false;
   }
 }
 

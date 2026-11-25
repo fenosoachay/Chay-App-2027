@@ -26,7 +26,7 @@ export default function DictionaryLoading({ status, progress, error, onRetry }) 
           : "Préparation du dictionnaire…"}
       </p>
       {pct != null && pct < 100 && (
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
           <div className="h-full brand-gradient transition-all" style={{ width: `${pct}%` }} />
         </div>
       )}

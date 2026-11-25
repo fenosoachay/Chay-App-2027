@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Headphones, Loader2, Pause, Play, Settings2, Upload } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronRight, Headphones, Loader2, Pause, Play, Settings2, Upload } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
@@ -9,6 +10,11 @@ import { confirmFr } from "@/lib/confirmFr";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { envoyerAudioBible } from "@/lib/upload";
 import { LIVRES_SAGESSE, audiosParChapitre, fileSagesse, livreSagesse } from "@/lib/sagesseAudio";
+import { BarreNuit, CadreNuit, LISERE, OR_PALE, TitreNuit } from "@/components/bible/NuitDoree";
+import { Etincelles, Reflet, TEINTES } from "@/components/jeux/BarreJeux";
+
+// 1.3.34 : style « Nuit dorée » de Chay Game ; une teinte par livre.
+const TEINTES_LIVRES = [TEINTES.classement, TEINTES.game, TEINTES.playmobile];
 
 /** Durée (secondes) d'un fichier audio choisi par l'admin, ou null si le navigateur ne la lit pas. */
 function lireDuree(file) {
@@ -123,66 +129,63 @@ export default function SagesseAudio({ onBack }) {
   };
 
   const enTete = (titre, sousTitre) => (
-    <header className="mb-5 flex items-center gap-3">
-      <button
-        type="button"
-        onClick={retour}
-        aria-label="Retour"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border hover:bg-muted"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <div className="min-w-0">
-        <h1 className="font-display text-2xl font-extrabold leading-tight">{titre}</h1>
-        {sousTitre && <p className="text-sm text-muted-foreground">{sousTitre}</p>}
-      </div>
-    </header>
+    <BarreNuit onBack={retour}><TitreNuit sousTitre={sousTitre}>{titre}</TitreNuit></BarreNuit>
   );
 
   // ── Choix du livre ──
   if (!livre) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-4 md:px-8 md:py-10">
-        {enTete("Sagesse en audio", "Écoutez les Proverbes, l'Ecclésiaste et Hébreux")}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {LIVRES_SAGESSE.map((l) => {
+      <CadreNuit>
+        {enTete("Sagesse en audio", "Proverbes, Ecclésiaste et Hébreux")}
+        <div className="grid grid-cols-1 gap-3 px-3 pb-8 pt-4 sm:grid-cols-2">
+          {LIVRES_SAGESSE.map((l, i) => {
             const n = rows ? audiosParChapitre(rows, l.id).size : null;
             return (
-              <button
+              <motion.button
                 key={l.id}
                 type="button"
                 onClick={() => ouvrirLivre(l.id)}
-                className="group flex items-center gap-4 rounded-[1.5rem] border border-border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                initial={{ opacity: 0, x: -40, scale: 0.96 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24, delay: 0.1 + i * 0.12 }}
+                whileTap={{ scale: 0.98 }}
+                className="relative flex items-center gap-4 overflow-hidden rounded-[1.4rem] border p-4 text-left shadow-[0_10px_30px_-12px_rgba(0,0,0,0.7)]"
+                style={{ borderColor: LISERE, background: TEINTES_LIVRES[i % TEINTES_LIVRES.length] }}
               >
-                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl brand-gradient text-white shadow-sm">
+                <Reflet delai={i * 0.8} />
+                <Etincelles graine={i + 3} />
+                <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-full border bg-white/10 text-[#FFD66E] shadow-[0_0_16px_rgba(255,184,0,0.3)]" style={{ borderColor: LISERE }}>
                   <Headphones className="h-7 w-7" aria-hidden="true" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block font-display text-xl font-extrabold">{l.nom}</span>
-                  <span className="block text-sm text-muted-foreground">
+                <span className="relative min-w-0 flex-1">
+                  <span className="block font-display text-xl font-extrabold" style={{ color: OR_PALE }}>{l.nom}</span>
+                  <span className="block text-sm text-white/65">
                     {n === null ? `${l.chapitres} chapitres` : `${n} / ${l.chapitres} chapitres en audio`}
                   </span>
                 </span>
-              </button>
+                <ChevronRight className="relative h-5 w-5 shrink-0 text-[#F3E2B5]/70" aria-hidden="true" />
+              </motion.button>
             );
           })}
         </div>
-      </main>
+      </CadreNuit>
     );
   }
 
   // ── Grille des chapitres ──
   const chapitres = Array.from({ length: livre.chapitres }, (_, i) => i + 1);
   return (
-    <main className="mx-auto max-w-3xl px-4 py-4 md:px-8 md:py-10">
+    <CadreNuit>
       {enTete(livre.nom, rows ? `${audios.size} / ${livre.chapitres} chapitres en audio` : null)}
+      <div className="px-4 pb-8 pt-4">
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {file.length > 0 && (
           <button
             type="button"
             onClick={() => playQueue(file, 0)}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-extrabold text-[#1a1030] shadow-[0_0_18px_rgba(255,184,0,0.35)]"
+            style={{ background: "linear-gradient(100deg, #FFD66E, #C9A052)" }}
           >
             <Play className="h-4 w-4" aria-hidden="true" /> Tout écouter
           </button>
@@ -192,20 +195,20 @@ export default function SagesseAudio({ onBack }) {
             type="button"
             aria-pressed={gestion}
             onClick={() => setGestion((g) => !g)}
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold ${gestion ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold ${gestion ? "border-[#FFD66E] bg-[#FFD66E]/15 text-[#FFD66E]" : "border-[#C9A052]/45 bg-white/5 text-white/85"}`}
           >
             <Settings2 className="h-4 w-4" aria-hidden="true" /> {gestion ? "Terminer" : "Gérer les audios"}
           </button>
         )}
       </div>
       {gestion && (
-        <p role="status" className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 p-3 text-sm">
+        <p role="status" className="mb-4 rounded-2xl border border-[#C9A052]/40 bg-white/5 p-3 text-sm text-white/85">
           Touchez un chapitre pour ajouter ou remplacer son audio (mp3, envoyé sur le stockage R2).
         </p>
       )}
 
       {rows === null ? (
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#FFD66E]" />
       ) : (
         <ol className="grid grid-cols-[repeat(auto-fill,minmax(min(3.5rem,calc((100%-1.5rem)/4)),1fr))] gap-2" aria-label={`Chapitres de ${livre.nom}`}>
           {chapitres.map((c) => {
@@ -216,19 +219,29 @@ export default function SagesseAudio({ onBack }) {
             const cible = chapitreCible === c && !actif;
             const etat = joue ? "en lecture" : actif ? "en pause" : dispo ? "écouter" : "audio pas encore disponible";
             const cls = actif
-              ? "brand-gradient text-white shadow-md scale-[1.04]"
+              ? "text-[#1a1030] shadow-[0_0_22px_rgba(255,184,0,0.5)] scale-[1.06]"
               : dispo
-                ? "border border-border bg-card text-foreground hover:border-primary hover:bg-primary/5"
-                : "border border-dashed border-border/70 bg-transparent text-foreground/35";
+                ? "border border-[#C9A052]/45 text-[#F3E2B5] hover:shadow-[0_0_16px_rgba(255,214,110,0.3)]"
+                : "border border-dashed border-white/15 bg-transparent text-white/25";
+            const fond = actif
+              ? { background: "linear-gradient(135deg, #FFE7A3, #FFD66E 45%, #C9A052)" }
+              : dispo ? { background: "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.14), rgba(255,255,255,0.03) 45%, rgba(46,26,92,0.55))" } : undefined;
             return (
-              <li key={c} ref={(n) => { if (n) carres.current.set(c, n); else carres.current.delete(c); }}>
+              <motion.li
+                key={c}
+                ref={(n) => { if (n) carres.current.set(c, n); else carres.current.delete(c); }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 22, delay: Math.min(c, 40) * 0.012 }}
+              >
                 <button
                   type="button"
                   disabled={(!dispo && !gestion) || Boolean(envoi)}
                   onClick={() => (gestion ? choisirFichier(c) : ecouter(c))}
                   aria-label={`${livre.nom} ${c}, ${gestion ? (dispo ? "remplacer l'audio" : "ajouter l'audio") : etat}`}
                   aria-current={actif ? "true" : undefined}
-                  className={`relative flex aspect-square w-full flex-col items-center justify-center rounded-[22%] text-lg font-extrabold tabular-nums transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-default ${cls} ${cible ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                  style={fond}
+                  className={`relative flex aspect-square w-full flex-col items-center justify-center rounded-[22%] text-lg font-extrabold tabular-nums transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD66E] disabled:cursor-default ${cls} ${cible ? "ring-2 ring-[#FFD66E] ring-offset-2 ring-offset-[#0C0E2C]" : ""}`}
                 >
                   {enEnvoi ? (
                     <span className="text-xs font-bold">{envoi.pct}%</span>
@@ -240,13 +253,14 @@ export default function SagesseAudio({ onBack }) {
                     </>
                   )}
                 </button>
-              </li>
+              </motion.li>
             );
           })}
         </ol>
       )}
 
       <input ref={fichierRef} type="file" accept="audio/mpeg,audio/*,.mp3" className="hidden" onChange={envoyer} aria-hidden="true" tabIndex={-1} />
-    </main>
+      </div>
+    </CadreNuit>
   );
 }

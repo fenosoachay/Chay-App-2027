@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Loader2, RefreshCw, Search, Star, X } from "lucide-react";
+import { Loader2, RefreshCw, Search, Star, X } from "lucide-react";
 import useConcordanceIndex from "@/hooks/useConcordanceIndex";
 import useConcordanceFavorites from "@/hooks/useConcordanceFavorites";
 import { LANGUAGES } from "@/lib/bibleConstants";
@@ -11,7 +11,7 @@ import {
   letterOf,
 } from "@/lib/concordanceBrowse";
 import { wordToIndexKeys } from "@/lib/bibleConcordance";
-import ConcordanceBreadcrumb from "@/components/bible/concordance/ConcordanceBreadcrumb";
+import { BarreNuit, CadreNuit, ChampNuit, FilNuit, LISERE, OR, TitreNuit } from "@/components/bible/NuitDoree";
 import AlphabetGrid from "@/components/bible/concordance/AlphabetGrid";
 import WordList from "@/components/bible/concordance/WordList";
 import BookGroupList from "@/components/bible/concordance/BookGroupList";
@@ -114,15 +114,30 @@ export default function BibleConcordance({ onBack, onOpenVerse }) {
   const showSearch = !word;
 
   return (
-    <main className="mx-auto min-h-[80vh] max-w-3xl bg-black text-white md:my-6 md:overflow-hidden md:rounded-3xl">
-      <div className="flex items-center gap-2 bg-zinc-800 px-3 py-3">
-        <button onClick={back} aria-label="Retour" className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10">
-          <ArrowLeft className="h-6 w-6" />
-        </button>
+    // 1.3.34 : habillage « Nuit dorée » de Chay Game.
+    <CadreNuit>
+      <BarreNuit
+        onBack={back}
+        droite={(
+          <button
+            type="button"
+            onClick={() => {
+              setShowFavorites((s) => !s);
+              setWord(null);
+              setBook(null);
+            }}
+            aria-label="Mes favoris"
+            aria-pressed={showFavorites}
+            className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10"
+          >
+            <Star className="h-6 w-6" style={{ color: OR, fill: showFavorites ? OR : "transparent" }} />
+          </button>
+        )}
+      >
         {showSearch ? (
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-            <input
+          <div className="relative">
+            <ChampNuit
+              icone={Search}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -131,52 +146,42 @@ export default function BibleConcordance({ onBack, onOpenVerse }) {
               placeholder={lang === "fr" ? "Rechercher un mot…" : "Hitady teny…"}
               aria-label="Mot à rechercher dans la concordance"
               maxLength={100}
-              className="w-full border-b border-slate-500 bg-transparent py-1.5 pl-9 pr-8 text-base text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
             />
             {query && (
               <button
+                type="button"
                 onClick={() => setQuery("")}
                 aria-label="Effacer"
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-white/50"
               >
                 <X className="h-5 w-5" />
               </button>
             )}
           </div>
         ) : (
-          <h1 className="min-w-0 flex-1 truncate text-lg text-slate-300">{word}</h1>
+          <TitreNuit>{word}</TitreNuit>
         )}
-        <button
-          onClick={() => {
-            setShowFavorites((s) => !s);
-            setWord(null);
-            setBook(null);
-          }}
-          aria-label="Mes favoris"
-          aria-pressed={showFavorites}
-          className="rounded-lg p-1.5 hover:bg-white/10"
-        >
-          <Star className={`h-6 w-6 ${showFavorites ? "fill-slate-300 text-slate-300" : "text-slate-400"}`} />
-        </button>
-      </div>
+      </BarreNuit>
 
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-800 pr-3">
-        <ConcordanceBreadcrumb crumbs={crumbs} />
-        <div className="flex shrink-0 overflow-hidden rounded-lg border border-zinc-700">
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => changeLang(l.id)}
-              aria-pressed={lang === l.id}
-              className={`px-2.5 py-1 text-[0.6875rem] font-bold ${
-                lang === l.id ? "brand-gradient text-white" : "text-slate-300 hover:bg-white/10"
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <FilNuit
+        crumbs={crumbs}
+        droite={(
+          <div className="flex shrink-0 overflow-hidden rounded-full border" style={{ borderColor: LISERE }}>
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => changeLang(l.id)}
+                aria-pressed={lang === l.id}
+                className={`px-3 py-1 text-[0.6875rem] font-bold ${lang === l.id ? "text-[#1a1030]" : "text-white/70 hover:bg-white/10"}`}
+                style={lang === l.id ? { background: "linear-gradient(100deg, #FFD66E, #C9A052)" } : undefined}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+      />
 
       {status === "loading" && (
         <p className="flex items-center gap-2 px-4 py-6 text-sm text-slate-400">
@@ -220,6 +225,6 @@ export default function BibleConcordance({ onBack, onOpenVerse }) {
           )}
         </>
       )}
-    </main>
+    </CadreNuit>
   );
 }

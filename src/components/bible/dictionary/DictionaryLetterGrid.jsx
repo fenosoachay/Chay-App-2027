@@ -1,21 +1,15 @@
 import React from "react";
 import { ALPHABET } from "@/lib/concordanceBrowse";
+import { GrilleLettres } from "@/components/bible/NuitDoree";
 
-// Écran 1 : les 26 lettres. Une lettre absente de la base est grisée.
+// Écran 1 : les 26 lettres. Une lettre absente de la base est grisée. (1.3.34 : style Chay Game.)
 export default function DictionaryLetterGrid({ available, onPick }) {
   return (
-    <div className="grid grid-cols-5 gap-2 p-4 sm:grid-cols-6">
-      {ALPHABET.map((letter) => (
-        <button
-          key={letter}
-          onClick={() => onPick(letter)}
-          disabled={!available.includes(letter)}
-          aria-label={`Mots commençant par ${letter}`}
-          className="flex aspect-square items-center justify-center rounded-xl bg-muted text-xl font-bold text-foreground transition hover:bg-primary/20 disabled:opacity-30"
-        >
-          {letter}
-        </button>
-      ))}
-    </div>
+    <GrilleLettres
+      lettres={ALPHABET}
+      desactivee={(l) => !available.includes(l)}
+      onPick={onPick}
+      libelle={(l) => `Mots commençant par ${l}`}
+    />
   );
 }
