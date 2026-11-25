@@ -692,10 +692,12 @@ const playVideo = (source) => {
         {/* Conteneur positionné : permet de superposer le poster custom et
             l'indicateur de buffering custom au-dessus des contrôles natifs. */}
         {/* 1.3.28 : application Android, la vidéo est dessinée par ExoPlayer par-dessus ; en attendant qu'il
-            apparaisse, l'image d'attente Chay (ou la couverture) au lieu d'un fond noir. */}
+            apparaisse, l'image d'attente Chay (ou la couverture) au lieu d'un fond noir. 1.3.33 : seulement avant la
+            première image ; dès que la lecture a commencé, fond noir (sinon l'affiche dépasse au-dessus et en
+            dessous d'un film plus large que l'écran). */}
         <div
-          className="relative h-full w-full bg-cover bg-center"
-          style={isNativeAndroidPlayer && isVideo ? { backgroundImage: `url("${control?.artwork || IMAGE_ATTENTE}")` } : undefined}
+          className={`relative h-full w-full bg-cover bg-center ${isNativeAndroidPlayer && isVideo ? "bg-black" : ""}`}
+          style={isNativeAndroidPlayer && isVideo && !(Number(control?.currentTime) > 0) ? { backgroundImage: `url("${control?.artwork || IMAGE_ATTENTE}")` } : undefined}
         >
         <video
   ref={videoRef}
