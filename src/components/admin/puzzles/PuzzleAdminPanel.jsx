@@ -237,12 +237,6 @@ export default function PuzzleAdminPanel() {
   return (
     <div className="space-y-5">
       <Block title={editing ? "Modifier un puzzle" : "Ajouter un puzzle"}>
-        <p className="mb-4 text-sm text-foreground/60">
-          {backendText(
-            "Ajoutez une image et ses informations. Les fichiers sont stockés via le service d'upload Base44, jamais dans la base sous forme Base64.",
-            "Ajoutez une image et ses informations. Les fichiers sont stockés comme fichiers sur le serveur, jamais dans la base sous forme Base64.",
-          )}
-        </p>
         <form onSubmit={save} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">

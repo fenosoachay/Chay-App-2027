@@ -197,9 +197,6 @@ function PuzzleBoard({ imageUrl, size, game }) {
           </div>
         </div>
       )}
-      <p className="mt-3 text-center text-xs text-foreground/55">
-        Faites glisser une pièce sur une autre, ou touchez deux pièces pour les échanger.
-      </p>
     </div>
   );
 }
