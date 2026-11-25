@@ -104,7 +104,7 @@ export const RUBRIQUES = [
   { titre: "Émojis", mots: "emojis jeu", route: "/games/emojis" },
   { titre: "Mots mélangés", mots: "mots melanges jeu lettres", route: "/word-scramble" },
   { titre: "Puzzle", mots: "puzzle jeu enfants", route: "/kids?vue=jeux&jeu=puzzle" },
-  { titre: "Personnalité biblique", mots: "personnalite biblique quiz test", route: "/personality-quiz" },
+  { titre: "Mots croisés", mots: "mots croises grille jeu bible", route: "/mots-croises" },
   { titre: "Espace enfants", mots: "enfants kids", route: "/kids" },
   { titre: "Vidéos des enfants", mots: "enfants kids videos dessins animes", route: "/kids?vue=videos" },
   { titre: "Jeux des enfants", mots: "enfants kids jeux coloriage memory cartes puzzle", route: "/kids?vue=jeux" },

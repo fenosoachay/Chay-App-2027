@@ -37,7 +37,7 @@ const Bible = lazy(() => import("@/pages/Bible"));
 const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
 const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
-const PersonalityQuiz = lazy(() => import("@/pages/PersonalityQuiz"));
+const MotsCroises = lazy(() => import("@/pages/MotsCroises"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
 const QuizResults = lazy(() => import("@/pages/QuizResults"));
@@ -125,7 +125,9 @@ const AuthenticatedApp = () => {
           {/* 1.3.26 : le Puzzle est dans Chay Enfants › Jeux (anciens liens redirigés). */}
           <Route path="/puzzle" element={<Navigate to="/kids?vue=jeux&jeu=puzzle" replace />} />
           <Route path="/games/emojis" element={<EmojisGame />} />
-          <Route path="/personality-quiz" element={<PersonalityQuiz />} />
+          {/* 1.3.31 : la Personnalité biblique est retirée ; Mots croisés bibliques ajoutés. */}
+          <Route path="/personality-quiz" element={<Navigate to="/games" replace />} />
+          <Route path="/mots-croises" element={<MotsCroises />} />
           {/* 1.3.29 : Brique est un jeu de Chay Enfants. */}
           <Route path="/block-blast" element={<Navigate to="/kids?vue=jeux&jeu=brique" replace />} />
           <Route path="/quiz" element={<Quiz />} />

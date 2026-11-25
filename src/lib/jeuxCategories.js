@@ -10,7 +10,8 @@ export const JEUX = [
   { id: "trivia", name: "Quiz", path: "/quiz" },
   { id: "emoji", name: "Émojis", path: "/games/emojis" },
   { id: "scramble", name: "Mots mélangés", path: "/word-scramble" },
-  { id: "personality", name: "Personnalité biblique", path: "/personality-quiz" },
+  // 1.3.31 : Personnalité biblique retirée ; Mots croisés (classés d'office dans Chay Game, l'admin peut changer).
+  { id: "motscroises", name: "Mots croisés", path: "/mots-croises", slotDefaut: "game" },
 ];
 
 export const CATEGORIES_JEUX_DEFAUT = [
@@ -46,7 +47,7 @@ export function grouperJeux(categories, classements, jeux = JEUX) {
   const cats = categoriesJeux(categories);
   const parJeu = classementParJeu(classements);
   return {
-    sections: cats.map((c) => ({ ...c, jeux: jeux.filter((j) => parJeu.get(j.id) === c.slot) })),
-    nonClasses: jeux.filter((j) => !parJeu.has(j.id)),
+    sections: cats.map((c) => ({ ...c, jeux: jeux.filter((j) => (parJeu.get(j.id) || j.slotDefaut) === c.slot) })),
+    nonClasses: jeux.filter((j) => !parJeu.has(j.id) && !j.slotDefaut),
   };
 }

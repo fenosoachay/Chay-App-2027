@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, BookOpen, Users, Gamepad2, Heart, Shield,
+  LayoutDashboard, BookOpen, Users, Gamepad2, Heart, Shield, Hash,
   Search, Sun, Headphones, Music, Video, Youtube, Image as ImageIcon,
   Megaphone, FileText, Mail, Brain, HeartHandshake, HelpCircle, UserPlus,
   Send, Library, Newspaper, Shuffle, MessageSquareQuote,
@@ -79,7 +79,7 @@ export const ADMIN_NAV = [
                   { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },
                   { key: "wordscramble", label: "Mots mélangés", icon: Shuffle, path: "/admin/word-scramble" },
                   { key: "emojis", mots: "emoji devine", label: "Devine qui je suis", icon: Smile, path: "/admin/emojis" },
-                  { key: "personalityquiz", mots: "personnalite", label: "Test de personnalité", icon: Heart, path: "/admin/personality-quiz" },
+                  { key: "MotCroise", mots: "mots croises grille definition", label: "Mots croisés", icon: Hash, path: "/admin/mots-croises" },
                   { key: "blockblast", mots: "brique block", label: "Messages Brique", icon: Blocks, path: "/admin/block-blast" },
                 ],
               },

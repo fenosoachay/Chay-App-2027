@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  BookOpen,
   Check,
   Clock3,
   Heart,
@@ -17,6 +18,9 @@ import { base44 } from "@/api/base44Client";
 import useGameLogic from "@/hooks/useGameLogic";
 import { enregistrerScore } from "@/lib/scoreBoard";
 import { jouerSon } from "@/lib/sonsJeu";
+import { useAuth } from "@/lib/AuthContext";
+import { ajouterAuAlbum, decouverts, personnages } from "@/lib/albumEmojis";
+import { chargerProgresJeu, enregistrerProgresJeu } from "@/lib/progresJeu";
 
 const gold = "#F6C453";
 
@@ -39,6 +43,13 @@ export default function EmojisGame() {
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [loadError, setLoadError] = useState("");
   const game = useGameLogic(questions, timerEnabled);
+  // Album des personnages (1.3.31) : chaque personnage trouvé y entre pour toujours.
+  const { user } = useAuth();
+  const [album, setAlbum] = useState({ id: null, trouves: {} });
+  const [albumOuvert, setAlbumOuvert] = useState(false);
+  const [nouveaux, setNouveaux] = useState([]); // personnages entrés dans l'album pendant cette partie
+  const liste = useMemo(() => personnages(questions), [questions]);
+  const nbDecouverts = decouverts(album.trouves, liste);
   const correct = game.selectedAnswer === game.question?.answer;
   const questionFinished = game.selectedAnswer !== null;
 
@@ -82,6 +93,34 @@ export default function EmojisGame() {
   useEffect(() => {
     if (game.status === "playing" && questionFinished) jouerSon(correct ? "bon" : "faux");
   }, [questionFinished]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    let actif = true;
+    chargerProgresJeu(user?.id, "emoji")
+      .then((p) => { if (actif) setAlbum({ id: p.id, trouves: p.donnees?.trouves || {} }); })
+      .catch(() => { /* album indisponible : le jeu reste jouable */ });
+    return () => { actif = false; };
+  }, [user?.id]);
+
+  // Bonne réponse : le personnage entre dans l'album (s'il n'y était pas).
+  const nouveauIci = questionFinished && correct && nouveaux.includes(game.question?.answer);
+  useEffect(() => {
+    if (game.status !== "playing" || !questionFinished || !correct || !game.question) return;
+    const r = ajouterAuAlbum(album.trouves, game.question.answer, new Date().toISOString().slice(0, 10));
+    if (!r.nouveau) return;
+    const suivant = { ...album, trouves: r.trouves };
+    setAlbum(suivant);
+    setNouveaux((n) => [...n, game.question.answer]);
+    enregistrerProgresJeu(user?.id, "emoji", album.id, { trouves: r.trouves })
+      .then((id) => setAlbum((a) => ({ ...a, id: id || a.id })))
+      .catch(() => { /* réessayé à la prochaine découverte */ });
+  }, [questionFinished]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const commencer = () => {
+    setNouveaux([]);
+    setAlbumOuvert(false);
+    game.start();
+  };
 
   // Leaderboard (1.3.22) : le score de la partie, une fois à la fin.
   useEffect(() => {
@@ -150,7 +189,46 @@ export default function EmojisGame() {
             </motion.section>
           )}
 
-          {game.status === "ready" && !loadingQuestions && questions.length > 0 && (
+          {albumOuvert && game.status !== "playing" && (
+            <motion.section
+              key="album"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-amber-200">Mon album</p>
+                  <h1 className="mt-1 text-2xl font-black sm:text-3xl">{nbDecouverts} sur {liste.length} découverts</h1>
+                </div>
+                <button type="button" onClick={() => setAlbumOuvert(false)} className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/10">
+                  Retour
+                </button>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 transition-all" style={{ width: `${liste.length ? (nbDecouverts / liste.length) * 100 : 0}%` }} />
+              </div>
+              <ul className="mt-5 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                {liste.map((p) => {
+                  const trouve = Boolean(album.trouves?.[p.nom]);
+                  return (
+                    <li
+                      key={p.nom}
+                      className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border p-2 text-center ${
+                        trouve ? "border-amber-300/30 bg-amber-300/[0.08]" : "border-white/5 bg-white/[0.02]"
+                      }`}
+                    >
+                      <span className={`text-2xl leading-tight ${trouve ? "" : "opacity-40 grayscale"}`} aria-hidden="true">{trouve ? p.emojis : "❓"}</span>
+                      <span className={`w-full truncate text-xs font-extrabold ${trouve ? "text-amber-100" : "text-white/30"}`}>{trouve ? p.nom : "???"}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </motion.section>
+          )}
+
+          {!albumOuvert && game.status === "ready" && !loadingQuestions && questions.length > 0 && (
             <motion.section
               key="welcome"
               initial={{ opacity: 0, y: 16 }}
@@ -182,11 +260,20 @@ export default function EmojisGame() {
               </label>
               <button
                 type="button"
-                onClick={game.start}
+                onClick={commencer}
                 className="mx-auto mt-7 flex min-h-14 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 px-9 py-4 text-base font-black text-[#21190a] shadow-[0_8px_35px_rgba(246,196,83,0.22)] transition hover:scale-[1.03] hover:shadow-[0_8px_42px_rgba(246,196,83,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
               >
                 <Sparkles className="h-5 w-5" /> Jouer
               </button>
+              {liste.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAlbumOuvert(true)}
+                  className="mx-auto mt-3 flex min-h-12 items-center justify-center gap-2 rounded-full border border-amber-200/25 px-6 py-3 text-sm font-extrabold text-amber-100 transition hover:bg-amber-200/10"
+                >
+                  <BookOpen className="h-4 w-4" /> Mon album · {nbDecouverts} / {liste.length}
+                </button>
+              )}
             </motion.section>
           )}
 
@@ -296,12 +383,13 @@ export default function EmojisGame() {
               {questionFinished && (
                 <p className={`mt-4 text-center text-sm font-extrabold ${correct ? "text-amber-200" : "text-rose-300"}`}>
                 {correct ? "Bonne réponse ! +10 points" : game.timedOut ? "Temps écoulé !" : "Ce n’est pas ça !"}
+                {nouveauIci && <span className="mt-1 block text-amber-100">✨ Nouveau dans ton album !</span>}
                 </p>
               )}
             </motion.section>
           )}
 
-          {game.status === "finished" && (
+          {!albumOuvert && game.status === "finished" && (
             <motion.section
               key="results"
               initial={{ opacity: 0, scale: 0.97 }}
@@ -319,9 +407,19 @@ export default function EmojisGame() {
                 {game.correctCount} bonne(s) réponse(s) sur {game.totalQuestions}
                 {game.gameOver ? " · Il ne te restait plus de vie." : ""}
               </p>
+              {nouveaux.length > 0 && (
+                <p className="mt-3 font-extrabold text-amber-100">
+                  ✨ {nouveaux.length} nouveau{nouveaux.length > 1 ? "x" : ""} personnage{nouveaux.length > 1 ? "s" : ""} dans ton album
+                </p>
+              )}
+              {liste.length > 0 && (
+                <button type="button" onClick={() => setAlbumOuvert(true)} className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-amber-200/25 px-5 py-2.5 text-sm font-extrabold text-amber-100 hover:bg-amber-200/10">
+                  <BookOpen className="h-4 w-4" /> Mon album · {nbDecouverts} / {liste.length}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={game.start}
+                onClick={commencer}
                 className="mx-auto mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 px-7 py-3 font-black text-[#21190a] shadow-[0_8px_35px_rgba(246,196,83,0.2)] transition hover:scale-[1.03]"
               >
                 <RefreshCw className="h-4 w-4" /> Rejouer

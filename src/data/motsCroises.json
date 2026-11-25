@@ -1,0 +1,1077 @@
+[
+{
+"mot": "ADAM",
+"definition": "Le premier homme, formé de la poussière",
+"reference": "Genèse 2:7"
+},
+{
+"mot": "EVE",
+"definition": "La première femme, « mère de tous les vivants »",
+"reference": "Genèse 3:20"
+},
+{
+"mot": "CAIN",
+"definition": "Fils d'Adam, il tua son frère",
+"reference": "Genèse 4:8"
+},
+{
+"mot": "ABEL",
+"definition": "Berger, il offrit les premiers-nés de son troupeau",
+"reference": "Genèse 4:4"
+},
+{
+"mot": "SETH",
+"definition": "Fils d'Adam né après la mort d'Abel",
+"reference": "Genèse 4:25"
+},
+{
+"mot": "HENOC",
+"definition": "Il marcha avec Dieu, puis il ne fut plus",
+"reference": "Genèse 5:24"
+},
+{
+"mot": "EDEN",
+"definition": "Jardin planté par Dieu à l'orient",
+"reference": "Genèse 2:8"
+},
+{
+"mot": "SERPENT",
+"definition": "Il tenta la femme dans le jardin",
+"reference": "Genèse 3:1"
+},
+{
+"mot": "FIGUIER",
+"definition": "Adam et Ève cousirent de ses feuilles",
+"reference": "Genèse 3:7"
+},
+{
+"mot": "CHERUBINS",
+"definition": "Ils gardaient le chemin de l'arbre de vie",
+"reference": "Genèse 3:24"
+},
+{
+"mot": "CIEUX",
+"definition": "« Au commencement, Dieu créa les … et la terre »",
+"reference": "Genèse 1:1"
+},
+{
+"mot": "GENESE",
+"definition": "Premier livre de la Bible",
+"reference": "Genèse 1:1"
+},
+{
+"mot": "NOE",
+"definition": "Il construisit l'arche",
+"reference": "Genèse 6:14"
+},
+{
+"mot": "ARCHE",
+"definition": "Bateau construit par Noé",
+"reference": "Genèse 6:14"
+},
+{
+"mot": "DELUGE",
+"definition": "Grandes eaux qui couvrirent la terre",
+"reference": "Genèse 7:17"
+},
+{
+"mot": "COLOMBE",
+"definition": "Elle revint avec une feuille d'olivier",
+"reference": "Genèse 8:11"
+},
+{
+"mot": "OLIVIER",
+"definition": "La colombe en rapporta une feuille",
+"reference": "Genèse 8:11"
+},
+{
+"mot": "AUTEL",
+"definition": "Noé en bâtit un après le déluge",
+"reference": "Genèse 8:20"
+},
+{
+"mot": "ARCENCIEL",
+"definition": "Signe de l'alliance après le déluge",
+"reference": "Genèse 9:13"
+},
+{
+"mot": "BABEL",
+"definition": "Ville où les langues furent confondues",
+"reference": "Genèse 11:9"
+},
+{
+"mot": "ABRAHAM",
+"definition": "Père des croyants, appelé à quitter son pays",
+"reference": "Genèse 17:5"
+},
+{
+"mot": "SARA",
+"definition": "Femme d'Abraham, mère d'Isaac dans sa vieillesse",
+"reference": "Genèse 21:2"
+},
+{
+"mot": "ISAAC",
+"definition": "Fils de la promesse, né d'Abraham et de Sara",
+"reference": "Genèse 21:3"
+},
+{
+"mot": "ISMAEL",
+"definition": "Fils d'Abraham et d'Agar",
+"reference": "Genèse 16:15"
+},
+{
+"mot": "AGAR",
+"definition": "Servante égyptienne de Saraï",
+"reference": "Genèse 16:1"
+},
+{
+"mot": "LOT",
+"definition": "Neveu d'Abraham, il s'établit vers Sodome",
+"reference": "Genèse 13:12"
+},
+{
+"mot": "SODOME",
+"definition": "Ville détruite par le soufre et le feu",
+"reference": "Genèse 19:24"
+},
+{
+"mot": "REBECCA",
+"definition": "Femme d'Isaac, rencontrée près d'un puits",
+"reference": "Genèse 24:15"
+},
+{
+"mot": "ESAU",
+"definition": "Il vendit son droit d'aînesse",
+"reference": "Genèse 25:33"
+},
+{
+"mot": "JACOB",
+"definition": "Il lutta avec Dieu et reçut un nouveau nom",
+"reference": "Genèse 32:28"
+},
+{
+"mot": "ISRAEL",
+"definition": "Nouveau nom donné à Jacob",
+"reference": "Genèse 32:28"
+},
+{
+"mot": "ECHELLE",
+"definition": "Jacob la vit en songe, touchant le ciel",
+"reference": "Genèse 28:12"
+},
+{
+"mot": "RACHEL",
+"definition": "Femme aimée de Jacob",
+"reference": "Genèse 29:18"
+},
+{
+"mot": "LEA",
+"definition": "Première femme de Jacob, sœur de Rachel",
+"reference": "Genèse 29:23"
+},
+{
+"mot": "JOSEPH",
+"definition": "Vendu par ses frères, il devint gouverneur d'Égypte",
+"reference": "Genèse 41:41"
+},
+{
+"mot": "TUNIQUE",
+"definition": "Jacob en fit une de plusieurs couleurs pour Joseph",
+"reference": "Genèse 37:3"
+},
+{
+"mot": "BENJAMIN",
+"definition": "Plus jeune fils de Jacob",
+"reference": "Genèse 35:18"
+},
+{
+"mot": "JUDA",
+"definition": "Fils de Jacob et de Léa",
+"reference": "Genèse 29:35"
+},
+{
+"mot": "LEVI",
+"definition": "Fils de Jacob, ancêtre des prêtres",
+"reference": "Genèse 29:34"
+},
+{
+"mot": "RUBEN",
+"definition": "Premier-né de Jacob",
+"reference": "Genèse 29:32"
+},
+{
+"mot": "CANAAN",
+"definition": "Pays promis à Abraham et à sa postérité",
+"reference": "Genèse 17:8"
+},
+{
+"mot": "EGYPTE",
+"definition": "Pays où Israël fut esclave",
+"reference": "Exode 20:2"
+},
+{
+"mot": "PHARAON",
+"definition": "Roi d'Égypte au temps de Moïse",
+"reference": "Exode 5:2"
+},
+{
+"mot": "MOISE",
+"definition": "Sauvé des eaux, il conduisit Israël hors d'Égypte",
+"reference": "Exode 2:10"
+},
+{
+"mot": "AARON",
+"definition": "Frère de Moïse, consacré comme sacrificateur",
+"reference": "Exode 28:1"
+},
+{
+"mot": "MARIE",
+"definition": "Sœur d'Aaron, elle chanta avec un tambourin",
+"reference": "Exode 15:20"
+},
+{
+"mot": "BUISSON",
+"definition": "Il brûlait sans se consumer",
+"reference": "Exode 3:2"
+},
+{
+"mot": "PAQUE",
+"definition": "Fête de la sortie d'Égypte",
+"reference": "Exode 12:11"
+},
+{
+"mot": "AGNEAU",
+"definition": "Pour la Pâque, il devait être sans défaut",
+"reference": "Exode 12:5"
+},
+{
+"mot": "MANNE",
+"definition": "Pain du ciel dans le désert",
+"reference": "Exode 16:31"
+},
+{
+"mot": "SINAI",
+"definition": "Montagne où la loi fut donnée",
+"reference": "Exode 19:20"
+},
+{
+"mot": "TABLES",
+"definition": "Les commandements y furent écrits du doigt de Dieu",
+"reference": "Exode 31:18"
+},
+{
+"mot": "VEAU",
+"definition": "Idole d'or fabriquée au pied de la montagne",
+"reference": "Exode 32:4"
+},
+{
+"mot": "SABBAT",
+"definition": "Jour du repos, à sanctifier",
+"reference": "Exode 20:8"
+},
+{
+"mot": "TABERNACLE",
+"definition": "Tente de la rencontre, remplie de la gloire de Dieu",
+"reference": "Exode 40:34"
+},
+{
+"mot": "JOSUE",
+"definition": "Successeur de Moïse",
+"reference": "Josué 1:2"
+},
+{
+"mot": "JERICHO",
+"definition": "Ses murailles s'écroulèrent",
+"reference": "Josué 6:20"
+},
+{
+"mot": "RAHAB",
+"definition": "Elle cacha les espions à Jéricho",
+"reference": "Josué 2:4"
+},
+{
+"mot": "JOURDAIN",
+"definition": "Fleuve traversé à pied sec",
+"reference": "Josué 3:17"
+},
+{
+"mot": "GEDEON",
+"definition": "Juge vainqueur avec trois cents hommes",
+"reference": "Juges 7:7"
+},
+{
+"mot": "SAMSON",
+"definition": "Sa force venait de son vœu de naziréat",
+"reference": "Juges 16:17"
+},
+{
+"mot": "DELILA",
+"definition": "Femme de la vallée de Sorek qui trahit Samson",
+"reference": "Juges 16:4"
+},
+{
+"mot": "DEBORA",
+"definition": "Prophétesse qui jugeait Israël",
+"reference": "Juges 4:4"
+},
+{
+"mot": "RUTH",
+"definition": "Moabite fidèle : « Ton peuple sera mon peuple »",
+"reference": "Ruth 1:16"
+},
+{
+"mot": "NAOMI",
+"definition": "Belle-mère de Ruth",
+"reference": "Ruth 1:2"
+},
+{
+"mot": "BOAZ",
+"definition": "Il épousa Ruth",
+"reference": "Ruth 4:13"
+},
+{
+"mot": "ANNE",
+"definition": "Elle pria et devint mère de Samuel",
+"reference": "1 Samuel 1:20"
+},
+{
+"mot": "SAMUEL",
+"definition": "Prophète qui oignit David",
+"reference": "1 Samuel 16:13"
+},
+{
+"mot": "ELI",
+"definition": "Sacrificateur auprès de qui grandit Samuel",
+"reference": "1 Samuel 3:8"
+},
+{
+"mot": "SAUL",
+"definition": "Premier roi d'Israël, oint par Samuel",
+"reference": "1 Samuel 10:1"
+},
+{
+"mot": "DAVID",
+"definition": "Berger devenu roi, vainqueur de Goliath",
+"reference": "1 Samuel 17:50"
+},
+{
+"mot": "GOLIATH",
+"definition": "Géant philistin de Gath",
+"reference": "1 Samuel 17:4"
+},
+{
+"mot": "FRONDE",
+"definition": "Arme de David contre le géant",
+"reference": "1 Samuel 17:50"
+},
+{
+"mot": "JONATHAN",
+"definition": "Ami fidèle de David, fils de Saül",
+"reference": "1 Samuel 18:1"
+},
+{
+"mot": "HARPE",
+"definition": "David en jouait pour apaiser Saül",
+"reference": "1 Samuel 16:23"
+},
+{
+"mot": "SALOMON",
+"definition": "Roi célèbre pour sa sagesse",
+"reference": "1 Rois 3:12"
+},
+{
+"mot": "TEMPLE",
+"definition": "Salomon le bâtit pour l'Éternel",
+"reference": "1 Rois 6:1"
+},
+{
+"mot": "SEBA",
+"definition": "Sa reine vint éprouver Salomon par des énigmes",
+"reference": "1 Rois 10:1"
+},
+{
+"mot": "ELIE",
+"definition": "Prophète enlevé au ciel dans un tourbillon",
+"reference": "2 Rois 2:11"
+},
+{
+"mot": "ELISEE",
+"definition": "Disciple et successeur d'Élie",
+"reference": "2 Rois 2:15"
+},
+{
+"mot": "CARMEL",
+"definition": "Montagne du défi d'Élie contre les prophètes de Baal",
+"reference": "1 Rois 18:19"
+},
+{
+"mot": "CORBEAUX",
+"definition": "Ils nourrirent Élie près du torrent",
+"reference": "1 Rois 17:6"
+},
+{
+"mot": "ACHAB",
+"definition": "Roi impie d'Israël, mari de Jézabel",
+"reference": "1 Rois 16:30"
+},
+{
+"mot": "JEZABEL",
+"definition": "Reine qui menaça Élie",
+"reference": "1 Rois 19:2"
+},
+{
+"mot": "NAAMAN",
+"definition": "Chef syrien guéri dans le Jourdain",
+"reference": "2 Rois 5:14"
+},
+{
+"mot": "EZECHIAS",
+"definition": "Roi de Juda à qui Dieu ajouta quinze ans de vie",
+"reference": "2 Rois 20:6"
+},
+{
+"mot": "JOSIAS",
+"definition": "Il devint roi à huit ans",
+"reference": "2 Rois 22:1"
+},
+{
+"mot": "NEHEMIE",
+"definition": "Il rebâtit les murailles de Jérusalem",
+"reference": "Néhémie 2:17"
+},
+{
+"mot": "ESTHER",
+"definition": "Reine qui intercéda pour son peuple",
+"reference": "Esther 4:14"
+},
+{
+"mot": "MARDOCHEE",
+"definition": "Cousin d'Esther qui l'avait élevée",
+"reference": "Esther 2:7"
+},
+{
+"mot": "JOB",
+"definition": "Homme intègre et droit, durement éprouvé",
+"reference": "Job 1:1"
+},
+{
+"mot": "BERGER",
+"definition": "« L'Éternel est mon … »",
+"reference": "Psaumes 23:1"
+},
+{
+"mot": "SAGESSE",
+"definition": "La crainte de l'Éternel en est le commencement",
+"reference": "Proverbes 9:10"
+},
+{
+"mot": "ESAIE",
+"definition": "Prophète qui annonça l'enfant Emmanuel",
+"reference": "Ésaïe 7:14"
+},
+{
+"mot": "EMMANUEL",
+"definition": "Nom qui signifie « Dieu avec nous »",
+"reference": "Matthieu 1:23"
+},
+{
+"mot": "JEREMIE",
+"definition": "Prophète consacré avant sa naissance",
+"reference": "Jérémie 1:5"
+},
+{
+"mot": "EZECHIEL",
+"definition": "Il vit une vallée pleine d'ossements",
+"reference": "Ézéchiel 37:1"
+},
+{
+"mot": "DANIEL",
+"definition": "Jeté dans la fosse aux lions",
+"reference": "Daniel 6:16"
+},
+{
+"mot": "LIONS",
+"definition": "Dieu ferma leur gueule",
+"reference": "Daniel 6:22"
+},
+{
+"mot": "FOURNAISE",
+"definition": "Trois amis y furent jetés sans être brûlés",
+"reference": "Daniel 3:23"
+},
+{
+"mot": "JONAS",
+"definition": "Prophète envoyé à Ninive",
+"reference": "Jonas 3:3"
+},
+{
+"mot": "NINIVE",
+"definition": "Grande ville qui se repentit",
+"reference": "Jonas 3:5"
+},
+{
+"mot": "POISSON",
+"definition": "Jonas fut trois jours dans son ventre",
+"reference": "Matthieu 12:40"
+},
+{
+"mot": "MICHEE",
+"definition": "Prophète qui annonça Bethléhem",
+"reference": "Michée 5:2"
+},
+{
+"mot": "DIME",
+"definition": "Le dixième apporté à la maison du trésor",
+"reference": "Malachie 3:10"
+},
+{
+"mot": "ALLIANCE",
+"definition": "Dieu promet d'en faire une nouvelle",
+"reference": "Jérémie 31:31"
+},
+{
+"mot": "JESUS",
+"definition": "« Il sauvera son peuple de ses péchés »",
+"reference": "Matthieu 1:21"
+},
+{
+"mot": "GABRIEL",
+"definition": "Ange envoyé à Nazareth",
+"reference": "Luc 1:26"
+},
+{
+"mot": "BETHLEHEM",
+"definition": "Ville où Jésus est né",
+"reference": "Matthieu 2:1"
+},
+{
+"mot": "CRECHE",
+"definition": "Le nouveau-né y fut couché",
+"reference": "Luc 2:7"
+},
+{
+"mot": "BERGERS",
+"definition": "Ils gardaient leurs troupeaux la nuit de Noël",
+"reference": "Luc 2:8"
+},
+{
+"mot": "MAGES",
+"definition": "Ils vinrent d'Orient adorer l'enfant",
+"reference": "Matthieu 2:1"
+},
+{
+"mot": "ETOILE",
+"definition": "Elle guida les mages",
+"reference": "Matthieu 2:9"
+},
+{
+"mot": "ENCENS",
+"definition": "Un des présents des mages",
+"reference": "Matthieu 2:11"
+},
+{
+"mot": "MYRRHE",
+"definition": "Un des présents des mages",
+"reference": "Matthieu 2:11"
+},
+{
+"mot": "HERODE",
+"definition": "Roi qui fit tuer les enfants de Bethléhem",
+"reference": "Matthieu 2:16"
+},
+{
+"mot": "NAZARETH",
+"definition": "Ville où Jésus grandit",
+"reference": "Luc 2:51"
+},
+{
+"mot": "ZACHARIE",
+"definition": "Sacrificateur, père de Jean-Baptiste",
+"reference": "Luc 1:13"
+},
+{
+"mot": "ELISABETH",
+"definition": "Mère de Jean-Baptiste",
+"reference": "Luc 1:13"
+},
+{
+"mot": "SIMEON",
+"definition": "Vieillard qui reçut l'enfant dans ses bras au temple",
+"reference": "Luc 2:28"
+},
+{
+"mot": "BAPTEME",
+"definition": "Jean le prêchait dans le désert",
+"reference": "Marc 1:4"
+},
+{
+"mot": "DESERT",
+"definition": "Jésus y fut conduit pour être tenté",
+"reference": "Matthieu 4:1"
+},
+{
+"mot": "PIERRE",
+"definition": "Disciple qui renia Jésus trois fois",
+"reference": "Luc 22:61"
+},
+{
+"mot": "ANDRE",
+"definition": "Pêcheur, frère de Simon Pierre",
+"reference": "Matthieu 4:18"
+},
+{
+"mot": "JACQUES",
+"definition": "Fils de Zébédée, frère de Jean",
+"reference": "Matthieu 4:21"
+},
+{
+"mot": "MATTHIEU",
+"definition": "Collecteur d'impôts devenu disciple",
+"reference": "Matthieu 9:9"
+},
+{
+"mot": "THOMAS",
+"definition": "Disciple qui voulut voir les marques des clous",
+"reference": "Jean 20:27"
+},
+{
+"mot": "JUDAS",
+"definition": "Il livra Jésus pour trente pièces d'argent",
+"reference": "Matthieu 26:15"
+},
+{
+"mot": "PHILIPPE",
+"definition": "Disciple originaire de Bethsaïda",
+"reference": "Jean 1:44"
+},
+{
+"mot": "CANA",
+"definition": "Village des noces où l'eau devint vin",
+"reference": "Jean 2:11"
+},
+{
+"mot": "PECHEURS",
+"definition": "« Je vous ferai … d'hommes »",
+"reference": "Matthieu 4:19"
+},
+{
+"mot": "FILETS",
+"definition": "Les disciples les laissèrent pour suivre Jésus",
+"reference": "Matthieu 4:20"
+},
+{
+"mot": "MONTAGNE",
+"definition": "Jésus y enseigna les béatitudes",
+"reference": "Matthieu 5:1"
+},
+{
+"mot": "SEL",
+"definition": "« Vous êtes le … de la terre »",
+"reference": "Matthieu 5:13"
+},
+{
+"mot": "LUMIERE",
+"definition": "« Vous êtes la … du monde »",
+"reference": "Matthieu 5:14"
+},
+{
+"mot": "LAMPE",
+"definition": "On ne la met pas sous le boisseau",
+"reference": "Matthieu 5:15"
+},
+{
+"mot": "TRESOR",
+"definition": "« Là où est ton …, là aussi sera ton cœur »",
+"reference": "Matthieu 6:21"
+},
+{
+"mot": "PORTE",
+"definition": "« Entrez par la … étroite »",
+"reference": "Matthieu 7:13"
+},
+{
+"mot": "ROC",
+"definition": "L'homme prudent bâtit sa maison dessus",
+"reference": "Matthieu 7:24"
+},
+{
+"mot": "SABLE",
+"definition": "L'insensé y bâtit sa maison",
+"reference": "Matthieu 7:26"
+},
+{
+"mot": "PAIN",
+"definition": "« Je suis le … de vie »",
+"reference": "Jean 6:35"
+},
+{
+"mot": "SAMARITAIN",
+"definition": "Il prit soin de l'homme blessé sur la route",
+"reference": "Luc 10:33"
+},
+{
+"mot": "BREBIS",
+"definition": "Le berger laisse les autres pour chercher celle qui est perdue",
+"reference": "Luc 15:4"
+},
+{
+"mot": "SEMEUR",
+"definition": "« Un … sortit pour semer »",
+"reference": "Matthieu 13:3"
+},
+{
+"mot": "SENEVE",
+"definition": "Le royaume des cieux est semblable à un de ses grains",
+"reference": "Matthieu 13:31"
+},
+{
+"mot": "TALENTS",
+"definition": "Le maître les confia à ses serviteurs",
+"reference": "Matthieu 25:15"
+},
+{
+"mot": "LAZARE",
+"definition": "Ami de Jésus, ressuscité à Béthanie",
+"reference": "Jean 11:43"
+},
+{
+"mot": "MARTHE",
+"definition": "Sœur de Marie, inquiète de beaucoup de choses",
+"reference": "Luc 10:41"
+},
+{
+"mot": "ZACHEE",
+"definition": "Petit de taille, il monta sur un arbre pour voir Jésus",
+"reference": "Luc 19:4"
+},
+{
+"mot": "SYCOMORE",
+"definition": "Arbre où monta Zachée",
+"reference": "Luc 19:4"
+},
+{
+"mot": "BARTIMEE",
+"definition": "Aveugle mendiant de Jéricho",
+"reference": "Marc 10:46"
+},
+{
+"mot": "NICODEME",
+"definition": "Il vint trouver Jésus de nuit",
+"reference": "Jean 3:2"
+},
+{
+"mot": "JAIRUS",
+"definition": "Chef de synagogue dont la fille fut ressuscitée",
+"reference": "Marc 5:22"
+},
+{
+"mot": "SAMARITAINE",
+"definition": "Femme à qui Jésus demanda à boire",
+"reference": "Jean 4:7"
+},
+{
+"mot": "PUITS",
+"definition": "Celui de Jacob, où Jésus s'assit fatigué",
+"reference": "Jean 4:6"
+},
+{
+"mot": "SARMENTS",
+"definition": "« Je suis le cep, vous êtes les … »",
+"reference": "Jean 15:5"
+},
+{
+"mot": "CHEMIN",
+"definition": "« Je suis le …, la vérité et la vie »",
+"reference": "Jean 14:6"
+},
+{
+"mot": "VERITE",
+"definition": "« La … vous affranchira »",
+"reference": "Jean 8:32"
+},
+{
+"mot": "LEPREUX",
+"definition": "Dix furent guéris, un seul revint remercier",
+"reference": "Luc 17:12"
+},
+{
+"mot": "AVEUGLE",
+"definition": "Jésus mit de la boue sur ses yeux",
+"reference": "Jean 9:6"
+},
+{
+"mot": "HOSANNA",
+"definition": "Cri de la foule à l'entrée de Jésus à Jérusalem",
+"reference": "Jean 12:13"
+},
+{
+"mot": "PALMIERS",
+"definition": "On prit leurs branches pour accueillir Jésus",
+"reference": "Jean 12:13"
+},
+{
+"mot": "ANON",
+"definition": "Jésus entra à Jérusalem monté sur lui",
+"reference": "Jean 12:14"
+},
+{
+"mot": "COUPE",
+"definition": "« Cette … est la nouvelle alliance en mon sang »",
+"reference": "Luc 22:20"
+},
+{
+"mot": "GETHSEMANE",
+"definition": "Lieu où Jésus pria avant son arrestation",
+"reference": "Matthieu 26:36"
+},
+{
+"mot": "COQ",
+"definition": "Il chanta après le reniement de Pierre",
+"reference": "Luc 22:60"
+},
+{
+"mot": "PILATE",
+"definition": "Gouverneur qui se lava les mains",
+"reference": "Matthieu 27:24"
+},
+{
+"mot": "BARABBAS",
+"definition": "Prisonnier relâché à la place de Jésus",
+"reference": "Matthieu 27:26"
+},
+{
+"mot": "EPINES",
+"definition": "La couronne posée sur la tête de Jésus en était faite",
+"reference": "Jean 19:2"
+},
+{
+"mot": "CROIX",
+"definition": "Jésus la porta jusqu'au lieu du crâne",
+"reference": "Jean 19:17"
+},
+{
+"mot": "GOLGOTHA",
+"definition": "Lieu du crâne, en hébreu",
+"reference": "Jean 19:17"
+},
+{
+"mot": "ARIMATHEE",
+"definition": "Joseph d'…, qui ensevelit Jésus",
+"reference": "Matthieu 27:57"
+},
+{
+"mot": "SEPULCRE",
+"definition": "La pierre en avait été roulée",
+"reference": "Luc 24:2"
+},
+{
+"mot": "RESSUSCITE",
+"definition": "« Il n'est point ici, mais il est … »",
+"reference": "Luc 24:6"
+},
+{
+"mot": "EMMAUS",
+"definition": "Village où deux disciples reconnurent Jésus",
+"reference": "Luc 24:13"
+},
+{
+"mot": "NUEE",
+"definition": "Elle déroba Jésus à leurs yeux",
+"reference": "Actes 1:9"
+},
+{
+"mot": "PENTECOTE",
+"definition": "Fête où le Saint-Esprit descendit",
+"reference": "Actes 2:1"
+},
+{
+"mot": "LANGUES",
+"definition": "Elles apparurent comme de feu sur les disciples",
+"reference": "Actes 2:3"
+},
+{
+"mot": "ETIENNE",
+"definition": "Diacre, premier martyr",
+"reference": "Actes 7:59"
+},
+{
+"mot": "PAUL",
+"definition": "Apôtre des païens, aussi appelé Saul",
+"reference": "Actes 13:9"
+},
+{
+"mot": "DAMAS",
+"definition": "Paul fut converti sur sa route",
+"reference": "Actes 9:3"
+},
+{
+"mot": "BARNABAS",
+"definition": "Compagnon de mission de Paul",
+"reference": "Actes 13:2"
+},
+{
+"mot": "SILAS",
+"definition": "Il chanta en prison avec Paul",
+"reference": "Actes 16:25"
+},
+{
+"mot": "TIMOTHEE",
+"definition": "Jeune disciple, fils d'une Juive croyante",
+"reference": "Actes 16:1"
+},
+{
+"mot": "LYDIE",
+"definition": "Marchande de pourpre de Thyatire",
+"reference": "Actes 16:14"
+},
+{
+"mot": "CORNEILLE",
+"definition": "Centenier romain de Césarée",
+"reference": "Actes 10:1"
+},
+{
+"mot": "PRISCILLE",
+"definition": "Femme d'Aquilas, faiseuse de tentes",
+"reference": "Actes 18:2"
+},
+{
+"mot": "CHARITE",
+"definition": "Elle est patiente, elle est pleine de bonté",
+"reference": "1 Corinthiens 13:4"
+},
+{
+"mot": "ESPERANCE",
+"definition": "Elle demeure avec la foi et la charité",
+"reference": "1 Corinthiens 13:13"
+},
+{
+"mot": "FOI",
+"definition": "Sans elle, il est impossible d'être agréable à Dieu",
+"reference": "Hébreux 11:6"
+},
+{
+"mot": "GRACE",
+"definition": "« C'est par la … que vous êtes sauvés »",
+"reference": "Éphésiens 2:8"
+},
+{
+"mot": "ARMES",
+"definition": "« Revêtez-vous de toutes les … de Dieu »",
+"reference": "Éphésiens 6:11"
+},
+{
+"mot": "BOUCLIER",
+"definition": "Celui de la foi éteint les traits enflammés",
+"reference": "Éphésiens 6:16"
+},
+{
+"mot": "EPEE",
+"definition": "Celle de l'Esprit est la parole de Dieu",
+"reference": "Éphésiens 6:17"
+},
+{
+"mot": "CASQUE",
+"definition": "Celui du salut",
+"reference": "Éphésiens 6:17"
+},
+{
+"mot": "JOIE",
+"definition": "Fruit de l'Esprit, après l'amour",
+"reference": "Galates 5:22"
+},
+{
+"mot": "PAIX",
+"definition": "Fruit de l'Esprit, après la joie",
+"reference": "Galates 5:22"
+},
+{
+"mot": "ALPHA",
+"definition": "« Je suis l'… et l'oméga »",
+"reference": "Apocalypse 1:8"
+},
+{
+"mot": "OMEGA",
+"definition": "Dernière lettre grecque, titre du Seigneur",
+"reference": "Apocalypse 1:8"
+},
+{
+"mot": "PATMOS",
+"definition": "Île où Jean reçut la révélation",
+"reference": "Apocalypse 1:9"
+},
+{
+"mot": "APOCALYPSE",
+"definition": "Dernier livre de la Bible",
+"reference": "Apocalypse 1:1"
+},
+{
+"mot": "MESSIE",
+"definition": "« Je sais que le … doit venir »",
+"reference": "Jean 4:25"
+},
+{
+"mot": "BETHANIE",
+"definition": "Village de Marthe, Marie et Lazare",
+"reference": "Jean 11:1"
+},
+{
+"mot": "CENTENIER",
+"definition": "Officier romain à la grande foi",
+"reference": "Matthieu 8:8"
+},
+{
+"mot": "TEMPETE",
+"definition": "Jésus menaça le vent et le calme revint",
+"reference": "Marc 4:39"
+},
+{
+"mot": "FARINE",
+"definition": "La veuve de Sarepta n'en manqua pas",
+"reference": "1 Rois 17:16"
+},
+{
+"mot": "VEUVE",
+"definition": "Elle donna deux petites pièces",
+"reference": "Marc 12:42"
+},
+{
+"mot": "PROPHETE",
+"definition": "« Nul n'est … dans sa patrie »",
+"reference": "Luc 4:24"
+},
+{
+"mot": "APOTRES",
+"definition": "Jésus en choisit douze",
+"reference": "Luc 6:13"
+},
+{
+"mot": "SAMARIE",
+"definition": "Région que Jésus devait traverser",
+"reference": "Jean 4:4"
+},
+{
+"mot": "GALILEE",
+"definition": "Région où Jésus commença à prêcher",
+"reference": "Matthieu 4:23"
+},
+{
+"mot": "JERUSALEM",
+"definition": "Ville sainte où Jésus fut crucifié",
+"reference": "Luc 18:31"
+},
+{
+"mot": "SION",
+"definition": "La montagne sainte de Dieu",
+"reference": "Psaumes 2:6"
+},
+{
+"mot": "PSAUMES",
+"definition": "Livre de cantiques de David",
+"reference": "Luc 20:42"
+},
+{
+"mot": "EVANGILE",
+"definition": "Bonne nouvelle à annoncer à toute la création",
+"reference": "Marc 16:15"
+}
+]

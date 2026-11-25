@@ -46,6 +46,11 @@ test("score board : classement avec ex aequo", () => {
 test("score board 1.3.26 : le Puzzle est un jeu d'enfant (sauf ancienne app sans pseudo)", () => {
   assert.deepEqual(sc.JEUX.enfant, ["memory", "puzzle", "brique", "voiture"]);
   assert.equal(sc.espaceDe("voiture", "Mickael"), "enfant"); // 1.3.30
+  assert.equal(sc.espaceDe("motscroises", ""), "adulte"); // 1.3.31
+  assert.ok(sc.JEUX.adulte.includes("motscroises"));
+  assert.equal(sc.pointsClient("motscroises", { taille: 7, indices: 0, secondes: 100 }), 36);
+  assert.equal(sc.pointsClient("motscroises", { taille: 11, indices: 2, secondes: 900 }), 80);
+  assert.equal(sc.pointsClient("motscroises", { taille: 9, indices: 0, secondes: 5 }), 0);
   assert.equal(sc.pointsClient("voiture", { niveau: 1, etoiles: 3 }), 36);
   assert.equal(sc.pointsClient("voiture", { niveau: 30, etoiles: 1 }), 70);
   assert.equal(sc.pointsClient("voiture", { niveau: 31, etoiles: 3 }), 0);

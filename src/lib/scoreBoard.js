@@ -17,6 +17,7 @@ export const JEUX_ADULTES = [
   { id: "trivia", label: "Quiz" },
   { id: "scramble", label: "Mots mélangés" },
   { id: "emoji", label: "Émojis" },
+  { id: "motscroises", label: "Mots croisés" },
 ];
 // 1.3.26 : le Puzzle est un jeu des enfants (Chay Enfants › Jeux).
 // 1.3.29 : Brique ; 1.3.30 : Libère la voiture.

@@ -18,7 +18,6 @@ const QuizAdminPanel = lazy(() => import("@/components/admin/quiz/QuizAdminPanel
 const WordScrambleAdminPanel = lazy(() => import("@/components/admin/wordscramble/WordScrambleAdminPanel"));
 const EmojisAdminPanel = lazy(() => import("@/components/admin/emojis/EmojisAdminPanel"));
 const PuzzleAdminPanel = lazy(() => import("@/components/admin/puzzles/PuzzleAdminPanel"));
-const PersonalityQuizAdminPanel = lazy(() => import("@/components/admin/personality/PersonalityQuizAdminPanel"));
 const BlockBlastMessagesAdminPanel = lazy(() => import("@/components/admin/blockblast/BlockBlastMessagesAdminPanel"));
 
 const PanelFallback = () => (
@@ -49,7 +48,6 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "wordscramble") return <Suspense fallback={<PanelFallback />}><WordScrambleAdminPanel /></Suspense>;
   if (active === "emojis") return <Suspense fallback={<PanelFallback />}><EmojisAdminPanel /></Suspense>;
   if (active === "puzzles") return <Suspense fallback={<PanelFallback />}><PuzzleAdminPanel /></Suspense>;
-  if (active === "personalityquiz") return <Suspense fallback={<PanelFallback />}><PersonalityQuizAdminPanel /></Suspense>;
   if (active === "blockblast") return <Suspense fallback={<PanelFallback />}><BlockBlastMessagesAdminPanel /></Suspense>;
   if (active === "admins") return <AdminListPanel />;
   if (active === "membres") return <GererMembres />;

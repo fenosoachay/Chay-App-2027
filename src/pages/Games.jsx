@@ -4,7 +4,7 @@ import {
   ArrowRight,
   Brain,
   Blocks,
-  Heart,
+  Hash,
   Check,
   Flame,
   Puzzle,
@@ -28,7 +28,7 @@ const APPARENCE = {
   emoji: { icon: Smile, tone: "from-[#8A56E2] to-[#FF57B2]" },
   scramble: { icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]" },
   puzzle: { icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]" },
-  personality: { icon: Heart, tone: "from-[#C18B33] to-[#A84D70]" },
+  motscroises: { icon: Hash, tone: "from-[#C18B33] to-[#A84D70]" },
 };
 const GAMES = JEUX.map((j) => ({ ...j, ...APPARENCE[j.id], live: true }));
 

@@ -32,7 +32,8 @@ export default function useGameLogic(questions, timerEnabled = true) {
 
   const start = useCallback(() => {
     answeredRef.current = false;
-    setGameQuestions(shuffle(questions));
+    // 1.3.31 : l'ordre des réponses est mélangé à chaque partie (la bonne réponse n'est plus presque toujours A).
+    setGameQuestions(shuffle(questions).map((q) => ({ ...q, options: shuffle(Array.isArray(q.options) ? q.options : []) })));
     setQuestionIndex(0);
     setScore(0);
     setLives(INITIAL_LIVES);

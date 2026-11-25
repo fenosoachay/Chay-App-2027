@@ -1,6 +1,6 @@
 import {
   BookOpen, Headphones, Film, Music, Library, FileText, Youtube,
-  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette, Phone,
+  Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette, Phone, Hash,
 } from "lucide-react";
 import { AUDIENCES } from "@/lib/audience";
 
@@ -453,6 +453,21 @@ export const SECTIONS = [
       { name: "body", label: "Texte", type: "rich-text", required: true },
       // Facultatif : petit bouton lecture/pause en haut à droite de la parole (1.3.25).
       { name: "musique_id", label: "Musique liée (facultatif)", type: "musique" },
+    ],
+  },
+  {
+    // Chay Game › Mots croisés (1.3.31) : la liste des mots des grilles (215 mots de départ). Le mot s'écrit
+    // comme on veut (accents, minuscules) : le jeu le met en majuscules sans accents.
+    key: "MotCroise",
+    label: "Mots croisés",
+    icon: Hash,
+    sort: "mot",
+    listColumns: ["mot", "definition", "reference"],
+    fields: [
+      { name: "mot", label: "Mot (3 à 11 lettres)", type: "text", required: true },
+      { name: "definition", label: "Définition", type: "textarea", required: true },
+      { name: "reference", label: "Référence biblique (ex. Genèse 6:14)", type: "text" },
+      { name: "actif", label: "Dans le jeu", type: "boolean" },
     ],
   },
   {

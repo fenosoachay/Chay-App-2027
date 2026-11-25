@@ -7,10 +7,10 @@
 //  - général (tous les jeux additionnés) ou un seul jeu.
 
 const JEUX = {
-  adulte: ['trivia', 'scramble', 'emoji'],
+  adulte: ['trivia', 'scramble', 'emoji', 'motscroises'], // 1.3.31 : Mots croisés
   enfant: ['memory', 'puzzle', 'brique', 'voiture'], // 1.3.29 : Brique ; 1.3.30 : Libère la voiture
 };
-const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory', 'voiture']; // scores envoyés par l'app (bornés ici)
+const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory', 'voiture', 'motscroises']; // scores envoyés par l'app (bornés ici)
 const MULT = { easy: 1, medium: 2, hard: 3, ultra_hard: 4, facile: 1, moyen: 2, difficile: 3 };
 const PLAFOND = 1000;
 const AVATARS = ['🦁', '🐑', '🕊️', '🐟', '🐘', '🦒', '🐻', '🐰', '🦊', '🐢', '🐝', '🦋', '🐳', '🐧', '🦉', '🐞'];
@@ -28,6 +28,17 @@ function pointsMemory(etoiles, niveau) {
   return e * 10 * (MULT[niveau] || 1);
 }
 function pointsBrique(score) { return borne(entier(score) / 10); }
+/**
+ * Mots croisés (1.3.31) : grille finie de 7, 9 ou 11 cases de côté -> 30, 60 ou 100 points, +20 % si finie vite,
+ * -10 par indice, 5 au moins ; 0 si trop rapide pour être vrai (moins de 15 s). Même calcul : src/lib/motsCroises.js.
+ */
+function pointsMotsCroises(taille, indices, secondes) {
+  const T = { 7: [30, 120], 9: [60, 300], 11: [100, 540] }[entier(taille)];
+  const s = entier(secondes);
+  if (!T || s < 15) return 0;
+  const bonus = s <= T[1] ? Math.round(T[0] * 0.2) : 0;
+  return Math.max(5, T[0] + bonus - 10 * Math.max(0, entier(indices)));
+}
 /** Libère la voiture (1.3.30) : niveau 1 à 30, 1 à 3 étoiles -> (10 + 2 × niveau) × étoiles. */
 function pointsVoiture(niveau, etoiles) {
   const n = entier(niveau);
@@ -51,6 +62,7 @@ function pointsClient(jeu, b) {
   if (jeu === 'puzzle') return pointsPuzzle(d.pieces);
   if (jeu === 'memory') return pointsMemory(d.etoiles, d.niveau);
   if (jeu === 'voiture') return pointsVoiture(d.niveau, d.etoiles);
+  if (jeu === 'motscroises') return pointsMotsCroises(d.taille, d.indices, d.secondes);
   return 0;
 }
 
@@ -111,6 +123,6 @@ function classer(lignes) {
 
 module.exports = {
   JEUX, JEUX_CLIENT, AVATARS, PLAFOND,
-  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsVoiture, pointsClient,
+  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsVoiture, pointsMotsCroises, pointsClient,
   pseudoValide, avatarValide, espaceDe, debutPeriode, datePb, classer,
 };
