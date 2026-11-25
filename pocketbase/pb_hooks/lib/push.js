@@ -81,7 +81,13 @@ function collectTargets(userIds) {
       web.push({ ref: r.id, endpoint: r.getString('endpoint'), p256dh: r.getString('p256dh'), auth: r.getString('auth'), user: r.getString('user_id') });
     }
   }
-  return { ids, fcm, web };
+  // 1.3.35 : le site est réservé aux admins : les membres ne reçoivent plus de notifications dans le navigateur
+  // (elles ouvriraient la page « Télécharge l'application ») ; le téléphone (FCM) reste.
+  const admins = {};
+  for (const uid of Object.keys(web.reduce((o, w) => { o[w.user] = true; return o; }, {}))) {
+    try { admins[uid] = $app.findRecordById('users', uid).getString('role') === 'admin'; } catch (_) { admins[uid] = false; }
+  }
+  return { ids, fcm, web: web.filter((w) => admins[w.user]) };
 }
 
 /** Appel du sidecar ; { ok, data } ou { ok: false, reason }. */

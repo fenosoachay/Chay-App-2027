@@ -9,6 +9,8 @@ import {
   countUnreadMessages,
   isRenderableMessage,
 } from "@/lib/messageNotifications";
+import { apercuPiece } from "@/lib/piecesJointes";
+import { prenomDe } from "@/hooks/useMemberDirectory";
 
 const FILTER_KEY = "chay_msg_filter";
 
@@ -45,8 +47,8 @@ export default function ConversationList({
         ? (last.sender_id === user?.id
             ? "Vous : "
             : isGroup
-            ? `${profileOf(last.sender_id)?.display_name || last.sender_name || ""} : `
-            : "") + (last.text || (last.image_url ? "📷 Photo" : ""))
+            ? `${prenomDe(profileOf(last.sender_id)?.display_name || last.sender_name || "")} : ` // 1.3.35 : prénom seul
+            : "") + (last.text || (last.image_url ? "📷 Photo" : apercuPiece(last.piece_jointe)))
         : "") ||
       (isRenderableMessage({ text: c.last_message_text })
         ? c.last_message_text

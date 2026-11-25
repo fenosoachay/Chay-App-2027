@@ -8,7 +8,6 @@ import LocalBibleAccess from "@/components/home/LocalBibleAccess";
 import AuthButtons from "@/components/home/AuthButtons";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
-import AnimatedBlobs from "@/components/home/AnimatedBlobs";
 import HomeSocialLinks from "@/components/home/HomeSocialLinks";
 import RequestsSection from "@/components/home/RequestsSection";
 import CibleNotificationAccueil from "@/components/home/CibleNotificationAccueil";
@@ -21,7 +20,7 @@ export default function Home() {
   return (
     <PullToRefresh mode="window" onRefresh={loadHome}>
       <div className="relative isolate min-h-[calc(100vh-4rem)] overflow-hidden">
-        <AnimatedBlobs />
+        {/* 1.3.35 : fond « Aube dorée » plein écran (FondSection, dans Layout) à la place des taches de couleur. */}
         <div className="relative z-10 mx-auto max-w-6xl px-6 md:px-8 py-4 md:py-12">
 
           {/* 1. Welcome Header */}

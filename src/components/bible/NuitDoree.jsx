@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { Etincelles, Reflet } from "@/components/jeux/BarreJeux";
+import { Reflet } from "@/components/jeux/BarreJeux";
 
 // 1.3.34 : habillage « Nuit dorée » de Chay Game (page Jeux, widget Verset du jour) pour la Bible :
 // Sagesse en audio, Dictionnaire et Concordance. Fond nuit marine-violet, liserés et textes dorés, étoiles qui
@@ -10,14 +10,15 @@ import { Etincelles, Reflet } from "@/components/jeux/BarreJeux";
 export const OR = "#FFD66E";
 export const OR_PALE = "#F3E2B5";
 export const LISERE = "rgba(201,160,82,0.45)";
-const FOND = "radial-gradient(120% 55% at 15% 0%, rgba(110,70,190,0.45), transparent 60%), radial-gradient(90% 50% at 100% 100%, rgba(40,70,170,0.35), transparent 65%), linear-gradient(180deg, #0C0E2C 0%, #160F38 45%, #07061A 100%)";
-
-/** Fond de page (plein écran sur téléphone, carte arrondie sur grand écran). */
+/**
+ * Page Nuit dorée. 1.3.35 : plus de carte : le fond est plein écran (FondSection dans Layout : « Ondes » pour
+ * Sagesse en audio, « Bibliothèque » pour le Dictionnaire, « Constellation » pour la Concordance), le contenu
+ * reste centré.
+ */
 export function CadreNuit({ children, className = "" }) {
   return (
-    <main className={`relative mx-auto min-h-[80vh] max-w-3xl overflow-hidden text-white md:my-6 md:rounded-3xl ${className}`} style={{ background: FOND }}>
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true"><Etincelles n={14} graine={7} /></div>
-      <div className="relative">{children}</div>
+    <main className={`relative mx-auto min-h-[80vh] max-w-3xl text-white ${className}`}>
+      {children}
     </main>
   );
 }

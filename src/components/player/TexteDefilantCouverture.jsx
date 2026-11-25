@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { AnimatePresence, motion } from "framer-motion";
-import { animationCentre, besoinPlaylists, disposition, dureePassage, tailleTexte, textesPour } from "@/lib/texteDefilant";
+import { animationCentre, besoinPlaylists, disposition, dureeBande, dureePassage, tailleTexte, tempsAffichage, textesPour } from "@/lib/texteDefilant";
 
 // Texte qui défile sur la photo du lecteur (1.3.26), posé dans le carré de la couverture (Musique, Prédication,
 // Bible en audio). Textes de Admin › Multimédia › Texte qui défile, chargés une fois (gardés en mémoire).
@@ -33,11 +33,10 @@ function chargerTextes() {
 function Bandeau({ textes, haut = false, sens = "gauche" }) {
   const piste = useRef(null);
   const [duree, setDuree] = useState(12);
-  const vitesse = textes[0].vitesse;
   useLayoutEffect(() => {
     const largeur = piste.current ? piste.current.scrollWidth / 2 : 0;
-    setDuree(dureePassage(largeur, vitesse));
-  }, [textes, vitesse]);
+    setDuree(dureeBande(textes, largeur)); // 1.3.35 : secondes réglées dans l'admin, sinon la vitesse
+  }, [textes]);
   const une = textes.map((t, i) => (
     <span key={`${t.id}-${i}`} className="px-6" style={{ color: t.couleur }}>{t.texte}<span className="pl-6 opacity-60" aria-hidden="true">•</span></span>
   ));
@@ -82,7 +81,7 @@ function Vertical({ t, descend, onFin }) {
   useLayoutEffect(() => {
     const h = cadre.current?.clientHeight || 300;
     const c = bloc.current?.offsetHeight || 0;
-    setAnim({ h, c, duree: dureePassage(h + c, t.vitesse) });
+    setAnim({ h, c, duree: t.secondes || dureePassage(h + c, t.vitesse) });
   }, [t]);
   return (
     <div ref={cadre} className="absolute inset-0 overflow-hidden" style={FONDU}>
@@ -107,9 +106,11 @@ function Vertical({ t, descend, onFin }) {
 /** Mot par mot : chaque mot arrive en fondu (léger flou qui se dissipe), la phrase reste, puis s'efface. */
 function MotParMot({ t, onFin }) {
   const mots = t.texte.split(" ");
-  const pas = Math.max(0.12, Math.min(0.4, 6 / mots.length));
+  // 1.3.35 : durée réglée : les mots arrivent pendant la première moitié, la phrase reste l'autre moitié.
+  const pas = t.secondes ? Math.min(0.8, (t.secondes * 0.5) / mots.length) : Math.max(0.12, Math.min(0.4, 6 / mots.length));
+  const total = t.secondes || mots.length * pas + 3;
   useEffect(() => {
-    const id = setTimeout(onFin, (mots.length * pas + 3) * 1000);
+    const id = setTimeout(onFin, total * 1000);
     return () => clearTimeout(id);
   }, [t]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
@@ -133,14 +134,17 @@ function Machine({ t, onFin }) {
   const lettres = [...t.texte];
   useEffect(() => {
     setN(0);
-    const pas = Math.max(25, Math.min(90, 2600 / lettres.length));
+    // 1.3.35 : durée réglée : 60 % pour écrire, 40 % pour lire.
+    const pas = t.secondes ? (t.secondes * 600) / Math.max(1, lettres.length) : Math.max(25, Math.min(90, 2600 / lettres.length));
+    const pause = t.secondes ? t.secondes * 400 : 2600;
     let k = 0;
+    let fin;
     const id = setInterval(() => {
       k += 1;
       setN(k);
-      if (k >= lettres.length) { clearInterval(id); setTimeout(onFin, 2600); }
+      if (k >= lettres.length) { clearInterval(id); fin = setTimeout(onFin, pause); }
     }, pas);
-    return () => clearInterval(id);
+    return () => { clearInterval(id); clearTimeout(fin); };
   }, [t]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <p className="px-6 text-center font-mono font-bold leading-snug" style={{ color: t.couleur, fontSize: tailleTexte(t.texte), textShadow: ombre() }}>
@@ -158,17 +162,18 @@ function Machine({ t, onFin }) {
 
 /** Respiration : la phrase gonfle et dégonfle doucement, avec une lueur. */
 function Respiration({ t, onFin }) {
-  // Deux respirations (7 s). La lueur est une tache floue fixe dont seule l'opacité varie (peu coûteux).
+  // Deux respirations (7 s, ou la durée réglée). La lueur est une tache floue fixe dont seule l'opacité varie.
+  const souffle = tempsAffichage(t, 7) / 2;
   return (
     <div className="relative grid place-items-center">
       <span
         aria-hidden="true"
         className="pointer-events-none absolute inset-[-20%] rounded-full"
-        style={{ background: `radial-gradient(closest-side, ${t.couleur}66, transparent)`, animation: "chay-txt-lueur 3.5s ease-in-out 2 both" }}
+        style={{ background: `radial-gradient(closest-side, ${t.couleur}66, transparent)`, animation: `chay-txt-lueur ${souffle}s ease-in-out 2 both` }}
       />
       <p
         className="chay-txt-anim relative px-6 text-center font-display font-extrabold leading-snug"
-        style={{ color: t.couleur, fontSize: tailleTexte(t.texte), textShadow: ombre(), animation: "chay-txt-respire 3.5s ease-in-out 2 both" }}
+        style={{ color: t.couleur, fontSize: tailleTexte(t.texte), textShadow: ombre(), animation: `chay-txt-respire ${souffle}s ease-in-out 2 both` }}
         onAnimationEnd={onFin}
       >
         {t.texte}

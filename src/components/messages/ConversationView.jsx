@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { App as CapacitorApp } from "@capacitor/app";
 import { createActiveConversationSync } from "@/lib/activeConversationSync";
 import { base44 } from "@/api/base44Client";
-import { uploadToBase44 } from "@/lib/upload";
+import { envoyerPieceJointe, uploadToBase44, SEUIL_UPLOAD_DIRECT } from "@/lib/upload";
+import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import {
   ChevronLeft,
@@ -15,7 +16,17 @@ import {
   Smile,
   Camera,
   Info,
+  Plus,
+  RotateCw,
 } from "lucide-react";
+import MenuPlus from "@/components/messages/MenuPlus";
+import PieceJointeBulle from "@/components/messages/PieceJointeBulle";
+import { BarreEnregistrement, BoutonMicro, EnvoyerVocal, useEnregistreur } from "@/components/messages/EnregistreurVocal";
+import { BulleEcrit, CSS_MESSAGES, StatutEnTete, VuPar } from "@/components/messages/animationsMessages";
+import { positionsVu } from "@/lib/vuMessages";
+import FondSection from "@/components/FondSection";
+import useSombre from "@/hooks/useSombre";
+import { apercuPiece, aPieceJointe, genreFichier, MAX_PIECE_OCTETS } from "@/lib/piecesJointes";
 import Avatar from "@/components/messages/Avatar";
 import MessageAvatar from "@/components/messages/MessageAvatar";
 import MemberName from "@/components/messages/MemberName";
@@ -29,7 +40,6 @@ import PhotoEditeur from "@/components/messages/PhotoEditeur";
 import TexteAvecLiens from "@/components/messages/TexteAvecLiens";
 import InfosConversation from "@/components/messages/InfosConversation";
 import { ChayConversation, estNatif } from "@/lib/chayConversation";
-import ReadReceipts from "@/components/messages/ReadReceipts";
 import { isRenderableMessage } from "@/lib/messageNotifications";
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { enqueue } from "@/lib/offlineQueue";
@@ -71,8 +81,19 @@ export default function ConversationView({
   const isTypingSent = useRef(false);
   const pressTimer = useRef(null);
   const pressPoint = useRef({ x: 0, y: 0 });
+  // 1.3.35 : « + » (fichiers), message vocal, envois en cours (barre de progression dans la bulle).
+  const [menuPlus, setMenuPlus] = useState(false);
+  const [envois, setEnvois] = useState([]);
+  const [glisse, setGlisse] = useState(0);
+  const controleurs = useRef({});
+  // Seuls les messages arrivés après l'ouverture de la conversation s'animent (pas tout l'historique).
+  const ouvertLe = useRef(Date.now());
+  useEffect(() => { ouvertLe.current = Date.now(); }, [conversation?.id]);
 
-  const { nameOf } = useMemberDirectory();
+  const { nameOf, prenomOf } = useMemberDirectory();
+  // 1.3.35 : en groupe, les membres sont désignés par leur prénom seul.
+  const nomCourt = (uid, fallback) => (isGroup ? prenomOf(uid, fallback) : nameOf(uid, fallback));
+  const sombre = useSombre();
   const isGroup = conversation?.type === "group";
   const otherId = !isGroup
     ? conversation?.participant_ids?.find((id) => id !== user?.id)
@@ -294,6 +315,67 @@ image_url: uploadedUrl,
     setSending(false);
   };
 
+  // 1.3.35 : pièce jointe (vocal, vidéo, audio, document, fichier) : envoyée vers R2 avec une bulle de
+  // progression, puis le message est créé. Annulable ; en cas d'échec, « Réessayer ».
+  const majEnvoi = (cle, patch) => setEnvois((l) => l.map((x) => (x.cle === cle ? { ...x, ...patch } : x)));
+  const envoyerPiece = async (file, { vocal = false, duree = null, cle: cleExistante } = {}) => {
+    if (!conversation) return;
+    if (file.size > MAX_PIECE_OCTETS) {
+      toast({ title: "Fichier trop volumineux", description: `${file.name} dépasse 500 Mo.`, variant: "destructive" });
+      return;
+    }
+    const cle = cleExistante || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const genre = vocal ? "vocal" : genreFichier(file);
+    const ctrl = new AbortController();
+    controleurs.current[cle] = ctrl;
+    if (cleExistante) majEnvoi(cle, { progres: 0, erreur: null });
+    else setEnvois((l) => [...l, { cle, file, vocal, duree, genre, nom: file.name, taille: file.size, progres: 0, erreur: null }]);
+    const reponse = replyTo?.id || null;
+    setReplyTo(null);
+    try {
+      const url = await envoyerPieceJointe(file, { signal: ctrl.signal, onProgress: (p) => majEnvoi(cle, { progres: p }) });
+      const result = await base44.functions.invoke("createMessage", {
+        conversation_id: conversation.id,
+        text: "",
+        piece_jointe: { url, vocal, duree },
+        reply_to_id: reponse,
+      });
+      const pj = result?.data?.piece_jointe || { genre, nom: file.name };
+      await base44.entities.Conversation.update(conversation.id, {
+        last_message_text: apercuPiece(pj),
+        last_message_at: result?.data?.created_date || new Date().toISOString(),
+      }).catch(() => {});
+      setEnvois((l) => l.filter((x) => x.cle !== cle));
+    } catch (e) {
+      if (e?.cancelled || ctrl.signal.aborted) setEnvois((l) => l.filter((x) => x.cle !== cle));
+      else majEnvoi(cle, { erreur: e?.message || "Échec de l'envoi" });
+    } finally {
+      delete controleurs.current[cle];
+    }
+  };
+  const annulerEnvoi = (cle) => {
+    controleurs.current[cle]?.abort();
+    setEnvois((l) => l.filter((x) => x.cle !== cle));
+  };
+  const reessayer = (x) => envoyerPiece(x.file, { vocal: x.vocal, duree: x.duree, cle: x.cle });
+
+  // « + » : une seule photo passe par l'éditeur ; plusieurs photos, vidéos et fichiers partent directement.
+  const surFichiers = (liste) => {
+    if (liste.length === 1 && genreFichier(liste[0]) === "image" && liste[0].size <= SEUIL_UPLOAD_DIRECT) {
+      setPhotoAEditer(liste[0]);
+      return;
+    }
+    liste.forEach((f) => {
+      if (genreFichier(f) === "image" && f.size <= SEUIL_UPLOAD_DIRECT) sendImage(f);
+      else envoyerPiece(f);
+    });
+  };
+
+  const enr = useEnregistreur({
+    onTermine: (fichier, duree) => envoyerPiece(fichier, { vocal: true, duree }),
+    onErreur: (message) => toast({ title: "Message vocal", description: message, variant: "destructive" }),
+  });
+
   // Recherche (bouton i) : la conversation défile jusqu'au message, qui est mis en évidence 2 secondes.
   const allerAuMessage = (id) => {
     setTimeout(() => {
@@ -339,6 +421,10 @@ image_url: uploadedUrl,
     );
   };
   const cancelPress = () => clearTimeout(pressTimer.current);
+  // 1.3.35 : le doigt bouge (barre d'un audio ou d'une vidéo, défilement) : pas de menu.
+  const onPointerMoveMenu = (e) => {
+    if (Math.abs(e.clientX - pressPoint.current.x) > 10 || Math.abs(e.clientY - pressPoint.current.y) > 10) cancelPress();
+  };
   const onContextMenuMenu = (e, m) => {
     e.preventDefault();
     openMenuAt(m, { x: e.clientX, y: e.clientY });
@@ -356,15 +442,13 @@ image_url: uploadedUrl,
   const otherParticipants = (conversation.participant_ids || []).filter(
     (id) => id !== user.id
   );
-  const readByAll = (m) =>
-    otherParticipants.length > 0 &&
-    otherParticipants.every((uid) => (m.read_by || []).includes(uid));
   const repliedOf = (id) => messages.find((x) => x.id === id);
-  const readersOf = (m) =>
-    otherParticipants
-      .filter((uid) => (m.read_by || []).includes(uid))
-      .map((uid) => profiles.find((p) => p.created_by_id === uid))
-      .filter(Boolean);
+  // 1.3.35 : « vu » façon Messenger : la photo de chaque lecteur sous le dernier message qu'il a lu.
+  const visibles = messages.filter(isRenderableMessage);
+  const vus = positionsVu(visibles, otherParticipants);
+  const profilDe = (uid) => profiles.find((p) => p.created_by_id === uid) || { created_by_id: uid, display_name: nameOf(uid) };
+  const dernier = visibles[visibles.length - 1];
+  const typer = conversation.typing_user_id ? profilDe(conversation.typing_user_id) : null;
 
   // Plein écran façon Messenger : la conversation occupe tout l'écran (nom en
   // haut, derniers messages et barre d'envoi toujours visibles), rendue par
@@ -372,9 +456,12 @@ image_url: uploadedUrl,
   // de la page (framer-motion) et au décalage du chrome de l'application.
   return createPortal(
 <div className="fixed inset-0 z-[55] flex flex-col w-full bg-background overflow-hidden">
+      <style>{CSS_MESSAGES}</style>
+      {/* 1.3.35 : fond « Aurore » derrière la conversation */}
+      <FondSection cle="messages" sombre={sombre} absolu />
       {/* Header */}
       <div
-        className="flex items-center gap-2.5 bg-background/85 backdrop-blur-xl border-b border-border px-3 py-2.5"
+        className="relative z-[2] flex items-center gap-2.5 bg-background/85 backdrop-blur-xl border-b border-border px-3 py-2.5"
         style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}
       >
         <button
@@ -390,11 +477,7 @@ image_url: uploadedUrl,
             {otherId ? <MemberName userId={otherId} fallback={title} /> : title}
           </div>
           <div className="text-xs text-foreground/50 truncate leading-tight">
-            {typing ? (
-              <span className="text-primary font-medium">en train d'écrire…</span>
-            ) : (
-              statusText
-            )}
+            <StatutEnTete ecrit={typing} statut={statusText} />
           </div>
         </div>
         {/* i : infos de la conversation (profil, recherche, photos, liens), façon Messenger */}
@@ -410,17 +493,20 @@ image_url: uploadedUrl,
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 space-y-1 selectable mx-auto w-full max-w-3xl"
+        className="relative z-[1] flex-1 overflow-y-auto px-3 md:px-6 py-4 space-y-1 selectable mx-auto w-full max-w-3xl"
       >
         {messages.length === 0 ? (
           <div className="py-16 text-center text-foreground/40 text-sm">
             Aucun message pour le moment. Écrivez le premier !
           </div>
-        ) : messages.filter(isRenderableMessage).map((m, i, visibleMessages) => {
+        ) : visibles.map((m, i, visibleMessages) => {
           const mine = m.sender_id === user.id;
-          const imageOnly = !!m.image_url && !m.text;
+          const pj = aPieceJointe(m) ? m.piece_jointe : null;
+          // Photo seule, vidéo ou photo jointe : sans bulle autour.
+          const imageOnly = (!!m.image_url || (pj && (pj.genre === "video" || pj.genre === "image"))) && !m.text;
+          const nouveau = new Date(m.created_date).getTime() > ouvertLe.current - 1500;
           // « Like » (1.3.27) : un message fait d'un seul pouce 👍 s'affiche en grand, sans bulle (comme Messenger).
-          const like = !m.image_url && String(m.text || "").trim() === LIKE;
+          const like = !m.image_url && !pj && String(m.text || "").trim() === LIKE;
           const repliedMessage = m.reply_to_id
             ? repliedOf(m.reply_to_id)
             : null;
@@ -445,7 +531,7 @@ image_url: uploadedUrl,
             <div
               key={m.id}
               id={`msg-${m.id}`}
-              className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} animate-float-in ${
+              className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${nouveau ? (mine ? "chay-msg-moi" : "chay-msg-autre") : ""} ${
                 grouped ? "mt-0.5" : "mt-2.5"
               } ${surligne === m.id ? "rounded-[12px] bg-primary/15 transition-colors" : ""}`}
             >
@@ -474,10 +560,10 @@ image_url: uploadedUrl,
                         : "border-primary bg-primary/10 text-foreground/70"
                     }`}
                   >
-                    <div className="font-bold">{nameOf(replied.sender_id, replied.sender_name)}</div>
-                    {(replied.text || replied.image_url) && (
+                    <div className="font-bold">{nomCourt(replied.sender_id, replied.sender_name)}</div>
+                    {(replied.text || replied.image_url || aPieceJointe(replied)) && (
                       <div className="truncate">
-                        {replied.text || "📷 Photo"}
+                        {replied.text || (replied.image_url ? "📷 Photo" : apercuPiece(replied.piece_jointe))}
                       </div>
                     )}
                   </div>
@@ -500,6 +586,7 @@ image_url: uploadedUrl,
                 <div
                   onPointerDown={(e) => onPointerDownMenu(e, m)}
                   onPointerUp={cancelPress}
+                  onPointerMove={onPointerMoveMenu}
                   onPointerLeave={cancelPress}
                   onPointerCancel={cancelPress}
                   onContextMenu={(e) => onContextMenuMenu(e, m)}
@@ -510,8 +597,9 @@ image_url: uploadedUrl,
                   }`}
                 >
                   {isGroup && !mine && !grouped && (
-                    <div className="text-xs font-bold text-primary mb-0.5">
-                      <MemberName userId={m.sender_id} fallback={m.sender_name} />
+                    <div className="text-[0.6875rem] font-semibold leading-tight text-primary mb-0.5">
+                      {/* 1.3.35 : en groupe, le prénom seul, en plus petit */}
+                      <MemberName userId={m.sender_id} fallback={m.sender_name} prenom />
                     </div>
                   )}
                   {m.image_url && (
@@ -529,50 +617,76 @@ image_url: uploadedUrl,
                       />
                     </button>
                   )}
+                  {pj && (
+                    <div className={m.text ? "mb-1" : ""}>
+                      <PieceJointeBulle pj={pj} mine={mine} graine={m.id} onVoirPhoto={(url) => setViewer({ images: [url], index: 0 })} />
+                    </div>
+                  )}
                   {like ? (
-                    <div className="text-5xl leading-none" role="img" aria-label="J'aime">{LIKE}</div>
+                    <div className={`text-5xl leading-none ${nouveau ? "chay-msg-pouce" : ""}`} role="img" aria-label="J'aime">{LIKE}</div>
                   ) : m.text ? (
                     <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                       <TexteAvecLiens texte={m.text} clair={mine} />
                     </div>
                   ) : null}
                 </div>
-                {mine && isLastOfGroup && (
-                  <ReadReceipts readers={readersOf(m)} allRead={readByAll(m)} />
-                )}
+                <VuPar
+                  lecteurs={(vus[m.id] || []).map(profilDe)}
+                  envoye={mine && m === dernier && !(vus[m.id] || []).length}
+                  groupe={isGroup}
+                />
               </div>
             </div>
           );
         })}
-        {typing === true && (
-          <div className="flex items-center gap-1 px-2 py-1">
-            <span
-              className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
-              style={{ animationDelay: "0ms" }}
-            />
-            <span
-              className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
-              style={{ animationDelay: "150ms" }}
-            />
-            <span
-              className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce"
-              style={{ animationDelay: "300ms" }}
-            />
-          </div>
-        )}
+        {/* 1.3.35 : envois en cours (barre de progression dans la bulle) */}
+        <AnimatePresence initial={false}>
+          {envois.map((x) => (
+            <motion.div
+              key={x.cle}
+              className="mt-2 flex justify-end"
+              initial={{ opacity: 0, y: 16, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              style={{ transformOrigin: "100% 100%" }}
+            >
+              <div className="w-[15.5rem] max-w-[82%] rounded-[12px] rounded-br-[4px] brand-gradient px-3.5 py-2.5 text-white">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="min-w-0 flex-1 truncate">{x.genre === "vocal" ? "🎤 Message vocal" : apercuPiece({ genre: x.genre, nom: x.nom })}</span>
+                  {x.erreur ? (
+                    <button type="button" onClick={() => reessayer(x)} className="flex shrink-0 items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs" aria-label="Réessayer l'envoi">
+                      <RotateCw className="h-3.5 w-3.5" /> Réessayer
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-xs tabular-nums text-white/85">{Math.round(x.progres)} %</span>
+                  )}
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/25">
+                  <div className="h-full rounded-full bg-white transition-[width] duration-300 ease-out" style={{ width: `${x.erreur ? 100 : Math.max(4, x.progres)}%`, opacity: x.erreur ? 0.35 : 1 }} />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-[0.6875rem] text-white/80">
+                  <span className="truncate">{x.erreur || "Envoi…"}</span>
+                  <button type="button" onClick={() => annulerEnvoi(x.cle)} className="shrink-0 font-semibold underline-offset-2 hover:underline">Annuler</button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <BulleEcrit visible={typing === true} profil={typer} nom={typer ? nomCourt(typer.created_by_id, typer.display_name) : ""} />
       </div>
 
       {/* Reply preview */}
       {replyTo && (
-        <div className="border-t border-border bg-muted/50 px-3 py-2 flex items-center gap-2">
+        <div className="relative z-[2] border-t border-border bg-muted/80 backdrop-blur-md px-3 py-2 flex items-center gap-2">
           <Reply className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-xs font-bold text-primary">
-              {nameOf(replyTo.sender_id, replyTo.sender_name)}
+              {nomCourt(replyTo.sender_id, replyTo.sender_name)}
             </div>
-            {(replyTo.text || replyTo.image_url) && (
+            {(replyTo.text || replyTo.image_url || aPieceJointe(replyTo)) && (
               <div className="text-xs text-foreground/60 truncate">
-                {replyTo.text || "📷 Photo"}
+                {replyTo.text || (replyTo.image_url ? "📷 Photo" : apercuPiece(replyTo.piece_jointe))}
               </div>
             )}
           </div>
@@ -599,83 +713,145 @@ image_url: uploadedUrl,
         className="relative z-10 bg-background/95 backdrop-blur-md border-t border-border px-3 py-2 safe-area-pb"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
-        {showEmoji && (
-          <div className="absolute bottom-full left-2 right-2 mb-2">
-            <EmojiPicker onPick={(em) => setDraft((d) => d + em)} />
-          </div>
-        )}
+        <AnimatePresence>
+          {showEmoji && (
+            <motion.div
+              className="absolute bottom-full left-2 right-2 mb-2"
+              initial={{ opacity: 0, y: 14, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.97, transition: { duration: 0.15 } }}
+              transition={{ type: "spring", stiffness: 420, damping: 32 }}
+              style={{ transformOrigin: "90% 100%" }}
+            >
+              <EmojiPicker onPick={(em) => setDraft((d) => d + em)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <MenuPlus ouvert={menuPlus} onFermer={() => setMenuPlus(false)} onFichiers={surFichiers} />
 
-        {/* Conteneur Flexible - w-full max-w-3xl garantit qu'il ne déborde jamais */}
-        <div className="flex items-end gap-2 w-full max-w-3xl mx-auto">
-          
-          {/* Bouton Emoji */}
-          <button
-            onClick={() => setShowEmoji((s) => !s)}
-            className={`h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted transition ${
-              showEmoji ? "text-primary bg-muted" : "text-foreground/60"
-            }`}
-            aria-label="Emojis"
-          >
-            <Smile className="h-5 w-5" />
-          </button>
+        {/* 1.3.35 : + (fichiers) · appareil photo · galerie · micro (vocal) | champ | emoji · 👍 / Envoyer.
+            Dès qu'on écrit, l'appareil photo, la galerie et le micro se replient pour laisser la place au texte. */}
+        <div className="flex items-end gap-1.5 w-full max-w-3xl mx-auto">
+          {!enr.actif && (
+            <motion.button
+              type="button"
+              onClick={() => { setShowEmoji(false); setMenuPlus((o) => !o); }}
+              animate={{ scale: menuPlus ? 1.08 : 1 }}
+              whileTap={{ scale: 0.88 }}
+              transition={{ type: "spring", stiffness: 500, damping: 26 }}
+              className={`h-10 w-10 shrink-0 grid place-items-center rounded-full transition ${menuPlus ? "bg-primary text-primary-foreground" : "text-primary hover:bg-muted"}`}
+              aria-label="Joindre un fichier"
+              data-bouton-plus
+              aria-expanded={menuPlus}
+            >
+              <Plus className="h-6 w-6" />
+            </motion.button>
+          )}
 
-          {/* Bouton Image */}
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted text-foreground/60"
-            aria-label="Image"
-          >
-            <ImageIcon className="h-5 w-5" />
-          </button>
-          
+          <AnimatePresence initial={false}>
+            {!draft.trim() && !enr.actif && (
+              <motion.div
+                key="outils"
+                className="flex shrink-0 items-end gap-1.5 overflow-hidden"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "auto", opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+              >
+                <button
+                  onClick={() => cameraRef.current?.click()}
+                  className="h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted text-foreground/60"
+                  aria-label="Prendre une photo"
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted text-foreground/60"
+                  aria-label="Image"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoAEditer(f); e.target.value = ""; }} />
-
-          {/* Bouton Appareil photo : prendre une photo directement */}
-          <button
-            onClick={() => cameraRef.current?.click()}
-            className="h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted text-foreground/60"
-            aria-label="Prendre une photo"
-          >
-            <Camera className="h-5 w-5" />
-          </button>
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPhotoAEditer(f); e.target.value = ""; }} />
 
-          {/* Champ Texte - min-w-0 EST OBLIGATOIRE POUR ÉVITER LE DÉBORDEMENT */}
-          {/* Entrée = à la ligne (téléphone et ordinateur) ; l'envoi se fait seulement avec le bouton Envoyer.
-              Le champ grandit avec le texte (jusqu'à 6 lignes environ, puis défilement). */}
-          <textarea
-            ref={champRef}
-            value={draft}
-            onChange={(e) => {
-              onDraftChange(e);
-              const el = e.target;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
-            }}
-            rows={1}
-            enterKeyHint="enter"
-            placeholder="Message…"
-            className="flex-1 min-w-0 max-h-36 resize-none rounded-3xl border border-border bg-card px-4 py-2.5 text-sm leading-5 outline-none focus:border-primary shadow-inner"
-          />
+          {/* Micro : reste à sa place pendant l'enregistrement (le doigt reste dessus) */}
+          {!draft.trim() && enr.etat !== "mainsLibres" && <BoutonMicro enr={enr} onGlisse={setGlisse} />}
 
-          {/* Champ vide : 👍 (envoyé aussitôt, en grand) ; dès qu'on écrit : Envoyer (1.3.27). */}
-          {draft.trim() || sending ? (
-            <button
-              onClick={() => send()}
-              disabled={sending}
-              className="h-10 w-10 shrink-0 grid place-items-center rounded-full brand-gradient text-white disabled:opacity-50 active:scale-95 transition shadow-lg"
-              aria-label="Envoyer"
-            >
-              {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-0.5" />}
-            </button>
+          {enr.actif ? (
+            <BarreEnregistrement enr={enr} glisse={glisse} />
           ) : (
-            <button
-              onClick={() => send(LIKE)}
-              className="h-10 w-10 shrink-0 grid place-items-center rounded-full text-[1.65rem] leading-none active:scale-90 transition"
-              aria-label="Envoyer un pouce"
-            >
-              <span aria-hidden="true">{LIKE}</span>
-            </button>
+            /* Entrée = à la ligne (téléphone et ordinateur) ; l'envoi se fait seulement avec le bouton Envoyer.
+               Le champ grandit avec le texte (jusqu'à 6 lignes environ, puis défilement). */
+            <textarea
+              ref={champRef}
+              value={draft}
+              onChange={(e) => {
+                onDraftChange(e);
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
+              }}
+              onFocus={() => setMenuPlus(false)}
+              rows={1}
+              enterKeyHint="enter"
+              placeholder="Message…"
+              className="flex-1 min-w-0 max-h-36 resize-none rounded-3xl border border-border bg-card px-4 py-2.5 text-sm leading-5 outline-none focus:border-primary shadow-inner transition-[border-color]"
+            />
+          )}
+
+          {enr.etat === "mainsLibres" ? (
+            <EnvoyerVocal enr={enr} />
+          ) : !enr.actif && (
+            <>
+              {/* Emoji, à côté de J'aime / Envoyer (1.3.35) */}
+              <button
+                onClick={() => { setMenuPlus(false); setShowEmoji((s) => !s); }}
+                className={`h-10 w-10 shrink-0 grid place-items-center rounded-full hover:bg-muted transition ${
+                  showEmoji ? "text-primary bg-muted" : "text-foreground/60"
+                }`}
+                aria-label="Emojis"
+                aria-expanded={showEmoji}
+              >
+                <Smile className="h-5 w-5" />
+              </button>
+              {/* Champ vide : 👍 (envoyé aussitôt, en grand) ; dès qu'on écrit : Envoyer, qui tourne en apparaissant. */}
+              <AnimatePresence mode="popLayout" initial={false}>
+                {draft.trim() || sending ? (
+                  <motion.button
+                    key="envoyer"
+                    onClick={() => send()}
+                    disabled={sending}
+                    initial={{ scale: 0.3, rotate: -90, opacity: 0 }}
+                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                    exit={{ scale: 0.3, rotate: 90, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 520, damping: 26 }}
+                    whileTap={{ scale: 0.88 }}
+                    className="h-10 w-10 shrink-0 grid place-items-center rounded-full brand-gradient text-white disabled:opacity-50 shadow-lg"
+                    aria-label="Envoyer"
+                  >
+                    {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-0.5" />}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    key="pouce"
+                    onClick={() => send(LIKE)}
+                    initial={{ scale: 0.3, rotate: 60, opacity: 0 }}
+                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                    exit={{ scale: 0.3, rotate: -60, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 520, damping: 24 }}
+                    whileTap={{ scale: 1.35, rotate: -12 }}
+                    className="h-10 w-10 shrink-0 grid place-items-center rounded-full text-[1.65rem] leading-none"
+                    aria-label="Envoyer un pouce"
+                  >
+                    <span aria-hidden="true">{LIKE}</span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </>
           )}
         </div>
       </div>
@@ -718,7 +894,7 @@ image_url: uploadedUrl,
           avatar={avatarUrl}
           autreId={otherId}
           messages={messages}
-          nomDe={(m) => (m.sender_id === user?.id ? "Vous" : nameOf(m.sender_id, m.sender_name))}
+          nomDe={(m) => (m.sender_id === user?.id ? "Vous" : nomCourt(m.sender_id, m.sender_name))}
           onFermer={() => setInfosOuvertes(false)}
           onAllerAuMessage={allerAuMessage}
           onVoirPhoto={openPhoto}

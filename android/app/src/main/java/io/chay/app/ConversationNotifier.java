@@ -115,7 +115,7 @@ final class ConversationNotifier {
             .setAllowGeneratedReplies(true)
             .build();
 
-        // 1.3.34 : « J'aime 👍 » envoie un pouce en réponse, en un geste.
+        // 1.3.34 : « J'aime » envoie un pouce 👍 en réponse, en un geste.
         Intent aimer = new Intent(ctx, MainActivity.class)
             .setAction(ACTION_REPONDRE)
             .putExtra(EXTRA_CONVERSATION, conversation)
@@ -124,7 +124,7 @@ final class ConversationNotifier {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent piAimer = PendingIntent.getActivity(ctx, code + 3, aimer, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationCompat.Action actionAimer = new NotificationCompat.Action.Builder(
-            IconCompat.createWithResource(ctx, R.drawable.ic_stat_chay), "J'aime " + AIME, piAimer)
+            IconCompat.createWithResource(ctx, R.drawable.ic_stat_chay), "J'aime", piAimer) // 1.3.35 : sans l'emoji (le pouce reste ce qui est envoyé)
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_THUMBS_UP)
             .build();
 

@@ -1,7 +1,7 @@
 // Image qui défile (1.3.34) : Admin › Multimédia › Lecteur audio › Image qui défile (ImageDefilante).
 // Des groupes de photos d'un même format (carré, paysage, portrait, vertical) remplacent l'image du lecteur
 // audio et s'animent (défilement horizontal, fondu enchaîné, défilement vertical). Pur, testé.
-import { lecteurDe, jourLocal } from "./texteDefilant.js";
+import { lecteurDe, jourLocal, secondesDe } from "./texteDefilant.js";
 
 export const FORMATS = [
   { value: "carre", label: "Carré 1:1", ratio: 1 },
@@ -40,7 +40,8 @@ export function groupesPour(rows, piste, { aujourdhui = jourLocal(), parents = n
       ratio: ratioDe(r.format),
       animation: ANIMATIONS_IMAGES.some((a) => a.value === r.animation) ? r.animation : "fondu",
       images: r.images.filter((u) => typeof u === "string" && u),
-      secondes: SECONDES[r.vitesse] || SECONDES.normal,
+      // 1.3.35 : secondes réglées à la main dans l'admin, sinon la vitesse (Lente / Normale / Rapide).
+      secondes: secondesDe(r.secondes) || SECONDES[r.vitesse] || SECONDES.normal,
     }));
 }
 
@@ -50,5 +51,5 @@ export function tailleDansCase(ratio, cote) {
 }
 
 /** Durée d'un tour complet d'un groupe (s). */
-export const dureeGroupe = (g) => Math.max(3, g.images.length * g.secondes);
+export const dureeGroupe = (g) => Math.max(1, g.images.length * g.secondes);
 

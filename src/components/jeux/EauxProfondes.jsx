@@ -45,19 +45,7 @@ function Decor({ theme }) {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <style>{CSS_DECOR}</style>
-      {/* Rayons de lumière venus de la surface (dégradé large et doux, sans flou) */}
-      {[12, 38, 66, 84].map((x, i) => (
-        <div
-          key={x}
-          className="ep-anim absolute -top-10 h-[130%] w-24 origin-top"
-          style={{
-            left: `${x - 4}%`,
-            background: `radial-gradient(50% 60% at 50% 0%, ${theme.lueur}, transparent 80%)`,
-            "--r0": `${-14 + i * 6}deg`, "--r1": `${-8 + i * 6}deg`,
-            animation: `ep-rayon ${7 + i * 1.7}s ease-in-out infinite`,
-          }}
-        />
-      ))}
+      {/* 1.3.35 : les rayons de lumière sont sur le fond plein écran de la page (FondSection « Eaux profondes »). */}
       {/* Plancton qui scintille */}
       {plancton.map((p, i) => (
         <span
@@ -86,7 +74,7 @@ function Decor({ theme }) {
         </svg>
       ))}
       {/* Fond sableux et ombre du large */}
-      <div className="absolute inset-x-0 bottom-0 h-16" style={{ background: "radial-gradient(120% 100% at 50% 100%, rgba(255,255,255,0.08), transparent 70%)" }} />
+
     </div>
   );
 }
@@ -163,8 +151,9 @@ export default function EauxProfondes({ jeux, onOpen, slot = "game" }) {
   return (
     <div
       ref={boite}
-      className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-[1.75rem] shadow-[inset_0_0_40px_rgba(0,0,0,0.5)]"
-      style={{ height: HAUTEUR, background: theme.fond }}
+      className="relative mx-auto w-full max-w-3xl overflow-hidden"
+      // 1.3.35 : plus de carte : les bulles flottent directement sur le fond plein écran de la page.
+      style={{ height: HAUTEUR, background: slot === "playmobile" ? "radial-gradient(70% 60% at 50% 50%, rgba(120,80,220,0.22), transparent 75%)" : "transparent" }}
     >
       <Decor theme={theme} />
       {liste.map((j, i) => (

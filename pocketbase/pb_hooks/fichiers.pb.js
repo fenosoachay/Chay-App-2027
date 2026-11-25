@@ -13,6 +13,9 @@
 //                                         100 Mo (jusqu'à 1 Go) et image de plus de 100 Mo (jusqu'à 200 Mo)
 //  POST /api/fn/getPresignedUrl           (admin) état de reprise / URL présignée d'une part (taille imposée)
 //  POST /api/fn/completeMultipartUpload   (admin) assemblage, contrôle de taille et du type réel (octets de tête)
+//  1.3.35 : avec « usage: "message" », ces trois routes servent aussi aux MEMBRES pour les pièces jointes des
+//           messages (vocal, photo, vidéo, document, tout fichier jusqu'à 500 Mo ; sessions « s3-message »,
+//           limite par membre sur 24 h, voir lib/televersement.js › refusQuotaMessage).
 //  POST /api/fn/cleanupIncompleteUploads  (admin) nettoyage immédiat des sessions de plus de 24 h
 //  POST /api/fn/cleanupOrphanFiles        (superuser) fichiers non référencés (simulation possible)
 // Tâches planifiées : sessions incomplètes toutes les heures ; fichiers non référencés le dimanche à 3 h 30.
@@ -162,19 +165,22 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   const lib = require(`${__hooks}/lib/televersement.js`);
   return fn.run(e, 'initMultipartUpload', 'Échec de l’initialisation du téléversement', () => {
-    const user = fn.requireAdmin(e, 'Unauthorized: admin requis');
     const body = fn.readBody(e);
+    // 1.3.35 : pièce jointe d'un message (tout membre) ; sinon réservé aux admins comme avant.
+    const pourMessage = body.usage === 'message';
+    const user = pourMessage ? fn.requireUser(e, 'Connexion requise') : fn.requireAdmin(e, 'Unauthorized: admin requis');
+    const storage = pourMessage ? lib.STORAGE_MESSAGE : 's3-multipart';
     const sessionId = lib.requireSessionId(body);
     const fileName = typeof body.fileName === 'string' ? body.fileName.slice(0, 200) : '';
     const fileSize = Number(body.fileSize);
     const fileType = typeof body.fileType === 'string' ? body.fileType.toLowerCase() : '';
     if (!Number.isInteger(fileSize) || fileSize <= 0) throw new fn.HttpError(400, 'fileSize invalide');
-    const famille = lib.familleR2(fileName, fileType);
+    const famille = pourMessage ? lib.familleMessage(fileName, fileType) : lib.familleR2(fileName, fileType);
     if (!famille) throw new fn.HttpError(415, 'Type de fichier non autorisé : vidéo, audio ou image seulement');
     if (fileSize > famille.max) throw new fn.HttpError(413, `Fichier trop volumineux (max ${famille.maxTexte})`);
     const ext = famille.ext;
     // Bible › Sagesse en audio : audio rangé par livre et chapitre (facultatif).
-    const rangement = lib.rangementBible(body.rangement);
+    const rangement = pourMessage ? null : lib.rangementBible(body.rangement);
     if (rangement && rangement.erreur) throw new fn.HttpError(400, rangement.erreur);
     if (rangement && famille.famille !== 'audio') throw new fn.HttpError(415, 'Seul un fichier audio peut être rangé dans la Bible audio');
     const cfg = lib.requireR2();
@@ -184,7 +190,7 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
     // et taille peuvent le partager. Empreinte complète (nom, taille, date de modification) gardée dans
     // le champ « name » : reprise ou « déjà envoyé » seulement si elle est identique.
     const fingerprint = `${fileName}|${fileSize}|${Number(body.lastModified) || 0}${rangement ? `|${rangement.livre}-${rangement.chapitre}` : ''}`.slice(0, 300);
-    const existing = lib.findSession(sessionId, user.id, 's3-multipart');
+    const existing = lib.findSession(sessionId, user.id, storage);
     const same = existing && existing.getString('name') === fingerprint;
     if (same && existing.getString('status') === 'done' && existing.getString('final_file_url')) {
       return { session_id: sessionId, uploadId: '', key: existing.getString('s3_key'), file_url: existing.getString('final_file_url'), already_done: true };
@@ -201,17 +207,21 @@ routerAdd('POST', '/api/fn/initMultipartUpload', (e) => {
       }
       $app.delete(existing);
     }
+    if (pourMessage) {
+      const refus = lib.refusQuotaMessage(user.id, fileSize);
+      if (refus) throw new fn.HttpError(429, refus);
+    }
 
     // Clé imposée par le serveur (le nom du client ne sert qu'au slug lisible).
     const now = new Date();
     const month = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
     const key = rangement
       ? lib.cleBible(cfg.prefix, rangement, $security.randomStringWithAlphabet(8, 'abcdefghijklmnopqrstuvwxyz0123456789'), ext)
-      : `${cfg.prefix}/${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
+      : `${cfg.prefix}/${pourMessage ? 'messages/' : ''}${month}/${$security.randomStringWithAlphabet(16, 'abcdefghijklmnopqrstuvwxyz0123456789')}-${lib.slug(fileName)}.${ext}`;
     const uploadId = lib.createMultipart(cfg, key, famille.mime);
     $app.save(fn.newRecord($app, lib.SESSIONS, {
       session_id: sessionId, name: fingerprint, file_name: fileName, mime_type: famille.mime, size: fileSize, total_chunks: totalParts,
-      part_size: lib.PART_SIZE, upload_id: uploadId, s3_key: key, storage: 's3-multipart', status: 'open',
+      part_size: lib.PART_SIZE, upload_id: uploadId, s3_key: key, storage, status: 'open',
       created_by: user.id, expires_at: lib.pbDate(lib.SESSION_TTL_MS), uploaded_indices: [], parts_json: '[]', final_file_url: '',
     }));
     return { session_id: sessionId, uploadId, key, partSize: lib.PART_SIZE, totalParts };
@@ -222,11 +232,12 @@ routerAdd('POST', '/api/fn/getPresignedUrl', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   const lib = require(`${__hooks}/lib/televersement.js`);
   return fn.run(e, 'getPresignedUrl', 'Échec de la préparation de l’envoi', () => {
-    const user = fn.requireAdmin(e, 'Unauthorized: admin requis');
     const body = fn.readBody(e);
+    const pourMessage = body.usage === 'message';
+    const user = pourMessage ? fn.requireUser(e, 'Connexion requise') : fn.requireAdmin(e, 'Unauthorized: admin requis');
     const sessionId = lib.requireSessionId(body);
     const cfg = lib.requireR2();
-    const session = lib.findSession(sessionId, user.id, 's3-multipart');
+    const session = lib.findSession(sessionId, user.id, pourMessage ? lib.STORAGE_MESSAGE : 's3-multipart');
 
     if (body.action === 'status') {
       if (!session) throw new fn.HttpError(404, 'session inconnue');
@@ -264,11 +275,12 @@ routerAdd('POST', '/api/fn/completeMultipartUpload', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   const lib = require(`${__hooks}/lib/televersement.js`);
   return fn.run(e, 'completeMultipartUpload', 'Échec de l’assemblage de la vidéo', () => {
-    const user = fn.requireAdmin(e, 'Unauthorized: admin requis');
     const body = fn.readBody(e);
+    const pourMessage = body.usage === 'message';
+    const user = pourMessage ? fn.requireUser(e, 'Connexion requise') : fn.requireAdmin(e, 'Unauthorized: admin requis');
     const sessionId = lib.requireSessionId(body);
     const cfg = lib.requireR2();
-    const session = lib.findSession(sessionId, user.id, 's3-multipart');
+    const session = lib.findSession(sessionId, user.id, pourMessage ? lib.STORAGE_MESSAGE : 's3-multipart');
     if (!session) throw new fn.HttpError(404, 'session inconnue');
     if (session.getString('status') === 'done' && session.getString('final_file_url')) {
       return { success: true, file_url: session.getString('final_file_url'), key: session.getString('s3_key') };
@@ -308,12 +320,13 @@ routerAdd('POST', '/api/fn/completeMultipartUpload', (e) => {
     lib.completeMultipart(cfg, key, session.getString('upload_id'), finalParts);
     // Type réel : premiers octets de l'objet assemblé.
     const mime = session.getString('mime_type');
-    if (!lib.contenuConforme(mime, lib.headBytes(cfg, key))) {
+    const conforme = pourMessage ? lib.contenuMessageConforme : lib.contenuConforme;
+    if (!conforme(mime, lib.headBytes(cfg, key))) {
       lib.deleteObject(cfg, key);
       const s = $app.findRecordById(lib.SESSIONS, session.id);
       s.set('status', 'error');
       $app.save(s);
-      throw new fn.HttpError(415, `Le contenu envoyé n’est pas ${lib.nomFamille(mime)} : fichier supprimé`);
+      throw new fn.HttpError(415, `Le contenu envoyé n’est pas ${mime === 'application/pdf' ? 'un PDF' : lib.nomFamille(mime)} : fichier supprimé`);
     }
     const url = lib.objectUrl(cfg, key);
     const s = $app.findRecordById(lib.SESSIONS, session.id);

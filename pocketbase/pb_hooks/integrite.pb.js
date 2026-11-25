@@ -11,8 +11,9 @@ function integriteNomAffiche(e) {
   if (!e.hasSuperuserAuth() && auth && auth.collection().name === 'users' && auth.getString('role') !== 'admin') {
     const fields = { Comment: 'author_name', ChatMessage: 'author_name', ChatPresence: 'display_name', MemberProfile: 'display_name', PostReaction: 'user_name' };
     const field = fields[e.record.collection().name];
-    const name = auth.getString('name')
-      || [auth.getString('first_name'), auth.getString('last_name')].filter(Boolean).join(' ')
+    // 1.3.35 : prénom + nom du profil d'abord (`name` peut garder l'ancien nom Google de l'inscription).
+    const name = [auth.getString('first_name'), auth.getString('last_name')].map((x) => x.trim()).filter(Boolean).join(' ')
+      || auth.getString('name')
       || 'Membre';
     e.record.set(field, name);
   }

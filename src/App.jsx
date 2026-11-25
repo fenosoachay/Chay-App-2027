@@ -21,6 +21,8 @@ const homeImport = () => import("@/pages/Home");
 const Layout = lazy(() => import('@/components/Layout'));
 const LocationGate = lazy(() => import('@/components/LocationGate'));
 const LocalLayout = lazy(() => import('@/components/LocalLayout'));
+// 1.3.35 : web réservé aux admins (les membres reçoivent le lien de l'application).
+import WebReserveAdmins from '@/components/WebReserveAdmins';
 const LocalAccessNotice = lazy(() => import('@/components/LocalAccessNotice'));
 // Lance le téléchargement de l'accueil dès l'évaluation du module, sans attendre le rendu.
 homeImport();
@@ -83,7 +85,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={navigator.onLine ? <Register /> : <Navigate to="/" replace />} />
       <Route path="/forgot-password" element={navigator.onLine ? <ForgotPassword /> : <Navigate to="/" replace />} />
       <Route path="/reset-password" element={navigator.onLine ? <ResetPassword /> : <Navigate to="/" replace />} />
-      <Route element={<LocalLayout />}>
+      <Route element={<WebReserveAdmins><LocalLayout /></WebReserveAdmins>}>
         <Route path="/" element={<Home />} />
         <Route path="/bible" element={<Bible />} />
         <Route path="/donate" element={<Donate />} />
@@ -120,7 +122,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route element={<LocationGate><Layout /></LocationGate>}>
+        <Route element={<WebReserveAdmins><LocationGate><Layout /></LocationGate></WebReserveAdmins>}>
           <Route path="/" element={<Home />} />
           <Route path="/bible" element={<Bible />} />
           <Route path="/media" element={<Media />} />

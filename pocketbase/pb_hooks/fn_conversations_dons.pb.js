@@ -122,8 +122,8 @@ routerAdd('POST', '/api/fn/createDonationRequest', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   return fn.run(e, 'createDonationRequest', 'Erreur interne', () => {
     const caller = fn.requireUser(e, 'Unauthorized');
-    const username = caller.getString('name')
-      || [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+    const username = [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+      || caller.getString('name')
       || caller.getString('email')
       || 'Membre';
     return fn.tx((txApp) => {

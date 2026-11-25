@@ -226,7 +226,9 @@ async function putPartToS3(presignedUrl, blob, { signal, partNumber }) {
 }
 
 export async function uploadMultipartS3(file, cb = {}) {
-  const { onProgress, onDetail, signal, initExtra } = cb;
+  const { onProgress, onDetail, signal, initExtra, usage } = cb;
+  // 1.3.35 : « usage: "message" » (pièces jointes des membres) accompagne les trois appels.
+  const extra = usage ? { usage } : {};
   console.log("[S3] Démarrage de uploadMultipartS3 pour:", file.name, "Taille:", file.size);
 
   const sessionId = sessionIdOf(file);
@@ -239,6 +241,7 @@ export async function uploadMultipartS3(file, cb = {}) {
     fileType: file.type || "",
     lastModified: file.lastModified || 0,
     ...(initExtra || {}),
+    ...extra,
   }, { signal });
   
   console.log("[S3] Réponse de initMultipartUpload:", init);
@@ -260,7 +263,7 @@ export async function uploadMultipartS3(file, cb = {}) {
 
   let doneSet = new Set();
   try {
-    const st = await callFn("getPresignedUrl", { action: "status", session_id: sessionId }, { signal });
+    const st = await callFn("getPresignedUrl", { action: "status", session_id: sessionId, ...extra }, { signal });
     if (st.done && st.file_url) { onProgress?.(100); return st.file_url; }
     for (const n of st.uploaded || []) doneSet.add(Number(n));
   } catch (e) {
@@ -297,7 +300,8 @@ export async function uploadMultipartS3(file, cb = {}) {
       session_id: sessionId, 
       uploadId, 
       key, 
-      partNumber: n 
+      partNumber: n,
+      ...extra,
     }, { signal });
     
     if (!signed || !signed.presignedUrl) {
@@ -329,6 +333,7 @@ export async function uploadMultipartS3(file, cb = {}) {
     uploadId, 
     key,
     parts: [...parts].sort((a, b) => a.partNumber - b.partNumber),
+    ...extra,
   }, { signal, timeoutMs: 180_000 });
   
   const url = pickUrl(fin);
@@ -409,6 +414,23 @@ export async function envoyerAudioBible(file, { livre, chapitre, onProgress, onD
   const refus = refusTaille(file);
   if (refus) throw new Error(refus);
   return uploadMultipartS3(avecExtension(file, "audio"), { onProgress, onDetail, signal, initExtra: { rangement: { livre, chapitre } } });
+}
+
+/** 1.3.35 : plafond d'une pièce jointe de message (même valeur que pb_hooks/lib/televersement.js). */
+export const MAX_PIECE_JOINTE = 500 * MO;
+
+/**
+ * 1.3.35 : pièce jointe d'un message (vocal, vidéo, audio, document, tout fichier jusqu'à 500 Mo), envoyée vers
+ * R2 par tout membre. Renvoie l'adresse publique, à passer à createMessage (piece_jointe.url).
+ */
+export async function envoyerPieceJointe(file, { onProgress, onDetail, signal } = {}) {
+  assertUploadable(file);
+  if (file.size > MAX_PIECE_JOINTE) {
+    const err = new Error("Fichier trop volumineux (500 Mo au maximum).");
+    err.status = 413;
+    throw err;
+  }
+  return uploadMultipartS3(file, { onProgress, onDetail, signal, usage: "message" });
 }
 
 export async function uploadToBase44(file, { forceChunked = false, onProgress, onDetail, signal } = {}) {

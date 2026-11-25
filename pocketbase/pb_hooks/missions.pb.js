@@ -25,7 +25,8 @@ routerAdd('POST', '/api/fn/createMissionRequest', (e) => {
     const c = missions.courrielMission(mail, v.data, `${mail.appUrl()}/admin/missions`);
     let envoyes = 0;
     for (const a of admins) {
-      if (a.email() && mail.trySend('createMissionRequest', a.email(), c.sujet, c.html, c.texte)) envoyes++;
+      // 1.3.35 : un admin qui a coupé le canal E-mail n'en reçoit plus (il garde la cloche et le push).
+      if (require(`${__hooks}/lib/notifications.js`).emailPermis(a, 'admin') && mail.trySend('createMissionRequest', a.email(), c.sujet, c.html, c.texte)) envoyes++;
     }
     return { id: rec.id, admins_prevenus: envoyes };
   });

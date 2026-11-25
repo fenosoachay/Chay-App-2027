@@ -10,6 +10,8 @@ let byUser = {};
 let photosComptes = {};
 // Même photo, retrouvée par le NOM : les contenus d'avant la migration portent l'ancien identifiant de l'auteur.
 let photosParNom = {};
+// 1.3.35 : prénom du compte (Paramètres › Profil), pour les discussions de groupe.
+let prenoms = {};
 const cleNom = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
 let loaded = false;
 let loading = null;
@@ -49,7 +51,9 @@ function ensureLoaded() {
         if (!Array.isArray(users)) return;
         const next = {};
         const parNom = {};
+        const pr = {};
         users.forEach((u) => {
+          if (u?.id && String(u.first_name || "").trim()) pr[u.id] = String(u.first_name).trim();
           if (!u?.id || !u.profile_photo_url) return;
           next[u.id] = u.profile_photo_url;
           const nom = cleNom([u.first_name, u.last_name].filter(Boolean).join(" "));
@@ -57,6 +61,7 @@ function ensureLoaded() {
           if (nom) parNom[nom] = nom in parNom ? "" : u.profile_photo_url;
         });
         photosComptes = next;
+        prenoms = pr;
         photosParNom = parNom;
         byUser = { ...byUser }; // nouvel objet : les écrans se redessinent avec les photos
         emit();
@@ -77,6 +82,9 @@ function ensureLoaded() {
   }
 }
 
+/** Premier mot d'un nom affiché (« Marie Rakoto » -> « Marie »). */
+export const prenomDe = (nom) => String(nom || "").trim().split(/\s+/)[0] || "";
+
 export default function useMemberDirectory() {
   const [dir, setDir] = useState(byUser);
   useEffect(() => {
@@ -89,6 +97,8 @@ export default function useMemberDirectory() {
   return {
     // Nom actuel du membre ; `fallback` = nom copié sur le message/post (anciens contenus).
     nameOf: (userId, fallback) => dir[userId]?.display_name || fallback || "Membre",
+    // 1.3.35 : prénom seul (discussions de groupe) : celui du compte, sinon le premier mot du nom affiché.
+    prenomOf: (userId, fallback) => prenoms[userId] || prenomDe(dir[userId]?.display_name || fallback) || "Membre",
     // `nom` (facultatif) : nom affiché de l'auteur, dernier recours pour les anciens contenus.
     avatarOf: (userId, ...noms) =>
       dir[userId]?.avatar_url || photosComptes[userId] || noms.map((n) => photosParNom[cleNom(n)]).find(Boolean) || "",

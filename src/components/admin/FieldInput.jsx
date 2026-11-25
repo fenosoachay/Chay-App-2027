@@ -450,6 +450,50 @@ function FileUploadField({ field, value, onChange, onUploadingChange, onChangeCh
   );
 }
 
+/**
+ * 1.3.35 : durée en secondes, réglée à la main : pastilles (5 s, 10 s, 20 s…) ou un nombre libre.
+ * Vide : la vitesse d'avant (Lente / Normale / Rapide) reste appliquée.
+ */
+export const CHOIX_SECONDES = [3, 5, 10, 15, 20, 30, 45, 60];
+function SecondesField({ value, onChange, cls, choix = CHOIX_SECONDES }) {
+  const n = Number(value) > 0 ? Number(value) : null;
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {choix.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(n === s ? null : s)}
+            aria-pressed={n === s}
+            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${n === s ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary"}`}
+          >
+            {s} s
+          </button>
+        ))}
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <span className="shrink-0 text-foreground/60">Autre :</span>
+        <input
+          type="number"
+          min={1}
+          max={600}
+          step={0.5}
+          inputMode="decimal"
+          value={n ?? ""}
+          placeholder="secondes"
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            onChange(e.target.value === "" || !(v > 0) ? null : Math.min(600, v));
+          }}
+          className={`${cls} max-w-[8rem]`}
+        />
+        <span className="text-foreground/60">s</span>
+      </label>
+    </div>
+  );
+}
+
 export default function FieldInput({ field, value, onChange, onUploadingChange, onChangeChamp, donnees }) {
   const cls =
     "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -494,6 +538,8 @@ export default function FieldInput({ field, value, onChange, onUploadingChange, 
           className={cls}
         />
       );
+    case "secondes":
+      return <SecondesField value={value} onChange={onChange} cls={cls} choix={field.choix} />;
     case "time":
       return (
         <input

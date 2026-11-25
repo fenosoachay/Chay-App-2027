@@ -312,7 +312,10 @@ export const SECTIONS = [
       { name: "track_id", label: "Seulement sur ce titre (sinon : tous)", type: "titre_lecteur" },
       { name: "debut", label: "À partir du (facultatif)", type: "date" },
       { name: "fin", label: "Jusqu'au (facultatif, inclus)", type: "date" },
-      { name: "vitesse", label: "Vitesse", type: "select", options: [
+      // 1.3.35 : vitesse en secondes, réglée à la main (passe avant « Vitesse »).
+      { name: "secondes", label: "Durée d'un passage du texte (secondes)", type: "secondes",
+        help: "Temps que met le texte pour traverser la photo (ou pour rester affiché : mot par mot, machine, respiration). Vide : la vitesse ci-dessous." },
+      { name: "vitesse", label: "Vitesse (si aucune durée)", type: "select", options: [
         { value: "lent", label: "Lente" }, { value: "normal", label: "Normale" }, { value: "rapide", label: "Rapide" },
       ] },
       { name: "couleur", label: "Couleur", type: "select", options: [
@@ -344,7 +347,10 @@ export const SECTIONS = [
       { name: "track_id", label: "Seulement sur ce titre (sinon : tous)", type: "titre_lecteur" },
       { name: "debut", label: "À partir du (facultatif)", type: "date" },
       { name: "fin", label: "Jusqu'au (facultatif, inclus)", type: "date" },
-      { name: "vitesse", label: "Vitesse", type: "select", options: [
+      // 1.3.35 : vitesse en secondes, réglée à la main (passe avant « Vitesse »).
+      { name: "secondes", label: "Durée de chaque photo (secondes)", type: "secondes",
+        help: "Temps pendant lequel chaque photo passe (ou reste affichée en fondu). Vide : la vitesse ci-dessous." },
+      { name: "vitesse", label: "Vitesse (si aucune durée)", type: "select", options: [
         { value: "lent", label: "Lente" }, { value: "normal", label: "Normale" }, { value: "rapide", label: "Rapide" },
       ] },
     ],

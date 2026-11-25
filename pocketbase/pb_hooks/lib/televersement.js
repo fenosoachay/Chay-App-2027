@@ -281,6 +281,52 @@ function familleR2(fileName, fileType) {
   return null;
 }
 
+// ── Pièces jointes des messages (1.3.35) ─────────────────────────────────────
+// Tout membre peut joindre à un message : message vocal, photo, vidéo, audio, document ou n'importe quel
+// fichier, jusqu'à 500 Mo, toujours vers R2 (sous <préfixe>/messages/). Les types qui pourraient s'exécuter
+// dans un navigateur (html, svg, js…) sont servis en « application/octet-stream » : ils se téléchargent.
+// Limite par membre : MAX_MESSAGE_JOUR fichiers et MAX_MESSAGE_OCTETS_JOUR sur 24 heures glissantes.
+const MAX_MESSAGE_BYTES = 500 * MIO;
+const MAX_MESSAGE_JOUR = 60;
+const MAX_MESSAGE_OCTETS_JOUR = 3 * 1024 * MIO;
+const STORAGE_MESSAGE = 's3-message';
+const DOC_TYPES = {
+  pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  odt: 'application/vnd.oasis.opendocument.text', ods: 'application/vnd.oasis.opendocument.spreadsheet',
+  odp: 'application/vnd.oasis.opendocument.presentation', rtf: 'application/rtf', txt: 'text/plain', csv: 'text/csv',
+  epub: 'application/epub+zip', zip: 'application/zip', rar: 'application/vnd.rar', '7z': 'application/x-7z-compressed',
+};
+
+/** Famille d'une pièce jointe de message : { famille, ext, mime, max, maxTexte, nom } (jamais null). */
+function familleMessage(fileName, fileType) {
+  const base = { max: MAX_MESSAGE_BYTES, maxTexte: '500 Mo' };
+  const r2 = familleR2(fileName, fileType);
+  if (r2) return Object.assign({}, r2, base);
+  const ext = extensionOf(fileName, 'bin');
+  if (DOC_TYPES[ext]) return Object.assign({ famille: 'document', ext, mime: DOC_TYPES[ext], nom: 'un document' }, base);
+  return Object.assign({ famille: 'fichier', ext, mime: 'application/octet-stream', nom: 'un fichier' }, base);
+}
+
+/** Contenu d'une pièce jointe conforme : vidéo, audio, image et PDF vérifiés ; les autres fichiers acceptés. */
+function contenuMessageConforme(mime, bytes) {
+  if (mime === 'application/pdf') return Boolean(bytes && bytes.length >= 4) && commencePar(bytes, [0x25, 0x50, 0x44, 0x46]);
+  if (FAMILLES[String(mime || '').split('/')[0]]) return contenuConforme(mime, bytes);
+  return true;
+}
+
+/** Limite par membre (24 h glissantes) : message d'erreur, ou null si l'envoi est permis. */
+function refusQuotaMessage(userId, taille) {
+  const depuis = pbDate(-24 * 3600 * 1000);
+  const recents = $app.findRecordsByFilter(SESSIONS, 'created_by = {:u} && storage = {:t} && created >= {:d}', '', 0, 0,
+    { u: userId, t: STORAGE_MESSAGE, d: depuis });
+  if (recents.length >= MAX_MESSAGE_JOUR) return `Limite atteinte : ${MAX_MESSAGE_JOUR} fichiers par jour. Réessayez demain.`;
+  const total = recents.reduce((n, r) => n + r.getInt('size'), 0);
+  if (total + taille > MAX_MESSAGE_OCTETS_JOUR) return 'Limite atteinte : 3 Go de fichiers par jour. Réessayez demain.';
+  return null;
+}
+
 /** Contenu assemblé conforme à la famille enregistrée dans la session (son type MIME) ? */
 function contenuConforme(mime, bytes) {
   const f = FAMILLES[String(mime || '').split('/')[0]];
@@ -461,7 +507,7 @@ function cleanupIncomplete() {
   for (const s of expired) {
     try {
       const done = s.getString('status') === 'done' || s.getString('status') === 'completed';
-      if (s.getString('storage') === 's3-multipart' && !done && s.getString('upload_id') && cfg) {
+      if ((s.getString('storage') === 's3-multipart' || s.getString('storage') === STORAGE_MESSAGE) && !done && s.getString('upload_id') && cfg) {
         if (abortMultipart(cfg, s.getString('s3_key'), s.getString('upload_id'))) result.uploads_abandonnes++;
       }
       if (s.getString('storage') === 'chunk') removeChunkDir(s);
@@ -474,7 +520,7 @@ function cleanupIncomplete() {
   if (cfg) {
     try {
       const open = {};
-      for (const s of $app.findRecordsByFilter(SESSIONS, 'storage = "s3-multipart" && upload_id != ""', '', 0, 0)) open[s.getString('upload_id')] = true;
+      for (const s of $app.findRecordsByFilter(SESSIONS, '(storage = "s3-multipart" || storage = "s3-message") && upload_id != ""', '', 0, 0)) open[s.getString('upload_id')] = true;
       for (const u of listUploads(cfg)) {
         if (!open[u.uploadId] && u.initiated < Date.now() - SESSION_TTL_MS && abortMultipart(cfg, u.key, u.uploadId)) result.uploads_abandonnes++;
       }
@@ -613,6 +659,11 @@ module.exports = {
   AUDIO_TYPES,
   IMAGE_TYPES,
   familleR2,
+  familleMessage,
+  contenuMessageConforme,
+  refusQuotaMessage,
+  MAX_MESSAGE_BYTES,
+  STORAGE_MESSAGE,
   rangementBible,
   cleBible,
   contenuConforme,

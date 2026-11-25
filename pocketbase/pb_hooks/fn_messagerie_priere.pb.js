@@ -13,7 +13,25 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
     const text = typeof body.text === 'string' ? body.text.trim() : '';
     const imageUrl = typeof body.image_url === 'string' ? body.image_url : '';
     const replyToId = typeof body.reply_to_id === 'string' && body.reply_to_id ? body.reply_to_id : null;
-    if (!conversationId || (!text && !imageUrl)) {
+    // 1.3.35 : pièce jointe (vocal, vidéo, audio, document, fichier) envoyée juste avant par CE membre vers R2
+    // (usage « message ») : nom, type et taille viennent de sa session de téléversement, jamais du client.
+    const pj = body.piece_jointe && typeof body.piece_jointe === 'object' ? body.piece_jointe : null;
+    let pieceJointe = null;
+    if (pj) {
+      const url = typeof pj.url === 'string' ? pj.url : '';
+      if (!url || url.length > 2000) throw new fn.HttpError(400, 'Pièce jointe invalide');
+      const lib = require(`${__hooks}/lib/televersement.js`);
+      const session = fn.findOne($app, lib.SESSIONS, 'final_file_url = {:url} && created_by = {:u} && storage = {:t} && status = "done"', '-created',
+        { url, u: caller.id, t: lib.STORAGE_MESSAGE });
+      if (!session) throw new fn.HttpError(400, 'Pièce jointe introuvable : renvoyez le fichier.');
+      const mime = session.getString('mime_type');
+      const msg = require(`${__hooks}/lib/messagesPieces.js`);
+      pieceJointe = msg.pieceJointe({
+        url, nom: session.getString('file_name'), mime, taille: session.getInt('size'),
+        vocal: pj.vocal === true, duree: pj.duree,
+      });
+    }
+    if (!conversationId || (!text && !imageUrl && !pieceJointe)) {
       throw new fn.HttpError(400, 'conversation_id et text ou image_url requis');
     }
     if (conversationId.length > 64 || text.length > 20000 || imageUrl.length > 2000 || (replyToId && replyToId.length > 64)) {
@@ -31,8 +49,8 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       throw new fn.HttpError(403, 'On ne peut pas répondre aux messages automatiques de Chay.');
     }
 
-    const myName = caller.getString('name')
-      || [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+    const myName = [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+      || caller.getString('name')
       || 'Membre';
     const message = fn.newRecord($app, 'Message', {
       conversation_id: conversationId,
@@ -41,6 +59,7 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       sender_name: myName,
       text,
       image_url: imageUrl || '',
+      piece_jointe: pieceJointe,
       reply_to_id: replyToId || '',
       read_by: [caller.id],
       created_by_id: caller.id,
@@ -65,6 +84,7 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
     return {
       id: message.id,
       created_date: fn.createdDate(fn.plain(message)),
+      piece_jointe: pieceJointe,
       notification_error: notificationError,
       notification_info: notificationInfo,
     };

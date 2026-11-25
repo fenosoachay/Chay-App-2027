@@ -11,6 +11,8 @@ export function isUnreadIncomingMessage(message, userId) {
 export function isRenderableMessage(message) {
   if (!message) return false;
   if (message.image_url) return true;
+  // 1.3.35 : message vocal, vidéo, document, fichier.
+  if (message.piece_jointe && typeof message.piece_jointe === "object" && message.piece_jointe.url) return true;
   const text = typeof message.text === "string"
     ? message.text.trim()
     : String(message.text ?? "").trim();

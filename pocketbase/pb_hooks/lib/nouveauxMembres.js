@@ -27,4 +27,18 @@ function profilARetablir(nomAffiche, nom) {
   return Boolean(nom) && (!n || n === 'Membre');
 }
 
-module.exports = { nomComplet, inscriptionTerminee, notificationNouveauMembre, profilARetablir };
+/**
+ * 1.3.35 : nom affiché d'un compte. Le prénom et le nom choisis dans Paramètres › Profil passent toujours avant
+ * `name`, qui peut encore porter le nom Google de l'inscription (Base44 ne laissait pas le modifier).
+ */
+function nomAffiche(prenom, nom, name) {
+  return nomComplet(prenom, nom) || String(name || '').trim();
+}
+
+/** 1.3.35 : `name` à écrire sur le compte (null : rien à changer). */
+function nameASynchroniser(prenom, nom, name) {
+  const n = nomComplet(prenom, nom);
+  return n && n !== String(name || '').trim() ? n : null;
+}
+
+module.exports = { nomComplet, inscriptionTerminee, notificationNouveauMembre, profilARetablir, nomAffiche, nameASynchroniser };

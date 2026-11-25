@@ -34,8 +34,8 @@ routerAdd('POST', '/api/fn/signalerProbleme', (e) => {
       { u: caller.id, d: depuis });
     if (recents.length >= sig.MAX_PAR_JOUR) throw new fn.HttpError(429, 'Trop de signalements aujourd’hui. Réessayez demain.');
 
-    const username = caller.getString('name')
-      || [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+    const username = [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
+      || caller.getString('name')
       || caller.email() || 'Membre';
     const rec = fn.newRecord($app, 'SignalementTechnique', {
       user_id: caller.id, username, message, capture_url: capture, plateforme, statut: 'ouvert', lu: false,

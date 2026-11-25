@@ -12,6 +12,7 @@ const cibles = require(`${__hooks}/lib/cibles.js`);
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const EMAIL_DEDUP_MS = 30 * 60 * 1000;
+const PUSH_CONTENU_ECART_MS = 10 * 60 * 1000; // 1.3.35 : un seul push « Nouveau » toutes les 10 minutes
 const APP_TZ = 'Europe/Paris';
 const DEFAULT_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const pbDate = (ms) => new Date(ms).toISOString().replace('T', ' ');
@@ -29,7 +30,7 @@ function settingsOf(u) {
 }
 
 function displayName(u) {
-  return u.getString('name') || [u.getString('first_name'), u.getString('last_name')].filter(Boolean).join(' ');
+  return [u.getString('first_name'), u.getString('last_name')].filter(Boolean).join(' ') || u.getString('name');
 }
 
 /** Membre actif par id, ou null (absent ou compte désactivé). */
@@ -40,6 +41,39 @@ function activeUser(id) {
 
 function activeUsers() {
   return $app.findRecordsByFilter('users', 'disabled != true', '', 0, 0);
+}
+
+// ── E-mails (1.3.35) : préférences respectées + plafond par jour (lib/canauxEmail.js) ──
+function canauxEmail() { return require(`${__hooks}/lib/canauxEmail.js`); }
+
+/** Un e-mail de ce genre peut-il partir vers ce membre ? (réglages + champs du compte) */
+function emailPermis(u, genre) {
+  if (!u || u.getBool('disabled') || !u.email()) return false;
+  return canauxEmail().emailAutorise(settingsOf(u), {
+    email_messages: u.getBool('email_messages'), email_nouveautes: u.getBool('email_nouveautes'),
+  }, genre);
+}
+
+function lireCompteurs() {
+  try { return JSON.parse($app.store().get('courriels_du_jour') || '{}') || {}; } catch (_) { return {}; }
+}
+
+/**
+ * Envoi d'un e-mail de messages ou de nouveautés, dans la limite du jour par membre. Renvoie true si parti.
+ * Au-delà, rien n'est envoyé (le push et la cloche restent) : évite la saturation de la boîte et du quota d'envoi.
+ */
+function envoyerPlafonne(context, u, sujet, html, texte) {
+  const ce = canauxEmail();
+  const compteurs = lireCompteurs();
+  if (ce.plafondAtteint(compteurs, u.id)) return false;
+  if (!mail.trySend(context, u.email(), sujet, html, texte)) return false;
+  const cle = ce.cleJour(u.id);
+  const jour = cle.slice(-10);
+  const propre = {};
+  for (const k of Object.keys(compteurs)) if (k.slice(-10) === jour) propre[k] = compteurs[k];
+  propre[cle] = (Number(propre[cle]) || 0) + 1;
+  $app.store().set('courriels_du_jour', JSON.stringify(propre));
+  return true;
 }
 
 /** Coupure générale + canal push (préférences des réglages de l'app). */
@@ -165,9 +199,11 @@ function messagePush(messageRecord) {
 
   const senderName = m.sender_name || 'Quelqu\'un';
   const isImageOnly = !m.text && Boolean(m.image_url);
-  const preview = isImageOnly ? '📷 Photo' : (m.text ? String(m.text).slice(0, 60) : '');
+  // 1.3.35 : pièce jointe (message vocal, vidéo, document…) : aperçu « 🎤 Message vocal », « 📄 devis.pdf »…
+  const apercuPj = !m.text && !m.image_url ? require(`${__hooks}/lib/messagesPieces.js`).apercuPiece(m.piece_jointe) : '';
+  const preview = isImageOnly ? '📷 Photo' : apercuPj || (m.text ? String(m.text).slice(0, 60) : '');
   const title = isImageOnly ? 'Vous avez reçu une photo' : `${senderName} vous a envoyé un message`;
-  const notifBody = isImageOnly ? `${senderName} vous a envoyé une photo` : (m.text ? String(m.text).slice(0, 100) : '');
+  const notifBody = isImageOnly ? `${senderName} vous a envoyé une photo` : apercuPj || (m.text ? String(m.text).slice(0, 100) : '');
 
   // Compteurs gardés pour le bilan (lib/bilan-push.js) : plus aucune notification de cloche pour un message.
   const notifCreated = 0;
@@ -183,7 +219,8 @@ function messagePush(messageRecord) {
     const prefs = settingsOf(recipient);
     const notificationsOn = prefs.notifications_enabled !== false && prefs.notif_messages !== false;
     const pushOn = notificationsOn && prefs.notif_push !== false;
-    const emailOn = notificationsOn && (!recipient || recipient.getBool('email_messages'));
+    // 1.3.35 : le canal « E-mail » des réglages compte aussi (avant : seul « Messages par e-mail »).
+    const emailOn = emailPermis(recipient, 'messages');
 
     const prof = fn.findOne($app, 'MemberProfile', 'created_by_id = {:u}', '-base44_created_date,-created', { u: uid });
     const lastSeen = prof ? toMs(prof.getString('last_seen_at')) : 0;
@@ -203,7 +240,7 @@ function messagePush(messageRecord) {
       const alreadyRead = Array.isArray(readBy) && readBy.indexOf(uid) !== -1;
       if (recentlyEmailed || alreadyRead) {
         emailsSkipped++;
-      } else if (mail.trySend('sendMessagePush', email, `${senderName} vous a envoyé un message`,
+      } else if (envoyerPlafonne('sendMessagePush', recipient, `${senderName} vous a envoyé un message`,
         messageEmailHtml(senderName, preview || notifBody, m.conversation_id),
         `${senderName} vous a envoyé un message.
 
@@ -339,21 +376,26 @@ function newContentNotify(contentRecord, sendEmail) {
     }
   }
   const created = createNotifications(rows, 'notifyNewContent');
+  // 1.3.35 : anti-saturation : plusieurs contenus publiés à la suite (ex. un album de 20 titres) ne font qu'UN
+  // push (et e-mail) en 10 minutes ; les suivants vont seulement dans la cloche. « Chay attire ton attention » passe toujours.
+  const dernier = Number($app.store().get('push_contenu_dernier') || 0);
+  const groupe = !attention && Date.now() - dernier < PUSH_CONTENU_ECART_MS;
+  if (pushIds.length && !groupe) $app.store().set('push_contenu_dernier', String(Date.now()));
   let emailsSent = 0;
   let emailsSkipped = 0;
-  if (sendEmail) {
-    // Comme Base44 : seul email_nouveautes compte pour l'e-mail.
+  if (sendEmail && !groupe) {
+    // 1.3.35 : « Nouveautés par e-mail » ET le canal « E-mail » des réglages, plafond par jour.
     const html = contentEmailHtml(c.title, c.description);
     const text = `Un nouveau contenu vient d'être publié dans l'application Chay.\n\n${c.title || ''}\n${c.description || ''}\n\n${mail.appUrl()}/media`;
     for (const u of users) {
-      if (!u.getBool('email_nouveautes') || !u.email()) continue;
-      if (mail.trySend('notifyNewContent', u.email(), title, html, text)) emailsSent++;
+      if (!emailPermis(u, 'nouveautes')) continue;
+      if (envoyerPlafonne('notifyNewContent', u, title, html, text)) emailsSent++;
       else emailsSkipped++;
     }
   }
-  const t = pushIds.length
+  const t = pushIds.length && !groupe
     ? pushTotals(push.sendToUsers(pushIds, { title, body: String(c.description || c.title || '').slice(0, attention ? 160 : 60), target_type: 'content', target_id: c.id, route: cibles.routeContenu(c) }, 'notifyNewContent'))
-    : { pushSent: 0, pushFailed: 0 };
+    : { pushSent: 0, pushFailed: 0, regroupe: groupe };
   return { recipients: rows.length, created, emailsSent, emailsSkipped, pushSent: t.pushSent, pushFailed: t.pushFailed, sendEmail };
 }
 
@@ -432,7 +474,7 @@ function themeRequestCreated(request, theme) {
   const html = mail.shell(title, mail.paragraph(mail.escapeHtml(message)) + mail.button(link, 'Voir la demande'));
   for (const id of adminIds) {
     const a = activeUser(id);
-    if (a && a.email()) mail.trySend('createThemeRequest', a.email(), title, html, `${message}\n\nVoir la demande : ${link}`);
+    if (emailPermis(a, 'admin')) mail.trySend('createThemeRequest', a.email(), title, html, `${message}\n\nVoir la demande : ${link}`);
   }
   pushToAllowed(adminIds, { title, body: message, target_type: 'theme_request', target_id: request.id }, 'createThemeRequest');
   return notified;
@@ -451,7 +493,7 @@ function themeRequestHandled(request, decision, note) {
   }], 'handleThemeRequest');
   const requester = activeUser(requesterId);
   const link = `${mail.appUrl()}/requests`;
-  if (requester && requester.email()) {
+  if (emailPermis(requester, 'demandes')) {
     mail.trySend('handleThemeRequest', requester.email(), title,
       mail.shell(title, mail.paragraph(mail.escapeHtml(message)) + mail.button(link, 'Voir mes requêtes')),
       `${message}\n\nVoir tes requêtes : ${link}`);
@@ -521,7 +563,7 @@ function hit(key, max, windowMs) {
 }
 
 module.exports = {
-  demandeNotify, demandeTexte, DEMANDES,
+  demandeNotify, demandeTexte, DEMANDES, emailPermis,
   settingsOf, displayName, activeUser, pushAllowed, pushToAllowed, createNotifications, notificationExists, pushTotals,
   designatedAdminIds, isDesignatedAdmin, messagePush, messageNotificationError, messageNotificationInfo, communityPostNotify, newContentNotify,
   dailyVerse, themeRequestCreated, themeRequestHandled, hit, pbDate,

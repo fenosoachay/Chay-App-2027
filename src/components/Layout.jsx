@@ -4,6 +4,9 @@ import { Capacitor } from "@capacitor/core";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, BookOpen, PlayCircle, Gamepad2, Bell, User, ChevronLeft, Settings, MessageCircle, Search } from "lucide-react";
 import AnimatedOutlet from "@/components/AnimatedOutlet";
+import FondSection from "@/components/FondSection";
+import { fondPour, sectionDe } from "@/lib/fondsSections";
+import useSombre from "@/hooks/useSombre";
 import AProposDepuisNotification from "@/components/home/AProposDepuisNotification";
 import AutoOpenAudioPlayer from "@/components/player/AutoOpenAudioPlayer";
 import PullDownMediaBar from "@/components/PullDownMediaBar";
@@ -136,9 +139,15 @@ export default function Layout() {
   };
 
   const isNativeAndroid = Capacitor.getPlatform() === "android";
+  // 1.3.35 : fond plein écran animé de la section (Aube dorée, Lanternes, Aurore…). Les pages Nuit dorée
+  // (Sagesse en audio, Dictionnaire, Concordance, Jeux) restent de nuit même en mode clair.
+  const sombre = useSombre();
+  const section = sectionDe(location.pathname, location.search);
+  const fondForce = fondPour(section, sombre)?.force;
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip">
+      <FondSection cle={section} sombre={sombre} />
       <NotificationBanner />
       {/* Desktop floating glass rail */}
       <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
@@ -256,7 +265,7 @@ export default function Layout() {
 
       <OfflineBanner />
 
-      <main className="pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12">
+      <main className={`relative z-[1] pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12 ${fondForce ? "dark text-foreground" : ""}`}>
         <AnimatedOutlet />
         {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
         <AProposDepuisNotification />

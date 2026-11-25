@@ -41,6 +41,7 @@ export function textesPour(rows, piste, { aujourdhui = jourLocal(), parents = ne
       direction: ANIMATIONS.some((a) => a.value === r.direction) ? r.direction : "gauche",
       couleur: COULEURS[r.couleur] || COULEURS.blanc,
       vitesse: VITESSES[r.vitesse] || VITESSES.normal,
+      secondes: secondesDe(r.secondes),
     }));
 }
 
@@ -53,6 +54,25 @@ export function dureePassage(distancePx, pxParSeconde) {
   const v = pxParSeconde > 0 ? pxParSeconde : VITESSES.normal;
   return Math.max(4, Math.round((Math.max(0, distancePx) / v) * 10) / 10);
 }
+
+/** 1.3.35 : durée réglée à la main dans l'admin (secondes), ou null (on garde la vitesse). Entre 1 et 600 s. */
+export function secondesDe(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(600, Math.max(1, n)) : null;
+}
+
+/**
+ * 1.3.35 : durée d'un tour de bande (tous ses textes) : la somme des durées réglées quand chaque texte en a
+ * une, sinon distance / vitesse comme avant.
+ */
+export function dureeBande(textes, distancePx) {
+  const liste = Array.isArray(textes) ? textes : [];
+  if (liste.length && liste.every((t) => t.secondes)) return liste.reduce((s, t) => s + t.secondes, 0);
+  return dureePassage(distancePx, liste[0]?.vitesse);
+}
+
+/** 1.3.35 : temps d'affichage d'un texte au milieu (mot par mot, machine, respiration) : réglé, ou `defaut`. */
+export const tempsAffichage = (t, defaut) => (t && t.secondes) || defaut;
 
 /** Une playlist doit-elle être connue (sous-playlists) ? Seulement si un texte vise une playlist. */
 export const besoinPlaylists = (rows) => (Array.isArray(rows) ? rows : []).some((r) => r && r.playlist_id);

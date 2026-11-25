@@ -4,9 +4,10 @@ import useMemberDirectory from "@/hooks/useMemberDirectory";
 
 // Nom d'un membre, toujours à jour (nom + prénom de « Mon compte ») et cliquable
 // vers son profil. `fallback` sert pour les membres sans profil public.
-export default function MemberName({ userId, fallback, className = "", onClick }) {
-  const { nameOf } = useMemberDirectory();
-  const name = nameOf(userId, fallback);
+// 1.3.35 : `prenom` : prénom seul (discussions de groupe).
+export default function MemberName({ userId, fallback, className = "", onClick, prenom = false }) {
+  const { nameOf, prenomOf } = useMemberDirectory();
+  const name = prenom ? prenomOf(userId, fallback) : nameOf(userId, fallback);
   if (!userId) return <span className={className}>{name}</span>;
   return (
     <Link
