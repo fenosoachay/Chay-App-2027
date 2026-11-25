@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COULEURS, VITESSES, bandes, dureePassage, lecteurDe, textesPour } from "./texteDefilant.js";
+import { ANIMATIONS, CENTRE, COULEURS, VITESSES, animationCentre, disposition, dureePassage, lecteurDe, tailleTexte, textesPour } from "./texteDefilant.js";
+import { valeursDirection } from "../../pocketbase/scripts/migrer-1-3-34.mjs";
 import { COLLECTIONS, completerSelects, copieVideo, profilsDepuisScores } from "../../pocketbase/scripts/migrer-1-3-26.mjs";
 
 const musique = { id: "t1", mediaType: "music", playlist_id: "sous1" };
@@ -77,14 +78,21 @@ test("migration 1.3.26 : copie de Video, listes fermées, enfants retrouvés", (
   assert.equal(texte.createRule, '@request.auth.role = "admin"');
 });
 
-test("1.3.34 : deux bandes horizontales (bas : droite -> gauche ; haut : gauche -> droite)", () => {
-  const a = { id: "a", direction: "gauche" };
-  const b = { id: "b", direction: "gauche" };
-  const h = { id: "h", direction: "monte" };
-  const ids = (r) => ({ haut: r.haut.map((t) => t.id), bas: r.bas.map((t) => t.id) });
-  assert.deepEqual(ids(bandes([a])), { haut: ["a"], bas: ["a"] }); // un seul texte : le même en haut et en bas
-  assert.deepEqual(ids(bandes([a, b])), { haut: ["b"], bas: ["a"] }); // deux textes : un par bande
-  assert.deepEqual(ids(bandes([a, h])), { haut: ["h"], bas: ["a"] }); // bande choisie par l'admin
-  assert.deepEqual(ids(bandes([h])), { haut: ["h"], bas: ["h"] });
-  assert.deepEqual(ids(bandes([])), { haut: [], bas: [] });
+test("1.3.34 : 12 animations ; bandes, sens et milieu", () => {
+  assert.equal(ANIMATIONS.length, 12);
+  const T2 = (id, direction) => ({ id, direction });
+  const d = disposition([T2("a", "deux_hg_bd"), T2("b", "haut_droite"), T2("c", "monte"), T2("d", "varie")]);
+  assert.deepEqual(d.haut, { sens: "gauche", textes: [T2("a", "deux_hg_bd"), T2("b", "haut_droite")] });
+  assert.deepEqual(d.bas, { sens: "droite", textes: [T2("a", "deux_hg_bd")] });
+  assert.deepEqual(d.centre.map((t) => t.id), ["c", "d"]);
+  assert.deepEqual(disposition([T2("x", "gauche")]), { haut: null, bas: { sens: "gauche", textes: [T2("x", "gauche")] }, centre: [] });
+  assert.equal(animationCentre(T2("d", "varie"), 0), CENTRE[0]);
+  assert.equal(animationCentre(T2("d", "varie"), 6), CENTRE[1]);
+  assert.equal(animationCentre(T2("c", "machine"), 3), "machine");
+  assert.equal(tailleTexte("Dieu t'aime"), "13cqw");
+  assert.equal(tailleTexte("x".repeat(300)), "4.5cqw");
+  // Valeur inconnue -> bas de droite à gauche ; valeurs de l'admin acceptées par le serveur (migration 1.3.34).
+  assert.equal(textesPour([T({ direction: "?" })], musique)[0].direction, "gauche");
+  assert.equal(textesPour([T({ direction: "respire" })], musique)[0].direction, "respire");
+  assert.deepEqual(valeursDirection(["monte", "gauche"]), ANIMATIONS.map((a) => a.value).sort());
 });

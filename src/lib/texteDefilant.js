@@ -38,7 +38,7 @@ export function textesPour(rows, piste, { aujourdhui = jourLocal(), parents = ne
     .map((r) => ({
       id: r.id,
       texte: String(r.texte).replace(/\s+/g, " ").trim(),
-      direction: r.direction === "monte" ? "monte" : "gauche",
+      direction: ANIMATIONS.some((a) => a.value === r.direction) ? r.direction : "gauche",
       couleur: COULEURS[r.couleur] || COULEURS.blanc,
       vitesse: VITESSES[r.vitesse] || VITESSES.normal,
     }));
@@ -58,18 +58,66 @@ export function dureePassage(distancePx, pxParSeconde) {
 export const besoinPlaylists = (rows) => (Array.isArray(rows) ? rows : []).some((r) => r && r.playlist_id);
 
 /**
- * 1.3.34 : deux bandes horizontales sur la photo : en bas de droite à gauche, en haut de gauche à droite.
- * « gauche » -> bande du bas, « monte » -> bande du haut (valeurs gardées pour les textes existants).
- * Une bande vide reprend des textes de l'autre : plusieurs textes se partagent les deux bandes ; un seul texte
- * passe dans les deux (le même texte en haut et en bas).
+ * 1.3.34 : animations du texte (champ « Animation » de l'admin, valeur gardée dans `direction`).
+ * « gauche » et « monte » gardent leur sens d'origine (textes existants).
  */
-export function bandes(textes) {
-  const liste = Array.isArray(textes) ? textes : [];
-  let bas = liste.filter((t) => t.direction !== "monte");
-  let haut = liste.filter((t) => t.direction === "monte");
-  if (!haut.length && bas.length > 1) { haut = bas.filter((_, i) => i % 2 === 1); bas = bas.filter((_, i) => i % 2 === 0); }
-  else if (!bas.length && haut.length > 1) { bas = haut.filter((_, i) => i % 2 === 1); haut = haut.filter((_, i) => i % 2 === 0); }
-  if (!haut.length) haut = bas;
-  if (!bas.length) bas = haut;
-  return { haut, bas };
+export const ANIMATIONS = [
+  { value: "haut_droite", label: "Seulement en haut (de gauche à droite)" },
+  { value: "haut_gauche", label: "Seulement en haut (de droite à gauche)" },
+  { value: "bas_droite", label: "Seulement en bas (de gauche à droite)" },
+  { value: "gauche", label: "Seulement en bas (de droite à gauche)" },
+  { value: "deux_hg_bd", label: "Les deux en sens contraire : en haut vers la gauche, en bas vers la droite" },
+  { value: "deux_hd_bg", label: "Les deux en sens contraire : en haut vers la droite, en bas vers la gauche" },
+  { value: "descend", label: "Vertical : de haut en bas" },
+  { value: "monte", label: "Vertical : de bas en haut" },
+  { value: "mots", label: "Mot par mot, en fondu" },
+  { value: "machine", label: "Machine à écrire" },
+  { value: "respire", label: "Respiration (au centre, avec une lueur)" },
+  { value: "varie", label: "Varié (une animation différente à chaque passage)" },
+];
+
+// Bandes horizontales : [bande, sens] ; « droite » = de gauche à droite.
+const BANDES = {
+  haut_droite: [["haut", "droite"]],
+  haut_gauche: [["haut", "gauche"]],
+  bas_droite: [["bas", "droite"]],
+  gauche: [["bas", "gauche"]],
+  deux_hg_bd: [["haut", "gauche"], ["bas", "droite"]],
+  deux_hd_bg: [["haut", "droite"], ["bas", "gauche"]],
+};
+/** Animations du milieu de la photo, dans l'ordre de « Varié ». */
+export const CENTRE = ["mots", "machine", "respire", "monte", "descend"];
+
+/**
+ * Où passe chaque texte : bandes du haut et du bas (avec leur sens ; le premier texte d'une bande donne le
+ * sens), et le milieu (vertical, mot par mot, machine à écrire, respiration, varié), un texte après l'autre.
+ */
+export function disposition(textes) {
+  const d = { haut: null, bas: null, centre: [] };
+  for (const t of Array.isArray(textes) ? textes : []) {
+    const bandes = BANDES[t.direction];
+    if (!bandes) { d.centre.push(t); continue; }
+    for (const [b, sens] of bandes) {
+      if (!d[b]) d[b] = { sens, textes: [] };
+      d[b].textes.push(t);
+    }
+  }
+  return d;
+}
+
+/** Animation d'un passage au milieu : celle du texte, ou la suivante de la liste pour « Varié ». */
+export const animationCentre = (t, passage = 0) => (t.direction === "varie" ? CENTRE[passage % CENTRE.length] : t.direction);
+
+/**
+ * Taille du texte au milieu selon sa longueur, en % de la largeur de la photo (cqw) : une phrase courte en grand,
+ * un long texte plus petit ; toujours bien proportionné dans la case, quelle que soit sa taille à l'écran.
+ */
+export function tailleTexte(texte) {
+  const n = String(texte || "").length;
+  if (n <= 16) return "13cqw";
+  if (n <= 32) return "10cqw";
+  if (n <= 70) return "8cqw";
+  if (n <= 130) return "6.5cqw";
+  if (n <= 220) return "5.5cqw";
+  return "4.5cqw";
 }

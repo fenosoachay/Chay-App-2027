@@ -27,7 +27,12 @@ export function estPhotoProfil(img) {
   return false;
 }
 
-function ZoomImage({ src }) {
+/**
+ * Photo zoomable (pincer, double-toucher, molette, double-clic) et déplaçable une fois zoomée.
+ * 1.3.34 : exportée pour zoomer directement dans les visionneuses (Galerie, Fonds d'écran), sans toucher la photo
+ * d'abord. `onZoom(true|false)` : prévient quand la photo est zoomée (le glissement change alors de rôle).
+ */
+export function ZoomImage({ src, classeImage = "max-h-full max-w-full", onZoom }) {
   const cadre = useRef(null);
   const img = useRef(null);
   const [etat, setEtat] = useState({ s: 1, x: 0, y: 0 });
@@ -42,6 +47,7 @@ function ZoomImage({ src }) {
     const c = cadre.current?.getBoundingClientRect();
     const i = img.current;
     const borne = c && i ? limiter(e, i.offsetWidth, i.offsetHeight, c.width, c.height) : e;
+    if ((etatRef.current.s > 1) !== (borne.s > 1)) onZoom?.(borne.s > 1);
     etatRef.current = borne;
     setAnime(avecAnimation);
     setEtat(borne);
@@ -61,7 +67,10 @@ function ZoomImage({ src }) {
     appliquer(e.s > 1 ? { s: 1, x: 0, y: 0 } : zoomerAutour(e, versCentre(clientX, clientY), ZOOM_DOUBLE), true);
   };
 
+  const surPhoto = useRef(false);
   const bas = (ev) => {
+    // Le cadre capture le doigt (le « clic » qui suit vise alors le cadre) : on retient s'il a touché la photo.
+    surPhoto.current = ev.target === img.current;
     cadre.current?.setPointerCapture?.(ev.pointerId);
     doigts.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     if (doigts.current.size === 2) {
@@ -132,6 +141,8 @@ function ZoomImage({ src }) {
       onPointerUp={haut}
       onPointerCancel={haut}
       onDoubleClick={(ev) => basculer(ev.clientX, ev.clientY)}
+      // Toucher la photo ne ferme pas la visionneuse qui la contient ; toucher à côté, si.
+      onClick={(ev) => { if (surPhoto.current || ev.target === img.current) ev.stopPropagation(); }}
       style={{ cursor: etat.s > 1 ? "grab" : "zoom-in" }}
     >
       <img
@@ -140,14 +151,16 @@ function ZoomImage({ src }) {
         alt=""
         draggable={false}
         data-sans-zoom
-        className={`max-h-full max-w-full object-contain ${anime ? "transition-transform duration-200" : ""}`}
+        className={`${classeImage} object-contain ${anime ? "transition-transform duration-200" : ""}`}
         style={{ transform: `translate(${etat.x}px, ${etat.y}px) scale(${etat.s})` }}
       />
     </div>
   );
 }
 
-function Visionneuse({ src, telechargeable = true, onClose }) {
+// 1.3.34 : seuls les fonds d'écran se téléchargent (bouton de Multimédia › Fonds d'écran) : plus de bouton
+// « Télécharger » ici, et pas de menu « Enregistrer l'image » à l'appui long sur les photos de l'app.
+function Visionneuse({ src, telechargeable = false, onClose }) {
   const { toast } = useToast();
   const [telechargement, setTelechargement] = useState(false);
   const [aide, setAide] = useState(true);
@@ -207,12 +220,13 @@ function Visionneuse({ src, telechargeable = true, onClose }) {
 
 export default function VisionneusePhoto() {
   const [src, setSrc] = useState(null);
-  const [telechargeable, setTelechargeable] = useState(true);
+  const telechargeable = false;
 
-  // Appui long / clic droit sur une photo de profil : pas de menu « Enregistrer l'image ».
+  // Appui long / clic droit sur une photo : pas de menu « Enregistrer l'image » (1.3.34 : toutes les photos ;
+  // seuls les fonds d'écran se téléchargent, par leur bouton).
   useEffect(() => {
     const menu = (e) => {
-      if (e.target instanceof HTMLImageElement && estPhotoProfil(e.target)) e.preventDefault();
+      if (e.target instanceof HTMLImageElement) e.preventDefault();
     };
     document.addEventListener("contextmenu", menu, true);
     return () => document.removeEventListener("contextmenu", menu, true);
@@ -234,7 +248,6 @@ export default function VisionneusePhoto() {
       if (!ok) return;
       e.preventDefault();
       e.stopPropagation();
-      setTelechargeable(!estPhotoProfil(cible));
       setSrc(adresseGrande(cible.currentSrc || cible.src));
     };
     document.addEventListener("click", clic, true);

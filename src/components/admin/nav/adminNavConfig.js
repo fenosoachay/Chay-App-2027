@@ -37,7 +37,14 @@ export const ADMIN_NAV = [
             id: "app_media", label: "Multimédia", icon: Film,
             items: [
               { key: "MusicTrack", mots: "chant chanson louange", label: "Musique", icon: Music, path: "/admin/music" },
-              { key: "TexteDefilant", mots: "texte defile defilant lecteur photo musique predication bible audio", label: "Texte qui défile", icon: Type, path: "/admin/texte-defilant" },
+              {
+                // 1.3.34 : Lecteur audio › Image qui défile, Texte qui défile.
+                id: "app_lecteur", label: "Lecteur audio", icon: Headphones,
+                items: [
+                  { key: "ImageDefilante", mots: "image photo defile defilante diaporama lecteur audio fond", label: "Image qui défile", icon: ImageIcon, path: "/admin/image-defilante" },
+                  { key: "TexteDefilant", mots: "texte defile defilant lecteur photo musique predication bible audio", label: "Texte qui défile", icon: Type, path: "/admin/texte-defilant" },
+                ],
+              },
               { key: "Sermon", mots: "predication sermon message audio", label: "Prédication", icon: Headphones, path: "/admin/sermons" },
               { key: "Video", mots: "film drole tiktok court", label: "Vidéo", icon: Video, path: "/admin/videos" },
               { key: "YouTubeVideo", mots: "culte celebration", label: "YouTube", icon: Youtube, path: "/admin/youtube" },

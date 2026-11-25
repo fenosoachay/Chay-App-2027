@@ -3,6 +3,8 @@ import {
   Image as ImageIcon, Bell, HelpCircle, Mail, Newspaper, Landmark, UserSquare, Globe, Smartphone, Type, Palette, Phone, Hash,
 } from "lucide-react";
 import { AUDIENCES } from "@/lib/audience";
+import { ANIMATIONS as ANIMATIONS_TEXTE } from "@/lib/texteDefilant";
+import { ANIMATIONS_IMAGES, FORMATS as FORMATS_IMAGES } from "@/lib/imagesDefilantes";
 
 const LANGS = [
   { value: "fr", label: "Français" },
@@ -298,11 +300,8 @@ export const SECTIONS = [
     listColumns: ["texte", "ou"],
     fields: [
       { name: "texte", label: "Texte", type: "textarea", required: true },
-      // 1.3.34 : deux bandes horizontales (valeurs « gauche » / « monte » gardées : pas de migration).
-      { name: "direction", label: "Bande", type: "select", required: true, options: [
-        { value: "gauche", label: "En bas (de droite à gauche)" },
-        { value: "monte", label: "En haut (de gauche à droite)" },
-      ] },
+      // 1.3.34 : 12 animations (lib/texteDefilant.js › ANIMATIONS ; migration migrer-1-3-34.mjs).
+      { name: "direction", label: "Animation", type: "select", required: true, options: ANIMATIONS_TEXTE },
       { name: "ou", label: "Apparaît où ?", type: "select", required: true, options: [
         { value: "partout", label: "Partout (Musique, Prédication et Bible en audio)" },
         { value: "musique", label: "Musique" },
@@ -319,6 +318,34 @@ export const SECTIONS = [
       { name: "couleur", label: "Couleur", type: "select", options: [
         { value: "blanc", label: "Blanc" }, { value: "dore", label: "Doré" }, { value: "jaune", label: "Jaune" },
         { value: "rose", label: "Rose" }, { value: "bleu", label: "Bleu clair" },
+      ] },
+    ],
+  },
+  {
+    // Image qui défile (1.3.34) : groupes de photos d'un même format sur l'image du lecteur audio.
+    key: "ImageDefilante",
+    label: "Image qui défile",
+    icon: ImageIcon,
+    sort: "order",
+    listColumns: ["titre"],
+    fields: [
+      { name: "titre", label: "Nom du groupe", type: "text", required: true },
+      { name: "format", label: "Format des photos", type: "select", required: true, options: FORMATS_IMAGES.map(({ value, label }) => ({ value, label })),
+        help: "Seules les photos d'un même format défilent ensemble. Choisissez le format avant d'ajouter les photos : chacune est rognée à ce format." },
+      { name: "images", label: "Photos", type: "images_format", formatField: "format", required: true },
+      { name: "animation", label: "Animation", type: "select", required: true, options: ANIMATIONS_IMAGES },
+      { name: "ou", label: "Apparaît où ?", type: "select", required: true, options: [
+        { value: "partout", label: "Partout (Musique, Prédication et Bible en audio)" },
+        { value: "musique", label: "Musique" },
+        { value: "predication", label: "Prédication" },
+        { value: "bible", label: "Bible en audio" },
+      ] },
+      { name: "playlist_id", label: "Seulement dans cette playlist (sinon : toutes)", type: "playlist_lecteur" },
+      { name: "track_id", label: "Seulement sur ce titre (sinon : tous)", type: "titre_lecteur" },
+      { name: "debut", label: "À partir du (facultatif)", type: "date" },
+      { name: "fin", label: "Jusqu'au (facultatif, inclus)", type: "date" },
+      { name: "vitesse", label: "Vitesse", type: "select", options: [
+        { value: "lent", label: "Lente" }, { value: "normal", label: "Normale" }, { value: "rapide", label: "Rapide" },
       ] },
     ],
   },

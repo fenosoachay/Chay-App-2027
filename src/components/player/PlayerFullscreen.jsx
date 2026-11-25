@@ -20,6 +20,7 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 import BoutonTv from "@/components/tv/BoutonTv";
 import TexteDefilantCouverture from "@/components/player/TexteDefilantCouverture";
 import BoutonFavoriLecteur from "@/components/player/BoutonFavoriLecteur";
+import ImagesDefilantes from "@/components/player/ImagesDefilantes";
 
 export default function PlayerFullscreen({ onCollapse, cover }) {
   useBackHandler(true, onCollapse);
@@ -47,7 +48,7 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
   const buffering = playerState === "connecting" || playerState === "buffering";
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background/98 backdrop-blur-xl flex flex-col animate-float-in">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-float-in">
       <div className="flex items-center justify-between p-4">
         <button
           onClick={onCollapse}
@@ -86,7 +87,8 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
               <Music className="h-16 w-16 text-white/90" />
             </div>
           )}
-          {/* Texte qui défile sur la photo (Admin › Multimédia › Texte qui défile, 1.3.26). */}
+          {/* Image qui défile (1.3.34), puis le texte par-dessus (Admin › Multimédia › Lecteur audio). */}
+          <ImagesDefilantes piste={currentTrack} />
           <TexteDefilantCouverture piste={currentTrack} />
         </div>
         <div className="text-center w-full max-w-sm">

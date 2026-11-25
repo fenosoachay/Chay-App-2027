@@ -4,6 +4,9 @@ import { base44 } from "@/api/base44Client";
 import { uploadToBase44, formatBytes } from "@/lib/upload";
 import { creerApercu } from "@/lib/fondsEcran";
 import RichTextEditor from "@/components/media/RichTextEditor";
+import ImageCrop from "@/components/media/ImageCrop";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FORMATS, ratioDe } from "@/lib/imagesDefilantes";
 
 // Seuil au-delà duquel un fichier est envoyé en mode morcelé (chunked) avec
 // progression détaillée — même logique que src/lib/upload.js (SEUIL_UPLOAD_DIRECT).
@@ -94,6 +97,88 @@ function ImagesField({ value, onChange, onUploadingChange }) {
         <input type="file" accept="image/*" multiple className="hidden" disabled={envoi} onChange={(e) => { ajouter(e.target.files); e.target.value = ""; }} />
       </label>
       {erreur && <p className="text-xs font-semibold text-destructive">{erreur}</p>}
+    </div>
+  );
+}
+
+/**
+ * Image qui défile (1.3.34) : photos d'un même format (champ `formatField` du formulaire). Chaque photo choisie
+ * est rognée au format avant l'envoi ; plusieurs photos se rognent l'une après l'autre.
+ */
+function ImagesFormatField({ value, onChange, onUploadingChange, format }) {
+  const liste = Array.isArray(value) ? value : [];
+  const [file, setFile] = useState([]); // photos en attente de rognage
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const ratio = ratioDe(format);
+  const nomFormat = (FORMATS.find((f) => f.value === format) || FORMATS[0]).label;
+  const courante = file[0] || null;
+  const suivante = () => setFile((f) => f.slice(1));
+  const envoyer = async (blob) => {
+    setEnvoi(true);
+    setErreur("");
+    onUploadingChange?.(true);
+    try {
+      const f = blob instanceof File ? blob : new File([blob], `image-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
+      const url = await uploadToBase44(f);
+      onChange([...(Array.isArray(value) ? value : []), url]);
+      suivante();
+    } catch (e) {
+      setErreur(`Envoi impossible : ${e?.message || e}`);
+    } finally {
+      setEnvoi(false);
+      onUploadingChange?.(false);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      {!format && <p className="text-xs font-semibold text-amber-600">Choisissez d'abord le format.</p>}
+      {liste.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {liste.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative overflow-hidden rounded-xl bg-black" style={{ aspectRatio: ratio }}>
+              <img src={url} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange(liste.filter((_, j) => j !== i))}
+                className="absolute right-1 top-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-bold text-white"
+                aria-label={`Retirer la photo ${i + 1}`}
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-bold ${format ? "cursor-pointer hover:bg-muted" : "pointer-events-none opacity-50"}`}>
+        {envoi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {envoi ? "Envoi…" : `Ajouter des photos (${nomFormat})`}
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          disabled={!format || envoi}
+          onChange={(e) => { setFile([...(e.target.files || [])].filter((f) => f.type.startsWith("image/"))); e.target.value = ""; }}
+        />
+      </label>
+      {erreur && <p className="text-xs font-semibold text-destructive">{erreur}</p>}
+      <Dialog open={Boolean(courante)} onOpenChange={(o) => { if (!o) setFile([]); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rogner la photo ({nomFormat})</DialogTitle>
+            <DialogDescription>{file.length > 1 ? `Encore ${file.length - 1} photo(s) après celle-ci.` : "Ajustez le cadre, puis validez."}</DialogDescription>
+          </DialogHeader>
+          {courante && (
+            <ImageCrop key={`${courante.name}-${file.length}`} file={courante} aspect={ratio} outW={1080} onCancel={suivante} onConfirm={(blob) => envoyer(blob)} />
+          )}
+          {envoi && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" /> Envoi…
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -365,7 +450,7 @@ function FileUploadField({ field, value, onChange, onUploadingChange, onChangeCh
   );
 }
 
-export default function FieldInput({ field, value, onChange, onUploadingChange, onChangeChamp }) {
+export default function FieldInput({ field, value, onChange, onUploadingChange, onChangeChamp, donnees }) {
   const cls =
     "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
@@ -462,6 +547,8 @@ export default function FieldInput({ field, value, onChange, onUploadingChange, 
       );
     case "images":
       return <ImagesField value={value} onChange={onChange} onUploadingChange={onUploadingChange} />;
+    case "images_format":
+      return <ImagesFormatField value={value} onChange={onChange} onUploadingChange={onUploadingChange} format={donnees?.[field.formatField]} />;
     case "file":
       return (
         <FileUploadField

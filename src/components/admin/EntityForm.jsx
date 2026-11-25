@@ -81,7 +81,8 @@ export default function EntityForm({
             value={data[f.name]}
             onChange={set(f.name)}
             onChangeChamp={(nom, v) => set(nom)(v)}
-            onUploadingChange={f.type === "file" || f.type === "images" ? setUploading : undefined}
+            donnees={data}
+            onUploadingChange={f.type === "file" || f.type === "images" || f.type === "images_format" ? setUploading : undefined}
           />
           {f.help && <p className="mt-1 text-xs text-muted-foreground">{f.help}</p>}
         </div>

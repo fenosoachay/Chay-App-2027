@@ -1,20 +1,18 @@
 import React, { useRef, useState } from "react";
 import useKeyboardShortcuts from "@/hooks/useKeyboardShortcuts";
-import { X, ChevronLeft, ChevronRight, Download, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
-import { enregistrerFond } from "@/lib/fondsEcran";
-import { useToast } from "@/components/ui/use-toast";
+import { ZoomImage } from "@/components/VisionneusePhoto";
 
 /**
  * Visionneuse plein écran des photos d'une conversation.
  * - Galerie : défilement entre toutes les photos (flèches, clavier, ou glisser du doigt à gauche / à droite).
- * - Téléchargement direct de la photo affichée.
+ * - 1.3.34 : on zoome directement (pincer, double-toucher) ; pas de téléchargement (seuls les fonds d'écran).
  */
 export default function PhotoViewer({ images, index, onClose }) {
   useBackHandler(true, onClose);
-  const { toast } = useToast();
   const [i, setI] = useState(index || 0);
-  const [downloading, setDownloading] = useState(false);
+  const [zoome, setZoome] = useState(false);
   const total = images.length;
 
   useKeyboardShortcuts(true, {
@@ -22,24 +20,6 @@ export default function PhotoViewer({ images, index, onClose }) {
     ArrowLeft: () => { if (total > 1) setI((p) => (p - 1 + total) % total); },
     ArrowRight: () => { if (total > 1) setI((p) => (p + 1) % total); },
   });
-
-  // Téléchargement : APK -> galerie du téléphone (Images › Chay) ; navigateur -> fichier téléchargé.
-  const download = async () => {
-    const url = images[i];
-    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
-    setDownloading(true);
-    try {
-      const ou = await enregistrerFond({ image_url: url, title: "photo-chay" });
-      toast({
-        title: ou === "galerie" ? "Photo enregistrée dans la galerie" : "Photo téléchargée",
-        description: ou === "galerie" ? "Dossier Images › Chay." : undefined,
-      });
-    } catch (error) {
-      toast({ title: "Téléchargement impossible", description: error?.message, variant: "destructive" });
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   const go = (e, dir) => {
     e.stopPropagation();
@@ -57,7 +37,7 @@ export default function PhotoViewer({ images, index, onClose }) {
     const d = debut.current;
     debut.current = null;
     const t = e.changedTouches[0];
-    if (!d || !t || total < 2) return;
+    if (!d || !t || total < 2 || zoome) return; // photo zoomée : le doigt déplace la photo
     const dx = t.clientX - d.x;
     const dy = t.clientY - d.y;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -74,32 +54,23 @@ export default function PhotoViewer({ images, index, onClose }) {
       onTouchEnd={toucherFin}
     >
       <button
-        className="absolute top-4 right-4 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+        className="absolute z-10 top-4 right-4 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Fermer"
       >
         <X className="h-6 w-6" />
       </button>
-      <button
-        className="absolute top-4 left-4 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white disabled:opacity-50"
-        onClick={(e) => { e.stopPropagation(); download(); }}
-        aria-label="Télécharger"
-        disabled={downloading}
-      >
-        {downloading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-      </button>
-
       {total > 1 && (
         <>
           <button
-            className="absolute left-2 md:left-6 h-12 w-12 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+            className="absolute z-10 left-2 md:left-6 h-12 w-12 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
             onClick={(e) => go(e, -1)}
             aria-label="Précédent"
           >
             <ChevronLeft className="h-7 w-7" />
           </button>
           <button
-            className="absolute right-2 md:right-6 h-12 w-12 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+            className="absolute z-10 right-2 md:right-6 h-12 w-12 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
             onClick={(e) => go(e, 1)}
             aria-label="Suivant"
           >
@@ -108,16 +79,12 @@ export default function PhotoViewer({ images, index, onClose }) {
         </>
       )}
 
-      <img
-        src={images[i]}
-        alt="Photo"
-        onClick={(e) => e.stopPropagation()}
-        draggable={false}
-        className="max-w-[92vw] max-h-[82vh] object-contain rounded-lg select-none"
-      />
+      <div className="absolute inset-0">
+        <ZoomImage key={images[i]} src={images[i]} classeImage="max-w-[92vw] max-h-[82vh] rounded-lg" onZoom={setZoome} />
+      </div>
 
       {total > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
+        <div className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
           {i + 1} / {total}
         </div>
       )}

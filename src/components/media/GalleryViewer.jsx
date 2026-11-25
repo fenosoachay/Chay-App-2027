@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatTimestamp } from "@/lib/formatTimestamp";
 import { GALLERY_SECTIONS } from "@/lib/mediaConstants";
 import { confirmFr } from "@/lib/confirmFr";
+import { ZoomImage } from "@/components/VisionneusePhoto";
 
 // Les commentaires de photo réutilisent l'entité Comment (déjà utilisée par
 // la Communauté). Le champ `post_id` reçoit un préfixe « gallery: » pour ne
@@ -71,6 +72,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   );
 
   const touch = useRef(null);
+  const [zoome, setZoome] = useState(false);
   const swiped = useRef(false);
   const swipeTimer = useRef(null);
 
@@ -171,7 +173,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
   const onTouchEnd = (e) => {
     const start = touch.current;
     touch.current = null;
-    if (!start || items.length < 2) return;
+    if (!start || items.length < 2 || zoome) return; // photo zoomée : le doigt déplace la photo
 
     const t = e.changedTouches[0];
     const dx = t.clientX - start.x;
@@ -421,19 +423,21 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
           )}
 
           {/* Photo affichée : pas de key (pas de remontage), fondu seulement à la toute première image. */}
+          {/* 1.3.34 : on zoome directement sur la photo (pincer, double-toucher), sans la toucher d'abord. */}
           {visibleSrc && (
-            <motion.img
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              src={visibleSrc}
-              alt=""
-              draggable={false}
-              onClick={(e) => e.stopPropagation()}
-              className={`max-w-[92vw] object-contain select-none transition-[max-height] duration-200 ${
-                showComments ? "max-h-[52vh]" : "max-h-[88vh]"
-              }`}
-            />
+              className="absolute inset-0"
+            >
+              <ZoomImage
+                key={visibleSrc}
+                src={visibleSrc}
+                onZoom={setZoome}
+                classeImage={`max-w-[92vw] select-none transition-[max-height] duration-200 ${showComments ? "max-h-[52vh]" : "max-h-[88vh]"}`}
+              />
+            </motion.div>
           )}
 
           {/* Panneau de commentaires */}
