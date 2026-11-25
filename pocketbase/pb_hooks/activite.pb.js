@@ -61,7 +61,11 @@ routerAdd('GET', '/api/chay/admin/stats', (e) => {
     const b = act.bornes(jour);
     const debut = b.semaine < b.mois ? b.semaine : b.mois;
 
-    const membres = $app.findRecordsByFilter('users', 'disabled != true && systeme != true', '', 0, 0).map((u) => {
+    // 1.3.32 : mêmes comptes que Communauté › Utilisateurs : inscription terminée (prénom ou nom), compte actif,
+    // hors compte automatique « Chay ».
+    const membres = $app.findRecordsByFilter('users', 'disabled != true && systeme != true', '', 0, 0)
+      .filter((u) => (u.getString('first_name') || u.getString('last_name')).trim())
+      .map((u) => {
       const p = fn.plain(u);
       const cree = fn.createdDate(p);
       const nom = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || 'Membre';

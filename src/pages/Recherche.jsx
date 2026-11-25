@@ -5,9 +5,7 @@ import {
   Music, Newspaper, Search, Type, User, Users, Youtube, FileText,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { loadConcordance, lookupPhrase } from "@/lib/bibleConcordance";
-import { VERSIONS } from "@/lib/bibleConstants";
-import { chercherRubriques, filtreContient, nettoyerRecherche, routeVersetBible, SOURCES, versResultats } from "@/lib/rechercheGlobale";
+import { chercherRubriques, filtreContient, nettoyerRecherche, SOURCES, versResultats } from "@/lib/rechercheGlobale";
 
 const ICONES = {
   rubrique: LayoutGrid, music: Music, playlist: ListMusic, sermon: Mic, film: Film, youtube: Youtube, paroles: Type,
@@ -15,8 +13,6 @@ const ICONES = {
   personne: User, membre: Users, bible: BookOpen,
 };
 const PAR_GROUPE = 6;
-const BIBLE_MAX = 5;
-const LANGUES_BIBLE = [["fr", "Bible · Louis Segond"], ["mg", "Baiboly Masina"]];
 
 function Resultat({ r, icone, onOuvrir }) {
   const Icone = ICONES[icone] || Search;
@@ -56,15 +52,14 @@ function Groupe({ titre, icone, resultats, onOuvrir, lienPlus }) {
 }
 
 // Recherche dans toute l'app (1.3.26) : rubriques, contenus (musique, playlists, prédications, films, YouTube, paroles,
-// versets, articles, galerie, actualité, annonces, pages de l'Église, personnel, membres) et versets de la Bible
-// (français et malgache, avec l'index de la concordance gardé sur l'appareil).
+// versets du Multimédia, articles, galerie, actualité, annonces, pages de l'Église, personnel, membres).
+// La Bible n'est plus cherchée ici (1.3.32) : trop de résultats.
 export default function Recherche() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [saisie, setSaisie] = useState(params.get("q") || "");
   const [texte, setTexte] = useState(nettoyerRecherche(params.get("q") || ""));
   const [contenus, setContenus] = useState({});
-  const [bible, setBible] = useState({});
   const [enCours, setEnCours] = useState(0);
   const champ = useRef(null);
 
@@ -82,10 +77,9 @@ export default function Recherche() {
 
   useEffect(() => {
     setContenus({});
-    setBible({});
     if (!texte) return undefined;
     let actif = true;
-    setEnCours(SOURCES.length + LANGUES_BIBLE.length);
+    setEnCours(SOURCES.length);
     const fini = () => actif && setEnCours((n) => Math.max(0, n - 1));
     for (const s of SOURCES) {
       base44.entities[s.entite]
@@ -94,39 +88,12 @@ export default function Recherche() {
         .catch(() => {})
         .finally(fini);
     }
-    for (const [lang] of LANGUES_BIBLE) {
-      loadConcordance(lang)
-        .then((index) => {
-          if (!actif) return;
-          const { total, entries } = lookupPhrase(index, texte, { limit: BIBLE_MAX });
-          const version = VERSIONS[lang][0].id;
-          setBible((b) => ({
-            ...b,
-            [lang]: {
-              total,
-              resultats: entries.map((v) => {
-                const livre = index.books[v.bookIdx] || {};
-                return {
-                  id: `bible:${lang}:${v.bookIdx}:${v.chapter}:${v.verse}`,
-                  titre: `${livre.name || ""} ${v.chapter}:${v.verse}`.trim(),
-                  sousTitre: v.text,
-                  image: "",
-                  route: routeVersetBible(version, livre.id, v.chapter, v.verse),
-                };
-              }).filter((x) => x.route.includes("ref=") && !x.route.includes("undefined")),
-            },
-          }));
-        })
-        .catch(() => {})
-        .finally(fini);
-    }
     return () => { actif = false; };
   }, [texte]);
 
   const rubriques = useMemo(() => chercherRubriques(saisie), [saisie]);
   const nbContenus = Object.values(contenus).reduce((n, l) => n + l.length, 0);
-  const nbBible = Object.values(bible).reduce((n, b) => n + b.resultats.length, 0);
-  const rien = texte && !enCours && !rubriques.length && !nbContenus && !nbBible;
+  const rien = texte && !enCours && !rubriques.length && !nbContenus;
   const ouvrir = (route) => navigate(route);
 
   return (
@@ -155,7 +122,7 @@ export default function Recherche() {
 
       {!saisie.trim() && (
         <p className="px-3 pt-6 text-center text-sm text-foreground/50">
-          Cherchez un titre de musique, une playlist, un verset de la Bible, une prédication, un article, une rubrique ou un membre.
+          Cherchez un titre de musique, une playlist, une prédication, un article, une rubrique ou un membre.
         </p>
       )}
 
@@ -163,10 +130,6 @@ export default function Recherche() {
         <Groupe titre="Dans l'app" icone="rubrique" resultats={rubriques} onOuvrir={ouvrir} />
         {SOURCES.map((s) => (
           <Groupe key={s.entite} titre={s.groupe} icone={s.icone} resultats={contenus[s.entite] || []} onOuvrir={ouvrir} />
-        ))}
-        {LANGUES_BIBLE.map(([lang, titre]) => (
-          <Groupe key={lang} titre={titre} icone="bible" resultats={bible[lang]?.resultats || []} onOuvrir={ouvrir}
-            lienPlus={(bible[lang]?.total || 0) > BIBLE_MAX ? { texte: `Voir les ${bible[lang].total} versets dans la concordance`, route: `/bible?view=concordance&lang=${lang}&word=${encodeURIComponent(texte)}` } : null} />
         ))}
       </div>
 

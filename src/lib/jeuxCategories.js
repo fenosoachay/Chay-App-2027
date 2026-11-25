@@ -12,6 +12,9 @@ export const JEUX = [
   { id: "scramble", name: "Mots mélangés", path: "/word-scramble" },
   // 1.3.31 : Personnalité biblique retirée ; Mots croisés (classés d'office dans Chay Game, l'admin peut changer).
   { id: "motscroises", name: "Mots croisés", path: "/mots-croises", slotDefaut: "game" },
+  { id: "enigmes", name: "Énigmes", path: "/enigmes", slotDefaut: "game" }, // 1.3.32
+  { id: "ouvastu", name: "Où vas-tu ?", path: "/ou-vas-tu", slotDefaut: "game" }, // 1.3.32
+  { id: "fronde", name: "Chay Fronde", path: "/chay-fronde", slotDefaut: "playmobile" }, // 1.3.32
 ];
 
 export const CATEGORIES_JEUX_DEFAUT = [

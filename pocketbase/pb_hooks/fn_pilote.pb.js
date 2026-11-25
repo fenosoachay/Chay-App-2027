@@ -8,7 +8,8 @@ routerAdd('POST', '/api/fn/listCommunityUsers', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
   return fn.run(e, 'listCommunityUsers', 'Erreur interne', () => {
     fn.requireUser(e, 'Connexion requise');
-    const records = $app.findRecordsByFilter('users', 'systeme != true', '-base44_created_date,-created', 100, 0); // sans le compte automatique « Chay »
+    // Sans le compte automatique « Chay » ni les comptes désactivés (1.3.32 : mêmes comptes que le tableau de bord).
+    const records = $app.findRecordsByFilter('users', 'systeme != true && disabled != true', '-base44_created_date,-created', 1000, 0);
     // Sans les inscriptions jamais terminées (ni prénom ni nom) : elles s'affichaient « Membre ».
     const users = records.filter((r) => (r.getString('first_name') || r.getString('last_name')).trim()).map((r) => ({
       id: r.id,

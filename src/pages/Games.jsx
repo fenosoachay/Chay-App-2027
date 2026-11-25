@@ -5,6 +5,9 @@ import {
   Brain,
   Blocks,
   Hash,
+  KeyRound,
+  Signpost,
+  Target,
   Check,
   Flame,
   Puzzle,
@@ -29,6 +32,9 @@ const APPARENCE = {
   scramble: { icon: Shuffle, tone: "from-[#FF57B2] to-[#FF4D2D]" },
   puzzle: { icon: Puzzle, tone: "from-[#2E6F40] to-[#4A6CFE]" },
   motscroises: { icon: Hash, tone: "from-[#C18B33] to-[#A84D70]" },
+  enigmes: { icon: KeyRound, tone: "from-[#3EC28F] to-[#4A6CFE]" },
+  ouvastu: { icon: Signpost, tone: "from-[#FF8A3D] to-[#FF4D2D]" },
+  fronde: { icon: Target, tone: "from-[#7cc6ff] to-[#4A6CFE]" },
 };
 const GAMES = JEUX.map((j) => ({ ...j, ...APPARENCE[j.id], live: true }));
 

@@ -48,6 +48,13 @@ test("score board 1.3.26 : le Puzzle est un jeu d'enfant (sauf ancienne app sans
   assert.equal(sc.espaceDe("voiture", "Mickael"), "enfant"); // 1.3.30
   assert.equal(sc.espaceDe("motscroises", ""), "adulte"); // 1.3.31
   assert.ok(sc.JEUX.adulte.includes("motscroises"));
+  assert.ok(sc.JEUX.adulte.includes("enigmes")); // 1.3.32
+  assert.equal(sc.pointsClient("enigmes", { enigme: 1, niveau: 1, etoiles: 3 }), 25);
+  assert.equal(sc.pointsClient("enigmes", { enigme: 9, niveau: 1, etoiles: 3 }), 0);
+  assert.equal(sc.pointsClient("ouvastu", { fin: "magasin-2" }), 20);
+  assert.equal(sc.pointsClient("ouvastu", { fin: "<script>" }), 0);
+  assert.equal(sc.pointsClient("fronde", { niveau: 20, etoiles: 3 }), 75);
+  assert.equal(sc.pointsClient("fronde", { niveau: 21, etoiles: 3 }), 0);
   assert.equal(sc.pointsClient("motscroises", { taille: 7, indices: 0, secondes: 100 }), 36);
   assert.equal(sc.pointsClient("motscroises", { taille: 11, indices: 2, secondes: 900 }), 80);
   assert.equal(sc.pointsClient("motscroises", { taille: 9, indices: 0, secondes: 5 }), 0);

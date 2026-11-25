@@ -7,10 +7,10 @@
 //  - général (tous les jeux additionnés) ou un seul jeu.
 
 const JEUX = {
-  adulte: ['trivia', 'scramble', 'emoji', 'motscroises'], // 1.3.31 : Mots croisés
+  adulte: ['trivia', 'scramble', 'emoji', 'motscroises', 'enigmes', 'ouvastu', 'fronde'], // 1.3.31 : Mots croisés ; 1.3.32 : Énigmes, Où vas-tu ?, Chay Fronde
   enfant: ['memory', 'puzzle', 'brique', 'voiture'], // 1.3.29 : Brique ; 1.3.30 : Libère la voiture
 };
-const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory', 'voiture', 'motscroises']; // scores envoyés par l'app (bornés ici)
+const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory', 'voiture', 'motscroises', 'enigmes', 'ouvastu', 'fronde']; // scores envoyés par l'app (bornés ici)
 const MULT = { easy: 1, medium: 2, hard: 3, ultra_hard: 4, facile: 1, moyen: 2, difficile: 3 };
 const PLAFOND = 1000;
 const AVATARS = ['🦁', '🐑', '🕊️', '🐟', '🐘', '🦒', '🐻', '🐰', '🦊', '🐢', '🐝', '🦋', '🐳', '🐧', '🦉', '🐞'];
@@ -39,6 +39,24 @@ function pointsMotsCroises(taille, indices, secondes) {
   const bonus = s <= T[1] ? Math.round(T[0] * 0.2) : 0;
   return Math.max(5, T[0] + bonus - 10 * Math.max(0, entier(indices)));
 }
+/** Énigmes (1.3.32) : énigme 1 à 8, niveau 1 à 3, 1 à 3 étoiles -> 10 + 5 × étoiles + 5 × (niveau − 1). */
+function pointsEnigme(enigme, niveau, etoiles) {
+  const e = entier(enigme);
+  const n = entier(niveau);
+  const s = entier(etoiles);
+  if (e < 1 || e > 8 || n < 1 || n > 3 || s < 1 || s > 3) return 0;
+  return 10 + 5 * s + 5 * (n - 1);
+}
+/** Où vas-tu ? (1.3.32) : 20 points par nouvelle fin découverte (« magasin-2 » : départ et numéro de fin). */
+function pointsOuVasTu(fin) {
+  return /^[a-z]{3,20}-[0-9]$/.test(String(fin || '')) ? 20 : 0;
+}
+/** Chay Fronde (1.3.32) : niveau 1 à 20, 1 à 3 étoiles -> (5 + niveau) × étoiles. */
+function pointsFronde(niveau, etoiles) {
+  const n = entier(niveau);
+  const e = entier(etoiles);
+  return n >= 1 && n <= 20 && e >= 1 && e <= 3 ? (5 + n) * e : 0;
+}
 /** Libère la voiture (1.3.30) : niveau 1 à 30, 1 à 3 étoiles -> (10 + 2 × niveau) × étoiles. */
 function pointsVoiture(niveau, etoiles) {
   const n = entier(niveau);
@@ -63,6 +81,9 @@ function pointsClient(jeu, b) {
   if (jeu === 'memory') return pointsMemory(d.etoiles, d.niveau);
   if (jeu === 'voiture') return pointsVoiture(d.niveau, d.etoiles);
   if (jeu === 'motscroises') return pointsMotsCroises(d.taille, d.indices, d.secondes);
+  if (jeu === 'enigmes') return pointsEnigme(d.enigme, d.niveau, d.etoiles);
+  if (jeu === 'ouvastu') return pointsOuVasTu(d.fin);
+  if (jeu === 'fronde') return pointsFronde(d.niveau, d.etoiles);
   return 0;
 }
 
@@ -123,6 +144,6 @@ function classer(lignes) {
 
 module.exports = {
   JEUX, JEUX_CLIENT, AVATARS, PLAFOND,
-  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsVoiture, pointsMotsCroises, pointsClient,
+  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsVoiture, pointsMotsCroises, pointsEnigme, pointsOuVasTu, pointsFronde, pointsClient,
   pseudoValide, avatarValide, espaceDe, debutPeriode, datePb, classer,
 };

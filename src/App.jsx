@@ -38,6 +38,9 @@ const Media = lazy(() => import("@/pages/Media"));
 const Games = lazy(() => import("@/pages/Games"));
 const EmojisGame = lazy(() => import("@/components/games/EmojisGame"));
 const MotsCroises = lazy(() => import("@/pages/MotsCroises"));
+const Enigmes = lazy(() => import("@/pages/Enigmes"));
+const OuVasTu = lazy(() => import("@/pages/OuVasTu"));
+const ChayFronde = lazy(() => import("@/pages/ChayFronde"));
 const Quiz = lazy(() => import("@/pages/Quiz"));
 const QuizPlay = lazy(() => import("@/pages/QuizPlay"));
 const QuizResults = lazy(() => import("@/pages/QuizResults"));
@@ -128,6 +131,9 @@ const AuthenticatedApp = () => {
           {/* 1.3.31 : la Personnalité biblique est retirée ; Mots croisés bibliques ajoutés. */}
           <Route path="/personality-quiz" element={<Navigate to="/games" replace />} />
           <Route path="/mots-croises" element={<MotsCroises />} />
+          <Route path="/enigmes" element={<Enigmes />} />
+          <Route path="/ou-vas-tu" element={<OuVasTu />} />
+          <Route path="/chay-fronde" element={<ChayFronde />} />
           {/* 1.3.29 : Brique est un jeu de Chay Enfants. */}
           <Route path="/block-blast" element={<Navigate to="/kids?vue=jeux&jeu=brique" replace />} />
           <Route path="/quiz" element={<Quiz />} />
