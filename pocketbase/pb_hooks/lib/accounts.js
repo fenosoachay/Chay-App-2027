@@ -129,6 +129,19 @@ function deleteAccount(app, userId) {
     }
   }
 
+  // 1.3.36 : réactions aux messages (objet { id_membre: emoji }) : celles du membre disparaissent.
+  try {
+    each(app, 'Message', 'reactions ~ {:q}', p, (r) => {
+      const reactions = JSON.parse(JSON.stringify(r)).reactions || {};
+      if (!(userId in reactions)) return false;
+      delete reactions[userId];
+      r.set('reactions', reactions);
+      app.save(r);
+      summary.anonymises++;
+      return true;
+    });
+  } catch (_) { /* champ « reactions » absent (avant la migration 1.3.36) */ }
+
   for (const [collection, fields] of CLEAR_FIELDS) {
     for (const field of fields) {
       each(app, collection, `${field} = {:u}`, p, (r) => {

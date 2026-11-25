@@ -1,12 +1,19 @@
 // 1.3.34 : playlists « Mindset » (Multimédia › Vidéo et Galerie) : pas de notification automatique à l'ajout.
+// 1.3.36 : « Pédagogie en image » aussi.
 // L'admin décide : bouton 🔔 sur le contenu -> « Chay attire ton attention sur cette vidéo / photo : … ».
 const simplifier = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
 
 export const ENTITES_ATTENTION = { Video: "video", GalleryImage: "photo" };
 
-/** Vrai si la playlist (ou sa playlist parente) s'appelle « Mindset ». `libelle` : « Playlist › Sous-playlist ». */
+// 1.3.36 : même règle pour « Pédagogie en image(s) » (Galerie).
+export const PLAYLISTS_MANUELLES = ["mindset", "pedagogieenimage", "pedagogieenimages"];
+
+/**
+ * Vrai si la playlist (ou sa playlist parente) est notifiée seulement à la main : « Mindset » ou
+ * « Pédagogie en image(s) ». `libelle` : « Playlist › Sous-playlist ».
+ */
 export function estMindset(libelle) {
-  return String(libelle || "").split("›").some((p) => simplifier(p) === "mindset");
+  return String(libelle || "").split("›").some((p) => PLAYLISTS_MANUELLES.includes(simplifier(p)));
 }
 
 /** Notification automatique à l'ajout ? Non pour une vidéo ou une photo rangée dans Mindset. */

@@ -17,3 +17,11 @@ test("1.3.34 : Mindset (Vidéo et Galerie) : pas de notification automatique, no
   const serveur = fs.readFileSync(new URL("../../pocketbase/pb_hooks/lib/notifications.js", import.meta.url), "utf8");
   assert.match(serveur, /Chay attire ton attention sur/);
 });
+
+test("1.3.36 : « Pédagogie en image » comme Mindset (notification à la main seulement)", () => {
+  assert.ok(estMindset("Pédagogie en image"));
+  assert.ok(estMindset("Galerie › Pédagogie en images"));
+  assert.ok(estMindset("PÉDAGOGIE EN IMAGE › Foi"));
+  assert.ok(!estMindset("Pédagogie"));
+  assert.equal(notifierAutomatiquement("GalleryImage", "Pédagogie en image"), false);
+});

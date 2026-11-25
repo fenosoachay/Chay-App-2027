@@ -35,7 +35,7 @@ export default function DailyVerseCard({ user }) {
           const dev = Array.isArray(devs) && devs[0] ? devs[0] : null;
           const body = dev
             ? `${dev.verse_text || dev.title} — ${dev.scripture_reference || ""}`
-            : "« Je puis tout par celui qui me fortifie. » — Philippiens 4:13";
+            : "«\u00a0Je puis tout par celui qui me fortifie.\u00a0» — Philippiens\u00a04:13";
           new Notification("Verset du jour — CHAY", { body });
         } catch {
           /* ignore */

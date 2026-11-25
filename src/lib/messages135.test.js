@@ -1,4 +1,5 @@
 // 1.3.35 : pièces jointes, « vu », fonds des sections, web réservé aux admins, durée en secondes.
+import fs from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { apercuPiece, extensionVocal, formatDuree, genreFichier, ondeDe, typeEnregistrement } from "./piecesJointes.js";
@@ -84,4 +85,14 @@ test("1.3.36 : réactions (pastille, choix immédiat, liste)", async () => {
   assert.deepEqual(resume(null), { emojis: [], total: 0 });
   assert.deepEqual(appliquer({ a: "❤️" }, "a", "❤️"), {});
   assert.deepEqual(lecteursReactions({ a: "👍", b: "❤️" }).map((x) => x.uid), ["b", "a"]);
+});
+
+test("1.3.36 : versets : jamais de guillemet seul sur une ligne (espaces insécables)", () => {
+  const lire = (p) => fs.readFileSync(new URL(p, import.meta.url), "utf8");
+  for (const f of ["../components/home/VersetDuJourSection.jsx", "../components/notifications/DailyVerseCard.jsx"]) {
+    const s = lire(f);
+    assert.doesNotMatch(s, /« \{|"« [A-Z]/, f); // guillemet suivi d'une espace ordinaire
+  }
+  const w = lire("../../android/app/src/main/java/io/chay/app/VersetWidget.java");
+  assert.match(w, /\\u00AB\\u00A0" \+ texte\.trim\(\) \+ "\\u00A0\\u00BB"/);
 });

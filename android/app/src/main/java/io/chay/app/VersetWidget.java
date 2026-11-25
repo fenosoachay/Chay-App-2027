@@ -308,7 +308,8 @@ public class VersetWidget extends AppWidgetProvider {
         TextPaint pVerset = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         pVerset.setTypeface(italique);
         pVerset.setColor(0xFFFFFFFF);
-        String corps = "« " + texte + " »";
+        // 1.3.36 : espaces insécables : jamais de guillemet seul sur une ligne.
+        String corps = "\u00AB\u00A0" + texte.trim() + "\u00A0\u00BB";
         StaticLayout verset = null;
         for (float taille = 20; taille >= 12; taille -= 1) {
             pVerset.setTextSize(taille * u);
@@ -318,7 +319,7 @@ public class VersetWidget extends AppWidgetProvider {
         String coupe = texte;
         while (verset != null && verset.getHeight() > placeVerset && coupe.length() > 20) {
             coupe = coupe.substring(0, coupe.lastIndexOf(' ') > 10 ? coupe.lastIndexOf(' ') : coupe.length() - 10);
-            verset = new StaticLayout("« " + coupe + "… »", pVerset, (int) largeurTexte, Layout.Alignment.ALIGN_CENTER, 1.08f, 0f, false);
+            verset = new StaticLayout("\u00AB\u00A0" + coupe + "\u2026\u00A0\u00BB", pVerset, (int) largeurTexte, Layout.Alignment.ALIGN_CENTER, 1.08f, 0f, false);
         }
         float hauteurVerset = verset != null ? verset.getHeight() : 0;
 

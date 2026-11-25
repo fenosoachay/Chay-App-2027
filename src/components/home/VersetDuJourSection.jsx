@@ -312,7 +312,8 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
           ) : devotional ? (
             <>
               <p className="selectable mt-3 text-sm md:text-base font-light leading-snug font-body">
-                « {devotional.verse_text || devotional.title} »
+                {/* 1.3.36 : espaces insécables : jamais de guillemet seul sur une ligne. */}
+                {`«\u00a0${String(devotional.verse_text || devotional.title || "").trim()}\u00a0»`}
               </p>
               <p className="mt-1.5 text-xs font-medium text-white/75 font-body">
                 — {devotional.scripture_reference}
@@ -334,7 +335,7 @@ export default function VersetDuJourSection({ refreshKey = 0, adminOnly = false 
             </>
           ) : (
             <p className="selectable mt-3 text-sm md:text-base font-light leading-snug font-body">
-              « Je puis tout par celui qui me fortifie. » — Philippiens 4:13
+              {"«\u00a0Je puis tout par celui qui me fortifie.\u00a0» — Philippiens\u00a04:13"}
             </p>
           )}
         </div>
