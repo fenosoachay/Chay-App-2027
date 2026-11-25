@@ -56,3 +56,20 @@ export function dureePassage(distancePx, pxParSeconde) {
 
 /** Une playlist doit-elle être connue (sous-playlists) ? Seulement si un texte vise une playlist. */
 export const besoinPlaylists = (rows) => (Array.isArray(rows) ? rows : []).some((r) => r && r.playlist_id);
+
+/**
+ * 1.3.34 : deux bandes horizontales sur la photo : en bas de droite à gauche, en haut de gauche à droite.
+ * « gauche » -> bande du bas, « monte » -> bande du haut (valeurs gardées pour les textes existants).
+ * Une bande vide reprend des textes de l'autre : plusieurs textes se partagent les deux bandes ; un seul texte
+ * passe dans les deux (le même texte en haut et en bas).
+ */
+export function bandes(textes) {
+  const liste = Array.isArray(textes) ? textes : [];
+  let bas = liste.filter((t) => t.direction !== "monte");
+  let haut = liste.filter((t) => t.direction === "monte");
+  if (!haut.length && bas.length > 1) { haut = bas.filter((_, i) => i % 2 === 1); bas = bas.filter((_, i) => i % 2 === 0); }
+  else if (!bas.length && haut.length > 1) { bas = haut.filter((_, i) => i % 2 === 1); haut = haut.filter((_, i) => i % 2 === 0); }
+  if (!haut.length) haut = bas;
+  if (!bas.length) bas = haut;
+  return { haut, bas };
+}

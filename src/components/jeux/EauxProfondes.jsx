@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
 import { bougerBulles, creerBulles } from "@/lib/bulles";
 
 // 1.3.34 : les jeux d'une catégorie flottent comme des bulles au fond de l'eau. Elles ne s'arrêtent jamais de
@@ -28,56 +27,63 @@ function useInclinaison() {
   return ref;
 }
 
+// 1.3.34 : décor animé en CSS (transform et opacité seulement : la carte graphique s'en charge, plus de saccades).
+const CSS_DECOR = `
+@keyframes ep-rayon { 0%,100% { opacity: .25; transform: rotate(var(--r0)); } 50% { opacity: .55; transform: rotate(var(--r1)); } }
+@keyframes ep-plancton { 0%,100% { opacity: .1; transform: translateY(0); } 50% { opacity: .7; transform: translateY(-8px); } }
+@keyframes ep-monte { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: .8; } 50% { transform: translate(6px, -${HAUTEUR / 2}px); } 85% { opacity: .8; } 100% { opacity: 0; transform: translate(0, -${HAUTEUR + 30}px); } }
+@keyframes ep-poisson { from { transform: translateX(-80px); } to { transform: translateX(var(--l, 420px)); } }
+.ep-anim { will-change: transform, opacity; animation-iteration-count: infinite; }
+@media (prefers-reduced-motion: reduce) { .ep-anim { animation: none !important; } }
+`;
+
 function Decor({ theme }) {
-  const plancton = useMemo(() => Array.from({ length: 26 }, (_, i) => ({
+  const plancton = useMemo(() => Array.from({ length: 16 }, (_, i) => ({
     x: (i * 37) % 100, y: (i * 61) % 100, d: 6 + (i % 5) * 2, t: 1 + (i % 3),
   })), []);
-  const montee = useMemo(() => Array.from({ length: 9 }, (_, i) => ({ x: 6 + i * 11, d: 7 + (i % 4) * 2.5, r: 3 + (i % 3) * 2, w: i * 0.9 })), []);
+  const montee = useMemo(() => Array.from({ length: 7 }, (_, i) => ({ x: 8 + i * 13, d: 7 + (i % 4) * 2.5, r: 3 + (i % 3) * 2, w: i * 1.1 })), []);
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {/* Rayons de lumière venus de la surface */}
+      <style>{CSS_DECOR}</style>
+      {/* Rayons de lumière venus de la surface (dégradé large et doux, sans flou) */}
       {[12, 38, 66, 84].map((x, i) => (
-        <motion.div
+        <div
           key={x}
-          className="absolute -top-10 h-[130%] w-16 origin-top"
-          style={{ left: `${x}%`, background: `linear-gradient(180deg, ${theme.lueur}, transparent 75%)`, filter: "blur(6px)" }}
-          animate={{ rotate: [-14 + i * 6, -8 + i * 6, -14 + i * 6], opacity: [0.25, 0.55, 0.25] }}
-          transition={{ duration: 7 + i * 1.7, repeat: Infinity, ease: "easeInOut" }}
+          className="ep-anim absolute -top-10 h-[130%] w-24 origin-top"
+          style={{
+            left: `${x - 4}%`,
+            background: `radial-gradient(50% 60% at 50% 0%, ${theme.lueur}, transparent 80%)`,
+            "--r0": `${-14 + i * 6}deg`, "--r1": `${-8 + i * 6}deg`,
+            animation: `ep-rayon ${7 + i * 1.7}s ease-in-out infinite`,
+          }}
         />
       ))}
       {/* Plancton qui scintille */}
       {plancton.map((p, i) => (
-        <motion.span
+        <span
           key={i}
-          className="absolute rounded-full bg-white"
-          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.t, height: p.t }}
-          animate={{ opacity: [0.1, 0.7, 0.1], y: [0, -8, 0] }}
-          transition={{ duration: p.d, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
+          className="ep-anim absolute rounded-full bg-white"
+          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.t, height: p.t, animation: `ep-plancton ${p.d}s ease-in-out ${i * 0.3}s infinite` }}
         />
       ))}
       {/* Petites bulles qui montent */}
       {montee.map((m, i) => (
-        <motion.span
+        <span
           key={`m${i}`}
-          className="absolute rounded-full border border-white/40 bg-white/10"
-          style={{ left: `${m.x}%`, bottom: -10, width: m.r * 2, height: m.r * 2 }}
-          animate={{ y: [0, -HAUTEUR - 30], x: [0, 6, -6, 0], opacity: [0, 0.8, 0.8, 0] }}
-          transition={{ duration: m.d, repeat: Infinity, delay: m.w, ease: "linear" }}
+          className="ep-anim absolute rounded-full border border-white/40 bg-white/10"
+          style={{ left: `${m.x}%`, bottom: -10, width: m.r * 2, height: m.r * 2, opacity: 0, animation: `ep-monte ${m.d}s linear ${m.w}s infinite` }}
         />
       ))}
       {/* Poissons au loin */}
       {[0, 1].map((i) => (
-        <motion.svg
+        <svg
           key={`p${i}`}
           viewBox="0 0 40 16"
-          className="absolute h-4 w-10"
-          style={{ top: `${28 + i * 38}%`, opacity: 0.22 }}
-          initial={{ x: i ? 420 : -60 }}
-          animate={{ x: i ? -60 : 420 }}
-          transition={{ duration: 26 + i * 9, repeat: Infinity, ease: "linear", delay: i * 6 }}
+          className="ep-anim absolute left-0 h-4 w-10"
+          style={{ top: `${28 + i * 38}%`, opacity: 0.22, animation: `ep-poisson ${26 + i * 9}s linear ${i * 6}s infinite ${i ? "reverse" : "normal"}` }}
         >
           <path d={i ? "M40 8 C28 0 14 0 8 8 C14 16 28 16 40 8 Z M8 8 L0 2 L0 14 Z" : "M0 8 C12 0 26 0 32 8 C26 16 12 16 0 8 Z M32 8 L40 2 L40 14 Z"} fill={theme.poisson} />
-        </motion.svg>
+        </svg>
       ))}
       {/* Fond sableux et ombre du large */}
       <div className="absolute inset-x-0 bottom-0 h-16" style={{ background: "radial-gradient(120% 100% at 50% 100%, rgba(255,255,255,0.08), transparent 70%)" }} />
@@ -100,7 +106,6 @@ function Bulle({ jeu, taille, onOpen, refEl }) {
         height: taille,
         background: "radial-gradient(circle at 50% 50%, rgba(160,225,255,0.06) 0 55%, rgba(120,200,255,0.28) 88%, rgba(255,255,255,0.6) 100%)",
         boxShadow: "inset 0 0 18px rgba(170,230,255,0.35), inset -6px -10px 18px rgba(0,30,60,0.35), 0 8px 24px rgba(0,0,0,0.25)",
-        backdropFilter: "blur(1.5px)",
       }}
     >
       <span className={`grid h-[52%] w-[52%] place-items-center rounded-full bg-gradient-to-br ${jeu.tone} text-white shadow-[0_0_22px_rgba(255,255,255,0.35)]`}>
@@ -128,11 +133,19 @@ export default function EauxProfondes({ jeux, onOpen, slot = "game" }) {
     const tilt = { x: 0, y: 0 };
     let precedent = performance.now();
     let id;
+    // Largeur suivie par ResizeObserver : aucune lecture de mise en page à chaque image (évite les saccades).
+    let nouvelle = largeur;
+    const obs = typeof ResizeObserver !== "undefined" ? new ResizeObserver(([e]) => { nouvelle = e.contentRect.width || nouvelle; }) : null;
+    obs?.observe(el);
+    // Hors écran : on ne calcule rien.
+    let visible = true;
+    const vue = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([e]) => { visible = e.isIntersecting; }) : null;
+    vue?.observe(el);
     const image = (t) => {
       const dt = Math.min(48, t - precedent) / 16.67;
       precedent = t;
-      const w = el.clientWidth || largeur;
-      if (Math.abs(w - largeur) > 1) { largeur = w; bulles = creerBulles(liste.length, largeur, HAUTEUR, taille / 2, bulles); }
+      if (!visible) { id = requestAnimationFrame(image); return; }
+      if (Math.abs(nouvelle - largeur) > 1) { largeur = nouvelle; bulles = creerBulles(liste.length, largeur, HAUTEUR, taille / 2, bulles); }
       // Lent et doux : l'inclinaison est rejointe peu à peu.
       tilt.x += (inclinaison.current.x - tilt.x) * 0.04;
       tilt.y += (inclinaison.current.y - tilt.y) * 0.04;
@@ -144,7 +157,7 @@ export default function EauxProfondes({ jeux, onOpen, slot = "game" }) {
       id = requestAnimationFrame(image);
     };
     id = requestAnimationFrame(image);
-    return () => cancelAnimationFrame(id);
+    return () => { cancelAnimationFrame(id); obs?.disconnect(); vue?.disconnect(); };
   }, [liste.length, taille, inclinaison]);
 
   return (

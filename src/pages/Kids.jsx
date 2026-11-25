@@ -43,7 +43,7 @@ const JEUX = [
 function CaseSection({ item, onClick }) {
   const Icon = item.icon;
   return (
-    <button type="button" onClick={onClick} className="group flex flex-col items-center gap-2">
+    <button type="button" onClick={onClick} className="group flex w-full flex-col items-center gap-2">
       <span
         className={`relative grid aspect-square w-full place-items-center rounded-[1.5rem] bg-gradient-to-br ${item.tone} text-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-lg`}
       >

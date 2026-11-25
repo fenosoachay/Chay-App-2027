@@ -460,6 +460,50 @@ function themeRequestHandled(request, decision, note) {
 }
 
 // ── Limites simples en mémoire ($app.store, remises à zéro au redémarrage) ───
+// ── Requêtes, dons, formulaire (1.3.34) ──────────────────────────────────────
+// Prière : tout le monde (sauf le demandeur) ; Se missionner, demande de don, message du formulaire de l'app :
+// les admins. Cloche + push (préférences respectées). Le thème garde themeRequestCreated (admins désignés).
+const DEMANDES = {
+  priere: { type: 'priere_nouvelle', route: '/requests?tab=prayer', titre: '🙏 Nouvelle demande de prière' },
+  mission: { type: 'mission_request', route: '/admin/missions', titre: '🧭 Nouvelle demande « Se missionner »' },
+  don: { type: 'donation_request', route: '/admin/donations', titre: '💝 Nouvelle demande de don' },
+  message: { type: 'message_site', route: '/admin/messages', titre: '✉️ Nouveau message (formulaire de l\'app)' },
+};
+
+function demandeTexte(genre, rec) {
+  const g = (k) => String(rec.getString(k) || '').replace(/\s+/g, ' ').trim();
+  if (genre === 'priere') return `${g('category') || 'Prière'} : ${g('content')}`.slice(0, 160);
+  if (genre === 'mission') {
+    const nom = [g('first_name'), g('last_name')].filter(Boolean).join(' ');
+    let quoi = g('kind') === 'autre' ? g('other_text') : '';
+    try { if (!quoi) quoi = require(`${__hooks}/lib/missions.js`).TYPES_MISSION[g('kind')] || ''; } catch (_) { quoi = ''; }
+    return `${nom || 'Un membre'} veut se missionner${quoi ? ` : ${quoi}` : ''}.`.slice(0, 160);
+  }
+  if (genre === 'don') return `${g('username') || 'Un membre'} veut faire un don. Contactez-le.`.slice(0, 160);
+  return `${g('name') || 'Quelqu\'un'} : ${g('subject') || 'Message'}`.slice(0, 160);
+}
+
+function demandeNotify(genre, rec) {
+  const d = DEMANDES[genre];
+  if (!d || !rec) return 0;
+  const auteur = genre === 'priere' ? rec.getString('requester_id') : '';
+  const ids = (genre === 'priere'
+    ? $app.findRecordsByFilter('users', 'disabled != true && systeme != true', '', 0, 0)
+    : $app.findRecordsByFilter('users', "role = 'admin' && disabled != true && systeme != true", '', 0, 0))
+    .map((u) => u.id)
+    .filter((id) => id && id !== auteur);
+  if (!ids.length) return 0;
+  const notificationId = `${d.type}_${rec.id}`;
+  if (notificationExists(notificationId)) return 0;
+  const message = demandeTexte(genre, rec);
+  const n = createNotifications(ids.map((id) => ({
+    user_id: id, notification_id: notificationId, type: d.type, content_type: d.type,
+    content_id: rec.id, title: d.titre, message, is_read: false,
+  })), `demande_${genre}`);
+  pushToAllowed(ids, { title: d.titre, body: message, target_type: d.type, target_id: rec.id, route: d.route }, `demande_${genre}`);
+  return n;
+}
+
 function hit(key, max, windowMs) {
   const now = Date.now();
   let list = [];
@@ -477,6 +521,7 @@ function hit(key, max, windowMs) {
 }
 
 module.exports = {
+  demandeNotify, demandeTexte, DEMANDES,
   settingsOf, displayName, activeUser, pushAllowed, pushToAllowed, createNotifications, notificationExists, pushTotals,
   designatedAdminIds, isDesignatedAdmin, messagePush, messageNotificationError, messageNotificationInfo, communityPostNotify, newContentNotify,
   dailyVerse, themeRequestCreated, themeRequestHandled, hit, pbDate,

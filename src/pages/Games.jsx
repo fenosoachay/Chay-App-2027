@@ -92,6 +92,9 @@ export default function Games() {
   // Catégories et classements : null = chargement ; collections absentes (avant la migration) = tous les jeux.
   const [classement, setClassement] = useState(null);
   const [voirClassement, setVoirClassement] = useState(false);
+  // 1.3.34 : Chay Game et Chay PlayMobile repliés ; leur contenu ne s'affiche qu'au toucher de la barre.
+  const [ouverts, setOuverts] = useState(() => new Set());
+  const basculer = (slot) => setOuverts((o) => { const n = new Set(o); if (n.has(slot)) n.delete(slot); else n.add(slot); return n; });
   useEffect(() => {
     let actif = true;
     Promise.all([
@@ -216,7 +219,7 @@ export default function Games() {
       {classement === null ? (
         <div className="h-32" aria-busy="true" />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* 1.3.34 : 1. Leaderboard (replié : on le touche pour voir le classement) ; 2. Chay Game ;
               3. Chay PlayMobile. Les jeux flottent en bulles dans les eaux profondes. */}
           <div className="mx-auto max-w-3xl">
@@ -237,10 +240,31 @@ export default function Games() {
             </AnimatePresence>
           </div>
           {classement.sections.filter((c) => c.slot !== "tous" || c.jeux.length).map((c, i) => (
-            <section key={c.slot} aria-label={c.name || "Jeux"} className="mx-auto max-w-3xl space-y-3 pt-4">
-              <BarreJeux titre={c.name || "Jeux"} icone={c.slot === "playmobile" ? Target : Gamepad2} teinte={TEINTES[c.slot] || TEINTES.game} ordre={i + 1} />
-              {PHRASES[c.slot] && <PhraseBrillante texte={PHRASES[c.slot]} ordre={i + 1} />}
-              <EauxProfondes jeux={c.jeux} onOpen={navigate} slot={c.slot === "playmobile" ? "playmobile" : "game"} />
+            <section key={c.slot} aria-label={c.name || "Jeux"} className="mx-auto max-w-3xl">
+              <BarreJeux
+                titre={c.name || "Jeux"}
+                icone={c.slot === "playmobile" ? Target : Gamepad2}
+                teinte={TEINTES[c.slot] || TEINTES.game}
+                ordre={i + 1}
+                ouvert={ouverts.has(c.slot)}
+                onClick={() => basculer(c.slot)}
+              />
+              <AnimatePresence initial={false}>
+                {ouverts.has(c.slot) && (
+                  <motion.div
+                    key="contenu"
+                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.15 } }}
+                    transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                    className="space-y-3 pt-3"
+                    style={{ transformOrigin: "top center" }}
+                  >
+                    {PHRASES[c.slot] && <PhraseBrillante texte={PHRASES[c.slot]} ordre={0} />}
+                    <EauxProfondes jeux={c.jeux} onOpen={navigate} slot={c.slot === "playmobile" ? "playmobile" : "game"} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </section>
           ))}
           {/* Jeux pas encore classés : jamais montrés aux membres ; les admins les voient pour les tester. */}

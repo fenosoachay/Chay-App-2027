@@ -37,7 +37,7 @@ export function Reflet({ duree = 5.5, delai = 0 }) {
     <motion.span
       aria-hidden="true"
       className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3"
-      style={{ background: "linear-gradient(100deg, transparent, rgba(255,255,255,0.22), transparent)", filter: "blur(4px)" }}
+      style={{ background: "linear-gradient(100deg, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.08) 70%, transparent)", willChange: "transform" }}
       animate={{ x: ["0%", "420%"] }}
       transition={{ duration: duree, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut", delay: delai }}
     />

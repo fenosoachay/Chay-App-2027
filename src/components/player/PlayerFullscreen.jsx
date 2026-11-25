@@ -19,6 +19,7 @@ import SeekBar from "./SeekBar";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import BoutonTv from "@/components/tv/BoutonTv";
 import TexteDefilantCouverture from "@/components/player/TexteDefilantCouverture";
+import BoutonFavoriLecteur from "@/components/player/BoutonFavoriLecteur";
 
 export default function PlayerFullscreen({ onCollapse, cover }) {
   useBackHandler(true, onCollapse);
@@ -98,12 +99,22 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
         </div>
       </div>
 
-      <div className="px-6 pb-10 max-w-md mx-auto w-full">
+      <div className="px-4 pb-10 max-w-md mx-auto w-full">
         <SeekBar currentTime={currentTime} duration={duration} onSeek={seek} bufferedRatio={bufferedRatio} className="mb-6" />
-        <div className="flex items-center justify-between gap-2">
+        {/* 1.3.34 : de gauche à droite : Arrêter · Aléatoire · Précédent · Lecture/Pause · Suivant · Boucle · Favori.
+            Arrêter coupe la lecture ET le téléchargement (pause seule continue de charger sur certains téléphones). */}
+        <div className="flex items-center justify-between gap-0.5">
+          <button
+            type="button"
+            onClick={stop}
+            className="h-11 w-11 grid place-items-center rounded-full text-foreground/45 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Arrêter la lecture"
+          >
+            <Square className="h-4 w-4" fill="currentColor" aria-hidden="true" />
+          </button>
           <button
             onClick={toggleShuffle}
-            className={`h-12 w-12 grid place-items-center rounded-full transition ${
+            className={`h-11 w-11 grid place-items-center rounded-full transition ${
               shuffle ? "text-primary bg-primary/10" : "text-foreground/60 hover:text-foreground"
             }`}
             aria-label="Lecture aléatoire"
@@ -112,14 +123,14 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
           </button>
           <button
             onClick={prev}
-            className="h-14 w-14 grid place-items-center text-foreground hover:text-primary"
+            className="h-12 w-12 grid place-items-center text-foreground hover:text-primary"
             aria-label="Précédent"
           >
             <SkipBack className="h-7 w-7" />
           </button>
           <button
             onClick={toggle}
-            className="h-16 w-16 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-lg"
+            className="h-16 w-16 shrink-0 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-lg"
             aria-label={isPlaying ? "Pause" : "Lecture"}
           >
             {buffering ? (
@@ -132,14 +143,14 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
           </button>
           <button
             onClick={next}
-            className="h-14 w-14 grid place-items-center text-foreground hover:text-primary"
+            className="h-12 w-12 grid place-items-center text-foreground hover:text-primary"
             aria-label="Suivant"
           >
             <SkipForward className="h-7 w-7" />
           </button>
           <button
             onClick={toggleLoop}
-            className={`h-12 w-12 grid place-items-center rounded-full transition relative ${
+            className={`h-11 w-11 grid place-items-center rounded-full transition relative ${
               loop !== "off" ? "text-primary bg-primary/10" : "text-foreground/60 hover:text-foreground"
             }`}
             aria-label="Lecture en boucle"
@@ -149,15 +160,8 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
               <span className="absolute -bottom-0.5 text-[0.5rem] font-extrabold leading-none">∞</span>
             )}
           </button>
+          <BoutonFavoriLecteur piste={currentTrack} />
         </div>
-        {/* Arrêter : coupe la lecture ET le téléchargement (pause seule continue de charger sur certains téléphones). */}
-        <button
-          type="button"
-          onClick={stop}
-          className="mx-auto mt-6 flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-foreground/80 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <Square className="h-4 w-4" fill="currentColor" aria-hidden="true" /> Arrêter la lecture
-        </button>
       </div>
     </div>
   );

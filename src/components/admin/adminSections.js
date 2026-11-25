@@ -298,9 +298,10 @@ export const SECTIONS = [
     listColumns: ["texte", "ou"],
     fields: [
       { name: "texte", label: "Texte", type: "textarea", required: true },
-      { name: "direction", label: "Direction du texte", type: "select", required: true, options: [
-        { value: "monte", label: "Monte (de bas en haut)" },
-        { value: "gauche", label: "De droite à gauche (comme sur le site)" },
+      // 1.3.34 : deux bandes horizontales (valeurs « gauche » / « monte » gardées : pas de migration).
+      { name: "direction", label: "Bande", type: "select", required: true, options: [
+        { value: "gauche", label: "En bas (de droite à gauche)" },
+        { value: "monte", label: "En haut (de gauche à droite)" },
       ] },
       { name: "ou", label: "Apparaît où ?", type: "select", required: true, options: [
         { value: "partout", label: "Partout (Musique, Prédication et Bible en audio)" },

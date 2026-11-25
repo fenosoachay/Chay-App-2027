@@ -41,6 +41,9 @@ function routeCible(type, id) {
     case 'app_update': return '/?apropos=1';
     case 'signalement': return '/admin/signalements';
     case 'message_site': return '/admin/messages';
+    case 'priere_nouvelle': return '/requests?tab=prayer';
+    case 'mission_request': return '/admin/missions';
+    case 'donation_request': return '/admin/donations';
     case 'nouveau_membre': return id ? `/admin/membres?membre=${q(id)}` : '/admin/membres';
     case 'content': return null;
     default: return '/';

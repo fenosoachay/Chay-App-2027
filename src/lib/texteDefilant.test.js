@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COULEURS, VITESSES, dureePassage, lecteurDe, textesPour } from "./texteDefilant.js";
+import { COULEURS, VITESSES, bandes, dureePassage, lecteurDe, textesPour } from "./texteDefilant.js";
 import { COLLECTIONS, completerSelects, copieVideo, profilsDepuisScores } from "../../pocketbase/scripts/migrer-1-3-26.mjs";
 
 const musique = { id: "t1", mediaType: "music", playlist_id: "sous1" };
@@ -75,4 +75,16 @@ test("migration 1.3.26 : copie de Video, listes fermées, enfants retrouvés", (
   assert.equal(profil.createRule, profil.listRule);
   const texte = COLLECTIONS.find((c) => c.name === "TexteDefilant");
   assert.equal(texte.createRule, '@request.auth.role = "admin"');
+});
+
+test("1.3.34 : deux bandes horizontales (bas : droite -> gauche ; haut : gauche -> droite)", () => {
+  const a = { id: "a", direction: "gauche" };
+  const b = { id: "b", direction: "gauche" };
+  const h = { id: "h", direction: "monte" };
+  const ids = (r) => ({ haut: r.haut.map((t) => t.id), bas: r.bas.map((t) => t.id) });
+  assert.deepEqual(ids(bandes([a])), { haut: ["a"], bas: ["a"] }); // un seul texte : le même en haut et en bas
+  assert.deepEqual(ids(bandes([a, b])), { haut: ["b"], bas: ["a"] }); // deux textes : un par bande
+  assert.deepEqual(ids(bandes([a, h])), { haut: ["h"], bas: ["a"] }); // bande choisie par l'admin
+  assert.deepEqual(ids(bandes([h])), { haut: ["h"], bas: ["h"] });
+  assert.deepEqual(ids(bandes([])), { haut: [], bas: [] });
 });
