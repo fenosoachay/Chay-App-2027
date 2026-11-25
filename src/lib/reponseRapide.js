@@ -13,7 +13,7 @@ export function lireReponse(data) {
   if (!ID_RE.test(conversation)) return null;
   const texte = typeof data.texte === "string" ? data.texte.trim().slice(0, TEXTE_MAX) : "";
   const route = routeValide(data.route) ? data.route : routeCible("message", conversation);
-  return { conversation, texte, route };
+  return { conversation, texte, route, aime: data.aime === true };
 }
 
 /**
@@ -34,6 +34,11 @@ export async function traiterReponseRapide(deps, data) {
     }
   }
   await Promise.resolve(deps.effacer?.(r.conversation)).catch(() => {});
+  // 1.3.34 : « J'aime 👍 » depuis la notification : on reste où l'on était.
+  if (r.aime) {
+    if (statut !== "erreur") deps.toast?.({ title: "👍 envoyé" });
+    return statut;
+  }
   deps.navigate(r.route);
   return statut;
 }

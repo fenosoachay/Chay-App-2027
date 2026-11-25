@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loader2, WifiOff } from "lucide-react";
+import { LayoutGroup } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import useWordScrambleGame from "@/hooks/useWordScrambleGame";
 import useOnlineStatus from "@/hooks/useOnlineStatus";
@@ -24,6 +25,7 @@ function PlayView({ difficulty }) {
   const g = useWordScrambleGame(difficulty);
   const level = wsLevelOf(difficulty);
   const [leaving, setLeaving] = useState(false);
+  const [melange, setMelange] = useState(0); // 1.3.34 : pirouette des lettres à chaque mélange
 
   useEffect(() => {
     if (g.status === "finished") navigate("/word-scramble/results", { replace: true, state: { summary: g.summary } });
@@ -83,21 +85,23 @@ function PlayView({ difficulty }) {
           )}
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {g.pool.map((t) => <WsTile key={t.id} char={t.char} disabled={locked} onClick={() => g.place(t)} />)}
-          {g.pool.length === 0 && <div className="h-12 sm:h-14" />}
-        </div>
+        <LayoutGroup id={`ws-${g.word.wordId}`}>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {g.pool.map((t, i) => <WsTile key={t.id} layoutId={`ws-${t.id}`} index={i} melange={melange} char={t.char} disabled={locked} onClick={() => { jouerSon("clic"); g.place(t); }} />)}
+            {g.pool.length === 0 && <div className="h-12 sm:h-14" />}
+          </div>
 
-        <div className="my-6 h-px bg-border" />
+          <div className="my-6 h-px bg-border" />
 
-        <WsAnswerRow length={g.word.wordLength} placed={g.placed} lockedId={g.lockedFirst?.id} feedback={g.feedback} onRemove={g.unplace} />
+          <WsAnswerRow length={g.word.wordLength} placed={g.placed} lockedId={g.lockedFirst?.id} feedback={g.feedback} onRemove={g.unplace} />
+        </LayoutGroup>
 
         <div className="mt-4 h-6 text-center text-sm font-bold">
           {g.feedback === "wrong" && <span className="text-red-500">Réessayez</span>}
           {g.feedback === "correct" && <span className="text-green-500">✅ Correct ! +{g.lastGain} pts</span>}
         </div>
 
-        <div className="mt-4"><WsActions disabled={locked} credits={g.credits} onShuffle={g.shufflePool} onErase={g.erase} onHint={onHint} /></div>
+        <div className="mt-4"><WsActions disabled={locked} credits={g.credits} onShuffle={() => { setMelange((m) => m + 1); jouerSon("pose"); g.shufflePool(); }} onErase={g.erase} onHint={onHint} /></div>
         {g.phrase && <div className="mt-5"><WsPhraseHint phrase={g.phrase} /></div>}
       </div>
 

@@ -8,8 +8,9 @@ import NotificationsSection from "@/components/settings/NotificationsSection";
 import DisplaySection from "@/components/settings/DisplaySection";
 import SpiritualSection from "@/components/settings/SpiritualSection";
 import PrivacySection from "@/components/settings/PrivacySection";
-import AccessibilitySection from "@/components/settings/AccessibilitySection";
 import HelpSection from "@/components/settings/HelpSection";
+import StockageSection from "@/components/settings/StockageSection";
+import AProposSection from "@/components/settings/AProposSection";
 import DangerZone from "@/components/settings/DangerZone";
 import {
   User,
@@ -18,7 +19,8 @@ import {
   Palette,
   Heart,
   Lock,
-  Accessibility,
+  HardDrive,
+  Info,
   LifeBuoy,
   Loader2,
 } from "lucide-react";
@@ -73,8 +75,8 @@ export default function Settings() {
         <SettingsSection
           value="display"
           icon={Palette}
-          title="Préférences d'affichage"
-          description="Thème et langue"
+          title="Affichage et accessibilité"
+          description="Thème, taille du texte, contraste, animations"
         >
           <DisplaySection />
         </SettingsSection>
@@ -98,21 +100,30 @@ export default function Settings() {
         </SettingsSection>
 
         <SettingsSection
-          value="accessibility"
-          icon={Accessibility}
-          title="Accessibilité"
-          description="Contraste et assistance"
+          value="stockage"
+          icon={HardDrive}
+          title="Stockage et données"
+          description="Espace utilisé, vider le cache"
         >
-          <AccessibilitySection />
+          <StockageSection />
         </SettingsSection>
 
         <SettingsSection
           value="help"
           icon={LifeBuoy}
-          title="Aide et assistance"
-          description="FAQ, contact et signalements"
+          title="Aide"
+          description="Questions fréquentes, signaler un problème"
         >
           <HelpSection />
+        </SettingsSection>
+
+        <SettingsSection
+          value="apropos"
+          icon={Info}
+          title="À propos"
+          description="Version de l'application"
+        >
+          <AProposSection />
         </SettingsSection>
       </Accordion>
 

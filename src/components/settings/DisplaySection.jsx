@@ -31,6 +31,8 @@ function Segmented({ options, value, onChange, labels, ariaLabel }) {
   );
 }
 
+// 1.3.34 : Affichage et accessibilité réunis (avant : contraste et animations en double dans deux sections ;
+// réglages sans effet retirés : lecture automatique, sous-titres, synthèse vocale).
 export default function DisplaySection() {
   const { prefs, setPref } = usePreferences();
   const [taille, setTaille] = React.useState(() => lireTaillePolice());
@@ -125,17 +127,6 @@ export default function DisplaySection() {
       />
 
       <div className="border-t border-border" />
-      <PrefSwitch
-        label="Lecture automatique de l'audio"
-        checked={prefs.autoplay_audio}
-        onChange={(v) => setPref("autoplay_audio", v)}
-      />
-      <PrefSwitch
-        label="Lecture automatique des vidéos"
-        checked={prefs.autoplay_video}
-        onChange={(v) => setPref("autoplay_video", v)}
-      />
-
       <BoutonWidget />
     </div>
   );

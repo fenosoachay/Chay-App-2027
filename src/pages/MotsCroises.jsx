@@ -39,7 +39,6 @@ async function chargerMots() {
 function ChoixTaille({ records, onChoisir, chargement }) {
   return (
     <div className="mx-auto max-w-md space-y-3">
-      <p className="text-center text-sm text-foreground/65">Une grille toujours nouvelle, avec des mots de la Bible.</p>
       {TAILLES.map((t) => (
         <button
           key={t.id}

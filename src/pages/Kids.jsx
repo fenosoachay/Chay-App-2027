@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ArrowLeft, Blocks, CarFront, Clapperboard, Gamepad2, Grid3x3, Palette, Puzzle as IconePuzzle } from "lucide-react";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { useAuth } from "@/lib/AuthContext";
@@ -120,6 +121,9 @@ export default function Kids() {
   const jeuDemande = vue === "jeux" ? JEUX.find((j) => j.id === searchParams.get("jeu")) || null : null;
   const enfants = useEnfants(user?.id);
   const [attire, setAttire] = useState(false);
+  // 1.3.34 : les jeux n'apparaissent qu'après « Qui joue ? » (à chaque visite de Chay Enfants ; un aller-retour
+  // dans un jeu ne redemande pas).
+  const [choisiIci, setChoisiIci] = useState(false);
   const haut = useRef(null);
 
   // Un jeu à points s'ouvre seulement pour un enfant choisi (« Qui joue ? »).
@@ -135,7 +139,7 @@ export default function Kids() {
 
   const ouvrir = (params) => setSearchParams(params, { state: { chayKids: true } });
   const ouvrirJeu = (j) => {
-    if (j.points && !enfants.actif) { setAttire(true); return; }
+    if ((j.points && !enfants.actif) || !choisiIci) { setAttire(true); return; }
     ouvrir({ vue: "jeux", jeu: j.id });
   };
   const retour = () => {
@@ -183,27 +187,37 @@ export default function Kids() {
 
       {vue === "jeux" && !jeu && (
         <>
+          {/* 1.3.34 : le Score Board d'abord, puis « Qui joue ? » ; les jeux arrivent ensuite, un à un. */}
           <div className="mb-4">
+            <ScoreBoard key={enfants.version} espace="enfant" pseudo={choisiIci ? enfants.actif?.pseudo || "" : ""} />
+          </div>
+          <div className="mb-6">
             <QuiJoue
               profils={enfants.profils}
-              actifId={enfants.actif?.id}
+              actifId={choisiIci ? enfants.actif?.id : null}
               chargement={enfants.chargement}
               erreur={enfants.erreur}
               attire={attire}
-              onChoisir={enfants.choisir}
-              onAjouter={enfants.ajouter}
+              onChoisir={(p) => { enfants.choisir(p); setChoisiIci(true); }}
+              onAjouter={async (pseudo, avatar) => { await enfants.ajouter(pseudo, avatar); setChoisiIci(true); }}
               onSupprimer={enfants.supprimer}
               onReessayer={enfants.charger}
             />
           </div>
-          {enfants.actif && (
-            <div className="mb-6">
-              <ScoreBoard key={enfants.version} espace="enfant" pseudo={enfants.actif.pseudo} />
+          {choisiIci && enfants.actif && (
+            <div key={enfants.actif.id} className="grid grid-cols-3 gap-4 md:grid-cols-6 md:gap-6 lg:grid-cols-8">
+              {JEUX.map((j, i) => (
+                <motion.div
+                  key={j.id}
+                  initial={{ opacity: 0, scale: 0.3, y: 24 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 520, damping: 17, delay: 0.08 + i * 0.09 }}
+                >
+                  <CaseSection item={j} onClick={() => ouvrirJeu(j)} />
+                </motion.div>
+              ))}
             </div>
           )}
-          <div className="grid grid-cols-3 gap-4 md:grid-cols-6 md:gap-6 lg:grid-cols-8">
-            {JEUX.map((j) => <CaseSection key={j.id} item={j} onClick={() => ouvrirJeu(j)} />)}
-          </div>
         </>
       )}
 

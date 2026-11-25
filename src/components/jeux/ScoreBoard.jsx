@@ -33,7 +33,7 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
     setErreur(false);
     base44.functions
       .invoke("classement", { espace, jeu, periode, pseudo })
-      .then((r) => { if (actif) setData(r?.data || { top: [], moi: null }); })
+      .then((r) => { if (actif) setData(Array.isArray(r?.data?.top) ? r.data : { top: [], moi: null }); })
       .catch(() => { if (actif) { setErreur(true); setData({ top: [], moi: null }); } });
     return () => { actif = false; };
   }, [espace, jeu, periode, pseudo]);

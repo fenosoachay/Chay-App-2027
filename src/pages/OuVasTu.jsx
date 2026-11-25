@@ -90,14 +90,13 @@ export default function OuVasTu() {
   if (!depart) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-6 md:py-10">
-        <div className="mb-3 flex items-center gap-3">
+        <div className="mb-5 flex items-center gap-3">
           <button type="button" onClick={() => navigate("/games")} aria-label="Retour aux jeux" className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="min-w-0 flex-1 font-display text-3xl font-extrabold">Où vas-tu ?</h1>
           <BoutonSon />
         </div>
-        <p className="mb-5 text-center text-sm text-foreground/65">Chaque choix compte. Choisis d'où tu pars… et découvre où tu arrives !</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {DEPARTS.map((d, i) => (
             <motion.button

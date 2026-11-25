@@ -10,18 +10,19 @@ import { jouerSon } from "@/lib/sonsJeu";
 import { chargerProgresJeu, enregistrerProgresJeu } from "@/lib/progresJeu";
 import BoutonSon from "@/components/BoutonSon";
 import {
-  FRONDE, LARGEUR, NIVEAUX, SOL, TIRAGE_MAX, auRepos, avancer, creerMonde, etoilesFronde, lancement, pointsFronde, tirer, trajectoire,
+  FRONDE, LARGEUR, NIVEAUX, SOL, TIRAGE_MAX, TYPES_PIERRE, auRepos, avancer, creerMonde, decorNiveau, etoilesFronde, formePierre,
+  lancement, pierreSuivante, pointsFronde, pretATirer, tirer, trajectoire,
 } from "@/lib/fronde";
 
 // Chay Fronde (1.3.32, Chay PlayMobile) : façon lance-pierre. On tire des pierres avec la fronde sur des
 // constructions en bois et en pierre ; les cibles sont les photos des personnes « En service » (Menu ☰), qui
-// disparaissent dans un pouf d'étoiles quand on les touche. 20 niveaux ; étoiles selon les pierres qui restent.
+// disparaissent dans un pouf d'étoiles quand on les touche. 60 niveaux (1.3.34) ; étoiles selon les pierres qui restent.
 // Progrès gardé sur le compte (ProgresJeu, jeu « fronde » : { etoiles: { [niveau]: 1..3 } }).
 // La partie se joue en plein écran, à l'horizontale : si le téléphone est tenu droit, le jeu est tourné d'un
 // quart de tour (on tourne le téléphone) ; le ciel et le sol s'étendent jusqu'aux bords de l'écran.
 
 // Partie du monde toujours visible (les constructions commencent vers y = 108 ; le sol à 580).
-const VUE = { y0: 70, h: 540 };
+const VUE = { y0: 30, h: 580 };
 
 const Etoiles = ({ n, taille = "h-3 w-3" }) => (
   <span className="flex justify-center gap-0.5">
@@ -43,23 +44,162 @@ function etoile(ctx, x, y, r) {
   ctx.fill();
 }
 
-function dessiner(ctx, m, visee, images) {
-  // Ciel, collines, sol
+// ── Décors (1.3.34) : un par groupe de 3 niveaux ─────────────────────────────────────────────────────────
+const G0 = -900;
+const G1 = LARGEUR + 900;
+const CIELS = {
+  jour: ["#7cc6ff", "#d9f1ff"], foret: ["#9fd3b0", "#e8f6dc"], coucher: ["#5b3f8c", "#ffb36b"], montagne: ["#8fbfe8", "#eef5fb"],
+  desert: ["#f2b56b", "#fde9bd"], palais: ["#b9a2f0", "#f4ecff"], nuit: ["#070b24", "#25306b"], neige: ["#c4dcf2", "#f7fbff"],
+};
+const SOLS = {
+  jour: ["#6fbf4a", "#8a5a32"], foret: ["#4f8f3a", "#5e3d22"], coucher: ["#7f6a3a", "#4b3322"], montagne: ["#8a9a6a", "#6b5a48"],
+  desert: ["#e6c27a", "#c99a52"], palais: ["#e8dcc6", "#b9a27a"], nuit: ["#2d4a3a", "#1d1a24"], neige: ["#ffffff", "#c9d6e2"],
+};
+
+function colline(ctx, couleur, base, amp, f1, f2, decalage = 0) {
+  ctx.fillStyle = couleur;
+  ctx.beginPath();
+  ctx.moveTo(G0, SOL);
+  for (let x = G0; x <= G1; x += 20) ctx.lineTo(x, base - Math.sin((x + decalage) / f1) * amp - Math.sin((x + decalage) / f2) * amp * 0.3);
+  ctx.lineTo(G1, SOL);
+  ctx.fill();
+}
+
+function sapin(ctx, x, bas, h, couleur) {
+  ctx.fillStyle = couleur;
+  for (let k = 0; k < 3; k += 1) {
+    const y = bas - h * (0.25 + k * 0.25);
+    const w = h * (0.42 - k * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(x, y - h * 0.32);
+    ctx.lineTo(x - w, y + h * 0.12);
+    ctx.lineTo(x + w, y + h * 0.12);
+    ctx.fill();
+  }
+  ctx.fillRect(x - h * 0.04, bas - h * 0.18, h * 0.08, h * 0.18);
+}
+
+function dessinerDecor(ctx, nom, temps) {
+  const [haut, bas] = CIELS[nom] || CIELS.jour;
   const ciel = ctx.createLinearGradient(0, 0, 0, SOL);
-  ciel.addColorStop(0, "#7cc6ff");
-  ciel.addColorStop(1, "#d9f1ff");
+  ciel.addColorStop(0, haut);
+  ciel.addColorStop(1, bas);
   ctx.fillStyle = ciel;
   ctx.fillRect(-3000, -3000, LARGEUR + 6000, SOL + 3000);
-  ctx.fillStyle = "#bfe3a8";
-  ctx.beginPath();
-  ctx.moveTo(-3000, SOL);
-  for (let x = -3000; x <= LARGEUR + 3000; x += 20) ctx.lineTo(x, SOL - 70 - Math.sin(x / 90) * 30 - Math.sin(x / 37) * 8);
-  ctx.lineTo(LARGEUR + 3000, SOL);
-  ctx.fill();
-  ctx.fillStyle = "#6fbf4a";
+
+  if (nom === "nuit") {
+    ctx.fillStyle = "#fff";
+    for (let i = 0; i < 70; i += 1) {
+      const x = G0 + ((i * 137) % (G1 - G0));
+      const y = 20 + ((i * 89) % 330);
+      ctx.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(temps * 1.3 + i));
+      ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#fff6d0";
+    ctx.beginPath(); ctx.arc(600, 150, 34, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = haut;
+    ctx.beginPath(); ctx.arc(615, 140, 30, 0, Math.PI * 2); ctx.fill();
+    colline(ctx, "#121a3d", SOL - 60, 34, 110, 41);
+  } else if (nom === "coucher") {
+    ctx.fillStyle = "#ffcf6b";
+    ctx.beginPath(); ctx.arc(420, SOL - 90, 70, 0, Math.PI * 2); ctx.fill();
+    colline(ctx, "#6a4a7a", SOL - 80, 40, 120, 47);
+    colline(ctx, "#4a3460", SOL - 40, 22, 80, 31, 200);
+  } else if (nom === "montagne") {
+    // Montagnes : des triangles, chacun avec sa calotte de neige (même pente).
+    const pics = [[-520, 230, 520], [-160, 170, 460], [150, 280, 420], [420, 140, 520], [700, 250, 440], [960, 170, 500], [1250, 240, 460]];
+    for (const [x, y, w] of pics) {
+      ctx.fillStyle = "#9aa8b8";
+      ctx.beginPath(); ctx.moveTo(x - w / 2, SOL); ctx.lineTo(x, y); ctx.lineTo(x + w / 2, SOL); ctx.fill();
+      const k = 0.22; // part enneigée
+      const hy = (SOL - y) * k;
+      const hw = (w / 2) * k;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.moveTo(x - hw, y + hy); ctx.lineTo(x, y); ctx.lineTo(x + hw, y + hy);
+      ctx.lineTo(x + hw * 0.4, y + hy * 0.8); ctx.lineTo(x, y + hy * 1.05); ctx.lineTo(x - hw * 0.4, y + hy * 0.8); ctx.fill();
+    }
+    colline(ctx, "#7d9a6a", SOL - 40, 18, 90, 37);
+  } else if (nom === "desert") {
+    ctx.fillStyle = "#fff2b8";
+    ctx.beginPath(); ctx.arc(620, 110, 40, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#d9a85a";
+    for (const [x, w] of [[-300, 180], [260, 240], [880, 200]]) { ctx.beginPath(); ctx.moveTo(x - w / 2, SOL - 30); ctx.lineTo(x, SOL - 30 - w * 0.6); ctx.lineTo(x + w / 2, SOL - 30); ctx.fill(); }
+    colline(ctx, "#eccb84", SOL - 40, 26, 140, 53);
+  } else if (nom === "palais") {
+    ctx.fillStyle = "rgba(120, 86, 180, 0.35)";
+    for (let x = -600; x < 1400; x += 260) {
+      ctx.fillRect(x, SOL - 230, 170, 230);
+      ctx.beginPath(); ctx.arc(x + 85, SOL - 230, 62, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = "rgba(255, 214, 110, 0.55)";
+      ctx.fillRect(x + 82, SOL - 312, 6, 22);
+      ctx.fillStyle = "rgba(120, 86, 180, 0.35)";
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    for (let x = -620; x < 1420; x += 70) ctx.fillRect(x, SOL - 150, 16, 150);
+  } else if (nom === "foret") {
+    for (let x = -800; x < 1500; x += 46) sapin(ctx, x, SOL - 20, 120 + ((x * 7) % 60), "#5f9a6e");
+    for (let x = -780; x < 1500; x += 64) sapin(ctx, x, SOL, 90 + ((x * 3) % 50), "#2f6b45");
+  } else if (nom === "neige") {
+    colline(ctx, "#e4eef8", SOL - 70, 30, 100, 43);
+    ctx.fillStyle = "#fff";
+    for (let i = 0; i < 60; i += 1) {
+      const x = G0 + (((i * 157) + temps * 18 * (1 + (i % 3))) % (G1 - G0));
+      const y = ((i * 97) + temps * 40 * (1 + (i % 2))) % SOL;
+      ctx.beginPath(); ctx.arc(x, y, 1.5 + (i % 3), 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    // jour : soleil, nuages, collines
+    ctx.fillStyle = "#fff4b0";
+    ctx.beginPath(); ctx.arc(640, 120, 36, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    for (let i = 0; i < 5; i += 1) {
+      const x = ((i * 300 + temps * 8) % 1800) - 600;
+      const y = 90 + (i % 3) * 50;
+      ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.arc(x + 28, y - 10, 30, 0, Math.PI * 2); ctx.arc(x + 58, y, 24, 0, Math.PI * 2); ctx.fill();
+    }
+    colline(ctx, "#bfe3a8", SOL - 70, 30, 90, 37);
+  }
+  const [herbe, terre] = SOLS[nom] || SOLS.jour;
+  ctx.fillStyle = herbe;
   ctx.fillRect(-3000, SOL, LARGEUR + 6000, 10);
-  ctx.fillStyle = "#8a5a32";
+  ctx.fillStyle = terre;
   ctx.fillRect(-3000, SOL + 10, LARGEUR + 6000, 3000);
+  if (nom === "palais") { // dallage
+    ctx.strokeStyle = "rgba(0,0,0,0.12)";
+    ctx.lineWidth = 1;
+    for (let x = -1000; x < 1800; x += 40) { ctx.beginPath(); ctx.moveTo(x, SOL + 10); ctx.lineTo(x - 30, SOL + 60); ctx.stroke(); }
+  }
+}
+
+/** Une pierre : polygone irrégulier (galet rond, caillou anguleux, rocher bosselé, silex pointu). */
+function dessinerPierre(ctx, type, x, y, angle, forme) {
+  const t = TYPES_PIERRE[type] || TYPES_PIERRE.galet;
+  const f = forme || formePierre(type, 7);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle || 0);
+  const g = ctx.createRadialGradient(-t.r * 0.35, -t.r * 0.35, 1, 0, 0, t.r * 1.2);
+  g.addColorStop(0, t.couleur[0]);
+  g.addColorStop(1, t.couleur[1]);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  f.forEach((k, i) => {
+    const a = (Math.PI * 2 * i) / f.length;
+    const px = Math.cos(a) * t.r * k;
+    const py = Math.sin(a) * t.r * k;
+    if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dessiner(ctx, m, visee, images, decor) {
+  dessinerDecor(ctx, decor, m.temps);
 
   // Fronde (arrière)
   const pierreVisee = visee ? { x: FRONDE.x + visee.dx, y: FRONDE.y + visee.dy } : null;
@@ -82,7 +222,7 @@ function dessiner(ctx, m, visee, images) {
     ctx.lineTo(FRONDE.x + 18, FRONDE.y - 8);
     ctx.stroke();
     // Trajectoire prévue
-    const v = lancement(visee.dx, visee.dy);
+    const v = lancement(visee.dx, visee.dy, pierreSuivante(m) || "galet");
     ctx.fillStyle = "rgba(255,255,255,.85)";
     trajectoire(v.vx, v.vy).forEach((p, i) => { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.5, 4 - i * 0.15), 0, Math.PI * 2); ctx.fill(); });
   }
@@ -144,30 +284,18 @@ function dessiner(ctx, m, visee, images) {
   }
 
   // Pierres
-  for (const p of m.pierres) {
-    const g = ctx.createRadialGradient(p.x - 4, p.y - 4, 2, p.x, p.y, p.r);
-    g.addColorStop(0, "#c9ced4");
-    g.addColorStop(1, "#5f6670");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
+  for (const p of m.pierres) dessinerPierre(ctx, p.type, p.x, p.y, p.angle, p.forme);
+  // Pierre dans la fronde, puis celles qui attendent (dans l'ordre du tir, posées au sol)
+  const file = m.file || [];
+  if (file.length && !m.pierres.some((p) => p.vie < 0.4)) {
+    dessinerPierre(ctx, file[0], pierreVisee ? pierreVisee.x : FRONDE.x, pierreVisee ? pierreVisee.y : FRONDE.y, 0);
   }
-  // Pierre dans la fronde
-  if (m.reste > 0 && !m.pierres.some((p) => p.vie < 0.4)) {
-    const px = pierreVisee ? pierreVisee.x : FRONDE.x;
-    const py = pierreVisee ? pierreVisee.y : FRONDE.y;
-    ctx.fillStyle = "#7d858f";
-    ctx.beginPath();
-    ctx.arc(px, py, 13, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // Pierres qui restent
-  for (let i = 0; i < Math.max(0, m.reste - 1); i += 1) {
-    ctx.fillStyle = "#7d858f";
-    ctx.beginPath();
-    ctx.arc(FRONDE.x - 40 - i * 22, SOL - 10, 9, 0, Math.PI * 2);
-    ctx.fill();
+  let x = FRONDE.x - 34;
+  for (let i = 1; i < file.length; i += 1) {
+    const r = (TYPES_PIERRE[file[i]] || TYPES_PIERRE.galet).r;
+    x -= r;
+    dessinerPierre(ctx, file[i], x, SOL - r, 0);
+    x -= r + 6;
   }
 
   // Poufs d'étoiles et éclats
@@ -205,6 +333,7 @@ function Partie({ n, photos, onFin, onQuitter }) {
   const images = useRef(new Map());
   const camera = useRef({ s: 1, ox: 0, oy: 0 }); // écran (px CSS) = monde × s + décalage
   const tourne = useTourne();
+  const decor = decorNiveau(n);
   const [etat, setEtat] = useState({ reste: 0, cibles: 0, statut: "jeu" });
   const [essai, setEssai] = useState(0);
 
@@ -222,7 +351,7 @@ function Partie({ n, photos, onFin, onQuitter }) {
     monde.current = creerMonde(n, photos);
     tir.current = null;
     visee.current = null;
-    setEtat({ reste: monde.current.reste, cibles: monde.current.cibles.length, statut: "jeu" });
+    setEtat({ reste: monde.current.reste, cibles: monde.current.cibles.length, statut: "jeu", suivante: pierreSuivante(monde.current) });
     setEssai((x) => x + 1);
   }, [n, photos]);
   useEffect(() => { recommencer(); }, [recommencer]);
@@ -245,18 +374,18 @@ function Partie({ n, photos, onFin, onQuitter }) {
         else if ((ev.casses || ev.chocs) && t - dernierSon > 140) { jouerSon("pose"); dernierSon = t; }
         if (tir.current) {
           tir.current.depuis += dt;
-          const fini = (auRepos(m) && tir.current.depuis > 1.2) || tir.current.depuis > 6;
-          if (fini || !m.cibles.length) {
-            tir.current = null;
-            if (!m.cibles.length && !finie) {
-              finie = true;
-              setTimeout(() => onFin(m.reste, setEtat), 700);
-            } else if (m.reste <= 0 && m.cibles.length && !finie) {
-              finie = true;
-              jouerSon("fin");
-              setEtat((e) => ({ ...e, statut: "perdu" }));
-            }
-          }
+          // 1.3.34 : la pierre suivante est prête dès que la lancée a fini sa course (plus d'attente des tours).
+          if (!m.cibles.length || (m.reste > 0 && pretATirer(m, tir.current.depuis))) tir.current = null;
+        }
+        // Fin de partie : gagné dès la dernière cible ; perdu quand plus de pierre et que tout s'est calmé.
+        if (!finie && !m.cibles.length) {
+          finie = true;
+          setTimeout(() => onFin(m.reste, setEtat), 700);
+        } else if (!finie && m.reste <= 0 && tir.current && ((auRepos(m) && tir.current.depuis > 1.2) || tir.current.depuis > 6)) {
+          finie = true;
+          tir.current = null;
+          jouerSon("fin");
+          setEtat((e) => ({ ...e, statut: "perdu" }));
         }
         // Dessin plein écran (net sur les écrans haute densité) : le monde est centré, la vue y0..y0+h
         // remplit la hauteur ; le décor déborde jusqu'aux bords.
@@ -273,13 +402,13 @@ function Partie({ n, photos, onFin, onQuitter }) {
         camera.current = { s, ox, oy };
         const ctx = canvas.getContext("2d");
         ctx.setTransform(s * r, 0, 0, s * r, ox * r, oy * r);
-        dessiner(ctx, m, visee.current, images.current);
+        dessiner(ctx, m, visee.current, images.current, decor);
       }
       image = requestAnimationFrame(boucle);
     };
     image = requestAnimationFrame(boucle);
     return () => cancelAnimationFrame(image);
-  }, [essai, onFin]);
+  }, [essai, onFin, decor]);
 
   // Viser et tirer
   const point = (e) => {
@@ -313,7 +442,7 @@ function Partie({ n, photos, onFin, onQuitter }) {
     tirer(monde.current, v.dx, v.dy);
     tir.current = { depuis: 0 };
     jouerSon("clic");
-    setEtat((e) => ({ ...e, reste: monde.current.reste }));
+    setEtat((e) => ({ ...e, reste: monde.current.reste, suivante: pierreSuivante(monde.current) }));
   };
 
   const bouton = "grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/35 text-white backdrop-blur hover:bg-black/50";
@@ -334,7 +463,7 @@ function Partie({ n, photos, onFin, onQuitter }) {
         </button>
         <span className="rounded-full bg-black/35 px-3 py-2 font-display text-base font-extrabold text-white backdrop-blur">Niveau {n + 1}</span>
         <span className="flex-1" />
-        <span className="rounded-full bg-black/35 px-3 py-2 text-sm font-bold text-white backdrop-blur">🪨 {etat.reste}</span>
+        <span className="rounded-full bg-black/35 px-3 py-2 text-sm font-bold text-white backdrop-blur">🪨 {etat.reste}{etat.suivante ? ` · ${TYPES_PIERRE[etat.suivante]?.nom || ""}` : ""}</span>
         <span className="rounded-full bg-black/35 px-3 py-2 text-sm font-bold text-white backdrop-blur">🎯 {etat.cibles}</span>
         <span className="pointer-events-auto"><BoutonSon /></span>
         <button type="button" onClick={recommencer} aria-label="Recommencer" className={`pointer-events-auto ${bouton}`}>
@@ -455,14 +584,13 @@ export default function ChayFronde() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 md:py-10">
-      <div className="mb-3 flex items-center gap-3">
+      <div className="mb-5 flex items-center gap-3">
         <button type="button" onClick={() => navigate("/games")} aria-label="Retour aux jeux" className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="min-w-0 flex-1 font-display text-3xl font-extrabold">Chay Fronde</h1>
         <BoutonSon />
       </div>
-      <p className="mb-5 text-center text-sm text-foreground/65">Comme David avec sa fronde : renverse les constructions et touche toutes les cibles ! Tourne ton téléphone : le jeu se joue à l'horizontale.</p>
       <div className="grid grid-cols-5 gap-2.5">
         {NIVEAUX.map((_, i) => {
           const ouvert = i === 0 || etoiles[i] > 0;

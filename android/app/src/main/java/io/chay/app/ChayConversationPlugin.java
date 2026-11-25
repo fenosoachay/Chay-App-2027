@@ -35,12 +35,17 @@ public class ChayConversationPlugin extends Plugin {
         if (intent == null || !ConversationNotifier.ACTION_REPONDRE.equals(intent.getAction())) return;
         Bundle saisie = RemoteInput.getResultsFromIntent(intent);
         CharSequence texte = saisie != null ? saisie.getCharSequence(ConversationNotifier.CLE_REPONSE) : null;
+        // 1.3.34 : bouton « J'aime 👍 » : texte fixe, sans saisie ; l'app l'envoie sans ouvrir la conversation.
+        String fixe = intent.getStringExtra(ConversationNotifier.EXTRA_TEXTE);
+        boolean aime = texte == null && ConversationNotifier.AIME.equals(fixe);
+        if (aime) texte = fixe;
         String conversation = intent.getStringExtra(ConversationNotifier.EXTRA_CONVERSATION);
         if (!ConversationNotifier.idValide(conversation)) return;
         JSObject data = new JSObject();
         data.put("conversation", conversation);
         data.put("texte", texte != null ? texte.toString() : "");
         data.put("route", intent.getStringExtra(ConversationNotifier.EXTRA_ROUTE));
+        data.put("aime", aime);
         // Gardé jusqu'à l'écoute de l'app (lancement à froid compris).
         notifyListeners("reponse", data, true);
         // Une réponse ne doit pas être traitée deux fois (rotation, retour à l'activité).

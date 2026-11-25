@@ -51,11 +51,11 @@ function pointsEnigme(enigme, niveau, etoiles) {
 function pointsOuVasTu(fin) {
   return /^[a-z]{3,20}-[0-9]$/.test(String(fin || '')) ? 20 : 0;
 }
-/** Chay Fronde (1.3.32) : niveau 1 à 20, 1 à 3 étoiles -> (5 + niveau) × étoiles. */
+/** Chay Fronde (1.3.32 ; 60 niveaux depuis 1.3.34) : niveau 1 à 60, 1 à 3 étoiles -> (5 + niveau) × étoiles. */
 function pointsFronde(niveau, etoiles) {
   const n = entier(niveau);
   const e = entier(etoiles);
-  return n >= 1 && n <= 20 && e >= 1 && e <= 3 ? (5 + n) * e : 0;
+  return n >= 1 && n <= 60 && e >= 1 && e <= 3 ? (5 + n) * e : 0;
 }
 /** Libère la voiture (1.3.30) : niveau 1 à 30, 1 à 3 étoiles -> (10 + 2 × niveau) × étoiles. */
 function pointsVoiture(niveau, etoiles) {

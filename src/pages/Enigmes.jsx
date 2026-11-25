@@ -285,7 +285,7 @@ export default function Enigmes() {
           <h1 className="min-w-0 flex-1 font-display text-3xl font-extrabold">Énigmes</h1>
           <BoutonSon />
         </div>
-        <p className="mb-4 text-center text-sm text-foreground/65">{finies} énigme{finies > 1 ? "s" : ""} résolue{finies > 1 ? "s" : ""} sur {ENIGMES.length}. Chaque énigme cache 3 mots.</p>
+        <p className="mb-4 text-center text-sm text-foreground/65">{finies} énigme{finies > 1 ? "s" : ""} résolue{finies > 1 ? "s" : ""} sur {ENIGMES.length}</p>
         <Carte etoiles={etoiles} onChoisir={ouvrir} />
       </main>
     );

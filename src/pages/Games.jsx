@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,6 +11,7 @@ import {
   Target,
   Check,
   Flame,
+  Gamepad2,
   Puzzle,
   RefreshCw,
   Shuffle,
@@ -23,6 +25,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { JEUX, grouperJeux } from "@/lib/jeuxCategories";
 import ScoreBoard from "@/components/jeux/ScoreBoard";
 import BoutonSon from "@/components/BoutonSon";
+import EauxProfondes from "@/components/jeux/EauxProfondes";
+import BarreJeux, { PhraseBrillante, TEINTES } from "@/components/jeux/BarreJeux";
 
 // Apparence de chaque jeu (identifiants : src/lib/jeuxCategories.js).
 const APPARENCE = {
@@ -38,20 +42,11 @@ const APPARENCE = {
 };
 const GAMES = JEUX.map((j) => ({ ...j, ...APPARENCE[j.id], live: true }));
 
-/** Catégorie sans jeu pour l'instant (ex. Chay Mobile) : une tuile grisée « Bientôt ». */
-function TuileBientot() {
-  return (
-    <div className="mx-auto grid max-w-5xl grid-cols-2 place-items-center gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
-      <div
-        aria-label="Bientôt"
-        className="flex aspect-square w-full max-w-32 flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-border bg-muted/60 p-3 text-center text-foreground/50"
-      >
-        <span className="text-3xl" aria-hidden="true">⏳</span>
-        <span className="text-base font-bold">Bientôt</span>
-      </div>
-    </div>
-  );
-}
+// 1.3.34 : phrase d'accueil de chaque catégorie, sous sa barre.
+const PHRASES = {
+  game: "Bienvenue dans les eaux profondes où les hommes intelligents puisent leur dessein !",
+  playmobile: "Détendez-vous maintenant.",
+};
 
 function GrilleJeux({ jeux, onOpen }) {
   return (
@@ -96,6 +91,7 @@ export default function Games() {
   const isAdmin = user?.role === "admin";
   // Catégories et classements : null = chargement ; collections absentes (avant la migration) = tous les jeux.
   const [classement, setClassement] = useState(null);
+  const [voirClassement, setVoirClassement] = useState(false);
   useEffect(() => {
     let actif = true;
     Promise.all([
@@ -215,25 +211,36 @@ export default function Games() {
           <h1 className="display-fluid">Jeux <span className="brand-gradient-text">bibliques</span></h1>
           <BoutonSon className="mt-2" />
         </div>
-        <p className="mt-3 text-lg text-foreground/60">Découvrez la Parole en vous amusant.</p>
       </header>
 
       {classement === null ? (
         <div className="h-32" aria-busy="true" />
       ) : (
-        <div className="space-y-10">
-          {/* 1. Leaderboard ; 2. Chay Game ; 3. Chay Mobile (« Bientôt » tant qu'il n'a pas de jeu). */}
-          <div className="mx-auto max-w-2xl">
-            <ScoreBoard espace="adulte" />
-          </div>
-          {classement.sections.filter((c) => c.slot !== "tous" || c.jeux.length).map((c) => (
-            <section key={c.slot} aria-label={c.name || "Jeux"}>
-              {c.name && (
-                <h2 className="mb-5 font-display text-2xl font-extrabold">
-                  <span className="brand-gradient-text">{c.name}</span>
-                </h2>
+        <div className="space-y-4">
+          {/* 1.3.34 : 1. Leaderboard (replié : on le touche pour voir le classement) ; 2. Chay Game ;
+              3. Chay PlayMobile. Les jeux flottent en bulles dans les eaux profondes. */}
+          <div className="mx-auto max-w-3xl">
+            <BarreJeux titre="Leaderboard" icone={Trophy} teinte={TEINTES.classement} ordre={0} ouvert={voirClassement} onClick={() => setVoirClassement((v) => !v)} />
+            <AnimatePresence initial={false}>
+              {voirClassement && (
+                <motion.div
+                  key="classement"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3"><ScoreBoard espace="adulte" /></div>
+                </motion.div>
               )}
-              {c.jeux.length ? <GrilleJeux jeux={c.jeux} onOpen={navigate} /> : <TuileBientot />}
+            </AnimatePresence>
+          </div>
+          {classement.sections.filter((c) => c.slot !== "tous" || c.jeux.length).map((c, i) => (
+            <section key={c.slot} aria-label={c.name || "Jeux"} className="mx-auto max-w-3xl space-y-3 pt-4">
+              <BarreJeux titre={c.name || "Jeux"} icone={c.slot === "playmobile" ? Target : Gamepad2} teinte={TEINTES[c.slot] || TEINTES.game} ordre={i + 1} />
+              {PHRASES[c.slot] && <PhraseBrillante texte={PHRASES[c.slot]} ordre={i + 1} />}
+              <EauxProfondes jeux={c.jeux} onOpen={navigate} slot={c.slot === "playmobile" ? "playmobile" : "game"} />
             </section>
           ))}
           {/* Jeux pas encore classés : jamais montrés aux membres ; les admins les voient pour les tester. */}

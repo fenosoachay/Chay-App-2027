@@ -64,3 +64,23 @@ test("serveur : push d'un message en style conversation (nom, photo https), prio
   assert.match(side, /android\.priority = 'HIGH'/);
   assert.match(side, /notification: \{ title: n\.title, body: n\.body \}/); // toujours présente : repli des APK ≤ 1.3.4
 });
+
+test("1.3.34 : J'aime 👍 depuis la notification : pouce envoyé, on reste où l'on était", async () => {
+  const appels = [];
+  const toasts = [];
+  const deps = {
+    invoke: async (name, body) => { appels.push([name, body.text]); return { data: { id: "m1" } }; },
+    updateConversation: async () => {},
+    enqueue: () => {},
+    effacer: (c) => appels.push(["effacer", c]),
+    navigate: (r) => appels.push(["navigate", r]),
+    toast: (t) => toasts.push(t.title),
+  };
+  assert.equal(await traiterReponseRapide(deps, { conversation: "conv1", texte: "👍", aime: true }), "envoye");
+  assert.deepEqual(appels, [["createMessage", "👍"], ["effacer", "conv1"]]);
+  assert.deepEqual(toasts, ["👍 envoyé"]);
+  const n = brut(`${JAVA}ConversationNotifier.java`);
+  assert.match(n, /addAction\(actionAimer\)\s+\.addAction\(actionRepondre\)/);
+  assert.match(n, /SEMANTIC_ACTION_THUMBS_UP/);
+  assert.match(brut(`${JAVA}ChayConversationPlugin.java`), /data\.put\("aime", aime\)/);
+});

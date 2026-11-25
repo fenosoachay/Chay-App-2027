@@ -11,6 +11,9 @@ import {
 import Avatar from "@/components/messages/Avatar";
 import { base44 } from "@/api/base44Client";
 import { relTime } from "@/hooks/usePresence";
+import { isRenderableMessage } from "@/lib/messageNotifications";
+
+const dateMessage = (m) => String(m.created_date || m.created || "");
 
 const Highlight = ({ text, q }) => {
   if (!q) return text;
@@ -113,8 +116,12 @@ export default function ConversationItem({
     setMenu(null);
     onRefresh?.();
   };
+  // 1.3.34 : « non lu » ne touche que le dernier message reçu (avant : tous les messages lus de la
+  // conversation repassaient en non lus, ce qui faisait un gros compteur pour une seule personne).
   const markUnread = async () => {
-    const targets = (messages || []).filter((m) => (m.read_by || []).includes(user.id));
+    const recus = (messages || []).filter((m) => m.sender_id !== user.id && isRenderableMessage(m));
+    const dernier = recus.reduce((a, m) => (!a || dateMessage(m) >= dateMessage(a) ? m : a), null);
+    const targets = dernier && (dernier.read_by || []).includes(user.id) ? [dernier] : [];
     if (targets.length) {
       await base44.entities.Message.bulkUpdate(
         targets.map((m) => ({

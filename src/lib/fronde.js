@@ -1,7 +1,11 @@
 // Chay Fronde (1.3.32, Chay PlayMobile) : moteur du jeu, pur (testé par fronde.test.js), sans bibliothèque.
+// 1.3.34 : 60 niveaux (10 à 60 générés et vérifiés : src/data/niveauxFronde.js), pierres de formes et de
+// tailles différentes imposées par le niveau (galet, caillou, rocher, silex), murs de pierre, décors variés.
 // Monde de 760 × 620 (unités), sol à y = 580. Corps : pierres et cibles (cercles), planches et poteaux
 // (rectangles qui ne tournent pas : ils glissent, tombent et s'empilent). Une cible touchée assez fort
 // (pierre, planche qui tombe, chute) disparaît dans un pouf d'étoiles. Une planche frappée fort se casse.
+
+import niveauxGeneres from "../data/niveauxFronde.js";
 
 export const LARGEUR = 760;
 export const HAUTEUR = 620;
@@ -10,8 +14,29 @@ export const FRONDE = { x: 110, y: 470 };
 export const TIRAGE_MAX = 95;
 export const PUISSANCE = 9.5;
 const G = 900;
-const R_PIERRE = 13;
 const R_CIBLE = 21;
+
+/**
+ * Pierres (1.3.34). r : taille ; puissance : vitesse au lancer ; bois / pierre : dégâts sur ce matériau ;
+ * rebond : élasticité. La forme (polygone irrégulier) est seulement dessinée ; le choc reste celui d'un cercle.
+ */
+export const TYPES_PIERRE = {
+  galet: { nom: "Galet", r: 13, masse: 6, puissance: 1, bois: 0.55, pierre: 0.5, rebond: 0.25, cotes: 9, creux: 0.12, couleur: ["#c9ced4", "#5f6670"] },
+  caillou: { nom: "Caillou", r: 9, masse: 3, puissance: 1.2, bois: 0.35, pierre: 0.22, rebond: 0.35, cotes: 6, creux: 0.25, couleur: ["#e3d3b5", "#8b7650"] },
+  rocher: { nom: "Rocher", r: 19, masse: 15, puissance: 0.84, bois: 0.95, pierre: 1.05, rebond: 0.08, cotes: 11, creux: 0.18, couleur: ["#a9a29a", "#4a4540"] },
+  silex: { nom: "Silex", r: 12, masse: 5, puissance: 1.06, bois: 1.6, pierre: 0.3, rebond: 0.12, cotes: 5, creux: 0.45, pointe: true, couleur: ["#b9c4d8", "#3c4660"] },
+};
+
+/** Contour d'une pierre : facteurs de rayon (déterministes, d'après la graine). */
+export function formePierre(type, graine = 1) {
+  const t = TYPES_PIERRE[type] || TYPES_PIERRE.galet;
+  let g = graine * 9301 + 49297;
+  const alea = () => { g = (g * 9301 + 49297) % 233280; return g / 233280; };
+  return Array.from({ length: t.cotes }, (_, i) => {
+    if (t.pointe && i === 0) return 1.45; // la pointe du silex
+    return 1 - t.creux / 2 + alea() * t.creux;
+  });
+}
 const SEUIL_CIBLE = 190; // vitesse d'impact qui fait disparaître une cible
 const SEUIL_BOIS = 330; // vitesse d'impact qui abîme une planche
 const MATERIAUX = { bois: { pv: 100, densite: 1, couleur: "#C8913E" }, pierre: { pv: 260, densite: 2.2, couleur: "#9AA3AE" } };
@@ -35,13 +60,13 @@ function etage(x, bas, largeur, hauteur, materiau) {
  * Tour de `etages` étages, centrée en x. `cibles` : étages (1 = rez-de-chaussée, etages + 1 = sur le toit)
  * où se trouve une cible. `materiaux` : matériau de chaque étage (sinon bois).
  */
-function tour(x, etages, largeur, cibles, materiaux = []) {
+function tour(x, etages, largeur, cibles, materiaux = [], hauteurEtage = 70) {
   const blocs = [];
   const cib = [];
   let bas = SOL;
   for (let k = 1; k <= etages; k += 1) {
     if (cibles.includes(k)) cib.push({ x, y: bas - R_CIBLE });
-    const e = etage(x, bas, largeur, 70, materiaux[k - 1] || "bois");
+    const e = etage(x, bas, largeur, hauteurEtage, materiaux[k - 1] || "bois");
     blocs.push(...e.blocs);
     bas = e.haut;
   }
@@ -49,58 +74,65 @@ function tour(x, etages, largeur, cibles, materiaux = []) {
   return { blocs, cibles: cib };
 }
 
-// 20 niveaux, du plus facile au plus difficile : [x, étages, largeur, étages avec cible, matériaux], pierres.
+// Niveaux : tours [x, étages, largeur, étages avec cible, matériaux, hauteur d'étage], murs [x, hauteur, matériau]
+// et la suite des pierres (dans l'ordre du tir). 1 à 9 : apprentissage ; 10 à 60 : générés puis vérifiés
+// (scripts/genererNiveauxFronde.mjs) : chaque niveau tient debout seul et se gagne avec ses pierres.
 const P = "pierre";
 const B = "bois";
-export const NIVEAUX = [
-  { tours: [[560, 1, 90, [1]]], pierres: 3 },
-  { tours: [[580, 1, 100, [2]]], pierres: 3 },
-  { tours: [[560, 2, 100, [1, 3]]], pierres: 3 },
-  { tours: [[480, 1, 90, [1]], [640, 1, 90, [2]]], pierres: 3 },
-  { tours: [[580, 3, 100, [1, 3]]], pierres: 4 },
-  { tours: [[470, 2, 90, [2]], [640, 1, 90, [1, 2]]], pierres: 4 },
-  { tours: [[450, 1, 80, [1]], [560, 2, 80, [3]], [670, 1, 80, [2]]], pierres: 4 },
-  { tours: [[560, 2, 110, [1, 2], [P, B]]], pierres: 4 },
-  { tours: [[500, 3, 90, [1, 4]], [660, 2, 90, [2]]], pierres: 5 },
-  { tours: [[560, 4, 110, [1, 3, 5]]], pierres: 4 },
-  { tours: [[460, 2, 90, [1], [P, B]], [640, 3, 90, [2, 4]]], pierres: 4 },
-  { tours: [[440, 1, 80, [2]], [550, 3, 80, [1, 3]], [660, 1, 80, [1]]], pierres: 5 },
-  { tours: [[560, 3, 120, [1, 2, 4], [P, P, B]]], pierres: 4 },
-  { tours: [[480, 4, 90, [2, 5]], [650, 4, 90, [1, 3]]], pierres: 6 },
-  { tours: [[450, 2, 80, [1, 3], [P, B]], [560, 4, 80, [2, 5]], [670, 2, 80, [3], [B, B]]], pierres: 6 },
-  { tours: [[560, 5, 110, [1, 3, 6], [P, B, B, P, B]]], pierres: 5 },
-  { tours: [[470, 3, 100, [1, 4], [P, P, B]], [650, 3, 100, [2, 3], [B, P, P]]], pierres: 6 },
-  { tours: [[430, 2, 80, [3]], [540, 4, 80, [1, 4]], [650, 4, 80, [2, 5], [P, B, P, B]]], pierres: 6 },
-  { tours: [[500, 5, 100, [1, 3, 6], [P, P, B, B, P]], [670, 3, 90, [2, 4], [P, B, P]]], pierres: 6 },
-  { tours: [[430, 3, 80, [4], [B, B, P]], [550, 4, 90, [2, 5], [P, B, B, B]], [670, 3, 80, [4], [B, B, B]]], pierres: 7 },
+const g = "galet";
+const c = "caillou";
+const ro = "rocher";
+const si = "silex";
+const DEBUT = [
+  { tours: [[560, 1, 90, [1]]], pierres: [g, g, g] },
+  { tours: [[580, 1, 100, [2]]], pierres: [g, g, g] },
+  { tours: [[560, 2, 100, [1, 3]]], pierres: [g, g, g] },
+  { tours: [[480, 1, 90, [1]], [640, 1, 90, [2]]], pierres: [c, c, g] },
+  { tours: [[580, 3, 100, [1, 3]]], pierres: [g, c, g, c] },
+  { tours: [[470, 2, 90, [2]], [640, 1, 90, [1, 2]]], pierres: [ro, g, c, g] },
+  { tours: [[450, 1, 80, [1]], [560, 2, 80, [3]], [670, 1, 80, [2]]], pierres: [c, c, g, g] },
+  { tours: [[560, 2, 110, [1, 2], [P, B]]], pierres: [si, ro, g, g] },
+  { tours: [[500, 3, 90, [1, 4]], [660, 2, 90, [2]]], pierres: [si, g, c, ro, g] },
 ];
+export const NIVEAUX = [...DEBUT, ...niveauxGeneres];
 
-/** Monde de départ du niveau `n` (0..19). `photos` : images à mettre sur les cibles (dans l'ordre). */
-export function creerMonde(n, photos = []) {
-  const niv = NIVEAUX[n];
+/** Décor du niveau (change tous les 3 niveaux) : jour, forêt, coucher, montagne, désert, palais, nuit, neige. */
+export const DECORS = ["jour", "foret", "coucher", "montagne", "desert", "palais", "nuit", "neige"];
+export const decorNiveau = (n) => DECORS[Math.floor(n / 3) % DECORS.length];
+
+/** Monde de départ du niveau `n` (0..59), ou d'un niveau donné. `photos` : images des cibles (dans l'ordre). */
+export function creerMonde(n, photos = [], niveau = null) {
+  const niv = niveau || NIVEAUX[n];
   const blocs = [];
   const cibles = [];
-  for (const [x, etages, largeur, c, mat] of niv.tours) {
-    const t = tour(x, etages, largeur, c, mat);
+  for (const [x, etages, largeur, cib, mat, he] of niv.tours) {
+    const t = tour(x, etages, largeur, cib, mat, he || 70);
     blocs.push(...t.blocs);
     cibles.push(...t.cibles);
   }
+  for (const [x, h, mat] of niv.murs || []) blocs.push({ x, y: SOL - h / 2, w: 20, h, materiau: mat || "pierre" });
+  const file = Array.isArray(niv.pierres) ? [...niv.pierres] : Array.from({ length: niv.pierres }, () => "galet");
   return {
     blocs: blocs.map((b) => ({ ...b, id: id(), vx: 0, vy: 0, pv: MATERIAUX[b.materiau].pv, masse: (b.w * b.h * MATERIAUX[b.materiau].densite) / 400 })),
     cibles: cibles.map((c, i) => ({ ...c, id: id(), r: R_CIBLE, vx: 0, vy: 0, masse: 2.2, photo: photos.length ? photos[i % photos.length] : null })),
     pierres: [],
     poufs: [],
     eclats: [],
-    reste: niv.pierres,
+    file,
+    reste: file.length,
     temps: 0,
   };
 }
 
-/** Vitesse de lancement d'après le tirage (vecteur du centre de la fronde vers le doigt). */
-export function lancement(dx, dy) {
+/** Pierre prête dans la fronde (type), ou null. */
+export const pierreSuivante = (monde) => (monde.file && monde.file.length ? monde.file[0] : null);
+
+/** Vitesse de lancement d'après le tirage (vecteur du centre de la fronde vers le doigt) et la pierre. */
+export function lancement(dx, dy, type = "galet") {
   const d = Math.hypot(dx, dy);
   const k = d > TIRAGE_MAX ? TIRAGE_MAX / d : 1;
-  return { vx: -dx * k * PUISSANCE, vy: -dy * k * PUISSANCE };
+  const p = PUISSANCE * (TYPES_PIERRE[type] || TYPES_PIERRE.galet).puissance;
+  return { vx: -dx * k * p, vy: -dy * k * p };
 }
 
 /** Points de la trajectoire prévue (pour viser). */
@@ -113,8 +145,11 @@ export function trajectoire(vx, vy, n = 18, pas = 0.06) {
 
 export function tirer(monde, dx, dy) {
   if (monde.reste <= 0) return monde;
-  const v = lancement(dx, dy);
-  monde.pierres.push({ id: id(), x: FRONDE.x, y: FRONDE.y, r: R_PIERRE, masse: 6, ...v, vie: 0 });
+  const type = (monde.file && monde.file.shift()) || "galet";
+  const t = TYPES_PIERRE[type] || TYPES_PIERRE.galet;
+  const v = lancement(dx, dy, type);
+  const n = id();
+  monde.pierres.push({ id: n, pierre: true, type, x: FRONDE.x, y: FRONDE.y, r: t.r, masse: t.masse, ...v, vie: 0, angle: 0, forme: formePierre(type, n) });
   monde.reste -= 1;
   return monde;
 }
@@ -212,7 +247,7 @@ export function avancer(monde, dt) {
           const sol = { fixe: true, x: o.x, y: SOL + 50, vx: 0, vy: 0 };
           const v = choc(sol, o, 0, -1, bas - SOL, 0.15) || 0;
           o.y -= 0; // séparation faite par choc
-          if (o.r === R_CIBLE && v > SEUIL_CIBLE + 60) o.mort = true;
+          if (o.r && !o.pierre && v > SEUIL_CIBLE + 60) o.mort = true;
           o.vx *= 0.985;
         }
       }
@@ -230,10 +265,12 @@ export function avancer(monde, dt) {
         for (const b of monde.blocs) {
           const k = cercleRect(c, b);
           if (!k) continue;
-          const v = choc(c, b, k.nx, k.ny, k.p, c.r === R_PIERRE ? 0.25 : 0.05);
+          const t = c.pierre ? TYPES_PIERRE[c.type] || TYPES_PIERRE.galet : null;
+          const v = choc(c, b, k.nx, k.ny, k.p, t ? t.rebond : 0.05);
           if (v > 80) ev.chocs += 1;
-          if (v > SEUIL_BOIS) b.pv -= (v - SEUIL_BOIS) * (c.r === R_PIERRE ? 0.55 : 0.2);
-          if (c.r === R_CIBLE && v > SEUIL_CIBLE) c.mort = true;
+          // Dégâts selon la pierre (un silex perce le bois, un rocher casse la pierre) et sa masse.
+          if (v > SEUIL_BOIS) b.pv -= (v - SEUIL_BOIS) * (t ? t[b.materiau === "bois" ? "bois" : "pierre"] * Math.sqrt(t.masse / 6) : 0.2);
+          if (!c.pierre && v > SEUIL_CIBLE) c.mort = true;
         }
       }
       // Cercles entre eux
@@ -245,7 +282,7 @@ export function avancer(monde, dt) {
           const k = cercleCercle(a, b);
           if (!k) continue;
           const v = choc(a, b, k.nx, k.ny, k.p, 0.3);
-          if (v > SEUIL_CIBLE * 0.8) { if (a.r === R_CIBLE) a.mort = true; if (b.r === R_CIBLE) b.mort = true; }
+          if (v > SEUIL_CIBLE * 0.8) { if (!a.pierre) a.mort = true; if (!b.pierre) b.mort = true; }
         }
       }
     }
@@ -270,12 +307,23 @@ export function avancer(monde, dt) {
     if (b.pv <= 0) { monde.eclats.push({ x: b.x, y: b.y, t: 0, couleur: MATERIAUX[b.materiau].couleur }); ev.casses += 1; return false; }
     return b.x > -200 && b.x < LARGEUR + 200 && b.y < HAUTEUR + 200;
   });
-  for (const p of monde.pierres) p.vie += dt;
+  for (const p of monde.pierres) { p.vie += dt; p.angle = (p.angle || 0) + (p.vx * dt) / p.r; }
   monde.pierres = monde.pierres.filter((p) => p.x < LARGEUR + 60 && p.x > -60 && p.vie < 9);
   monde.poufs = monde.poufs.filter((p) => (p.t += dt) < 0.7);
   monde.eclats = monde.eclats.filter((p) => (p.t += dt) < 0.5);
   monde.temps += dt;
   return ev;
+}
+
+/**
+ * La fronde est-elle de nouveau prête ? (1.3.34) La pierre suivante n'attend plus que tout le décor soit
+ * immobile (les grandes tours tremblaient longtemps) : seulement que la pierre lancée ait fini sa course.
+ */
+export function pretATirer(monde, depuis) {
+  if (depuis < 0.7) return false;
+  const lancee = monde.pierres[monde.pierres.length - 1];
+  const finie = !lancee || Math.hypot(lancee.vx, lancee.vy) < 40 || lancee.vie > 2.2;
+  return finie || depuis > 2.4;
 }
 
 /** Tout est presque immobile ? (fin d'un tir) */
@@ -288,4 +336,4 @@ export function auRepos(monde) {
 export const etoilesFronde = (reste) => (reste >= 2 ? 3 : reste === 1 ? 2 : 1);
 
 /** Points d'un niveau réussi (même calcul que le serveur). */
-export const pointsFronde = (n, etoiles) => (n >= 1 && n <= 20 && etoiles >= 1 && etoiles <= 3 ? (5 + n) * etoiles : 0);
+export const pointsFronde = (n, etoiles) => (n >= 1 && n <= 60 && etoiles >= 1 && etoiles <= 3 ? (5 + n) * etoiles : 0);

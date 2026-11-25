@@ -26,7 +26,6 @@ export default function WordScramble() {
         <h1 className="display-fluid">Mots <span className="brand-gradient-text">mélangés</span></h1>
         <span className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-bold">💎 {data.credits}</span>
       </div>
-      <p className="mb-5 text-foreground/60">Remettez les lettres dans l'ordre pour retrouver le mot biblique. Pas de limite de temps.</p>
       <div className="grid gap-4">
         {WS_LEVELS.map((l) => (
           <WsLevelCard key={l.value} level={l} info={data.levels[l.value]} onPlay={() => navigate(`/word-scramble/play/${l.value}`)} />

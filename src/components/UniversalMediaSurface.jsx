@@ -934,7 +934,7 @@ const playVideo = (source) => {
             {!isRadio && typeof control.stop === "function" && (
               <button type="button" onClick={() => control.stop()} aria-label="Arrêter la lecture" title="Arrêter la lecture" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Square fill="currentColor" className="h-5 w-5" /></button>
             )}
-            <button type="button" onClick={() => setExpanded(false)} aria-label="Réduire le lecteur et continuer la lecture" className="grid h-12 w-12 place-items-center rounded-full text-white/70 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><X /></button>
+            {/* 1.3.34 : plus de seconde croix ici ; « Réduire » reste en haut à droite. */}
           </div>
         </>
       )}

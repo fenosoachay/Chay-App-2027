@@ -241,9 +241,6 @@ export default function EmojisGame() {
               </div>
               <p className="text-sm font-extrabold uppercase tracking-[0.24em] text-amber-200">Jeu biblique</p>
               <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-6xl">Devine qui je suis</h1>
-              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">
-                Observe les émojis, devine le personnage biblique et gagne 10 points à chaque bonne réponse.
-              </p>
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3 text-sm font-bold text-white/75">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2"><Heart className="h-4 w-4 fill-rose-400 text-rose-400" /> 3 vies</span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-4 py-2"><Lightbulb className="h-4 w-4 text-amber-300" /> Indices progressifs</span>

@@ -42,6 +42,9 @@ final class ConversationNotifier {
     static final String CLE_REPONSE = "chay_reponse";
     static final String EXTRA_CONVERSATION = "chay_conversation";
     static final String EXTRA_ROUTE = "chay_route";
+    /** 1.3.34 : texte envoyé tel quel, sans saisie (bouton « J'aime 👍 » de la notification). */
+    static final String EXTRA_TEXTE = "chay_texte";
+    static final String AIME = "\uD83D\uDC4D";
 
     private ConversationNotifier() {}
 
@@ -112,6 +115,19 @@ final class ConversationNotifier {
             .setAllowGeneratedReplies(true)
             .build();
 
+        // 1.3.34 : « J'aime 👍 » envoie un pouce en réponse, en un geste.
+        Intent aimer = new Intent(ctx, MainActivity.class)
+            .setAction(ACTION_REPONDRE)
+            .putExtra(EXTRA_CONVERSATION, conversation)
+            .putExtra(EXTRA_ROUTE, route)
+            .putExtra(EXTRA_TEXTE, AIME)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent piAimer = PendingIntent.getActivity(ctx, code + 3, aimer, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Action actionAimer = new NotificationCompat.Action.Builder(
+            IconCompat.createWithResource(ctx, R.drawable.ic_stat_chay), "J'aime " + AIME, piAimer)
+            .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_THUMBS_UP)
+            .build();
+
         NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CANAL)
             .setSmallIcon(R.drawable.ic_stat_chay)
             .setContentTitle(expediteur)
@@ -125,6 +141,7 @@ final class ConversationNotifier {
             .setAutoCancel(true)
             .setOnlyAlertOnce(false)
             .addPerson(lui)
+            .addAction(actionAimer)
             .addAction(actionRepondre);
 
         // Bulle (Android 11+) : la conversation s'ouvre dans BubbleActivity, une fenêtre flottante.

@@ -54,7 +54,8 @@ test("score board 1.3.26 : le Puzzle est un jeu d'enfant (sauf ancienne app sans
   assert.equal(sc.pointsClient("ouvastu", { fin: "magasin-2" }), 20);
   assert.equal(sc.pointsClient("ouvastu", { fin: "<script>" }), 0);
   assert.equal(sc.pointsClient("fronde", { niveau: 20, etoiles: 3 }), 75);
-  assert.equal(sc.pointsClient("fronde", { niveau: 21, etoiles: 3 }), 0);
+  assert.equal(sc.pointsClient("fronde", { niveau: 60, etoiles: 3 }), 195); // 1.3.34 : 60 niveaux
+  assert.equal(sc.pointsClient("fronde", { niveau: 61, etoiles: 3 }), 0);
   assert.equal(sc.pointsClient("motscroises", { taille: 7, indices: 0, secondes: 100 }), 36);
   assert.equal(sc.pointsClient("motscroises", { taille: 11, indices: 2, secondes: 900 }), 80);
   assert.equal(sc.pointsClient("motscroises", { taille: 9, indices: 0, secondes: 5 }), 0);

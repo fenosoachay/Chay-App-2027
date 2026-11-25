@@ -164,10 +164,6 @@ export default function HelpSection() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-foreground/70">
-        Besoin d'aide ? Nous sommes là pour vous accompagner.
-      </p>
-
       {faqs.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-foreground/50 mb-1">
