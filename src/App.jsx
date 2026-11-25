@@ -23,6 +23,7 @@ const LocationGate = lazy(() => import('@/components/LocationGate'));
 const LocalLayout = lazy(() => import('@/components/LocalLayout'));
 // 1.3.35 : web réservé aux admins (les membres reçoivent le lien de l'application).
 import WebReserveAdmins from '@/components/WebReserveAdmins';
+import { Capacitor } from '@capacitor/core';
 const LocalAccessNotice = lazy(() => import('@/components/LocalAccessNotice'));
 // Lance le téléchargement de l'accueil dès l'évaluation du module, sans attendre le rendu.
 homeImport();
@@ -82,7 +83,7 @@ const AuthenticatedApp = () => {
   if (isLocalMode) {
     return <Suspense fallback={<AppLoader />}><Routes>
       <Route path="/login" element={navigator.onLine ? <Login /> : <Navigate to="/" replace />} />
-      <Route path="/register" element={navigator.onLine ? <Register /> : <Navigate to="/" replace />} />
+      <Route path="/register" element={navigator.onLine && Capacitor.isNativePlatform() ? <Register /> : <Navigate to={navigator.onLine ? "/login" : "/"} replace />} />
       <Route path="/forgot-password" element={navigator.onLine ? <ForgotPassword /> : <Navigate to="/" replace />} />
       <Route path="/reset-password" element={navigator.onLine ? <ResetPassword /> : <Navigate to="/" replace />} />
       <Route element={<WebReserveAdmins><LocalLayout /></WebReserveAdmins>}>
@@ -118,7 +119,8 @@ const AuthenticatedApp = () => {
     <Suspense fallback={<AppLoader />}>
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* 1.3.35 : sur le site, l'inscription renvoie à la connexion (on s'inscrit dans l'application). */}
+      <Route path="/register" element={Capacitor.isNativePlatform() ? <Register /> : <Navigate to="/login" replace />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

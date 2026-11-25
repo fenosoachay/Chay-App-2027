@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { base44 } from "@/api/base44Client";
 import { saveLocalSession } from '@/lib/localSession';
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Mail, Lock, AlertCircle } from "lucide-react";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import LoginButton from "@/components/auth/LoginButton";
 import PasswordInput from "@/components/PasswordInput";
+import { APK_URL } from "@/lib/apkRelease";
 import AuthPageBackground from "@/components/auth/AuthPageBackground";
 
 const LOGO_URL =
@@ -135,15 +137,25 @@ export default function Login() {
           <LoginButton state={btnState} disabled={btnState !== "idle"} />
         </form>
 
-        <p className="text-center text-sm text-[#4B5563] dark:text-[#99C9FF] mt-6">
-          Pas encore de compte ?{" "}
-          <Link
-            to={registerLink}
-            className="text-[#6B2D6B] dark:text-[#B06FB0] font-medium hover:underline"
-          >
-            Créer un compte
-          </Link>
-        </p>
+        {/* 1.3.35 : sur le site (réservé aux admins), pas d'inscription : on s'inscrit dans l'application. */}
+        {Capacitor.isNativePlatform() ? (
+          <p className="text-center text-sm text-[#4B5563] dark:text-[#99C9FF] mt-6">
+            Pas encore de compte ?{" "}
+            <Link
+              to={registerLink}
+              className="text-[#6B2D6B] dark:text-[#B06FB0] font-medium hover:underline"
+            >
+              Créer un compte
+            </Link>
+          </p>
+        ) : (
+          <p className="text-center text-sm text-[#4B5563] dark:text-[#99C9FF] mt-6">
+            Pas encore de compte ?{" "}
+            <a href={APK_URL} className="text-[#6B2D6B] dark:text-[#B06FB0] font-medium hover:underline">
+              Téléchargez l'application
+            </a>
+          </p>
+        )}
       </div>
     </AuthPageBackground>
   );
