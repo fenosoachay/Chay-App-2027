@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import useGameLogic from "@/hooks/useGameLogic";
 import { enregistrerScore } from "@/lib/scoreBoard";
+import { jouerSon } from "@/lib/sonsJeu";
 
 const gold = "#F6C453";
 
@@ -77,8 +78,14 @@ export default function EmojisGame() {
     });
   }, [correct, game.status, questionFinished]);
 
+  // Sons (1.3.30) : bonne ou mauvaise réponse, fin de partie.
+  useEffect(() => {
+    if (game.status === "playing" && questionFinished) jouerSon(correct ? "bon" : "faux");
+  }, [questionFinished]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Leaderboard (1.3.22) : le score de la partie, une fois à la fin.
   useEffect(() => {
+    if (game.status === "finished") jouerSon("victoire");
     if (game.status === "finished" && game.score > 0) enregistrerScore("emoji", { score: game.score });
   }, [game.status]); // eslint-disable-line react-hooks/exhaustive-deps
 

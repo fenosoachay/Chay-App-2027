@@ -23,6 +23,7 @@ import {
 import usePuzzleGame from "@/hooks/usePuzzleGame";
 import { enregistrerScore } from "@/lib/scoreBoard";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { jouerSon } from "@/lib/sonsJeu";
 import {
   getPuzzlesForDifficulty,
   PUZZLE_DIFFICULTIES,
@@ -244,6 +245,7 @@ export default function Puzzle({ profil = null, integre = false }) {
 
   useEffect(() => {
     if (!game.solved) return;
+    jouerSon("victoire");
     // Score Board des enfants (1.3.26) : 5 points par pièce du puzzle réussi, au nom de l'enfant qui joue.
     if (profil) enregistrerScore("puzzle", { pieces: game.pieces.length, pseudo: profil.pseudo, avatar: profil.avatar });
     confetti({

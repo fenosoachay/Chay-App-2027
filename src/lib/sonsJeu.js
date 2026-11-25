@@ -51,12 +51,20 @@ const SONS = {
   },
   // Nouveau record : petite fanfare.
   record: (c) => { [784, 988, 1175, 1568].forEach((f, i) => note(c, f, i * 0.09, 0.22, "square", 0.08)); },
+  // Petit clic (pièce lâchée ailleurs, carte retournée, choix).
+  clic: (c) => { note(c, 880, 0, 0.05, "sine", 0.12); },
+  // Bonne réponse : deux notes qui montent.
+  bon: (c) => { note(c, 660, 0, 0.12, "triangle", 0.18); note(c, 990, 0.09, 0.18, "triangle", 0.18); },
+  // Mauvaise réponse : deux notes qui descendent.
+  faux: (c) => { note(c, 300, 0, 0.14, "sawtooth", 0.07); note(c, 220, 0.12, 0.2, "sawtooth", 0.07); },
+  // Jeu gagné (puzzle fini, voiture sortie, toutes les paires) : petite mélodie joyeuse.
+  victoire: (c) => { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => note(c, f, i * 0.1, 0.24, "triangle", 0.16)); },
   // Fin de partie : notes qui descendent.
   fin: (c) => { [523, 440, 349, 262].forEach((f, i) => note(c, f, i * 0.14, 0.25, "sine", 0.15)); },
 };
-const VIBRATIONS = { pose: 12, refus: [20, 40, 20], ligne: 35, record: [30, 50, 30], fin: 80 };
+const VIBRATIONS = { pose: 12, refus: [20, 40, 20], ligne: 35, record: [30, 50, 30], fin: 80, clic: 0, bon: 15, faux: [25, 40, 25], victoire: [40, 60, 40] };
 
-/** Joue un son (« pose », « refus », « ligne », « record », « fin ») et la vibration qui va avec. */
+/** Joue un son (pose, refus, ligne, record, fin, clic, bon, faux, victoire) et la vibration qui va avec. */
 export function jouerSon(nom, n = 1) {
   if (!sonsActifs()) return;
   vibrer(VIBRATIONS[nom] || 0);

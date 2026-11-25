@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { jouerSon } from "@/lib/sonsJeu";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Heart, Loader2, RotateCcw, Share2, Sparkles } from "lucide-react";
@@ -122,6 +123,7 @@ export default function PersonalityQuiz() {
 
   const chooseAnswer = (answerId) => {
     if (!question || advancing || result) return;
+    jouerSon("clic");
     const nextAnswers = { ...answers, [question.content_id]: answerId };
     setAnswers(nextAnswers);
     setAdvancing(true);
@@ -142,6 +144,7 @@ export default function PersonalityQuiz() {
         return;
       }
       setResult(outcome);
+      jouerSon("victoire");
       setAdvancing(false);
       persistResult(outcome, nextAnswers);
     }, 350);

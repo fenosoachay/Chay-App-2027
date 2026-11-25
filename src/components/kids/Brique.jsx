@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Blocks, Play, RotateCcw, Trophy, Volume2, VolumeX } from "lucide-react";
+import { Blocks, Play, RotateCcw, Trophy } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { enregistrerScore } from "@/lib/scoreBoard";
 import { enregistrerProgres } from "@/lib/profilsEnfants";
-import { jouerSon, reglerSons, sonsActifs } from "@/lib/sonsJeu";
+import { jouerSon } from "@/lib/sonsJeu";
 import {
   BLOCK_BLAST_CATEGORIES,
   BLOCK_BLAST_SHAPES,
@@ -123,7 +123,6 @@ export default function Brique({ profil = null }) {
   const [eclats, setEclats] = useState([]); // cases qui éclatent
   const [gains, setGains] = useState([]); // « +25 » qui s'envolent
   const [bandeau, setBandeau] = useState(null); // { id, texte }
-  const [son, setSon] = useState(sonsActifs);
   const [nouveauRecord, setNouveauRecord] = useState(false);
   const records = { facile: 0, normal: 0, ...(profil?.progres?.brique || {}) };
   const record = mode ? records[mode] || 0 : 0;
@@ -376,14 +375,6 @@ export default function Brique({ profil = null }) {
           <p className="flex items-center justify-center gap-1 text-[0.65rem] font-bold uppercase tracking-wider text-foreground/50"><Trophy className="h-3 w-3" /> Record</p>
           <p className="text-2xl font-black tabular-nums">{Math.max(record, score)}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => { reglerSons(!son); setSon(!son); }}
-          aria-label={son ? "Couper le son" : "Remettre le son"}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-card ring-1 ring-border"
-        >
-          {son ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-        </button>
         <button type="button" onClick={() => commencer(mode)} aria-label="Recommencer" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-card ring-1 ring-border">
           <RotateCcw className="h-5 w-5" />
         </button>

@@ -7,6 +7,7 @@ import QuizOfflineScreen from "@/components/quiz/QuizOfflineScreen";
 import QuizTimer from "@/components/quiz/QuizTimer";
 import QuizAnswerButton from "@/components/quiz/QuizAnswerButton";
 import { levelOf } from "@/lib/quizConstants";
+import { jouerSon } from "@/lib/sonsJeu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,10 @@ function PlayView({ difficulty }) {
   useEffect(() => {
     if (status === "finished") navigate("/quiz/results", { replace: true, state: { summary } });
   }, [status, summary, navigate]);
+  // Sons (1.3.30) : bonne ou mauvaise réponse.
+  useEffect(() => {
+    if (result) jouerSon(result.is_correct ? "bon" : "faux");
+  }, [result]);
 
   if (!online && status === "loading") return <QuizOfflineScreen />;
   if (status === "loading") {

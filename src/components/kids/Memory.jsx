@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw, Star, Timer, Trophy } from "lucide-react";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { enregistrerScore } from "@/lib/scoreBoard";
+import { jouerSon } from "@/lib/sonsJeu";
 import { lireMasques, lireThemesAdmin, MIN_CARTES } from "@/lib/jeuxEnfants";
 import {
   NIVEAUX, THEMES, disposition, distribuer, duree, etoiles, lireDisposition, lireRecords, noterDisposition, noterRecord,
@@ -163,6 +164,7 @@ function Partie({ theme, niveau, onQuitter, profil }) {
 
   useEffect(() => {
     if (!fini) return;
+    jouerSon("victoire");
     setRecord(noterRecord(theme.id, niveau.id, essais, secondes));
     // Score Board : étoiles de la partie, au nom de l'enfant qui joue (« Qui joue ? », Chay Enfants › Jeux).
     if (profil) {
@@ -175,14 +177,16 @@ function Partie({ theme, niveau, onQuitter, profil }) {
     if (!demarre) setDemarre(true);
     const suivantes = [...retournees, carte.cle];
     setRetournees(suivantes);
-    if (suivantes.length < 2) return;
+    if (suivantes.length < 2) { jouerSon("clic"); return; }
     setEssais((n) => n + 1);
     const [a, b] = suivantes.map((cle) => cartes.find((c) => c.cle === cle));
     if (a.paire === b.paire) {
+      jouerSon("bon");
       setTrouvees((s) => new Set(s).add(a.paire));
       setDerniere(a);
       setRetournees([]);
     } else {
+      jouerSon("faux");
       bloque.current = true;
       setTimeout(() => { setRetournees([]); bloque.current = false; }, 900);
     }

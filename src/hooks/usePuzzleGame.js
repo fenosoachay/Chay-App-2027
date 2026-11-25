@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createShuffledPieces, isPuzzleSolved, swapPuzzlePieces } from "@/lib/puzzleGame";
+import { jouerSon } from "@/lib/sonsJeu";
 
 export default function usePuzzleGame(pieceCount) {
   const [pieces, setPieces] = useState([]);
@@ -36,6 +37,7 @@ export default function usePuzzleGame(pieceCount) {
     piecesRef.current = next;
     setPieces(next);
     setMoves((count) => count + 1);
+    jouerSon(next[secondIndex] === secondIndex || next[firstIndex] === firstIndex ? "pose" : "clic");
     if (isPuzzleSolved(next)) {
       setSolved(true);
       setElapsedSeconds(Math.floor((Date.now() - startedAt.current) / 1000));

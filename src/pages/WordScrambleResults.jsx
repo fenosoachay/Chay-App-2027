@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Trophy } from "lucide-react";
+import { jouerSon } from "@/lib/sonsJeu";
 import WsResultDetails from "@/components/wordscramble/WsResultDetails";
 import { resultMessage, wsLevelLabel } from "@/lib/wordScrambleConstants";
 
@@ -28,6 +29,7 @@ export default function WordScrambleResults() {
   const shown = useCountUp(summary?.total_score || 0);
 
   const perfect = Boolean(summary) && summary.score_percent >= 100 && summary.perfect;
+  useEffect(() => { if (summary) jouerSon("victoire"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (perfect) {
       import("canvas-confetti").then(({ default: confetti }) =>

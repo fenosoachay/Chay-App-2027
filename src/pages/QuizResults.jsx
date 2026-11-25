@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Trophy } from "lucide-react";
+import { jouerSon } from "@/lib/sonsJeu";
 
 export default function QuizResults() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const summary = state?.summary;
+  useEffect(() => { if (summary) jouerSon("victoire"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!summary) return <Navigate to="/quiz" replace />;
 
   return (

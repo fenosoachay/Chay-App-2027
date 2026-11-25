@@ -8,9 +8,9 @@
 
 const JEUX = {
   adulte: ['trivia', 'scramble', 'emoji'],
-  enfant: ['memory', 'puzzle', 'brique'], // 1.3.29 : Brique passe chez les enfants
+  enfant: ['memory', 'puzzle', 'brique', 'voiture'], // 1.3.29 : Brique ; 1.3.30 : Libère la voiture
 };
-const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory']; // scores envoyés par l'app (bornés ici)
+const JEUX_CLIENT = ['emoji', 'brique', 'puzzle', 'memory', 'voiture']; // scores envoyés par l'app (bornés ici)
 const MULT = { easy: 1, medium: 2, hard: 3, ultra_hard: 4, facile: 1, moyen: 2, difficile: 3 };
 const PLAFOND = 1000;
 const AVATARS = ['🦁', '🐑', '🕊️', '🐟', '🐘', '🦒', '🐻', '🐰', '🦊', '🐢', '🐝', '🦋', '🐳', '🐧', '🦉', '🐞'];
@@ -28,6 +28,13 @@ function pointsMemory(etoiles, niveau) {
   return e * 10 * (MULT[niveau] || 1);
 }
 function pointsBrique(score) { return borne(entier(score) / 10); }
+/** Libère la voiture (1.3.30) : niveau 1 à 30, 1 à 3 étoiles -> (10 + 2 × niveau) × étoiles. */
+function pointsVoiture(niveau, etoiles) {
+  const n = entier(niveau);
+  const e = entier(etoiles);
+  if (n < 1 || n > 30 || e < 1 || e > 3) return 0;
+  return (10 + 2 * n) * e;
+}
 function pointsEmoji(score) { return borne(score); }
 function pointsPuzzle(pieces) {
   const p = entier(pieces);
@@ -43,6 +50,7 @@ function pointsClient(jeu, b) {
   if (jeu === 'brique') return pointsBrique(d.score);
   if (jeu === 'puzzle') return pointsPuzzle(d.pieces);
   if (jeu === 'memory') return pointsMemory(d.etoiles, d.niveau);
+  if (jeu === 'voiture') return pointsVoiture(d.niveau, d.etoiles);
   return 0;
 }
 
@@ -59,7 +67,7 @@ function avatarValide(a) { return AVATARS.indexOf(a) !== -1 ? a : AVATARS[0]; }
  * (pseudo) ; un Puzzle sans pseudo vient d'une ancienne version de l'app (Puzzle adulte) : compté chez les adultes.
  */
 function espaceDe(jeu, pseudo) {
-  if (jeu === 'memory') return 'enfant';
+  if (jeu === 'memory' || jeu === 'voiture') return 'enfant';
   // Puzzle (1.3.26) et Brique (1.3.29) : au nom d'un enfant (pseudo) ; sans pseudo = ancienne version de l'app.
   if (jeu === 'puzzle' || jeu === 'brique') return pseudoValide(pseudo) ? 'enfant' : 'adulte';
   return 'adulte';
@@ -103,6 +111,6 @@ function classer(lignes) {
 
 module.exports = {
   JEUX, JEUX_CLIENT, AVATARS, PLAFOND,
-  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsClient,
+  pointsQuiz, pointsMemory, pointsBrique, pointsEmoji, pointsPuzzle, pointsVoiture, pointsClient,
   pseudoValide, avatarValide, espaceDe, debutPeriode, datePb, classer,
 };

@@ -11,6 +11,7 @@ import WsActions from "@/components/wordscramble/WsActions";
 import WsPhraseHint from "@/components/wordscramble/WsPhraseHint";
 import { useToast } from "@/components/ui/use-toast";
 import { wsLevelOf } from "@/lib/wordScrambleConstants";
+import { jouerSon } from "@/lib/sonsJeu";
 import {
   AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,6 +28,11 @@ function PlayView({ difficulty }) {
   useEffect(() => {
     if (g.status === "finished") navigate("/word-scramble/results", { replace: true, state: { summary: g.summary } });
   }, [g.status, g.summary, navigate]);
+  // Sons (1.3.30) : mot trouvé ou faux.
+  useEffect(() => {
+    if (g.feedback === "correct") jouerSon("bon");
+    else if (g.feedback === "wrong") jouerSon("faux");
+  }, [g.feedback]);
 
   if (!online && g.status === "loading") return <WsOfflineScreen />;
   if (g.status === "loading") return <div className="py-24 text-center"><Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" /></div>;

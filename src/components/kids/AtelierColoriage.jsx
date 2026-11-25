@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { confirmFr } from "@/lib/confirmFr";
 import { COTE, PALETTE, enregistrerDessin, masqueTraits, remplir, versDessin } from "@/lib/coloriage";
 import { enregistrerImageGalerie } from "@/lib/fondsEcran";
+import { jouerSon } from "@/lib/sonsJeu";
 
 // Atelier de coloriage : l'enfant touche une zone pour la remplir (seau), ou dessine librement (pinceau),
 // gomme. Les traits du dessin restent toujours par-dessus.
@@ -160,6 +161,7 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
       const img = c.getImageData(0, 0, COTE, COTE);
       const avant = img.data.slice();
       if (!remplir(masqueRef.current, img.data, COTE, COTE, p.x, p.y, couleur)) return;
+      jouerSon("pose");
       historique.current.push(new ImageData(avant, COTE, COTE));
       if (historique.current.length > HISTORIQUE_MAX) historique.current.shift();
       setNbAnnuler(historique.current.length);

@@ -19,6 +19,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { JEUX, grouperJeux } from "@/lib/jeuxCategories";
 import ScoreBoard from "@/components/jeux/ScoreBoard";
+import BoutonSon from "@/components/BoutonSon";
 
 // Apparence de chaque jeu (identifiants : src/lib/jeuxCategories.js).
 const APPARENCE = {
@@ -204,7 +205,10 @@ export default function Games() {
   return (
     <div className="mx-auto max-w-6xl px-6 md:px-8 py-8 md:py-12">
       <header className="mb-8">
-        <h1 className="display-fluid">Jeux <span className="brand-gradient-text">bibliques</span></h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="display-fluid">Jeux <span className="brand-gradient-text">bibliques</span></h1>
+          <BoutonSon className="mt-2" />
+        </div>
         <p className="mt-3 text-lg text-foreground/60">Découvrez la Parole en vous amusant.</p>
       </header>
 

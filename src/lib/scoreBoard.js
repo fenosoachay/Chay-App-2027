@@ -19,8 +19,8 @@ export const JEUX_ADULTES = [
   { id: "emoji", label: "Émojis" },
 ];
 // 1.3.26 : le Puzzle est un jeu des enfants (Chay Enfants › Jeux).
-// 1.3.29 : Brique aussi.
-export const JEUX_ENFANTS = [{ id: "general", label: "Général" }, { id: "memory", label: "Jeux Carte" }, { id: "puzzle", label: "Puzzle" }, { id: "brique", label: "Brique" }];
+// 1.3.29 : Brique ; 1.3.30 : Libère la voiture.
+export const JEUX_ENFANTS = [{ id: "general", label: "Général" }, { id: "memory", label: "Jeux Carte" }, { id: "puzzle", label: "Puzzle" }, { id: "brique", label: "Brique" }, { id: "voiture", label: "Voiture" }];
 
 // Même liste que le serveur (pb_hooks/lib/scores.js).
 export const AVATARS = ["🦁", "🐑", "🕊️", "🐟", "🐘", "🦒", "🐻", "🐰", "🦊", "🐢", "🐝", "🦋", "🐳", "🐧", "🦉", "🐞"];
