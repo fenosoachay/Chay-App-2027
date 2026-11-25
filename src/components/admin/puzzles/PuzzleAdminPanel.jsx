@@ -108,6 +108,7 @@ export default function PuzzleAdminPanel() {
       description: error?.message || "Réessayez.",
       variant: "destructive",
     }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   useEffect(() => {

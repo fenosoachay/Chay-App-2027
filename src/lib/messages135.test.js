@@ -76,3 +76,12 @@ test("texte et image qui défilent : durée réglée en secondes, sinon la vites
   const [g] = groupesPour([{ id: "g", images: ["a", "b"], ou: "partout", secondes: 3, vitesse: "lent" }], piste);
   assert.equal(g.secondes, 3);
 });
+
+test("1.3.36 : réactions (pastille, choix immédiat, liste)", async () => {
+  const { REACTIONS, resume, appliquer, lecteursReactions } = await import("./reactionsMessages.js");
+  assert.equal(REACTIONS.length, 6);
+  assert.deepEqual(resume({ a: "❤️", b: "❤️", c: "😆", d: "👍", e: "😮" }), { emojis: ["❤️", "😆", "😮"], total: 5 });
+  assert.deepEqual(resume(null), { emojis: [], total: 0 });
+  assert.deepEqual(appliquer({ a: "❤️" }, "a", "❤️"), {});
+  assert.deepEqual(lecteursReactions({ a: "👍", b: "❤️" }).map((x) => x.uid), ["b", "a"]);
+});

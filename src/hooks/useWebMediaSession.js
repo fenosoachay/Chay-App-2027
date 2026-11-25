@@ -34,8 +34,11 @@ export function useWebMediaSession(control, enabled) {
     enabled,
     control?.id,
     control?.type,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Boolean(control?.previous),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Boolean(control?.next),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Boolean(control?.seek),
     control?.duration,
   ]);
@@ -63,6 +66,7 @@ export function useWebMediaSession(control, enabled) {
         console.warn("[MediaSession] Métadonnées impossibles.", error);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [enabled, control?.id, control?.title, control?.subtitle, control?.artwork, control?.isLive]);
 
   // État lecture / pause + barre de progression.
@@ -83,6 +87,7 @@ export function useWebMediaSession(control, enabled) {
     } catch {
       /* flux en direct ou lecteur sans durée */
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [enabled, control?.id, control?.isPlaying, control?.currentTime, control?.duration]);
 
   // Ancre audio silencieuse pour YouTube / flux sans élément média natif.

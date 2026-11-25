@@ -129,6 +129,7 @@ export default function MyPrayers() {
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [refreshKey, user?.id]);
 
   useEffect(() => {

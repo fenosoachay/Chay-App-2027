@@ -120,7 +120,7 @@ export default function AboutDialog({ open, onOpenChange }) {
   const [editText, setEditText] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newText, setNewText] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [saving] = useState(false);
 
   // Application Android : dernière version publiée (latest.json) et version installée (APK seulement).
   // Le bouton de téléchargement est toujours affiché, même si latest.json est illisible.
@@ -164,7 +164,7 @@ export default function AboutDialog({ open, onOpenChange }) {
       }),
     ];
     return () => { ecoutes.forEach((p) => Promise.resolve(p).then((h) => h?.remove?.()).catch(() => {})); };
-  }, [open, natif]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, natif]);
 
   const loadNotices = async () => {
     setLoading(true);

@@ -174,12 +174,15 @@ function marquerMessage(genre, cle) {
   $app.store().set(`memo_message:${genre}`, JSON.stringify(o));
 }
 
-function messageEmailHtml(senderName, preview, conversationId) {
-  const cta = `${mail.appUrl()}/messages?c=${encodeURIComponent(conversationId || '')}`;
+// 1.3.35 : le site est réservé aux admins : l'e-mail invite à ouvrir l'APPLICATION (plus de lien vers le site,
+// qui menait les membres sur la page « Télécharge l'application »). Lien de téléchargement en dernier recours.
+const APK_URL = 'https://membres.chay.fr/telechargements/chay.apk';
+function messageEmailHtml(senderName, preview) {
   return mail.shell('Nouveau message',
     mail.paragraph(`<strong>${mail.escapeHtml(senderName)}</strong> vous a envoyé un message.`)
     + mail.paragraph(mail.escapeHtml(preview), 'border-left:3px solid #8A56E2;padding-left:12px;')
-    + mail.button(cta, 'Ouvrir la conversation'));
+    + mail.paragraph('Ouvrez l’application <strong>Chay</strong> sur votre téléphone pour lire et répondre.')
+    + mail.paragraph(`Pas encore l’application ? <a href="${APK_URL}">Télécharger Chay (Android)</a>`, 'font-size:13px;color:#71717a;'));
 }
 
 /** Notifications d'un message : push et e-mail (30 min de déduplication), sans cloche. Idempotent. */
@@ -241,12 +244,13 @@ function messagePush(messageRecord) {
       if (recentlyEmailed || alreadyRead) {
         emailsSkipped++;
       } else if (envoyerPlafonne('sendMessagePush', recipient, `${senderName} vous a envoyé un message`,
-        messageEmailHtml(senderName, preview || notifBody, m.conversation_id),
+        messageEmailHtml(senderName, preview || notifBody),
         `${senderName} vous a envoyé un message.
 
 ${preview || notifBody}
 
-Ouvrir la conversation : ${mail.appUrl()}/messages?c=${encodeURIComponent(m.conversation_id || '')}`)) {
+Ouvrez l'application Chay sur votre téléphone pour lire et répondre.
+Pas encore l'application ? ${APK_URL}`)) {
         emailsSent++;
         marquerMessage('courriel', cle);
       } else {

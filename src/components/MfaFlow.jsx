@@ -74,6 +74,7 @@ function Verify({ session, challenge, returnTo, onDone }) {
     if (method !== "sms" || sent.current) return;
     sent.current = true;
     sendCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [method]);
 
   const verify = async (value = code) => {

@@ -9,7 +9,8 @@ const JAVA = "android/app/src/main/java/io/chay/app/";
 test("réponse rapide : envoyée comme depuis la conversation, notification retirée, conversation ouverte", async () => {
   const appels = [];
   const deps = {
-    invoke: async (name, body) => { appels.push([name, body]); return { data: { id: "m1" } }; },
+    // 1.3.35 : la clé d'envoi (anti-doublon) est aléatoire : vérifiée à part.
+    invoke: async (name, { cle_envoi, ...body }) => { assert.match(cle_envoi, /^[a-z0-9]{8,}$/i); appels.push([name, body]); return { data: { id: "m1" } }; },
     updateConversation: async () => {},
     enqueue: () => appels.push(["file"]),
     effacer: (c) => appels.push(["effacer", c]),

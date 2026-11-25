@@ -61,6 +61,7 @@ export default function Requests() {
 
   useEffect(() => {
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [refreshKey, user?.id]);
 
   // Si l'URL change (depuis l'accueil par exemple), on change d'onglet

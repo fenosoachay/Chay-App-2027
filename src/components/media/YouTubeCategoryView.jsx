@@ -246,6 +246,7 @@ export default function YouTubeCategoryView({ section, youtube = [], targetVideo
       stop,
     }, "youtube");
     setPlayingId(item.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [section, nomSection, stopUrlVideo]);
 
   const startVideoAt = useCallback((index) => {

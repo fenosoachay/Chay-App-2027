@@ -31,6 +31,7 @@ export default function VerseActionsSheet({
 
   useEffect(() => {
     setNote(count === 1 ? annotations[verses[0]?.number]?.note || "" : "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [open, count]);
 
   const copy = async () => {

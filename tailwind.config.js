@@ -68,7 +68,9 @@ module.exports = {
   			heading: ['var(--font-heading)'],
   			body: ['var(--font-body)'],
   			display: ['var(--font-display)'],
-  			mono: ['var(--font-mono)']
+  			mono: ['var(--font-mono)'],
+  			// 1.3.36 : mêmes emojis partout (Noto Color Emoji) dans les textes en italique / serif aussi.
+  			serif: ['ui-serif', 'Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif', '"Noto Color Emoji"']
   		},
   		keyframes: {
   			'accordion-down': {

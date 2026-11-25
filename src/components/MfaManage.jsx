@@ -28,6 +28,7 @@ export default function MfaManage({ session, returnTo }) {
       setError(err);
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   useEffect(() => { load(); }, [session]);
 
   const back = () => { setView({ name: "list" }); load(); };

@@ -191,6 +191,7 @@ export function usePushNotifications(navigate) {
       handles.forEach((h) => h && typeof h.remove === "function" && h.remove());
       handles = [];
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [isAuthenticated, pushEnabled, user?.id]);
 
   // Déconnexion : désactiver le token de cet appareil.

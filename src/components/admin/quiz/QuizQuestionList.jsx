@@ -46,6 +46,7 @@ export default function QuizQuestionList({
       setTotal(count);
       setLoading(false);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [difficulty, category, term, refreshKey]);
 
   const loadMore = async () => {

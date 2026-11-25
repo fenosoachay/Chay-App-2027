@@ -211,6 +211,7 @@ const playVideo = (source) => {
     else if (requested.type === "youtube") playYouTube(requested.source);
     // La radio se joue sur sa page : pas de plein écran (voir mediaSurfaceRules).
     if (opensFullPlayerOnRequest(requested.type)) setExpanded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }), []);
 
   useEffect(() => {
@@ -287,6 +288,7 @@ const playVideo = (source) => {
       }
     }
     previousControlRef.current = control;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [control?.id, control?.source, control?.type, isNativeAndroidPlayer]);
 
   const handlersMissing = surfaceHandlersMissing(control);
@@ -363,6 +365,7 @@ const playVideo = (source) => {
     });
     // La page Films republie le même contrôle (même identifiant) avec toggle / seek à null : sans cette
     // dépendance, les commandes ne seraient pas remises et le bouton lecture/pause ne ferait plus rien.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [control?.id, control?.type, isNativeAndroidPlayer, handlersMissing]);
 
   useEffect(() => {
@@ -469,7 +472,7 @@ const playVideo = (source) => {
     clearTimeout(inactiviteRef.current);
     inactiviteRef.current = setTimeout(() => setCommandesVisibles(false), 3000);
   };
-  useEffect(() => { if (pleinEcranWeb) reveillerCommandes(); else setCommandesVisibles(true); }, [pleinEcranWeb]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (pleinEcranWeb) reveillerCommandes(); else setCommandesVisibles(true); }, [pleinEcranWeb]);
   // YouTube sur téléphone : plein écran de la page (paysage, barres masquées) ; le lecteur couvre l'écran.
   const [pleinEcranAppli, setPleinEcranAppli] = useState(false);
   const basculerPleinEcranAppli = (actif) => {
@@ -597,6 +600,7 @@ const playVideo = (source) => {
 
   useEffect(() => {
     if (isOnline && isYouTube && control?.source) playYouTube(control.source);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [isOnline, retryTick]); 
 
   return (

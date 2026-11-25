@@ -95,3 +95,19 @@ test('e-mails : le canal « E-mail » coupé arrête tout, plafond par jour', ()
   assert.match(notif, /PUSH_CONTENU_ECART_MS = 10 \* 60 \* 1000/);
   assert.match(lire('../pb_hooks/lib/push.js'), /web: web\.filter\(\(w\) => admins\[w\.user\]\)/);
 });
+
+test('1.3.36 : réactions aux messages (6, une par personne), migration', async () => {
+  const r = chargerLib('reactionsMessages.js');
+  assert.deepEqual(r.REACTIONS, ['❤️', '😆', '😮', '😢', '😠', '👍']);
+  assert.deepEqual(r.appliquer({}, 'u1', '❤️'), { u1: '❤️' });
+  assert.deepEqual(r.appliquer({ u1: '❤️' }, 'u1', '😆'), { u1: '😆' }); // remplacée
+  assert.deepEqual(r.appliquer({ u1: '❤️', u2: '👍' }, 'u1', '❤️'), { u2: '👍' }); // même emoji : retirée
+  assert.deepEqual(r.appliquer({ u1: '❤️', u3: '🍕' }, 'u1', ''), {}); // vide : retirée ; inconnue : nettoyée
+  assert.equal(r.valide('🍕'), false);
+  assert.equal(r.valide(''), true);
+  const { CHAMP } = await import('../scripts/migrer-1-3-36.mjs');
+  assert.equal(CHAMP.name, 'reactions');
+  const route = lire('../pb_hooks/fn_messagerie_priere.pb.js');
+  assert.match(route, /routerAdd\('POST', '\/api\/fn\/reactMessage'/);
+  assert.match(route, /participants\.indexOf\(caller\.id\) === -1\) throw new fn\.HttpError\(403/);
+});

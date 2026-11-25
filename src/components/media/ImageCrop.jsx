@@ -9,6 +9,7 @@ export default function ImageCrop({ file, onCancel, onConfirm, aspect = 1, allow
   // ignorent ce second argument voient leur comportement inchangé.
   // Ne jamais brancher confirmCropped directement sur onClick : l'appelant recevrait l'événement
   // du clic au lieu de l'image (bogue « fileSize invalide » de la photo de profil).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   const confirmCropped = (blob) => onConfirm?.(blob, true);
   const confirmOriginal = (original) => onConfirm?.(original, false);
   const [busy, setBusy] = useState(false);

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -8,7 +7,6 @@ import {
 import { Loader2, BellRing, Smartphone, X, Check, AlertTriangle } from "lucide-react";
 
 export default function PublishContent() {
-  const { toast } = useToast();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [pushing, setPushing] = useState(false);

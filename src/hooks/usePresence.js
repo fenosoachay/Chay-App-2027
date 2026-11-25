@@ -39,6 +39,7 @@ export function usePresenceHeartbeat(user, enabled = true) {
     if (!user?.id || !enabled) return;
     let profileId = null;
     let interval = null;
+    let surVisibilite = null;
     let stopped = false;
 
     const ensure = async () => {
@@ -92,7 +93,11 @@ export function usePresenceHeartbeat(user, enabled = true) {
       await ensure();
       if (stopped) return;
       beat();
-      interval = setInterval(beat, 30000);
+      // 1.3.35 : « en ligne » envoyé seulement quand l'appli est à l'écran (avant : aussi en arrière-plan,
+      // retransmis à tous les membres connectés). Au retour : signal immédiat.
+      interval = setInterval(() => { if (document.visibilityState !== "hidden") beat(); }, 30000);
+      surVisibilite = () => { if (document.visibilityState !== "hidden") beat(); };
+      document.addEventListener("visibilitychange", surVisibilite);
       const onUnload = () => beat();
       window.addEventListener("beforeunload", onUnload);
       window.__chayUnload = onUnload;
@@ -101,11 +106,13 @@ export function usePresenceHeartbeat(user, enabled = true) {
     return () => {
       stopped = true;
       if (interval) clearInterval(interval);
+      if (surVisibilite) document.removeEventListener("visibilitychange", surVisibilite);
       if (window.__chayUnload) {
         window.removeEventListener("beforeunload", window.__chayUnload);
         delete window.__chayUnload;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [user?.id, user?.profile_photo_url, user?.cover_photo_url, user?.profile_bio, user?.full_name, user?.first_name, user?.last_name]);
 }
 

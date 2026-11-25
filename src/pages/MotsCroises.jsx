@@ -119,6 +119,7 @@ export default function MotsCroises() {
   useEffect(() => {
     chargerProgresJeu(user?.id, "motscroises").then(setProgres).catch(() => {});
   }, [user?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   const records = progres.donnees?.records || {};
 
   // Chronomètre

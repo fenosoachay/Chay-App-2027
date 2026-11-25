@@ -113,6 +113,7 @@ export default function EmojisAdminPanel() {
         variant: "destructive",
       });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   const resetForm = () => {

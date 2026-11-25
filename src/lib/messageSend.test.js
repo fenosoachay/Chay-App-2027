@@ -30,7 +30,10 @@ test("échec réseau réel : mis en file d'attente", async () => {
     const d = deps({ invoke: async () => { throw err; } });
     const r = await envoyerMessageTexte(d, body);
     assert.equal(r.statut, "en-attente");
-    assert.deepEqual(d.file, [["message", { body }]]);
+    // 1.3.35 : le message part en file AVEC sa clé d'envoi : renvoyé, il n'est pas créé deux fois.
+    const { cle_envoi, ...reste } = d.file[0][1].body;
+    assert.match(cle_envoi, /^[a-z0-9]{8,}$/i);
+    assert.deepEqual([d.file[0][0], reste], ["message", body]);
   }
 });
 
@@ -57,4 +60,11 @@ test("ConversationView et la file d'attente ne dépendent plus de navigator.onLi
   assert.doesNotMatch(vue, /navigator\.onLine/);
   assert.match(vue, /envoyerMessageTexte\(/);
   assert.doesNotMatch(code("./offlineSync.js"), /navigator\.onLine/);
+});
+
+test("1.3.35 : une clé d'envoi déjà présente est gardée (renvoi depuis la file)", async () => {
+  const vus = [];
+  const d = deps({ invoke: async (_n, b) => { vus.push(b.cle_envoi); return { data: { created_date: "2026-11-11T08:00:00.000Z" } }; } });
+  await envoyerMessageTexte(d, { ...body, cle_envoi: "abc12345xyz" });
+  assert.deepEqual(vus, ["abc12345xyz"]);
 });

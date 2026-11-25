@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import TexteRiche from "@/components/media/TexteRiche";
-import { ChevronLeft, ChevronRight, Loader2, Target, Flag, ScrollText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -18,12 +18,6 @@ export default function PageTexteView({ cle, title, icon: Icon }) {
 
   const photos = fiche?.photos || [];
   useBackHandler(photo !== null, () => setPhoto(null));
-
-  const icons = {
-    vision: Target,
-    but: Flag,
-    confession: ScrollText,
-  };
 
   const iconsColors = {
     vision: "brand-gradient-text",

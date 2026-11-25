@@ -21,7 +21,7 @@ export default function BoutonFavoriLecteur({ piste }) {
       .then((r) => { if (vivant) setFavori(Array.isArray(r) && r[0] ? r[0] : null); })
       .catch(() => {});
     return () => { vivant = false; };
-  }, [actif, piste?.id, piste?.playlist_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [actif, piste?.id, piste?.playlist_id]);
 
   const basculer = async () => {
     if (!actif || occupe) return;

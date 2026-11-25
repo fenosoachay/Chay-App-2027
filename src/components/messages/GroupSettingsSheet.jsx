@@ -31,6 +31,7 @@ export default function GroupSettingsSheet({
       setName(conversation?.name || "");
       setPhoto(null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [open, conversation?.id]);
 
   const isAdmin = conversation?.admin_id === user?.id;

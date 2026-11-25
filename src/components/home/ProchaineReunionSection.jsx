@@ -129,6 +129,7 @@ export default function ProchaineReunionSection({ refreshKey = 0, adminOnly = fa
 
   useEffect(() => {
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [refreshKey]);
 
   const openEdit = () => {

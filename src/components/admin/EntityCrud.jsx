@@ -132,6 +132,7 @@ export default function EntityCrud({
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   const loadPlaylists = async () => {
     try {
       const list = await base44.entities.Playlist.list("-created_date", 1000);
@@ -152,7 +153,9 @@ export default function EntityCrud({
     } catch {}
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   useEffect(() => { load(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   useEffect(() => { if (showPlaylist) loadPlaylists(); }, [showPlaylist]);
 
   const allFields = sousPlaylist
@@ -211,7 +214,7 @@ export default function EntityCrud({
         variant: "destructive",
       });
     }
-  }, [loadPlaylists, toast, sousPlaylist]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadPlaylists, toast, sousPlaylist]);
 
   /* ── Sauvegarde ordre musiques ── */
   const handleReorderItems = useCallback(async (next) => {

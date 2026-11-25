@@ -41,7 +41,7 @@ function NomSection({ section, onErreur }) {
   );
 }
 
-export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio }) {
+export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio: _onToggleRadio }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";

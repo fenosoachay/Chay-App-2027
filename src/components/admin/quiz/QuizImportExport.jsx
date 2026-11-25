@@ -68,6 +68,7 @@ export default function QuizImportExport({ categories = [], onImported }) {
         variant: "destructive",
       });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   const getImportedQuestions = async (importId) => {

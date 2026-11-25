@@ -75,10 +75,10 @@ button button, button [role="button"], [role="button"] button { zoom: 1; }
     --chart-4: 328 100% 66%;
     --chart-5: 219 100% 67%;
     --radius: 1.5rem;
-    --font-heading: 'Gilroy', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Gilroy', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Gilroy', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-heading: 'Gilroy', 'Noto Color Emoji', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Gilroy', 'Noto Color Emoji', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Gilroy', 'Noto Color Emoji', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace, 'Noto Color Emoji';
     --sidebar-background: 40 60% 98%;
     --sidebar-foreground: 36 25% 10%;
     --sidebar-primary: 43.29 100% 50%;

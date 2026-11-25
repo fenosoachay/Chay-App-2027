@@ -16,33 +16,32 @@ export function useUnreadMessages(user) {
     let stopped = false;
     let reloadTimer;
 
+    // 1.3.35 : le serveur compte lui-même (une seule petite requête) au lieu de renvoyer jusqu'à 10 000
+    // messages à chaque événement : c'était la plus grosse charge du serveur quand beaucoup de membres sont
+    // connectés. Non lus = messages de MES conversations, envoyés par un autre, que je n'ai pas lus.
     const load = async () => {
-      let count = 0;
-      let skip = 0;
       try {
-        while (skip < 10000) {
-          const page = await base44.entities.Message.list("-created_date", 500, skip);
-          if (!Array.isArray(page)) throw new Error("Réponse de messages invalide.");
-          // Mode PocketBase : un admin voit tous les messages (règles) ; on ne compte que
-          // ceux des conversations où il participe (sinon le badge affiche « 99+ »).
-          count += page.filter((message) =>
-            isUnreadIncomingMessage(message, user.id) &&
-            (!IS_POCKETBASE || (Array.isArray(message.participant_ids) && message.participant_ids.includes(user.id)))
-          ).length;
-          if (page.length < 500) break;
-          skip += page.length;
-        }
-        if (skip >= 10000) {
-          console.warn("[Messages] Le compteur non lu est limité aux 10 000 messages récents.");
-        }
-        if (!stopped) setUnread(count);
+        const count = IS_POCKETBASE
+          ? await base44.entities.Message.count({
+            participant_ids: user.id,
+            read_by: { $ne: user.id },
+            sender_id: { $ne: user.id },
+          })
+          : await compterAncienneMethode();
+        if (!stopped) setUnread(Number(count) || 0);
       } catch (error) {
         console.error("[Messages] Impossible de calculer les messages non lus.", error);
       }
     };
+    // Base44 (ancien mode) : lecture des messages, comme avant.
+    const compterAncienneMethode = async () => {
+      const page = await base44.entities.Message.list("-created_date", 500);
+      return (Array.isArray(page) ? page : []).filter((m) => isUnreadIncomingMessage(m, user.id)).length;
+    };
     const scheduleLoad = () => {
       clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(load, 200);
+      // Plusieurs événements d'affilée (messages marqués « lu ») : un seul recomptage.
+      reloadTimer = setTimeout(load, 1500);
     };
 
     load();

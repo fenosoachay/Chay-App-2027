@@ -208,6 +208,8 @@ export default function Layout() {
           paddingTop: isNativeAndroid
             ? "max(24px, env(safe-area-inset-top))"
             : "max(1rem, env(safe-area-inset-top))",
+          // 1.3.35 : un peu d'air entre les icônes et le bas de la barre (le bord touchait les icônes).
+          paddingBottom: "7.53px", // 3,78 + 3,75 px
         }}
       >
         <div className="flex items-center justify-between gap-1">
@@ -304,4 +306,4 @@ export default function Layout() {
       <UniversalMediaSurface />
       </div>
   );
-}
+}

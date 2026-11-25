@@ -265,7 +265,7 @@ try {
     check('aucune notification de cloche pour un message (ni B, ni l\'expéditeur)',
       (await list('UserNotification', `notification_id ~ "message_${r.data.id}_"`)).length === 0);
     const mails = await waitMails(emailB, since);
-    check('e-mail au destinataire (faux SMTP), en français', mails.length === 1 && /vous a envoy/.test(mails[0].text) && /Ouvrir la conversation/.test(mails[0].text));
+    check('e-mail au destinataire (faux SMTP), en français', mails.length === 1 && /vous a envoy/.test(mails[0].text) && /Ouvrez l'application Chay/.test(mails[0].text));
     check('e-mail : HTML du message échappé (pas d\'injection)', mails.length === 1 && htmlOf(mails[0]) && !htmlOf(mails[0]).includes('<script>') && htmlOf(mails[0]).includes('&lt;script&gt;'));
     const r2 = await fn('createMessage', { token: A.token, body: { conversation_id: convId, text: 'deuxième' } });
     created.push(['Message', r2.data?.id]);

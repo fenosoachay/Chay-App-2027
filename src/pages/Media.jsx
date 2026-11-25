@@ -127,6 +127,7 @@ export default function Media() {
         setLoading(false);
       }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   // Nouvelle cible alors que Multimédia est déjà ouvert (clic sur une notification, app ouverte).

@@ -29,7 +29,6 @@ const TYPE_LABELS = {
   radio: "Radio",
 };
 
-const AUDIO_TYPES = new Set(["audio", "music", "sermon", "sermons", "predication", "bible"]);
 
 function getMediaIcon(type) {
   if (type === "radio") return Radio;
@@ -67,6 +66,7 @@ export default function PullDownMediaBar() {
     if (control && !control.isPlaying && isVisible) {
       setIsVisible(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [control?.isPlaying, isVisible]);
 
   const handleTouchStart = useCallback((e) => {

@@ -1,6 +1,8 @@
 import React from "react";
 import { Reply, Copy, Trash2, Pencil } from "lucide-react";
+import { motion } from "framer-motion";
 import { useBackHandler } from "@/hooks/useBackHandler";
+import { NOMS_REACTIONS, REACTIONS } from "@/lib/reactionsMessages";
 
 export default function MessageActionMenu({
   position,
@@ -11,10 +13,13 @@ export default function MessageActionMenu({
   onCopy,
   onDelete,
   onClose,
+  onReact,
+  maReaction,
 }) {
   useBackHandler(true, onClose);
-  const left = Math.min(position.x, window.innerWidth - 210);
-  const top = Math.min(position.y, window.innerHeight - 220);
+  // 1.3.36 : la barre des 6 réactions (comme Messenger) au-dessus du menu : un peu plus large.
+  const left = Math.max(8, Math.min(position.x - 40, window.innerWidth - 300));
+  const top = Math.max(8, Math.min(position.y - 64, window.innerHeight - 300));
 
   return (
     <div
@@ -25,10 +30,38 @@ export default function MessageActionMenu({
         onClose();
       }}
     >
+      <div className="absolute" style={{ left, top }} onClick={(e) => e.stopPropagation()}>
+      {onReact && (
+        <motion.div
+          className="mb-2 flex w-fit items-center gap-0.5 rounded-full border border-border bg-popover px-1.5 py-1 shadow-xl"
+          initial={{ opacity: 0, scale: 0.6, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 520, damping: 30 }}
+          style={{ transformOrigin: "20% 100%" }}
+          role="toolbar"
+          aria-label="Réagir"
+        >
+          {REACTIONS.map((e, i) => (
+            <motion.button
+              key={e}
+              type="button"
+              onClick={() => { onReact(e); onClose(); }}
+              initial={{ opacity: 0, y: 14, scale: 0.4 }}
+              animate={{ opacity: 1, y: 0, scale: maReaction === e ? 1.12 : 1 }}
+              transition={{ type: "spring", stiffness: 600, damping: 22, delay: 0.03 + i * 0.035 }}
+              whileHover={{ scale: 1.35, y: -6 }}
+              whileTap={{ scale: 1.5, y: -10 }}
+              className={`grid h-11 w-11 place-items-center rounded-full text-[1.75rem] leading-none ${maReaction === e ? "bg-primary/20" : ""}`}
+              aria-label={NOMS_REACTIONS[e]}
+              aria-pressed={maReaction === e}
+            >
+              <span aria-hidden="true">{e}</span>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
       <div
-        className="absolute rounded-2xl border border-border bg-popover shadow-xl p-1 min-w-[190px] animate-float-in"
-        style={{ left, top }}
-        onClick={(e) => e.stopPropagation()}
+        className="rounded-2xl border border-border bg-popover shadow-xl p-1 min-w-[190px] w-fit animate-float-in"
         role="menu"
       >
         <button
@@ -79,6 +112,7 @@ export default function MessageActionMenu({
         <div className="px-3 py-1 text-[0.625rem] text-foreground/40">
           Long-appui / clic droit pour les actions
         </div>
+      </div>
       </div>
     </div>
   );

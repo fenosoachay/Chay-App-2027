@@ -60,11 +60,16 @@ export default function Messages() {
     setLoading(false);
   };
 
+  // 1.3.35 : le temps réel apporte déjà les nouveaux messages ; le rechargement complet n'est qu'un filet de
+  // sécurité : toutes les 30 s (au lieu de 5 s), seulement écran visible, et aussitôt au retour dans l'appli.
   useEffect(() => {
     loadAll();
-    const t = setInterval(loadAll, 5000);
-    return () => clearInterval(t);
-  }, []);
+    const visible = () => typeof document === "undefined" || document.visibilityState !== "hidden";
+    const t = setInterval(() => { if (visible()) loadAll(); }, 30000);
+    const retour = () => { if (visible()) loadAll(); };
+    document.addEventListener("visibilitychange", retour);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", retour); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Realtime updates
   useEffect(() => {
@@ -158,6 +163,7 @@ export default function Messages() {
         isGroup,
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [activeConv?.id, user?.id, profiles]);
 
   const openConversation = (id) =>

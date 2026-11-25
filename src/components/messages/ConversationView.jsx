@@ -24,6 +24,7 @@ import PieceJointeBulle from "@/components/messages/PieceJointeBulle";
 import { BarreEnregistrement, BoutonMicro, EnvoyerVocal, useEnregistreur } from "@/components/messages/EnregistreurVocal";
 import { BulleEcrit, CSS_MESSAGES, StatutEnTete, VuPar } from "@/components/messages/animationsMessages";
 import { positionsVu } from "@/lib/vuMessages";
+import { appliquer as appliquerReaction, lecteursReactions, resume as resumeReactions } from "@/lib/reactionsMessages";
 import FondSection from "@/components/FondSection";
 import useSombre from "@/hooks/useSombre";
 import { apercuPiece, aPieceJointe, genreFichier, MAX_PIECE_OCTETS } from "@/lib/piecesJointes";
@@ -69,6 +70,9 @@ export default function ConversationView({
   const [surligne, setSurligne] = useState(null); // message trouvé par la recherche (mis en évidence)
   const [menu, setMenu] = useState(null);
   const [viewer, setViewer] = useState(null);
+  // 1.3.36 : réactions (❤️ 😆 😮 😢 😠 👍) : affichées tout de suite, avant la réponse du serveur (8 s).
+  const [reactionsLocales, setReactionsLocales] = useState({});
+  const [voirReactions, setVoirReactions] = useState(null); // message dont on regarde qui a réagi
   const [editing, setEditing] = useState(null);
   const [editText, setEditText] = useState("");
   const scrollRef = useRef(null);
@@ -112,11 +116,6 @@ export default function ConversationView({
       ? "Messages automatiques"
       : lastSeenLabel(otherProfile?.last_seen_at);
 
-  const myName =
-    user?.full_name ||
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    "Membre";
-
   // Messenger : à l'ouverture, tout apparaît d'un seul coup — nom en haut,
   // derniers messages et barre d'envoi en bas (saut instantané, sans smooth).
   const anchoredConv = useRef(null);
@@ -139,6 +138,7 @@ export default function ConversationView({
     const mine = !!last && !!user && last.sender_id === user.id;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
     if (mine || nearBottom) el.scrollTop = el.scrollHeight;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [messages.length, user?.id]);
 
   // Mark incoming unread messages as read
@@ -151,6 +151,7 @@ export default function ConversationView({
         .update(m.id, { read_by: [...(m.read_by || []), user.id] })
         .catch(() => {});
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [conversation?.id, messages.length, user?.id]);
 
   // Signal "conversation ouverte" pour le système anti-notification (MemberProfile.active_conversation_id) :
@@ -389,6 +390,23 @@ image_url: uploadedUrl,
     const imgs = messages.filter((x) => x.image_url).map((x) => x.image_url);
     const idx = imgs.indexOf(m.image_url);
     setViewer({ images: imgs, index: idx < 0 ? 0 : idx });
+  };
+
+  const reactionsDe = (m) => {
+    const l = reactionsLocales[m.id];
+    return l && Date.now() - l.t < 8000 ? l.r : m.reactions || {};
+  };
+  const reagir = async (m, emoji) => {
+    const avant = reactionsDe(m);
+    const apres = appliquerReaction(avant, user.id, emoji);
+    setReactionsLocales((x) => ({ ...x, [m.id]: { r: apres, t: Date.now() } }));
+    try {
+      const res = await base44.functions.invoke("reactMessage", { message_id: m.id, emoji: apres[user.id] ? emoji : "" });
+      if (res?.data?.reactions) setReactionsLocales((x) => ({ ...x, [m.id]: { r: res.data.reactions, t: Date.now() } }));
+    } catch (e) {
+      setReactionsLocales((x) => ({ ...x, [m.id]: { r: avant, t: Date.now() } }));
+      toast({ title: "Réaction non envoyée", description: e.message, variant: "destructive" });
+    }
   };
 
   const deleteMessage = async (m) => {
@@ -630,6 +648,28 @@ image_url: uploadedUrl,
                     </div>
                   ) : null}
                 </div>
+                {/* 1.3.36 : pastille des réactions, accrochée au bas de la bulle (comme Messenger) */}
+                {(() => {
+                  const rs = resumeReactions(reactionsDe(m));
+                  if (!rs.total) return null;
+                  return (
+                    <div className={`relative z-[1] -mt-2 flex ${mine ? "justify-end pr-2" : "justify-start pl-2"}`}>
+                      <motion.button
+                        key={`${rs.emojis.join("")}-${rs.total}`}
+                        type="button"
+                        onClick={() => setVoirReactions(m)}
+                        initial={{ scale: 0.3, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 600, damping: 20 }}
+                        className="flex items-center gap-0.5 rounded-full border border-border bg-card px-1.5 py-0.5 text-[0.8125rem] leading-none shadow-sm"
+                        aria-label={`${rs.total} réaction${rs.total > 1 ? "s" : ""} : voir qui a réagi`}
+                      >
+                        {rs.emojis.map((e) => <span key={e} aria-hidden="true">{e}</span>)}
+                        {rs.total > 1 && <span className="ml-0.5 text-[0.6875rem] font-semibold tabular-nums text-foreground/60">{rs.total}</span>}
+                      </motion.button>
+                    </div>
+                  );
+                })()}
                 <VuPar
                   lecteurs={(vus[m.id] || []).map(profilDe)}
                   envoye={mine && m === dernier && !(vus[m.id] || []).length}
@@ -875,6 +915,8 @@ image_url: uploadedUrl,
                 .catch(() => {});
           }}
           onDelete={() => deleteMessage(menu.msg)}
+          onReact={(emoji) => reagir(menu.msg, emoji)}
+          maReaction={reactionsDe(menu.msg)[user.id]}
           onClose={() => setMenu(null)}
         />
       )}
@@ -908,6 +950,47 @@ image_url: uploadedUrl,
           } : null}
         />
       )}
+
+      {/* 1.3.36 : qui a réagi ; toucher sa propre réaction la retire */}
+      <AnimatePresence>
+        {voirReactions && (
+          <motion.div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setVoirReactions(null)}>
+            <motion.div
+              className="w-full max-w-md rounded-t-3xl border border-border bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl"
+              initial={{ y: 60 }} animate={{ y: 0 }} exit={{ y: 60 }} transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-label="Réactions"
+            >
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-foreground/20" />
+              <h2 className="mb-2 text-sm font-bold">Réactions</h2>
+              <ul className="max-h-[50vh] space-y-1 overflow-y-auto">
+                {lecteursReactions(reactionsDe(voirReactions)).map(({ uid, emoji }) => {
+                  const moi = uid === user.id;
+                  const p = profilDe(uid);
+                  return (
+                    <li key={uid}>
+                      <button
+                        type="button"
+                        disabled={!moi}
+                        onClick={() => { reagir(voirReactions, emoji); setVoirReactions(null); }}
+                        className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left enabled:hover:bg-muted"
+                      >
+                        <Avatar name={p.display_name} src={p.avatar_url} size={36} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{moi ? "Vous" : nomCourt(uid, p.display_name)}</span>
+                          {moi && <span className="block text-xs text-foreground/50">Toucher pour retirer</span>}
+                        </span>
+                        <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {photoAEditer && (
         <PhotoEditeur

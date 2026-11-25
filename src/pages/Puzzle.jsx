@@ -251,6 +251,7 @@ export default function Puzzle({ profil = null, integre = false }) {
       origin: { y: 0.65 },
       colors: [gold, "#FFF1C2", "#2E9D68", "#FFFFFF"],
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [game.solved]);
 
   const startPuzzle = () => {

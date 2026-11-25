@@ -21,7 +21,6 @@ export default function RadioPlayer() {
     errorCode,
     retries,
     toggle,
-    stop,
     retryNow,
   } = useRadio();
   const { toast } = useToast();

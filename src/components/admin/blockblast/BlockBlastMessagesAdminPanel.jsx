@@ -90,6 +90,7 @@ export default function BlockBlastMessagesAdminPanel() {
       description: error?.message || "Vérifie que l'entité BlockBlastMessage est publiée.",
       variant: "destructive",
     })).finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   const categoryCounts = BLOCK_BLAST_CATEGORIES.map((category) => ({

@@ -197,6 +197,7 @@ export default function PlaylistCategoryView({
 
 
   const cats = orderedPlaylists;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   const tracks = open ? orderedTracks : [];
 
   useEffect(() => {

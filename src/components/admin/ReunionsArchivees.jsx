@@ -18,7 +18,7 @@ export default function ReunionsArchivees({ refreshKey = 0 }) {
     setListe(Array.isArray(rows) ? rows : []);
   };
 
-  useEffect(() => { charger(); }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { charger(); }, [refreshKey]);  
 
   const restaurer = async (r) => {
     try {

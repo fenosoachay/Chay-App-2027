@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Download, ImageDown, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/lib/AuthContext";
 import { enregistrerFond, trierFonds, vignetteFond } from "@/lib/fondsEcran";
 import GalleryViewer from "./GalleryViewer";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -19,7 +18,6 @@ export default function FondsEcran() {
   const [liste, setListe] = useState(null);
   const [viewerItem, setViewerItem] = useState(null);
   const [envoi, setEnvoi] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
     let actif = true;

@@ -69,6 +69,7 @@ export default function WsImportExport({ categories = WS_CATEGORIES, categoriesR
         variant: "destructive",
       });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   const getImportedWords = async (importId) => {

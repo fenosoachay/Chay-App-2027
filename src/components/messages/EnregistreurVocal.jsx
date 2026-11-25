@@ -35,7 +35,7 @@ export function useEnregistreur({ onTermine, onErreur }) {
     contexte.current = null;
   }, []);
 
-  useEffect(() => () => { annule.current = true; try { rec.current?.stop(); } catch (_) { /* déjà arrêté */ } nettoyer(); }, [nettoyer]);
+  useEffect(() => () => { annule.current = true; try { rec.current?.stop(); } catch { /* déjà arrêté */ } nettoyer(); }, [nettoyer]);
 
   const arreter = useCallback((envoyer) => {
     annule.current = !envoyer;
@@ -105,7 +105,7 @@ export function useEnregistreur({ onTermine, onErreur }) {
           raf.current = requestAnimationFrame(image);
         };
         raf.current = requestAnimationFrame(image);
-      } catch (_) { /* onde décorative seulement */ }
+      } catch { /* onde décorative seulement */ }
     } catch (e) {
       nettoyer();
       setEtat("repos");

@@ -49,6 +49,14 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       throw new fn.HttpError(403, 'On ne peut pas répondre aux messages automatiques de Chay.');
     }
 
+    // 1.3.35 : envoi déjà reçu (même clé, réponse perdue puis renvoi depuis la file d'attente) : pas de doublon.
+    const cle = typeof body.cle_envoi === 'string' && /^[A-Za-z0-9]{8,64}$/.test(body.cle_envoi) ? `${caller.id}:${body.cle_envoi}` : '';
+    const envois = (() => { try { return JSON.parse($app.store().get('cles_envoi') || '{}') || {}; } catch (_) { return {}; } })();
+    const deja = cle && envois[cle];
+    if (deja && Date.now() - deja.t < 24 * 3600 * 1000) {
+      return { id: deja.id, created_date: deja.date, notification_error: null, notification_info: null, piece_jointe: pieceJointe, deja_recu: true };
+    }
+
     const myName = [caller.getString('first_name'), caller.getString('last_name')].filter(Boolean).join(' ')
       || caller.getString('name')
       || 'Membre';
@@ -65,6 +73,12 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       created_by_id: caller.id,
     });
     $app.save(message);
+    if (cle) {
+      const maintenant = Date.now();
+      for (const k of Object.keys(envois)) if (maintenant - envois[k].t >= 24 * 3600 * 1000) delete envois[k];
+      envois[cle] = { id: message.id, t: maintenant, date: fn.createdDate(fn.plain(message)) };
+      $app.store().set('cles_envoi', JSON.stringify(envois));
+    }
 
     // sendMessagePush : in-app + e-mail + push (idempotent ; les push en échec temporaire sont remis en file).
     // notification_error : vrais échecs seulement ; notification_info : envoi retenu par NOTIFICATIONS_MODE
@@ -88,6 +102,58 @@ routerAdd('POST', '/api/fn/createMessage', (e) => {
       notification_error: notificationError,
       notification_info: notificationInfo,
     };
+  });
+});
+
+// ── reactMessage (1.3.36) ─────────────────────────────────────────────────────
+// Réaction à un message (❤️ 😆 😮 😢 😠 👍), comme Messenger. L'appelant doit être participant ; il ne
+// change que SA réaction. L'auteur du message est prévenu (push), au plus une fois par message et par personne
+// en 10 minutes (pas de rafale si l'on change d'avis).
+routerAdd('POST', '/api/fn/reactMessage', (e) => {
+  const fn = require(`${__hooks}/lib/fn.js`);
+  return fn.run(e, 'reactMessage', 'Erreur interne', () => {
+    const caller = fn.requireUser(e, 'Connexion requise');
+    const body = fn.readBody(e);
+    const lib = require(`${__hooks}/lib/reactionsMessages.js`);
+    const id = typeof body.message_id === 'string' && body.message_id.length <= 64 ? body.message_id : '';
+    const emoji = typeof body.emoji === 'string' ? body.emoji : '';
+    if (!id || !lib.valide(emoji)) throw new fn.HttpError(400, 'Réaction invalide');
+    const message = fn.findById('Message', id);
+    if (!message) throw new fn.HttpError(404, 'Message introuvable');
+    const m = fn.plain(message);
+    const participants = Array.isArray(m.participant_ids) ? m.participant_ids : [];
+    if (participants.indexOf(caller.id) === -1) throw new fn.HttpError(403, 'Forbidden');
+    const avant = m.reactions && typeof m.reactions === 'object' ? m.reactions : {};
+    const apres = lib.appliquer(avant, caller.id, emoji);
+    message.set('reactions', apres);
+    $app.save(message);
+
+    // Push à l'auteur (pas à soi-même), si une réaction est ajoutée.
+    const auteur = m.sender_id;
+    if (apres[caller.id] && auteur && auteur !== caller.id) {
+      try {
+        const cle = `reaction:${id}:${caller.id}`;
+        const derniere = Number($app.store().get(cle) || 0);
+        if (Date.now() - derniere > 10 * 60 * 1000) {
+          $app.store().set(cle, String(Date.now()));
+          const notif = require(`${__hooks}/lib/notifications.js`);
+          const dest = notif.activeUser(auteur);
+          const s = notif.settingsOf(dest);
+          if (dest && s.notif_messages !== false) {
+            const prenom = caller.getString('first_name') || caller.getString('name') || 'Quelqu\'un';
+            const extrait = String(m.text || '').slice(0, 60);
+            notif.pushToAllowed([auteur], {
+              title: prenom,
+              body: `a réagi ${apres[caller.id]} à votre message${extrait ? ` : « ${extrait} »` : ''}`,
+              target_type: 'message', target_id: m.conversation_id,
+            }, 'reactMessage');
+          }
+        }
+      } catch (_) {
+        $app.logger().error('[reactMessage] push impossible');
+      }
+    }
+    return { id, reactions: apres };
   });
 });
 

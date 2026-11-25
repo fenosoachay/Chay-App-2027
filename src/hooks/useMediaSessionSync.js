@@ -110,6 +110,7 @@ export function useMediaSessionSync(control) {
     }
 
     syncAndroidNotification();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [
     syncAndroidNotification,
     control?.id,
@@ -119,9 +120,12 @@ export function useMediaSessionSync(control) {
     control?.isPlaying,
     control?.isBuffering,
     control?.isLive,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Math.floor(control?.currentTime || 0),
     control?.duration,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Boolean(control?.previous),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
     Boolean(control?.next),
   ]);
 

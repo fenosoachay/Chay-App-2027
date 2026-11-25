@@ -18,7 +18,17 @@ export function isNetworkError(e) {
  * @param {{ conversation_id: string, text: string, reply_to_id: string|null }} body
  * @returns {Promise<{ statut: "envoye", result: any } | { statut: "en-attente" }>}
  */
-export async function envoyerMessageTexte({ invoke, updateConversation, enqueue }, body) {
+/** 1.3.35 : clé unique d'un envoi : renvoyée telle quelle en cas de nouvel essai, le serveur ne crée pas de doublon. */
+export function cleEnvoi() {
+  const c = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID().replace(/-/g, "");
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
+export async function envoyerMessageTexte({ invoke, updateConversation, enqueue }, bodyIn) {
+  // La même clé accompagne le message dans la file d'attente : s'il était déjà arrivé (réponse perdue),
+  // le renvoi ne le crée pas une deuxième fois.
+  const body = bodyIn.cle_envoi ? bodyIn : { ...bodyIn, cle_envoi: cleEnvoi() };
   let result;
   try {
     result = await invoke("createMessage", body);

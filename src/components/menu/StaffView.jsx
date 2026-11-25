@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { User, UserPlus, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useBackHandler } from "@/hooks/useBackHandler";
 import { useNavigate } from "react-router-dom";
@@ -11,11 +10,9 @@ const nomDe = (s) => s?.name || [s?.prenom, s?.nom].filter(Boolean).join(" ");
 
 // Page Personnel : grille 2 colonnes, fiches cliquables vers /profile/{user_id}
 export default function StaffView() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Liste gérée dans l'admin : Engagement › Personnel (entité StaffMember : name, role, photo_url, order).

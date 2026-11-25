@@ -18,7 +18,7 @@ export default function AddPlaylistTrackModal({
   open,
   onOpenChange,
   playlist,
-  category,
+  category: _category,
   kind = "audio",
   onSaved,
 }) {

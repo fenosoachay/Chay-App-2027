@@ -35,6 +35,7 @@ export default function Mfa() {
         setResuming(false);
       })
       .catch((err) => { setError(err); setResuming(false); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, []);
 
   if (resuming) {

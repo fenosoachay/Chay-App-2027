@@ -69,7 +69,6 @@ export default function MediaUploader({ onClose, onSaved }) {
       // "[BUF] malloc failure" / HTTP 404 sur gros fichiers. Petits fichiers :
       // Core.UploadFile officiel. Après une reprise ("Reprendre"), on force le
       // mode chunké : les chunks déjà partis sont sautés côté serveur.
-      const isVideo = type === "video";
       const mediaUrl = await uploadToBase44(mediaFile, {
   forceChunked: true,
   onProgress: (p) => setProgress(p),

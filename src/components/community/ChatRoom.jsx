@@ -102,6 +102,7 @@ export default function ChatRoom({ user }) {
       if (interval) clearInterval(interval);
       unsub();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [user?.id]);
 
   // Typing detection from others' presence

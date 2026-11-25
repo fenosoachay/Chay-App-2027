@@ -203,7 +203,7 @@ function GalerieSousPlaylist({ images, targetImageId, clearTarget, onItemUpdated
 
 export default function MediaCategory({
   cat, data, query, setQuery, onBack,
-  currentTrack, isPlaying, play, playQueue, toggle,
+  currentTrack, isPlaying, play: _play, playQueue, toggle,
   addToPlaylist, removeFromPlaylist, playPlaylistItem, isPinned,
   playlists = [], playlistTracks = [],
   onGalleryItemUpdated, onGalleryItemDeleted,
@@ -341,6 +341,7 @@ export default function MediaCategory({
       setGalleryIdx(null);
       setOrphanIdx(uncategorizedImages.findIndex((image) => image.id === targetImageId));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [targetImageId, gallery]);
 
   return (
