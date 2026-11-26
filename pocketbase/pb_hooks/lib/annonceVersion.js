@@ -32,8 +32,9 @@ function canaux(settings) {
 
 /** Textes de l'annonce. `mail` = lib/courriel.js (pour l'e-mail). */
 function contenus(v) {
-  const titre = `Nouvelle version de l'app Chay : ${v.version_name}`;
-  const corps = 'Une mise à jour de l\'application Android est disponible. Touchez pour la télécharger.';
+  // 1.4.0 : les mises à jour sont obligatoires (l'ancienne version ne fonctionne plus).
+  const titre = `Mise à jour obligatoire de l'app Chay : ${v.version_name}`;
+  const corps = 'Chay ne fonctionne plus sans cette mise à jour. Touchez pour l\'installer.';
   return { titre, corps };
 }
 

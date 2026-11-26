@@ -36,7 +36,8 @@ const APP_SHARE_URL = "https://chay.fr/application-chay/";
 const APP_SHARE_TEXTE = "Découvre l'application de l'Église Chay :";
 
 /** Application installée : mise à jour sans quitter l'app (barre de progression, puis fenêtre d'Android). */
-function MiseAJourApp({ maj, nouvelle, inconnue, versionName, admin, onLancer, onVerifier }) {
+// Aussi utilisé par l'écran de mise à jour obligatoire (MiseAJourObligatoire.jsx, 1.4.0).
+export function MiseAJourApp({ maj, nouvelle, inconnue, versionName, admin, onLancer, onVerifier }) {
   const bouton = "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50";
 
   if (maj.etat === "telechargement") {

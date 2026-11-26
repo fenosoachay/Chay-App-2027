@@ -74,6 +74,7 @@ import { CapacitorBackHandler } from './components/CapacitorBackHandler';
 import ConfirmHost from '@/components/ConfirmHost';
 import TelecommandeTv from '@/components/tv/TelecommandeTv';
 import VisionneusePhoto from '@/components/VisionneusePhoto';
+import MiseAJourObligatoire from '@/components/MiseAJourObligatoire';
 
 const AuthenticatedApp = () => {
   const { isLocalMode, isLoggingOut, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
@@ -220,6 +221,8 @@ function App() {
             <ConfirmHost />
             <TelecommandeTv />
             <VisionneusePhoto />
+            {/* 1.4.0 : appli bloquée tant que la dernière version n'est pas installée. */}
+            <MiseAJourObligatoire />
             <ScrollToTop />
             <ErrorBoundary>
               <AuthenticatedApp />

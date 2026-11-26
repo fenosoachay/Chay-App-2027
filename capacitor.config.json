@@ -3,6 +3,7 @@
   "appName": "Chay",
   "webDir": "dist",
   "backgroundColor": "#00000000",
+  "appendUserAgent": "ChayApp/1.4",
   "server": {
     "androidScheme": "https",
     "allowNavigation": []
