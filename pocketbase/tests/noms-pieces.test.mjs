@@ -92,7 +92,10 @@ test('e-mails : le canal « E-mail » coupé arrête tout, plafond par jour', ()
   const notif = lire('../pb_hooks/lib/notifications.js');
   assert.match(notif, /const emailOn = emailPermis\(recipient, 'messages'\);/);
   assert.match(notif, /if \(!emailPermis\(u, 'nouveautes'\)\) continue;/);
-  assert.match(notif, /PUSH_CONTENU_ECART_MS = 10 \* 60 \* 1000/);
+  // 1.3.42 : toutes les notifications comme avant : plus de regroupement ni de plafond d'e-mails.
+  assert.doesNotMatch(notif, /PUSH_CONTENU_ECART_MS/);
+  assert.match(notif, /const groupe = false;/);
+  assert.doesNotMatch(notif, /plafondAtteint/);
   assert.match(lire('../pb_hooks/lib/push.js'), /web: web\.filter\(\(w\) => admins\[w\.user\]\)/);
 });
 

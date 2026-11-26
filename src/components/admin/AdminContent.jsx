@@ -11,6 +11,7 @@ import JeuxCategoriesAdmin from "@/components/admin/JeuxCategoriesAdmin";
 import AdminMissions from "@/components/admin/AdminMissions";
 import AnnoncerVersion from "@/components/admin/AnnoncerVersion";
 import SiteVisites from "@/components/admin/SiteVisites";
+import MessagesSite from "@/components/admin/MessagesSite";
 import AdminPetiteHistoire from "@/components/admin/AdminPetiteHistoire";
 import AdminRequetes from "@/components/admin/AdminRequetes";
 import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
@@ -72,6 +73,21 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
             <div className="-mt-6"><QuestionLogiqueSection /></div>
           </>
         )}
+      </section>
+    );
+  }
+
+  // 1.3.42 : messages du formulaire « Nous contacter » : lire, répondre, supprimer.
+  if (active === "ContactMessage") {
+    const { item } = findNav(active);
+    const Icon = item.icon;
+    return (
+      <section className="rounded-[2rem] border border-border bg-background/40 p-5 md:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Icon className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-extrabold text-xl">Messages reçus</h2>
+        </div>
+        <MessagesSite />
       </section>
     );
   }

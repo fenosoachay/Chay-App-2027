@@ -12,7 +12,6 @@ const cibles = require(`${__hooks}/lib/cibles.js`);
 
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const EMAIL_DEDUP_MS = 30 * 60 * 1000;
-const PUSH_CONTENU_ECART_MS = 10 * 60 * 1000; // 1.3.35 : un seul push « Nouveau » toutes les 10 minutes
 const APP_TZ = 'Europe/Paris';
 const DEFAULT_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const pbDate = (ms) => new Date(ms).toISOString().replace('T', ' ');
@@ -54,26 +53,11 @@ function emailPermis(u, genre) {
   }, genre);
 }
 
-function lireCompteurs() {
-  try { return JSON.parse($app.store().get('courriels_du_jour') || '{}') || {}; } catch (_) { return {}; }
-}
-
-/**
- * Envoi d'un e-mail de messages ou de nouveautés, dans la limite du jour par membre. Renvoie true si parti.
- * Au-delà, rien n'est envoyé (le push et la cloche restent) : évite la saturation de la boîte et du quota d'envoi.
- */
+/** Envoi d'un e-mail de messages ou de nouveautés. Renvoie true si parti. */
+// 1.3.42 : plus de plafond d'e-mails par jour (demande de l'Église : toutes les notifications comme avant).
+// Les préférences de chacun (emailPermis) restent respectées.
 function envoyerPlafonne(context, u, sujet, html, texte) {
-  const ce = canauxEmail();
-  const compteurs = lireCompteurs();
-  if (ce.plafondAtteint(compteurs, u.id)) return false;
-  if (!mail.trySend(context, u.email(), sujet, html, texte)) return false;
-  const cle = ce.cleJour(u.id);
-  const jour = cle.slice(-10);
-  const propre = {};
-  for (const k of Object.keys(compteurs)) if (k.slice(-10) === jour) propre[k] = compteurs[k];
-  propre[cle] = (Number(propre[cle]) || 0) + 1;
-  $app.store().set('courriels_du_jour', JSON.stringify(propre));
-  return true;
+  return Boolean(mail.trySend(context, u.email(), sujet, html, texte));
 }
 
 /** Coupure générale + canal push (préférences des réglages de l'app). */
@@ -380,11 +364,8 @@ function newContentNotify(contentRecord, sendEmail) {
     }
   }
   const created = createNotifications(rows, 'notifyNewContent');
-  // 1.3.35 : anti-saturation : plusieurs contenus publiés à la suite (ex. un album de 20 titres) ne font qu'UN
-  // push (et e-mail) en 10 minutes ; les suivants vont seulement dans la cloche. « Chay attire ton attention » passe toujours.
-  const dernier = Number($app.store().get('push_contenu_dernier') || 0);
-  const groupe = !attention && Date.now() - dernier < PUSH_CONTENU_ECART_MS;
-  if (pushIds.length && !groupe) $app.store().set('push_contenu_dernier', String(Date.now()));
+  // 1.3.42 : plus de regroupement : chaque contenu publié envoie sa notification (comme avant la 1.3.35).
+  const groupe = false;
   let emailsSent = 0;
   let emailsSkipped = 0;
   if (sendEmail && !groupe) {

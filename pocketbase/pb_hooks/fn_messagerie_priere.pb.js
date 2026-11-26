@@ -132,10 +132,8 @@ routerAdd('POST', '/api/fn/reactMessage', (e) => {
     const auteur = m.sender_id;
     if (apres[caller.id] && auteur && auteur !== caller.id) {
       try {
-        const cle = `reaction:${id}:${caller.id}`;
-        const derniere = Number($app.store().get(cle) || 0);
-        if (Date.now() - derniere > 10 * 60 * 1000) {
-          $app.store().set(cle, String(Date.now()));
+        // 1.3.42 : chaque réaction prévient l'auteur (plus de limite de 10 minutes).
+        {
           const notif = require(`${__hooks}/lib/notifications.js`);
           const dest = notif.activeUser(auteur);
           const s = notif.settingsOf(dest);

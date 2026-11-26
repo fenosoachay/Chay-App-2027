@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Lock, Search, Smartphone, Unlock } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { Image } from "@/components/ui/image";
 import ArticleCard from "@/components/media/ArticleCard";
 import RadioPlayer from "@/components/radio/RadioPlayer";
 import PlaylistCategoryView from "@/components/media/PlaylistCategoryView";
 import YouTubeCategoryView from "@/components/media/YouTubeCategoryView";
 import FavoritesView from "@/components/media/FavoritesView";
 import FondsEcran from "@/components/media/FondsEcran";
-import BadgeAudience from "@/components/media/BadgeAudience";
+import TuileGalerie from "@/components/media/TuileGalerie";
 import GalleryViewer from "@/components/media/GalleryViewer";
 import ListeTriable from "@/components/media/ListeTriable";
 import NavigationPlaylists from "@/components/media/NavigationPlaylists";
@@ -179,15 +178,7 @@ function GalerieSousPlaylist({ images, targetImageId, clearTarget, onItemUpdated
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {images.map((g, i) => (
-          <button
-            key={g.id}
-            onClick={() => { clearTarget("image"); setIdx(i); }}
-            className="relative block aspect-square overflow-hidden bg-muted group"
-            aria-label={g.title || "Photo"}
-          >
-            <Image src={g.image_url} fittingType="fill" className="w-full h-full object-cover md:group-hover:scale-105 transition-transform" />
-            <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
-          </button>
+          <TuileGalerie key={g.id} image={g} index={i} onClick={() => { clearTarget("image"); setIdx(i); }} />
         ))}
       </div>
       <GalleryViewer
@@ -517,21 +508,16 @@ export default function MediaCategory({
                 >
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {uncategorizedImages.map((g, i) => (
-                      <button
+                      <TuileGalerie
                         key={g.id}
+                        image={g}
+                        index={i}
+                        arrondi="rounded-xl"
                         onClick={() => {
                           clearTarget("image");
                           setOrphanIdx(i);
                         }}
-                        className="relative block aspect-square overflow-hidden bg-muted group rounded-xl"
-                      >
-                        <Image
-                          src={g.image_url}
-                          fittingType="fill"
-                          className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
-                        />
-                        <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
-                      </button>
+                      />
                     ))}
                   </div>
                   <GalleryViewer
@@ -572,21 +558,15 @@ export default function MediaCategory({
                 >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {sectionImages.map((g, i) => (
-                    <button
+                    <TuileGalerie
                       key={g.id}
+                      image={g}
+                      index={i}
                       onClick={() => {
                         clearTarget("image");
                         setGalleryIdx(i);
                       }}
-                      className="relative block aspect-square overflow-hidden bg-muted group"
-                    >
-                      <Image
-                        src={g.image_url}
-                        fittingType="fill"
-                        className="w-full h-full object-cover md:group-hover:scale-105 transition-transform"
-                      />
-                      <BadgeAudience audience={g.audience} className="absolute bottom-1.5 left-1.5" />
-                    </button>
+                    />
                   ))}
                 </div>
                 </BlocOrdonnable>

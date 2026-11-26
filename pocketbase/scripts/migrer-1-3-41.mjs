@@ -32,7 +32,7 @@ export const BLOCS_LEGAUX = [
   "page": "infos",
   "type": "info",
   "titre": "Adresse du siège",
-  "texte": "21 avenue Jean Moulin, 02700 Tergnier",
+  "texte": "9 rue Albert Catalifaud, 02800 La Fère",
   "reference": "siege",
   "icone": ""
  },
