@@ -6,7 +6,7 @@ import { backendText } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
-import { deactivateDeviceToken, upsertDeviceToken } from "@/lib/deviceTokenSync";
+import { deactivateDeviceToken, memoriserJetonAppareil, upsertDeviceToken } from "@/lib/deviceTokenSync";
 import { ouvrirNotification } from "@/lib/ouvrirNotification";
 import { foregroundPushToast } from "@/lib/pushForeground";
 import { traiterReponseRapide } from "@/lib/reponseRapide";
@@ -114,6 +114,7 @@ export function usePushNotifications(navigate) {
           await PushNotifications.addListener("registration", async (ev) => {
             settled = true;
             tokenRef.current = ev.value;
+            memoriserJetonAppareil(ev.value);
             try {
               await upsertToken(
                 ev.value,

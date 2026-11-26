@@ -58,6 +58,20 @@ export async function upsertDeviceToken(entities, { token, platform, userId, now
   return { action, id, doublons: duplicates.length };
 }
 
+// 1.3.43 : jeton de cet appareil, gardé pour la déconnexion : il faut le désactiver AVANT de quitter le compte
+// (après, la session n'existe plus et le serveur refuse de modifier la ligne : l'appareil recevait encore les
+// notifications de l'ancien compte).
+let jetonAppareil = null;
+export function memoriserJetonAppareil(token) { jetonAppareil = token || null; }
+
+/** Déconnexion : désactive le jeton de cet appareil pour le compte qui part (2,5 s au plus). */
+export async function desactiverAvantDeconnexion(entities, delaiMs = 2500) {
+  const t = jetonAppareil;
+  if (!t) return;
+  jetonAppareil = null;
+  await Promise.race([deactivateDeviceToken(entities, t), new Promise((r) => setTimeout(r, delaiMs))]);
+}
+
 /** Désactive la ligne de ce jeton (déconnexion, push coupé). Ne lève jamais d'erreur. */
 export async function deactivateDeviceToken(entities, token) {
   const rows = await entities.DeviceToken.filter({ token }, null, 25).catch(() => []);

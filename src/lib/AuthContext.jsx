@@ -5,6 +5,7 @@ import { IS_POCKETBASE, readPocketBaseToken } from '@/api/backendConfig';
 import { appParams } from '@/lib/app-params';
 import { readLocalSession, saveLocalSession, clearLocalSession } from '@/lib/localSession';
 import { decisionApresEchec, decisionHorsLigne, doitVerifierAuRetour, etatInitial } from '@/lib/sessionPolicy';
+import { desactiverAvantDeconnexion } from '@/lib/deviceTokenSync';
 
 // Jeton lu au moment voulu (et non figé au chargement du module : après une connexion dans la même
 // session, appParams.token ne le connaît pas).
@@ -262,6 +263,14 @@ export const AuthProvider = ({ children }) => {
   // Déconnexion explicite : on vide la session locale, puis on revient à
   // l'accueil invité ("/"), jamais vers /login.
   const logout = (shouldRedirect = true) => {
+    // 1.3.43 : cet appareil ne reçoit plus les notifications du compte qui se déconnecte (fait AVANT de quitter
+    // la session, sinon le serveur refuse). 2,5 s au plus, puis la déconnexion continue quoi qu'il arrive.
+    // Déconnexion forcée (session déjà invalide) : tout de suite, comme avant.
+    if (!shouldRedirect) { terminerDeconnexion(false); return; }
+    setIsLoggingOut(true);
+    desactiverAvantDeconnexion(base44.entities).catch(() => {}).finally(() => terminerDeconnexion(true));
+  };
+  const terminerDeconnexion = (shouldRedirect) => {
     clearLocalSession();
     try { sessionStorage.removeItem('chay_just_logged_in'); } catch { /* ignoré */ }
     // Écran de chargement neutre jusqu'au rechargement : aucun écran intermédiaire.

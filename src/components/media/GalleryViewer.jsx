@@ -23,6 +23,14 @@ const commentKey = (id) => `gallery:${id}`;
 
 // Options (Fond d'écran) : `sansCommentaires` retire les commentaires, `sansGestion` les boutons Modifier/Supprimer
 // de la Galerie, `actionsHaut(photo)` ajoute des boutons en haut à droite (ex. Télécharger), pour la photo affichée.
+// Transition entre deux photos (1.3.43). « Réduire les animations » : framer-motion la remplace par un fondu.
+const RESSORT = { type: "spring", stiffness: 260, damping: 32, mass: 0.9 };
+const TRANSITION_PHOTO = {
+  entree: (s) => ({ x: `${s * 38}%`, opacity: 0, scale: 0.94 }),
+  centre: { x: 0, opacity: 1, scale: 1, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.28 } } },
+  sortie: (s) => ({ x: `${s * -38}%`, opacity: 0, scale: 0.94, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.22 } } }),
+};
+
 export default function GalleryViewer({ items = [], index, onClose, onItemUpdated, onItemDeleted, sansCommentaires = false, sansGestion = false, actionsHaut = null }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -144,8 +152,12 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
     setTimeout(() => navigate(`/profile/${userId}`), 0);
   };
 
-  const go = (delta) =>
+  // 1.3.43 : sens du passage d'une photo à l'autre (1 = suivante, -1 = précédente), pour la transition.
+  const [sens, setSens] = useState(1);
+  const go = (delta) => {
+    setSens(delta > 0 ? 1 : -1);
     setI((v) => (v + delta + items.length) % items.length);
+  };
 
   const prev = (e) => { e?.stopPropagation(); go(-1); };
   const next = (e) => { e?.stopPropagation(); go(1); };
@@ -422,23 +434,29 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
             />
           )}
 
-          {/* Photo affichée : pas de key (pas de remontage), fondu seulement à la toute première image. */}
+          {/* 1.3.43 : passage d'une photo à l'autre en douceur : la nouvelle glisse depuis le côté (selon le sens),
+              l'ancienne s'efface de l'autre côté, avec un léger zoom. La nouvelle n'arrive qu'une fois chargée
+              (jamais d'écran noir). Fondu simple à la toute première photo. */}
           {/* 1.3.34 : on zoome directement sur la photo (pincer, double-toucher), sans la toucher d'abord. */}
-          {visibleSrc && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0"
-            >
-              <ZoomImage
+          <AnimatePresence initial={false} custom={sens}>
+            {visibleSrc && (
+              <motion.div
                 key={visibleSrc}
-                src={visibleSrc}
-                onZoom={setZoome}
-                classeImage={`max-w-[92vw] select-none transition-[max-height] duration-200 ${showComments ? "max-h-[52vh]" : "max-h-[88vh]"}`}
-              />
-            </motion.div>
-          )}
+                custom={sens}
+                variants={TRANSITION_PHOTO}
+                initial="entree"
+                animate="centre"
+                exit="sortie"
+                className="absolute inset-0"
+              >
+                <ZoomImage
+                  src={visibleSrc}
+                  onZoom={setZoome}
+                  classeImage={`max-w-[92vw] select-none transition-[max-height] duration-200 ${showComments ? "max-h-[52vh]" : "max-h-[88vh]"}`}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Panneau de commentaires */}
           {showComments && (
