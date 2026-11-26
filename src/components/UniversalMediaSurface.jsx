@@ -614,7 +614,12 @@ const playVideo = (source) => {
       aria-hidden={!isFullPlayer}
       ref={racineRef}
       onMouseMove={pleinEcranFilm ? reveillerCommandes : undefined}
-      style={{ pointerEvents: isFullPlayer ? "auto" : "none", cursor: pleinEcranFilm && !commandesVisibles ? "none" : undefined }}
+      // 1.4.0 (Android 16, bord à bord) : marges sous l'heure et au-dessus des boutons d'Android (sauf film plein écran).
+      style={{
+        pointerEvents: isFullPlayer ? "auto" : "none",
+        cursor: pleinEcranFilm && !commandesVisibles ? "none" : undefined,
+        ...(pleinEcranFilm ? {} : { paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }),
+      }}
       className={`fixed inset-0 z-[65] flex flex-col text-white ${pleinEcranFilm ? "bg-black p-0" : "bg-black/95 p-4"}`}
     >
       {control && !pleinEcranFilm && (

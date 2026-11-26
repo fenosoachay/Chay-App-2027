@@ -54,7 +54,7 @@ export default function PhotoViewer({ images, index, onClose }) {
       onTouchEnd={toucherFin}
     >
       <button
-        className="absolute z-10 top-4 right-4 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+        className="absolute z-10 top-[calc(env(safe-area-inset-top,0px)+1rem)] right-4 h-11 w-11 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Fermer"
       >
@@ -84,7 +84,7 @@ export default function PhotoViewer({ images, index, onClose }) {
       </div>
 
       {total > 1 && (
-        <div className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
+        <div className="absolute z-10 bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
           {i + 1} / {total}
         </div>
       )}

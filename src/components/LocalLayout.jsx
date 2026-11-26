@@ -1,9 +1,19 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import ThemeToggle from '@/components/ThemeToggle';
 import BrandLogo from '@/components/BrandLogo';
+import FondSection from '@/components/FondSection';
+import useSombre from '@/hooks/useSombre';
+import { fondPour, sectionDe } from '@/lib/fondsSections';
 
 export default function LocalLayout() {
-  return <div className="min-h-screen bg-background text-foreground">
+  // 1.4.0 : sans compte aussi, l'accueil et la Bible gardent leur fond animé (Aube dorée, Parchemin de nuit…),
+  // comme dans l'appli connectée (Layout.jsx).
+  const location = useLocation();
+  const sombre = useSombre();
+  const section = sectionDe(location.pathname, location.search);
+  const fondForce = fondPour(section, sombre)?.force;
+  return <div className="min-h-screen bg-background text-foreground overflow-x-clip">
+    <FondSection cle={section} sombre={sombre} />
     <header
       className="sticky top-0 z-30 border-b border-border bg-background px-3 pb-3 sm:px-4 sm:pb-4"
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
@@ -17,6 +27,8 @@ export default function LocalLayout() {
         </div>
       </div>
     </header>
-    <Outlet />
+    <main className={`relative ${fondForce ? "dark text-foreground" : ""}`}>
+      <Outlet />
+    </main>
   </div>;
 }

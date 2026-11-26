@@ -48,7 +48,11 @@ export default function PlayerFullscreen({ onCollapse, cover }) {
   const buffering = playerState === "connecting" || playerState === "buffering";
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-float-in">
+    <div
+      className="fixed inset-0 z-[60] bg-background flex flex-col animate-float-in"
+      // 1.4.0 (Android 16, bord à bord) : rien sous l'heure ni sous les boutons d'Android.
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <div className="flex items-center justify-between p-4">
         <button
           onClick={onCollapse}

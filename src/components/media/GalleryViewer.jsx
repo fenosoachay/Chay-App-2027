@@ -339,7 +339,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
           onTouchEnd={onTouchEnd}
         >
           {/* Contrôles haut : commentaires + fermeture */}
-          <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <div className="absolute top-[calc(env(safe-area-inset-top,0px)+1rem)] right-4 z-20 flex items-center gap-2">
             {current && actionsHaut?.(current)}
             {canManageItem && (
               <>
@@ -387,7 +387,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
                 <ChevronRight className="h-6 w-6" />
               </button>
               {!showComments && (
-                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white z-10">
+                <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+4rem)] left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white z-10">
                   {i + 1} / {items.length}
                 </div>
               )}
@@ -398,7 +398,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
           {!showComments && !sansCommentaires && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
-              className="absolute bottom-4 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
+              className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+1rem)] left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
               aria-label="Voir les commentaires"
             >
               <PenLine className="h-4 w-4" />
@@ -467,7 +467,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
             <div
               data-comments-panel
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-x-0 bottom-0 z-30 flex max-h-[58vh] flex-col border-t border-white/15 bg-black/92 backdrop-blur-xl"
+              className="absolute inset-x-0 bottom-0 z-30 flex max-h-[58vh] flex-col pb-[env(safe-area-inset-bottom,0px)] border-t border-white/15 bg-black/92 backdrop-blur-xl"
             >
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
                 <span className="text-sm font-bold text-white">
