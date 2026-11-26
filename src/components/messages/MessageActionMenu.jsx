@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Reply, Copy, Trash2, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBackHandler } from "@/hooks/useBackHandler";
@@ -17,6 +17,29 @@ export default function MessageActionMenu({
   maReaction,
 }) {
   useBackHandler(true, onClose);
+  // 1.3.39 : sur certains Android (Pixel…), l'appui long envoie aussi un « clic droit » et un clic juste
+  // APRÈS l'ouverture du menu : ils tombaient sur le fond et refermaient aussitôt le menu (il clignotait).
+  // Le fond ne ferme le menu qu'une fois le doigt levé (et au moins 400 ms après l'ouverture).
+  const pret = useRef(false);
+  useEffect(() => {
+    const debut = Date.now();
+    let leve = false;
+    const t = setTimeout(() => { if (leve) pret.current = true; }, 400);
+    const surLeve = () => {
+      leve = true;
+      const reste = 400 - (Date.now() - debut);
+      if (reste <= 0) pret.current = true;
+      else setTimeout(() => { pret.current = true; }, reste);
+    };
+    window.addEventListener("pointerup", surLeve, true);
+    window.addEventListener("pointercancel", surLeve, true);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("pointerup", surLeve, true);
+      window.removeEventListener("pointercancel", surLeve, true);
+    };
+  }, []);
+  const fermerSiPret = () => { if (pret.current) onClose(); };
   // 1.3.36 : la barre des 6 réactions (comme Messenger) au-dessus du menu : un peu plus large.
   const left = Math.max(8, Math.min(position.x - 40, window.innerWidth - 300));
   const top = Math.max(8, Math.min(position.y - 64, window.innerHeight - 300));
@@ -24,13 +47,19 @@ export default function MessageActionMenu({
   return (
     <div
       className="fixed inset-0 z-50"
-      onClick={onClose}
+      onClick={fermerSiPret}
       onContextMenu={(e) => {
         e.preventDefault();
-        onClose();
+        fermerSiPret();
       }}
     >
-      <div className="absolute" style={{ left, top }} onClick={(e) => e.stopPropagation()}>
+      <div
+        className="absolute"
+        style={{ left, top }}
+        onClick={(e) => e.stopPropagation()}
+        // Le clic du doigt qui se lève après l'appui long ne choisit rien par accident.
+        onClickCapture={(e) => { if (!pret.current) { e.preventDefault(); e.stopPropagation(); } }}
+      >
       {onReact && (
         <motion.div
           className="mb-2 flex w-fit items-center gap-0.5 rounded-full border border-border bg-popover px-1.5 py-1 shadow-xl"
