@@ -59,7 +59,9 @@ export function describeLatest(latest, locale = "fr-FR") {
   const parts = [`Version ${latest.versionName}`];
   const date = formatDate(latest.date, locale);
   if (date) parts.push(date);
-  if (latest.tailleMo) parts.push(`${latest.tailleMo.toLocaleString(locale, { maximumFractionDigits: 1 })} Mo`);
+  // 1.3.40 : tailleMo de latest.json (publier-membres.ps1) est en Mio (octets / 1 048 576) ; affichée en Mo
+  // décimaux, comme le gestionnaire de fichiers d'Android (26,9 Mio = 28,2 Mo).
+  if (latest.tailleMo) parts.push(`${((latest.tailleMo * 1048576) / 1e6).toLocaleString(locale, { maximumFractionDigits: 1 })} Mo`);
   return parts.join(" · ");
 }
 

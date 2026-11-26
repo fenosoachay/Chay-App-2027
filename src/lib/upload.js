@@ -155,7 +155,8 @@ export function formatBytes(n) {
   if (!Number.isFinite(n) || n < 0) return "0 o";
   const units = ["o", "Ko", "Mo", "Go", "To"];
   let v = n, u = 0;
-  while (v >= 1024 && u < units.length - 1) { v /= 1024; u += 1; }
+  // 1.3.40 : unités décimales (1 Mo = 1 000 000 octets), comme Android.
+  while (v >= 1000 && u < units.length - 1) { v /= 1000; u += 1; }
   return `${v >= 100 || u === 0 ? Math.round(v) : v.toFixed(1)} ${units[u]}`;
 }
 

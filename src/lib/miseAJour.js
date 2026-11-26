@@ -5,7 +5,8 @@
 
 /** « 12,3 Mo sur 24,0 Mo » (ou « 12,3 Mo » si la taille totale est inconnue). */
 export function texteProgression(recus, total, locale = "fr-FR") {
-  const mo = (n) => `${(Math.max(0, Number(n) || 0) / (1024 * 1024)).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mo`;
+  // 1.3.40 : mégaoctets « décimaux » (1 Mo = 1 000 000 octets), comme le gestionnaire de fichiers d'Android.
+  const mo = (n) => `${(Math.max(0, Number(n) || 0) / 1e6).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Mo`;
   return Number(total) > 0 ? `${mo(recus)} sur ${mo(total)}` : mo(recus);
 }
 

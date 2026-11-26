@@ -54,7 +54,8 @@ test("fetchLatest : ne lève jamais d'erreur (404, réseau, JSON invalide, conte
 });
 
 test("describeLatest : version, date, taille ; parties absentes omises", () => {
-  assert.equal(describeLatest(ok), "Version 1.3 · 10 nov. 2026 · 25,4 Mo");
+  assert.equal(describeLatest(ok), "Version 1.3 · 10 nov. 2026 · 26,6 Mo");
+  assert.match(describeLatest({ ...ok, tailleMo: 26.9 }), /28,2 Mo$/);
   assert.equal(describeLatest({ versionName: "1.3", versionCode: 4, date: null, tailleMo: null }), "Version 1.3");
   assert.equal(describeLatest(null), null);
 });
