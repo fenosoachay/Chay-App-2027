@@ -32,7 +32,6 @@ import Avatar from "@/components/messages/Avatar";
 import MessageAvatar from "@/components/messages/MessageAvatar";
 import MemberName from "@/components/messages/MemberName";
 import useMemberDirectory from "@/hooks/useMemberDirectory";
-import { Image } from "@/components/ui/image";
 import { isOnline, lastSeenLabel } from "@/hooks/usePresence";
 import EmojiPicker from "@/components/messages/EmojiPicker";
 import MessageActionMenu from "@/components/messages/MessageActionMenu";
@@ -627,11 +626,14 @@ image_url: uploadedUrl,
                       className={`block overflow-hidden focus:outline-none ${imageOnly ? "rounded-[10px]" : "rounded-[8px] mb-1"} max-w-[240px] md:max-w-[280px]`}
                       aria-label={`Agrandir la photo envoyée par ${m.sender_name || "Membre"}`}
                     >
-                      <Image
+                      {/* 1.3.43 : la photo garde ses vraies proportions (avant : cadre fixe de 192 px de haut, la photo
+                          était étirée ou écrasée). Très haute : coupée proprement à 320 px, sans déformation. */}
+                      <img
                         src={m.image_url}
                         alt={`Photo envoyée par ${m.sender_name || "Membre"}`}
-                        fittingType="fill"
-                        className="w-full h-48 md:h-56"
+                        loading="lazy"
+                        decoding="async"
+                        className="block h-auto w-full min-h-[6rem] max-h-80 bg-black/20 object-cover"
                       />
                     </button>
                   )}

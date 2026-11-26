@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2, Lock, Unlock, ChevronDown, ChevronRight, FolderPlus, Search, X, BellRing } from "lucide-react";
-import { ENTITES_ATTENTION, estMindset, notifierAutomatiquement, texteAttention } from "@/lib/notificationAttention";
+import { ENTITES_ATTENTION, notifierAutomatiquement, texteAttention } from "@/lib/notificationAttention";
 import { Image } from "@/components/ui/image";
 import { AUDIENCES } from "@/lib/audience";
 import EntityForm from "@/components/admin/EntityForm";
@@ -289,7 +289,7 @@ export default function EntityCrud({
     }
     const kind = kindMap[entity];
     if (!kind) return;
-    // 1.3.34 : Mindset (Vidéo, Galerie) : pas de notification automatique ; l'admin l'envoie s'il le veut (🔔).
+    // 1.3.43 : tout contenu est notifié automatiquement, Mindset et Pédagogie en image compris (bouton 🔔 en plus).
     const pl = playlists.find((p) => p.id === playlistId);
     const parent = pl?.parent_id ? playlists.find((p) => p.id === pl.parent_id) : null;
     if (!notifierAutomatiquement(entity, [parent?.name, pl?.name].filter(Boolean).join(" › "))) return;
@@ -536,11 +536,14 @@ export default function EntityCrud({
   /** 1.3.34 : notification manuelle d'un contenu Mindset : « Chay attire ton attention sur… ». */
   const [attentionEnvoi, setAttentionEnvoi] = useState(null);
   const envoyerAttention = async (item) => {
-    const texte = texteAttention(entity, item.title);
+    // 1.3.43 : bouton 🔔 sur tous les contenus : « Chay attire ton attention sur ce chant / cette prédication… ».
+    const genre = entity === "Announcement" ? genreAnnonce(item) : ENTITES_ATTENTION[entity]?.kind;
+    const texte = texteAttention(entity, item.title, genre);
     if (!(await confirmFr({ title: "Envoyer la notification ?", message: texte, confirmLabel: "Envoyer" }))) return;
     setAttentionEnvoi(item.id);
     const ok = await notifyAdminUpload({
-      kind: ENTITES_ATTENTION[entity] === "photo" ? "gallery" : "film",
+      kind: genre || "autre",
+      section: item.section,
       title: item.title,
       contentId: item.id,
       audience: item.audience,
@@ -862,7 +865,7 @@ export default function EntityCrud({
 
                 {!readOnly && (
                   <>
-                    {ENTITES_ATTENTION[entity] && estMindset(playlistParContenu.get(item.id)) && (
+                    {ENTITES_ATTENTION[entity] && (
                       <button
                         type="button"
                         onClick={() => envoyerAttention(item)}
