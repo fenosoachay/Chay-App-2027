@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/drawer";
 import { enqueue, queueSize } from "@/lib/offlineQueue";
 import useReadingProgress from "@/hooks/useReadingProgress";
+import { derniereLecture } from "@/lib/readingProgress";
 import ResumeReadingButton from "@/components/bible/ResumeReadingButton";
 import { readLocalAnnotations, saveLocalAnnotation, clearLocalAnnotations } from "@/lib/localAnnotations";
 import { getLocalBooks, getLocalChapterVerses } from "@/lib/localBible";
@@ -55,23 +56,34 @@ export default function BibleReader({ onBack }) {
   const isDarkMode = themeResolved === "dark";
   const { user, isLocalMode } = useAuth();
   const didInitRef = useRef(false);
-  // Langue et version initiales : ?translation=… (lien depuis la concordance).
+  // Ouverture : ?ref=… (verset du jour, concordance…) ; sinon la dernière lecture (1.3.41 : avant, toujours Jean 1,
+  // et ce Jean 1 écrasait aussitôt la dernière lecture enregistrée).
+  const [ouverture] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    const parLien = Boolean(q.get("ref"));
+    return { parLien, derniere: parLien ? null : derniereLecture(isLocalMode ? null : user), translation: q.get("translation") };
+  });
+  // Langue et version initiales : ?translation=… (lien depuis la concordance), sinon celle de la dernière lecture.
   const initialVersion = (() => {
-    const t = new URLSearchParams(window.location.search).get("translation");
+    const t = ouverture.translation || ouverture.derniere?.versionId;
     return ALL_VERSIONS.some((v) => v.id === t) ? t : "fra_lsg";
   })();
   const [lang, setLang] = useState(langOfVersion(initialVersion));
   const [selectedVersion, setSelectedVersion] = useState(initialVersion);
   const [books, setBooks] = useState([]);
-  const [selectedBookId, setSelectedBookId] = useState("JHN");
-  const [selectedChapter, setSelectedChapter] = useState(1);
+  const [selectedBookId, setSelectedBookId] = useState(() =>
+    ouverture.derniere?.versionId === initialVersion ? ouverture.derniere.book : "JHN");
+  const [selectedChapter, setSelectedChapter] = useState(() =>
+    ouverture.derniere?.versionId === initialVersion ? Number(ouverture.derniere.chapter) || 1 : 1);
   const [verses, setVerses] = useState([]);
   const [pendingRef, setPendingRef] = useState(() =>
     new URLSearchParams(window.location.search).get("ref")
   );
   const [pendingVerse, setPendingVerse] = useState(() => {
     const v = new URLSearchParams(window.location.search).get("verse");
-    return v ? Number(v) : null;
+    if (v) return Number(v);
+    const d = ouverture.derniere;
+    return d?.versionId === initialVersion && Number(d.verse) > 1 ? Number(d.verse) : null;
   });
   const [highlightVerse, setHighlightVerse] = useState(null);
 
@@ -107,7 +119,8 @@ export default function BibleReader({ onBack }) {
     let alive = true;
     const resolveInitial = (loaded) => {
       let nextBookId = loaded.find((b) => b.id === selectedBookId)?.id || loaded.find((b) => b.id === "JHN")?.id || loaded[0].id;
-      let nextChapter = didInitRef.current ? selectedChapter : 1;
+      // Premier chargement : chapitre de la dernière lecture (ou 1) ; ensuite (changement de langue) on le garde.
+      let nextChapter = selectedChapter;
       if (pendingRef) {
         const parsed = parseReference(pendingRef, loaded);
         if (parsed) {
@@ -209,7 +222,7 @@ export default function BibleReader({ onBack }) {
 
   const savedProgress = useReadingProgress({
     versionId: selectedVersion, bookId: selectedBookId, chapter: selectedChapter,
-    ready: chapterStatus === "ready", user, isLocalMode,
+    ready: chapterStatus === "ready", user, isLocalMode, memoriserOuverture: !ouverture.parLien,
   });
   const resumeBook = savedProgress && books.find((b) => b.id === savedProgress.book);
   const isAlreadyThere = savedProgress && savedProgress.book === selectedBookId && savedProgress.chapter === selectedChapter;

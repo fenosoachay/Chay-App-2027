@@ -38,6 +38,19 @@ export async function pushProgress(versionId, p) {
   await base44.auth.updateMe({ bible_progress: { ...remote, [versionId]: p } });
 }
 
+// 1.3.41 : dernière lecture connue tout de suite (sans attendre le réseau), toutes versions confondues
+// (appareil et compte) : { versionId, book, chapter, verse, at } ou null. Le lecteur s'ouvre dessus.
+export function derniereLecture(user) {
+  const local = readAll();
+  const remote = user?.bible_progress && typeof user.bible_progress === "object" ? user.bible_progress : {};
+  let best = null;
+  for (const [versionId, p] of [...Object.entries(remote), ...Object.entries(local)]) {
+    if (!p || !p.book || !p.chapter) continue;
+    if (!best || (p.at || 0) > (best.at || 0)) best = { versionId, ...p };
+  }
+  return best;
+}
+
 // Retourne la progression la plus récente entre l'appareil et le compte.
 export async function loadProgress(versionId, user) {
   const local = getLocalProgress(versionId);

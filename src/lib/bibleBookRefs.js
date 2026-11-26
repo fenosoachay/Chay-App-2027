@@ -30,14 +30,22 @@ const FR_BOOK_TO_ID = {
   "1 pierre": "1PE", "2 pierre": "2PE",
   "1 jean": "1JN", "2 jean": "2JN", "3 jean": "3JN", jude: "JUD",
   apocalypse: "REV",
+  // 1.3.41 : variantes courantes.
+  "actes des apotres": "ACT", "cantique de salomon": "SNG", "psautier": "PSA",
+  "1 thes": "1TH", "2 thes": "2TH", "1 cor": "1CO", "2 cor": "2CO",
 };
 
 // Retourne { bookId, chapter, verse } ou null si la référence est illisible
 // ou si le livre n'existe pas dans le catalogue.
 export function parseReference(ref, books) {
-  const m = String(ref || "").trim().match(/^(.*?)\s+(\d+)(?::(\d+))?$/);
+  // 1.3.41 : « Jean 3:16 », mais aussi « Jean 3.16 », « Jean 3,16 », « Jean 3 : 16 », « Jean 3:16-18 »,
+  // « Jean 3:16 (LSG) »… Avant, tout ce qui n'était pas exactement « Livre 3:16 » ouvrait Jean 1.
+  const m = String(ref || "")
+    .replace(/\u00a0/g, " ")
+    .trim()
+    .match(/^(.*?\D)\s*(\d+)(?:\s*[:.,]\s*(\d+))?(?:\s*[-–—]\s*\d+(?:\s*[:.,]\s*\d+)?)?\s*(?:\(.*\))?\s*[.;]?$/);
   if (!m || !Array.isArray(books)) return null;
-  const rawBook = norm(m[1]).replace(/^(\d)\s*(?:er|ere|re|eme)\s*/, "$1 ");
+  const rawBook = norm(m[1].replace(/[.,:]\s*$/, "")).replace(/^(\d)\s*(?:ere|eme|er|re|e)\s*/, "$1 ");
   const frId = FR_BOOK_TO_ID[rawBook];
   const book = frId
     ? books.find((b) => b.id === frId)

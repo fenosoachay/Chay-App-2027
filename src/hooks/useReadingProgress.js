@@ -4,8 +4,11 @@ import { enqueue } from "@/lib/offlineQueue";
 
 // Charge la progression enregistrée pour la version courante et mémorise
 // automatiquement le chapitre + premier verset visible pendant la lecture.
-export default function useReadingProgress({ versionId, bookId, chapter, ready, user, isLocalMode }) {
+// memoriserOuverture = false (ouverture par un lien, ex. « Lire la Bible » du verset du jour) : ce premier passage
+// n'est mémorisé que si on y lit vraiment (défilement) ; la dernière lecture n'est plus écrasée (1.3.41).
+export default function useReadingProgress({ versionId, bookId, chapter, ready, user, isLocalMode, memoriserOuverture = true }) {
   const [saved, setSaved] = useState(null);
+  const premier = useRef(true);
   const verseRef = useRef(1);
   const timer = useRef(null);
   const userRef = useRef(user);
@@ -30,8 +33,17 @@ export default function useReadingProgress({ versionId, bookId, chapter, ready, 
   useEffect(() => {
     if (!ready || !bookId || !chapter) return undefined;
     verseRef.current = 1;
-    persist();
+    // Passage ouvert par un lien : mémorisé seulement si la personne le lit elle-même (doigt, molette, clavier),
+    // pas à cause du défilement automatique vers le verset.
+    const attendreGeste = premier.current && !memoriserOuverture;
+    premier.current = false;
+    let geste = false;
+    const surGeste = () => { geste = true; };
+    const GESTES = ["touchstart", "wheel", "keydown", "pointerdown"];
+    if (attendreGeste) GESTES.forEach((g) => window.addEventListener(g, surGeste, { passive: true }));
+    else persist();
     const onScroll = () => {
+      if (attendreGeste && !geste) return;
       const els = document.querySelectorAll("[id^='verse-']");
       const top = Array.from(els).find((el) => el.getBoundingClientRect().bottom > 120);
       if (!top) return;
@@ -42,6 +54,7 @@ export default function useReadingProgress({ versionId, bookId, chapter, ready, 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
+      GESTES.forEach((g) => window.removeEventListener(g, surGeste));
       clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
