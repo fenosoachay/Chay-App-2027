@@ -1,5 +1,6 @@
 package io.chay.app;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +13,11 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.UpdateAvailability;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
@@ -55,6 +61,82 @@ public class ChayMiseAJourPlugin extends Plugin {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getContext().getPackageManager().canRequestPackageInstalls();
     }
 
+    /** 1.4.1 : { play: true } dans la version Google Play, { play: false } dans l'APK du site. */
+    @PluginMethod
+    public void source(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("play", BuildConfig.PLAY_STORE);
+        call.resolve(r);
+    }
+
+    /** 1.4.1 (version Google Play) : une mise à jour est-elle disponible sur le Play Store ? { disponible }. */
+    @PluginMethod
+    public void verifierPlay(PluginCall call) {
+        JSObject non = new JSObject();
+        non.put("disponible", false);
+        if (!BuildConfig.PLAY_STORE) {
+            call.resolve(non);
+            return;
+        }
+        try {
+            AppUpdateManagerFactory.create(getContext()).getAppUpdateInfo()
+                .addOnSuccessListener(info -> {
+                    JSObject r = new JSObject();
+                    boolean dispo = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                        || info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS;
+                    r.put("disponible", dispo);
+                    r.put("versionCode", info.availableVersionCode());
+                    call.resolve(r);
+                })
+                .addOnFailureListener(e -> call.resolve(non));
+        } catch (Exception e) {
+            call.resolve(non);
+        }
+    }
+
+    /** Version Google Play : écran « Mise à jour requise » de Google ; à défaut, la fiche de Chay sur le Play Store. */
+    private void installerParPlay(PluginCall call) {
+        Activity activite = getActivity();
+        JSObject r = new JSObject();
+        r.put("etat", "play");
+        try {
+            AppUpdateManager gestionnaire = AppUpdateManagerFactory.create(getContext());
+            gestionnaire.getAppUpdateInfo()
+                .addOnSuccessListener(info -> {
+                    boolean dispo = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                        || info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS;
+                    if (dispo && info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                        gestionnaire.startUpdateFlow(info, activite, AppUpdateOptions.defaultOptions(AppUpdateType.IMMEDIATE));
+                    } else {
+                        ouvrirFichePlay();
+                    }
+                    call.resolve(r);
+                })
+                .addOnFailureListener(e -> {
+                    ouvrirFichePlay();
+                    call.resolve(r);
+                });
+        } catch (Exception e) {
+            ouvrirFichePlay();
+            call.resolve(r);
+        }
+    }
+
+    private void ouvrirFichePlay() {
+        String paquet = getContext().getPackageName();
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + paquet));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+        } catch (Exception e) {
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + paquet));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+            } catch (Exception ignore) { /* aucun navigateur */ }
+        }
+    }
+
     @PluginMethod
     public void autorise(PluginCall call) {
         JSObject r = new JSObject();
@@ -64,6 +146,10 @@ public class ChayMiseAJourPlugin extends Plugin {
 
     @PluginMethod
     public void installer(PluginCall call) {
+        if (BuildConfig.PLAY_STORE) {
+            installerParPlay(call);
+            return;
+        }
         final String url = call.getString("url", "");
         if (url == null || !url.startsWith(ORIGINE) || !url.endsWith(".apk")) {
             call.reject("Adresse de mise à jour non autorisée.");

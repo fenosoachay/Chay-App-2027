@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1.4.1 : version Google Play. Google interdit aux applis du Play Store d'installer d'autres APK :
+     la permission est retirée ici ; les mises à jour passent par Google Play (ChayMiseAJourPlugin). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+</manifest>

@@ -149,8 +149,21 @@ export default function Layout() {
     <div className="min-h-screen bg-background overflow-x-clip">
       <FondSection cle={section} sombre={sombre} />
       <NotificationBanner />
-      {/* Desktop floating glass rail */}
-      <header className="hidden md:flex sticky top-0 z-40 px-6 pt-5">
+      {/* 1.4.1 (Android 16, bord à bord) : bande opaque sous l'heure et la batterie, pour que la page qui défile
+          ne passe jamais dessous (tablettes surtout, dont l'en-tête flotte). */}
+      {isNativeAndroid && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[45] bg-background"
+          style={{ height: "max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px))" }}
+        />
+      )}
+      {/* Desktop floating glass rail (aussi sur tablette) */}
+      <header
+        className="hidden md:flex sticky top-0 z-40 px-6 pt-5"
+        // 1.4.1 : sur tablette Android, l'en-tête commence sous la barre d'état (heure, batterie).
+        style={isNativeAndroid ? { paddingTop: "calc(max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px)) + 1.25rem)" } : undefined}
+      >
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
           <Link to="/" className="flex items-center">
             <BrandLogo className="h-9 w-9" />
@@ -272,7 +285,7 @@ export default function Layout() {
       {/* 1.3.43 : plus de z-index sur <main> : il enfermait les fenêtres plein écran des pages (visionneuse de photos,
           lecteur, profil…) SOUS la barre du haut et la barre du bas (boutons du haut inactifs). Le contenu reste
           au-dessus du fond animé (même plan, et placé après lui). */}
-      <main className={`relative pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12 ${fondForce ? "dark text-foreground" : ""}`}>
+      <main className={`relative pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-[calc(3rem_+_env(safe-area-inset-bottom))] ${fondForce ? "dark text-foreground" : ""}`}>
         <AnimatedOutlet />
         {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
         <AProposDepuisNotification />

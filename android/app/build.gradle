@@ -18,14 +18,19 @@ android {
         applicationId "io.chay.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 48
-        versionName "1.4.0"
+        versionCode 49
+        versionName "1.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // 1.4.1 : false = APK du site (mise à jour par téléchargement) ; true = version Google Play (type « play »).
+        buildConfigField "boolean", "PLAY_STORE", "false"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     signingConfigs {
         release {
@@ -47,12 +52,20 @@ android {
                 signingConfig signingConfigs.release
             }
         }
+        // 1.4.1 : version Google Play (AAB : gradlew bundlePlay). Même clé de signature que l'APK du site.
+        // Sans la permission d'installer des applications (src/play/AndroidManifest.xml) ; mises à jour par
+        // Google Play (écran « Mise à jour requise » de Google, ChayMiseAJourPlugin).
+        play {
+            initWith release
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "PLAY_STORE", "true"
+        }
     }
 }
 
 // Une construction release sans signature valide s'arrête (jamais d'APK release non signé ou signé en debug).
 gradle.taskGraph.whenReady { graph ->
-    def releaseDemandee = graph.allTasks.any { it.project == project && it.name.toLowerCase().contains('release') }
+    def releaseDemandee = graph.allTasks.any { it.project == project && (it.name.toLowerCase().contains('release') || it.name.toLowerCase().contains('play')) }
     if (releaseDemandee && !releaseSigningReady) {
         throw new GradleException(
             "Signature release : fichier ${keystorePropertiesFile} absent ou incomplet " +
@@ -86,6 +99,8 @@ dependencies {
     // 1.4.0 : identifiants gardés dans le Gestionnaire de mots de passe Google (ChayIdentifiantsPlugin).
     implementation "androidx.credentials:credentials:1.5.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.5.0"
+    // 1.4.1 : mises à jour obligatoires de la version Google Play (sans effet dans l'APK du site).
+    implementation "com.google.android.play:app-update:2.1.0"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

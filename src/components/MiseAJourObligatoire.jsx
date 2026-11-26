@@ -11,6 +11,8 @@ import { MiseAJourApp } from "@/components/home/AboutDialog";
 // téléchargement que dans « À propos » : barre de progression, puis fenêtre d'installation d'Android).
 // Vérifié au lancement puis à chaque retour dans l'appli (au plus toutes les 10 minutes).
 // Hors connexion, ou si latest.json est illisible, l'appli n'est jamais bloquée.
+// 1.4.1 : version Google Play : c'est Google Play qui dit si une mise à jour existe (latest.json décrit l'APK du
+// site, qui peut sortir avant que Google ait validé la même version) ; « Mettre à jour » ouvre l'écran de Google.
 export default function MiseAJourObligatoire() {
   const natif = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
   const [latest, setLatest] = useState(null);
@@ -22,6 +24,14 @@ export default function MiseAJourObligatoire() {
   const verifier = useCallback(async (force = false) => {
     if (!force && Date.now() - derniere.current < INTERVALLE_VERIFICATION_MS) return;
     derniere.current = Date.now();
+    let play = false;
+    try { play = Boolean((await ChayMiseAJour.source())?.play); } catch { play = false; }
+    if (play) {
+      let r = null;
+      try { r = await ChayMiseAJour.verifierPlay(); } catch { r = null; }
+      if (r) setLatest(r.disponible ? { versionName: null, play: true } : null);
+      return;
+    }
     const l = await fetchLatest();
     if (!l) return; // hors connexion : on ne change rien
     let info = null;
@@ -35,6 +45,7 @@ export default function MiseAJourObligatoire() {
     try {
       const r = await ChayMiseAJour.installer({ url: APK_URL });
       if (r?.etat === "autorisation") setMaj({ etat: "autorisation" });
+      else if (r?.etat === "play") setMaj({ etat: "repos" }); // écran de Google Play ouvert
       else setMaj((m) => ({ ...m, etat: "confirmation" }));
     } catch (e) {
       setMaj({ etat: "erreur", message: e?.message || "La mise à jour n'a pas pu être téléchargée." });
@@ -84,8 +95,9 @@ export default function MiseAJourObligatoire() {
           La dernière mise à jour est disponible
         </h1>
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-foreground/70">
-          La version <strong>{latest.versionName}</strong> de Chay est sortie. Mets à jour l'application pour continuer
-          à l'utiliser : ça ne prend qu'une minute, et tes messages, ta Bible et tes progrès restent.
+          {latest.versionName ? <>La version <strong>{latest.versionName}</strong> de Chay est sortie.</> : "Une nouvelle version de Chay est sortie."}{" "}
+          Mets à jour l'application pour continuer à l'utiliser : ça ne prend qu'une minute, et tes messages, ta Bible et
+          tes progrès restent.
         </p>
         <div className="mt-6 text-left">
           <MiseAJourApp
