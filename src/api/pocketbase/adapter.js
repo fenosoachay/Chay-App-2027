@@ -322,7 +322,11 @@ export function createPocketBaseAdapter(pb, { baseUrl, fetchImpl } = {}) {
         }
       }
       if (!Object.keys(rest).length) return this.me();
-      return fromRecord('User', await guard(users().update(id, toRecord('User', rest))));
+      const maj = fromRecord('User', await guard(users().update(id, toRecord('User', rest))));
+      // 1.3.37 : l'appli entière suit aussitôt (nom, photo…) ; avant, l'ancien profil restait en mémoire
+      // et revenait en rouvrant Paramètres, jusqu'au redémarrage.
+      try { window.dispatchEvent(new CustomEvent('chay-profil-maj', { detail: maj })); } catch { /* hors navigateur */ }
+      return maj;
     },
     async changePassword({ currentPassword, newPassword } = {}) {
       const id = currentUserId();

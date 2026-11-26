@@ -205,10 +205,12 @@ export default function Layout() {
       <header
         className="md:hidden sticky top-0 z-40 px-4 bg-background/80 backdrop-blur-xl"
         style={{
+          // 1.3.37 : logo et icônes centrés verticalement, 7,53 px au-dessus (sous la barre d'état) et en dessous.
+          // APK : --chay-barre-etat = hauteur réelle de la barre d'état au-dessus de la page (MainActivity.java),
+          // 0 quand Android place déjà la page sous la barre d'état.
           paddingTop: isNativeAndroid
-            ? "max(24px, env(safe-area-inset-top))"
-            : "max(1rem, env(safe-area-inset-top))",
-          // 1.3.35 : un peu d'air entre les icônes et le bas de la barre (le bord touchait les icônes).
+            ? "calc(max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px)) + 7.53px)"
+            : "calc(env(safe-area-inset-top, 0px) + 7.53px)",
           paddingBottom: "7.53px", // 3,78 + 3,75 px
         }}
       >
@@ -306,4 +308,4 @@ export default function Layout() {
       <UniversalMediaSurface />
       </div>
   );
-}
+}

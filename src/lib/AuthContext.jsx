@@ -90,6 +90,19 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(nouvelEssaiRef.current);
   }, []);
 
+  // Profil modifié (Paramètres, photo, préférences…) : le nouveau profil remplace aussitôt l'ancien,
+  // partout dans l'appli et dans la session mémorisée (1.3.37).
+  useEffect(() => {
+    const onProfil = (e) => {
+      const maj = e.detail;
+      if (!maj?.id) return;
+      setUser((actuel) => (actuel && actuel.id !== maj.id ? actuel : { ...(actuel || {}), ...maj }));
+      try { saveLocalSession({ ...(readLocalSession(jetonActuel()) || {}), ...maj }); } catch { /* stockage indisponible */ }
+    };
+    window.addEventListener('chay-profil-maj', onProfil);
+    return () => window.removeEventListener('chay-profil-maj', onProfil);
+  }, []);
+
   // Coupure : session gardée. Retour du réseau : vérification (sans écran de chargement).
   useEffect(() => {
     const onOffline = () => passerHorsLigne();
