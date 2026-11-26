@@ -479,7 +479,7 @@ image_url: uploadedUrl,
       {/* Header */}
       <div
         className="relative z-[2] flex items-center gap-2.5 bg-background/85 backdrop-blur-xl border-b border-border px-3 py-2.5"
-        style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.625rem)" }}
       >
         <button
           onClick={onBack}

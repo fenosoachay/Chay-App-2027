@@ -10,5 +10,7 @@
     <string name="external_link_confirmation_message">Voulez-vous ouvrir %1$s dans votre navigateur ?</string>
     <string name="external_link_confirmation_open">Ouvrir</string>
     <string name="external_link_confirmation_cancel">Annuler</string>
+    <!-- 1.4.0 : l'appli et membres.chay.fr partagent les mots de passe enregistrés chez Google (assetlinks.json). -->
+    <string name="asset_statements" translatable="false">[{\"include\": \"https://membres.chay.fr/.well-known/assetlinks.json\"}]</string>
     <string name="widget_verset_description">Le verset du jour, toujours sur votre écran d\'accueil</string>
 </resources>

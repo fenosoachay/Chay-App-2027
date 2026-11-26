@@ -20,13 +20,18 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="chay-default" />
 
+        <!-- 1.4.0 : appli reliée à membres.chay.fr (mots de passe enregistrés chez Google proposés des deux côtés). -->
+        <meta-data
+            android:name="asset_statements"
+            android:resource="@string/asset_statements" />
+
         <!-- Diffusion sur Chromecast / Google TV : réglages du SDK Cast (récepteur standard de Google). -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="io.chay.app.CastOptionsProvider" />
 
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
@@ -43,7 +48,7 @@
         <!-- Fenêtre de bulle d'un message privé (Android 11+) : intégrable, redimensionnable, une par conversation. -->
         <activity
             android:name=".BubbleActivity"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBar"
             android:allowEmbedded="true"

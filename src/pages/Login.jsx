@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { base44 } from "@/api/base44Client";
@@ -11,6 +11,7 @@ import LoginButton from "@/components/auth/LoginButton";
 import PasswordInput from "@/components/PasswordInput";
 import { APK_URL } from "@/lib/apkRelease";
 import AuthPageBackground from "@/components/auth/AuthPageBackground";
+import { enregistrerIdentifiants, proposerIdentifiants } from "@/lib/identifiants";
 
 const LOGO_URL =
   "/branding/logo-connexion.png";
@@ -32,20 +33,28 @@ export default function Login() {
   const [error, setError] = useState("");
   const [btnState, setBtnState] = useState("idle"); // idle | loading | success | error
   const returnTo = safeReturnTo();
+  // 1.4.0 : identifiants venus du Gestionnaire de mots de passe Google (inutile de proposer de les réenregistrer).
+  const depuisGestionnaire = useRef(null);
+  const enCours = useRef(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (btnState === "loading" || btnState === "success") return;
+  const connecter = async (adresse, motDePasse) => {
+    if (enCours.current) return;
     setError("");
     // Validation préalable : pas d'animation de chargement si invalide.
-    if (!EMAIL_REGEX.test(email.trim()) || !password) {
+    if (!EMAIL_REGEX.test(adresse.trim()) || !motDePasse) {
       setError("Veuillez saisir un email valide et votre mot de passe.");
       return;
     }
+    enCours.current = true;
     setBtnState("loading");
     try {
-      await base44.auth.loginViaEmailPassword(email.trim(), password);
+      await base44.auth.loginViaEmailPassword(adresse.trim(), motDePasse);
       saveLocalSession(await base44.auth.me());
+      const g = depuisGestionnaire.current;
+      if (!g || g.email !== adresse.trim() || g.motDePasse !== motDePasse) {
+        // Android propose « Enregistrer le mot de passe ? » ; on attend la réponse avant de quitter la page.
+        await enregistrerIdentifiants(adresse.trim(), motDePasse);
+      }
       // Au retour sur l'accueil, la session est validée automatiquement (un seul clic).
       try { sessionStorage.setItem("chay_just_logged_in", "1"); } catch { /* ignoré */ }
       setBtnState("success");
@@ -53,11 +62,32 @@ export default function Login() {
         window.location.href = returnTo;
       }, 600);
     } catch (err) {
+      enCours.current = false;
       setError(mapLoginError(err?.message));
       setBtnState("error");
       setTimeout(() => setBtnState("idle"), 600);
     }
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (btnState === "loading" || btnState === "success") return;
+    connecter(email, password);
+  };
+
+  // Appli Android : à l'ouverture de l'écran, Android propose les comptes enregistrés ; un toucher suffit.
+  useEffect(() => {
+    let actif = true;
+    proposerIdentifiants().then((r) => {
+      if (!actif || !r) return;
+      depuisGestionnaire.current = r;
+      setEmail(r.email);
+      setPassword(r.motDePasse);
+      connecter(r.email, r.motDePasse);
+    });
+    return () => { actif = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const registerLink =
     "/register" +

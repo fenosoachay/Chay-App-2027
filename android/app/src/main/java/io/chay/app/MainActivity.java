@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.webkit.WebView;
+import androidx.activity.EdgeToEdge;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -48,6 +49,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ChayTvPlugin.class);
         registerPlugin(ChayPartagePlugin.class);
         registerPlugin(ChayWidgetPlugin.class);
+        registerPlugin(ChayIdentifiantsPlugin.class);
+        // Android 16 (API 36) : l'appli s'affiche toujours bord à bord. Capacitor 8 (SystemBars, insetsHandling
+        // « native ») garde la page sous les barres ou lui donne les bons env(safe-area-inset-*).
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         // Widget « Verset du jour » : rafraîchi à chaque ouverture de l'app.
         VersetWidget.toutRafraichir(getApplicationContext());
@@ -60,14 +65,10 @@ public class MainActivity extends BridgeActivity {
             webView.getSettings().setTextZoom(100);
             // 1.3.37 : barre du haut de l'appli centrée (même espace au-dessus et en dessous des icônes) :
             // la page reçoit la place exacte prise par la barre d'état (variable CSS --chay-barre-etat).
-            ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
-                Insets barres = insets.getInsets(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
-                float densite = getResources().getDisplayMetrics().density;
-                hautBarreEtat = Math.round(barres.top / densite);
-                transmettreBarreEtat((WebView) v);
-                // La WebView garde son propre traitement (env(safe-area-inset-*) dans la page).
-                return ViewCompat.onApplyWindowInsets(v, insets);
-            });
+            // Capacitor 8 : on ne remplace plus l'écouteur d'encarts de la WebView (Capacitor s'en sert) ; on mesure
+            // après chaque mise en page la partie de la WebView réellement cachée sous la barre d'état (0 si Capacitor
+            // a déjà décalé la WebView), pour ne jamais compter deux fois cet espace.
+            webView.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or2, ob) -> mesurerBarreEtat((WebView) v));
         }
         // Fond transparent (capacitor.config.json) seulement pendant le lancement : le dégradé de la fenêtre
         // (styles.xml) apparaît à travers la WebView, sans éclair blanc. Dès que la page est chargée, son propre
@@ -79,9 +80,26 @@ public class MainActivity extends BridgeActivity {
                 view.setBackgroundColor(couleurFondOpaque());
                 // Réappliqué une fois la page chargée : rien ne doit avoir remis la taille du téléphone.
                 view.getSettings().setTextZoom(100);
+                mesurerBarreEtat(view);
                 transmettreBarreEtat(view);
             }
         });
+    }
+
+    private void mesurerBarreEtat(WebView view) {
+        WindowInsetsCompat encarts = ViewCompat.getRootWindowInsets(view);
+        int haut = 0;
+        if (encarts != null) {
+            Insets barres = encarts.getInsets(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            int[] position = new int[2];
+            view.getLocationInWindow(position);
+            int cache = Math.max(0, barres.top - position[1] - view.getPaddingTop());
+            haut = Math.round(cache / getResources().getDisplayMetrics().density);
+        }
+        if (haut != hautBarreEtat) {
+            hautBarreEtat = haut;
+            transmettreBarreEtat(view);
+        }
     }
 
     private void transmettreBarreEtat(WebView view) {

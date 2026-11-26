@@ -200,11 +200,11 @@ function Visionneuse({ src, telechargeable = false, onClose }) {
       data-sans-zoom
     >
       <ZoomImage src={src} />
-      <button type="button" onPointerUp={onClose} onClick={(e) => { if (e.detail === 0) onClose(); }} aria-label="Fermer" className={bouton} style={{ top: "max(1rem, env(safe-area-inset-top))", right: "1rem" }}>
+      <button type="button" onPointerUp={onClose} onClick={(e) => { if (e.detail === 0) onClose(); }} aria-label="Fermer" className={bouton} style={{ top: "calc(env(safe-area-inset-top, 0px) + 1rem)", right: "1rem" }}>
         <X className="h-6 w-6" />
       </button>
       {telechargeable && /^https?:\/\//i.test(src) && (
-        <button type="button" onClick={telecharger} disabled={telechargement} aria-label="Télécharger" className={`${bouton} disabled:opacity-50`} style={{ top: "max(1rem, env(safe-area-inset-top))", left: "1rem" }}>
+        <button type="button" onClick={telecharger} disabled={telechargement} aria-label="Télécharger" className={`${bouton} disabled:opacity-50`} style={{ top: "calc(env(safe-area-inset-top, 0px) + 1rem)", left: "1rem" }}>
           {telechargement ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
         </button>
       )}

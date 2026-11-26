@@ -143,12 +143,12 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
         type="button"
         onClick={() => onClose?.()}
         aria-label="Retour"
-        className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur"
+        className="absolute left-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
       {titre && (
-        <span className="pointer-events-none absolute left-1/2 top-[max(1.25rem,env(safe-area-inset-top))] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold drop-shadow">
+        <span className="pointer-events-none absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+1.25rem)] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold drop-shadow">
           {titre}
         </span>
       )}

@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import SplashScreen from "@/components/SplashScreen";
 import { SPLASH_DURATION_MS, removeBootSplash } from "@/lib/splash";
 import { ChayConversation, estNatif } from "@/lib/chayConversation";
+import { suivreBarresSysteme } from "@/lib/barresSysteme";
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -186,6 +187,8 @@ function App() {
     // Cache le splash natif Capacitor dès que React monte (double sécurité :
     // launchShowDuration est déjà à 0 dans capacitor.config.json).
     CapacitorSplashScreen.hide().catch(() => {});
+    // Android 16 : couleur de l'heure / batterie selon le fond de l'appli (src/lib/barresSysteme.js).
+    suivreBarresSysteme();
     if (!showSplash) {
       // Pas d'animation (déjà vue dans cette session) : retirer tout de suite le fond de démarrage.
       removeBootSplash();

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": { "namespace": "web", "site": "https://membres.chay.fr" }
+  },
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.chay.app",
+      "sha256_cert_fingerprints": ["6F:72:15:E3:82:BC:80:8B:5A:75:76:C7:73:D5:DC:C5:F8:C9:BB:64:35:D6:D2:09:DE:74:4D:BB:76:E8:F6:13"]
+    }
+  }
+]
