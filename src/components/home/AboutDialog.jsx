@@ -31,8 +31,9 @@ import {
 import { partagerTexte } from "@/lib/partage";
 
 // Partage de l'application : le fichier d'installation Android (APK), pas le site.
-const APP_SHARE_URL = "https://membres.chay.fr/telechargements/chay.apk";
-const APP_SHARE_TEXTE = "Installe l'application de l'Église Chay (Android) :";
+// 1.3.43 : on partage la page de l'appli sur le site (explications + bouton de téléchargement), plus le fichier APK.
+const APP_SHARE_URL = "https://chay.fr/application-chay/";
+const APP_SHARE_TEXTE = "Découvre l'application de l'Église Chay :";
 
 /** Application installée : mise à jour sans quitter l'app (barre de progression, puis fenêtre d'Android). */
 function MiseAJourApp({ maj, nouvelle, inconnue, versionName, admin, onLancer, onVerifier }) {
