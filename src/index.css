@@ -527,3 +527,10 @@ html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Transition entre les pages (1.3.37) : entrée seulement ; « backwards » = l'état final est l'état normal. */
+@keyframes chay-page-entree { from { opacity: 0; transform: translateX(28px); } }
+@keyframes chay-page-retour { from { opacity: 0; transform: translateX(-28px); } }
+.chay-page-entree { animation: chay-page-entree 0.2s ease-out backwards; }
+.chay-page-retour { animation: chay-page-retour 0.2s ease-out backwards; }
+@media (prefers-reduced-motion: reduce) { .chay-page-entree, .chay-page-retour { animation: none; } }

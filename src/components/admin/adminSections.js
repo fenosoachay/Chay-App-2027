@@ -108,7 +108,7 @@ export const SECTIONS_SITE = [
     sort: "order",
     listColumns: ["texte"],
     fields: [
-      { name: "texte", label: "Numéro WhatsApp (ex. +33 7 49 92 94 33)", type: "text", required: true, help: "Le bouton « Contacter l'association » ouvre WhatsApp sur ce numéro. Gardez une seule fiche." },
+      { name: "texte", label: "Numéro WhatsApp (ex. +33 7 49 92 74 33)", type: "text", required: true, help: "Le bouton « Contacter l'association » ouvre WhatsApp sur ce numéro. Gardez une seule fiche." },
     ],
   },
   {
