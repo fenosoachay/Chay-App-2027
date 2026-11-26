@@ -220,10 +220,10 @@ export default function Games() {
         <div className="h-32" aria-busy="true" />
       ) : (
         <div className="space-y-3">
-          {/* 1.3.34 : 1. Leaderboard (replié : on le touche pour voir le classement) ; 2. Chay Game ;
+          {/* 1.3.34 : 1. Classement (replié : on le touche pour voir le classement) ; 2. Chay Game ;
               3. Chay PlayMobile. Les jeux flottent en bulles dans les eaux profondes. */}
           <div className="mx-auto max-w-3xl">
-            <BarreJeux titre="Leaderboard" icone={Trophy} teinte={TEINTES.classement} ordre={0} ouvert={voirClassement} onClick={() => setVoirClassement((v) => !v)} />
+            <BarreJeux titre="Classement" icone={Trophy} teinte={TEINTES.classement} ordre={0} ouvert={voirClassement} onClick={() => setVoirClassement((v) => !v)} />
             <AnimatePresence initial={false}>
               {voirClassement && (
                 <motion.div

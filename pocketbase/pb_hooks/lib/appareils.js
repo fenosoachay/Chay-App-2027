@@ -16,4 +16,15 @@ function garderSeulement(record) {
   return n;
 }
 
-module.exports = { garderSeulement };
+/** Appareil sans compte connecté : toutes les lignes actives de ce jeton sont désactivées. Renvoie leur nombre. */
+function oublier(jeton) {
+  if (!jeton) return 0;
+  const lignes = $app.findRecordsByFilter('DeviceToken', 'token = {:t} && is_active = true', '', 0, 0, { t: jeton });
+  for (const r of lignes) {
+    r.set('is_active', false);
+    $app.save(r);
+  }
+  return lignes.length;
+}
+
+module.exports = { garderSeulement, oublier };

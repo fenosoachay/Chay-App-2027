@@ -49,7 +49,7 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
           <Trophy className="h-5 w-5" />
         </span>
         <span className="min-w-0">
-          <h2 className="font-display text-xl font-extrabold leading-tight">{titre || (enfant ? "Score Board" : "Leaderboard")}</h2>
+          <h2 className="font-display text-xl font-extrabold leading-tight">{titre || (enfant ? "Score Board" : "Classement")}</h2>
           <p className="text-xs text-foreground/50">Remis à zéro le {prochainMois()}</p>
         </span>
       </div>

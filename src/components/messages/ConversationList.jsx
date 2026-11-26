@@ -11,6 +11,7 @@ import {
 } from "@/lib/messageNotifications";
 import { apercuPiece } from "@/lib/piecesJointes";
 import { prenomDe } from "@/hooks/useMemberDirectory";
+import { vuParDernier } from "@/lib/vuParDernier";
 
 const FILTER_KEY = "chay_msg_filter";
 
@@ -57,7 +58,12 @@ export default function ConversationList({
     const time = last?.created_date || c.last_message_at || c.updated_date;
     const pinned = (c.pinned_by || []).includes(user?.id);
     const muted = (c.muted_by || []).includes(user?.id);
-    return { c, isGroup, title, avatar, online, unread, preview, time, pinned, muted, msgs };
+    // 1.3.43 : « Vu » comme Messenger : photo de ceux qui ont lu mon dernier message.
+    const vus = vuParDernier(last, user?.id, c.participant_ids).map((id) => {
+      const p = profileOf(id);
+      return { id, nom: p?.display_name || "Membre", photo: p?.avatar_url || "" };
+    });
+    return { c, isGroup, title, avatar, online, unread, preview, time, pinned, muted, msgs, vus };
   });
 
   const unreadConvCount = items.filter((it) => it.unread > 0).length;
@@ -172,6 +178,7 @@ export default function ConversationList({
                 time={it.time}
                 pinned={it.pinned}
                 muted={it.muted}
+                vus={it.vus}
                 onOpen={onOpen}
                 onRefresh={onRefresh}
               />

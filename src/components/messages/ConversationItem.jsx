@@ -42,6 +42,7 @@ export default function ConversationItem({
   time,
   pinned,
   muted,
+  vus = [],
   onOpen,
   onRefresh,
   query,
@@ -202,6 +203,25 @@ export default function ConversationItem({
             {unread > 0 && (
               <span className="shrink-0 rounded-full bg-primary text-primary-foreground text-xs font-bold h-5 min-w-[1.25rem] px-1 grid place-items-center">
                 {unread}
+              </span>
+            )}
+            {/* 1.3.43 : « Vu » comme Messenger : la photo de ceux qui ont lu mon dernier message (3 au plus). */}
+            {!unread && vus.length > 0 && (
+              <span
+                className="flex shrink-0 items-center -space-x-1.5"
+                aria-label={`Vu par ${vus.map((v) => v.nom).join(", ")}`}
+                title={`Vu par ${vus.map((v) => v.nom).join(", ")}`}
+              >
+                {vus.slice(0, 3).map((v) => (
+                  <span key={v.id} className="rounded-full ring-2 ring-background">
+                    <Avatar name={v.nom} src={v.photo} size={16} />
+                  </span>
+                ))}
+                {vus.length > 3 && (
+                  <span className="grid h-4 min-w-[1rem] place-items-center rounded-full bg-muted px-0.5 text-[0.5625rem] font-bold text-foreground/70 ring-2 ring-background">
+                    +{vus.length - 3}
+                  </span>
+                )}
               </span>
             )}
           </div>

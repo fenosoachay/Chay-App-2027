@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useMemberDirectory from "@/hooks/useMemberDirectory";
@@ -322,7 +323,10 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
     }
   };
 
-  return (
+  // 1.3.43 : rendue directement dans <body> : à l'intérieur de la page, la visionneuse restait SOUS la barre du
+  // haut de l'appli (sur ordinateur, les boutons Fermer, Supprimer et Modifier ne répondaient pas au clic).
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -611,6 +615,7 @@ export default function GalleryViewer({ items = [], index, onClose, onItemUpdate
           </form>
         </DialogContent>
       </Dialog>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

@@ -17,9 +17,11 @@ export const JEUX = [
   { id: "fronde", name: "Chay Fronde", path: "/chay-fronde", slotDefaut: "playmobile" }, // 1.3.32
 ];
 
+// 1.3.43 : noms en français. Les anciens noms de départ (« Chay Game », « Chay PlayMobile ») encore enregistrés
+// sont remplacés à l'affichage ; un nom choisi par l'admin reste tel quel.
 export const CATEGORIES_JEUX_DEFAUT = [
-  { slot: "game", name: "Chay Game", order: 0 },
-  { slot: "playmobile", name: "Chay PlayMobile", order: 1 },
+  { slot: "game", name: "Jeux de réflexion", order: 0, ancien: "Chay Game" },
+  { slot: "playmobile", name: "Jeux d'action", order: 1, ancien: "Chay PlayMobile" },
 ];
 
 /** Les deux catégories, dans l'ordre, avec le nom choisi par l'admin (sinon le nom de départ). */
@@ -27,7 +29,8 @@ export function categoriesJeux(rows) {
   const parSlot = new Map((Array.isArray(rows) ? rows : []).map((r) => [r.slot, r]));
   return CATEGORIES_JEUX_DEFAUT.map((d) => {
     const r = parSlot.get(d.slot);
-    const name = String(r?.name || "").trim() || d.name;
+    const choisi = String(r?.name || "").trim();
+    const name = !choisi || choisi.toLowerCase() === d.ancien.toLowerCase() ? d.name : choisi;
     return { slot: d.slot, name, id: r?.id || null, order: r?.order ?? d.order };
   }).sort((a, b) => a.order - b.order);
 }

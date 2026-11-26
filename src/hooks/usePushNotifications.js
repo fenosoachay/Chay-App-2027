@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { base44 } from "@/api/base44Client";
-import { backendText } from "@/api/backendConfig";
+import { backendText, PB_URL } from "@/api/backendConfig";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { usePreferences } from "@/lib/PreferencesContext";
@@ -57,10 +57,35 @@ async function upsertToken(token, platform, userId) {
 
 const deactivateToken = (token) => deactivateDeviceToken(base44.entities, token);
 
+// 1.3.43 : appareil sans compte connecté : il ne doit plus recevoir les notifications d'un ancien compte
+// (déconnexions faites avant la 1.3.43, quand la ligne de l'appareil restait active). Une fois par lancement,
+// seulement si les notifications sont déjà autorisées (aucune demande d'autorisation ici).
+let oubliFait = false;
+async function oublierAppareilSansCompte() {
+  if (oubliFait) return;
+  oubliFait = true;
+  try {
+    const perm = await PushNotifications.checkPermissions();
+    if (perm.receive !== "granted") return;
+    const h = await PushNotifications.addListener("registration", (ev) => {
+      h?.remove?.();
+      if (!ev?.value) return;
+      fetch(`${PB_URL}/api/chay/appareil/oublier`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: ev.value }),
+      }).catch(() => {});
+    });
+    await PushNotifications.register();
+  } catch {
+    /* sans importance : on réessaiera au prochain lancement */
+  }
+}
+
 // Enregistre le token FCM de l'appareil (uniquement sur build natif Android).
 // Au premier lancement, affiche un court message FR puis demande l'autorisation.
 export function usePushNotifications(navigate) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth } = useAuth();
   const { prefs } = usePreferences();
   const { toast } = useToast();
   const tokenRef = useRef(null);
@@ -194,6 +219,12 @@ export function usePushNotifications(navigate) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- volontaire : relancé seulement sur ces valeurs
   }, [isAuthenticated, pushEnabled, user?.id]);
+
+  // 1.3.43 : personne n'est connecté sur cet appareil : le retirer des anciens comptes.
+  useEffect(() => {
+    if (!isNative() || isLoadingAuth || isAuthenticated) return;
+    oublierAppareilSansCompte();
+  }, [isAuthenticated, isLoadingAuth]);
 
   // Déconnexion : désactiver le token de cet appareil.
   useEffect(() => {

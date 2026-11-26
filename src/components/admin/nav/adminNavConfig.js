@@ -80,7 +80,7 @@ export const ADMIN_NAV = [
                 ],
               },
               {
-                id: "chay_game", label: "Chay Game", icon: Gamepad2,
+                id: "chay_game", label: "Jeux de réflexion", icon: Gamepad2,
                 items: [
                   { key: "game_categories", label: "Catégories des jeux", icon: LayoutGrid, path: "/admin/jeux-categories" },
                   { key: "quiz", label: "Quiz biblique", icon: Brain, path: "/admin/quiz" },

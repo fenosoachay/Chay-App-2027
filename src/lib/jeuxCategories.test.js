@@ -7,9 +7,11 @@ import { nouvellesCollections, donneesDepart } from "../../pocketbase/scripts/mi
 const lire = (f) => fs.readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
 
 test("jeux : deux catégories, noms de l'admin ou de départ, dans l'ordre", () => {
-  assert.deepEqual(categoriesJeux([]).map((c) => c.name), ["Chay Game", "Chay PlayMobile"]);
+  assert.deepEqual(categoriesJeux([]).map((c) => c.name), ["Jeux de réflexion", "Jeux d'action"]);
+  // 1.3.43 : les anciens noms enregistrés passent en français.
+  assert.deepEqual(categoriesJeux([{ slot: "game", name: "Chay Game" }, { slot: "playmobile", name: "chay playmobile" }]).map((c) => c.name), ["Jeux de réflexion", "Jeux d'action"]);
   const cats = categoriesJeux([{ id: "b", slot: "playmobile", name: "Petits", order: 0 }, { id: "a", slot: "game", name: "  ", order: 1 }]);
-  assert.deepEqual(cats.map((c) => [c.slot, c.name, c.id]), [["playmobile", "Petits", "b"], ["game", "Chay Game", "a"]]);
+  assert.deepEqual(cats.map((c) => [c.slot, c.name, c.id]), [["playmobile", "Petits", "b"], ["game", "Jeux de réflexion", "a"]]);
 });
 
 test("jeux : un jeu non classé n'est dans aucune section ; un classement vers une catégorie inconnue est ignoré", () => {

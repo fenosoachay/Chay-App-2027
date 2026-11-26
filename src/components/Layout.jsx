@@ -269,7 +269,10 @@ export default function Layout() {
 
       <OfflineBanner />
 
-      <main className={`relative z-[1] pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12 ${fondForce ? "dark text-foreground" : ""}`}>
+      {/* 1.3.43 : plus de z-index sur <main> : il enfermait les fenêtres plein écran des pages (visionneuse de photos,
+          lecteur, profil…) SOUS la barre du haut et la barre du bas (boutons du haut inactifs). Le contenu reste
+          au-dessus du fond animé (même plan, et placé après lui). */}
+      <main className={`relative pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-12 ${fondForce ? "dark text-foreground" : ""}`}>
         <AnimatedOutlet />
         {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
         <AProposDepuisNotification />
