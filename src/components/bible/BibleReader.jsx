@@ -346,7 +346,8 @@ export default function BibleReader({ onBack }) {
         </div>
       </header>
 
-      <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+      {/* Sur téléphone : bord à bord (pas de fond marron à gauche ni à droite). */}
+      <section className="-mx-3 overflow-hidden border-y border-border bg-card shadow-sm md:mx-0 md:rounded-3xl md:border">
         <div className="border-b border-border bg-muted/50 px-3 py-3 md:px-6">
           {booksStatus === "loading" && (
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
