@@ -23,7 +23,7 @@ test("menu admin : 3 grandes parties, dans l'ordre demandé", () => {
   const site = ADMIN_NAV[1].items;
   assert.equal(site[0].label, "Tableau de bord");
   assert.deepEqual(site[1].items.map((g) => g.label), ["Accueil", "Pages"]);
-  assert.equal(site[1].items[1].items.length, 5);
+  assert.equal(site[1].items[1].items.length, 6);
   assert.deepEqual(ADMIN_NAV[2].items.map((i) => i.key), ["invite", "membres", "admins", "app_update"]);
 });
 

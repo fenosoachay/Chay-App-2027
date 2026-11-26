@@ -159,6 +159,17 @@ export const ADMIN_NAV = [
                 ],
               },
               { key: "SiteBloc_contact", mots: "site contact telephone whatsapp", label: "Nous contacter", icon: Mail, path: "/admin/site-contact" },
+              {
+                // 1.3.41 : pages légales modifiables.
+                id: "site_legal", label: "Pages légales", icon: ScrollText,
+                items: [
+                  { key: "SiteInfosLegales", mots: "site legal editeur siege adresse directeur directrice publication siren siret association", label: "Informations légales", icon: Landmark, path: "/admin/site-infos-legales" },
+                  { key: "SiteBloc_mentions", mots: "site mentions legales hebergement", label: "Mentions légales", icon: FileText, path: "/admin/site-mentions-legales" },
+                  { key: "SiteBloc_confidentialite", mots: "site confidentialite rgpd donnees personnelles", label: "Confidentialité", icon: FileText, path: "/admin/site-confidentialite" },
+                  { key: "SiteBloc_cookies", mots: "site cookies traceurs", label: "Cookies", icon: FileText, path: "/admin/site-cookies" },
+                  { key: "SiteBloc_suppression", mots: "site supprimer compte suppression", label: "Supprimer mon compte", icon: FileText, path: "/admin/site-supprimer-compte" },
+                ],
+              },
             ],
           },
         ],

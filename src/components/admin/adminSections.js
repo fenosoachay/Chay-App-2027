@@ -26,6 +26,16 @@ const ICONES_RESEAUX = [
 ].map(([value, label]) => ({ value, label }));
 const AIDE_ETOILES = "Astuce : entourez un mot d'étoiles pour l'écrire en doré et en italique, ex. Revivez nos *cultes*.";
 const choixTypes = (liste) => liste.map(([value, label]) => ({ value, label }));
+// Pages légales du site (1.3.41).
+const TYPES_LEGAL = [["surtitre", "Petit texte au-dessus du titre"], ["intro", "Phrase sous le titre"], ["section", "Partie de la page (Titre + Texte)"]];
+const TITRE_LEGAL = "Titre de la partie (vide pour le petit texte et la phrase)";
+const AIDE_LEGAL = "Mise en forme : ligne vide = nouveau paragraphe ; « - » en début de ligne = liste à puces ; « 1. » = liste numérotée ; **gras** ; [texte du lien](/cookies/) ; les adresses e-mail deviennent cliquables. {association}, {siege}, {directeur}, {email}, {siren}… sont remplacés par les Informations légales.";
+const INFOS_LEGALES = [
+  ["association", "{association} — nom de l'association"], ["forme", "{forme} — forme juridique"], ["siege", "{siege} — adresse du siège"],
+  ["directeur", "{directeur} — directeur ou directrice de la publication"], ["jo", "{jo} — date au Journal officiel"],
+  ["siren", "{siren} — SIREN"], ["siret", "{siret} — SIRET"], ["telephone", "{telephone} — téléphone"], ["email", "{email} — e-mail"],
+  ["maj", "{maj} — date de dernière mise à jour"],
+].map(([value, label]) => ({ value, label }));
 const pageSite = (page, label, types, { reference, icone, icones, titre = "Titre", texte = "Texte", aide } = {}) => ({
   key: `SiteBloc_${page}`,
   entity: "SiteBloc",
@@ -144,6 +154,27 @@ export const SECTIONS_SITE = [
   pageSite("pied", "Bas de page", [["pied", "Texte du bas de page"], ["reseau", "Lien (réseau social ou application)"]],
     { titre: "Titre (ex. Église Chay) ou nom du réseau", texte: "Texte du bas de page, ou adresse du lien (https://…)", icone: true, icones: ICONES_RESEAUX }),
   pageSite("copyright", "Copyright", [["copyright", "Ligne de copyright"]], { texte: "Texte (ex. © Église Chay 2026)" }),
+  // Pages légales (1.3.41) : une fiche = une partie de la page (Titre + Texte), dans l'ordre choisi.
+  pageSite("mentions", "Mentions légales", TYPES_LEGAL, { titre: TITRE_LEGAL, texte: "Texte", aide: AIDE_LEGAL }),
+  pageSite("confidentialite", "Confidentialité", TYPES_LEGAL, { titre: TITRE_LEGAL, texte: "Texte", aide: AIDE_LEGAL }),
+  pageSite("cookies", "Cookies", [...TYPES_LEGAL, ["choix", "Partie « Votre choix » (la case Accepter / Refuser s'ajoute dessous)"]], { titre: TITRE_LEGAL, texte: "Texte", aide: AIDE_LEGAL }),
+  pageSite("suppression", "Supprimer mon compte", TYPES_LEGAL, { titre: TITRE_LEGAL, texte: "Texte", aide: AIDE_LEGAL }),
+  {
+    // Informations obligatoires (éditeur, siège, directrice de la publication…) : reprises dans les pages légales
+    // par {association}, {siege}, {directeur}… Une information vidée garde sa dernière valeur connue sur le site.
+    key: "SiteInfosLegales",
+    entity: "SiteBloc",
+    fixe: { page: "infos", type: "info" },
+    label: "Informations légales",
+    icon: Landmark,
+    sort: "order",
+    listColumns: ["titre", "texte"],
+    fields: [
+      { name: "reference", label: "Information", type: "select", required: true, options: INFOS_LEGALES },
+      { name: "titre", label: "Nom affiché dans cette liste", type: "text" },
+      { name: "texte", label: "Valeur", type: "text", required: true, help: "Obligatoire par la loi : ne laissez pas vide. Les pages légales la reprennent partout où est écrit {clé}, ex. {siege}." },
+    ],
+  },
 ];
 
 // Menu de l'Église : une fiche par page (Vision, But, Confession de foi).
