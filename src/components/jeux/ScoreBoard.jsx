@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Trophy } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { JEUX_ADULTES, JEUX_ENFANTS, PERIODES, rangTexte } from "@/lib/scoreBoard";
+import { JEUX_ADULTES, JEUX_ENFANTS, rangTexte } from "@/lib/scoreBoard";
+import { prochainLundi } from "@/lib/semaineJeux";
 
 // Score Board (1.3.22) : en haut de Chay Enfants (espace « enfant », par pseudo) et des Jeux (espace « adulte »).
-// Onglets Semaine / Mois / Toujours, classement général et par jeu, 5 premiers + sa propre place.
+// 1.4.1 : classement de la SEMAINE seulement (remis à zéro chaque lundi) ; général et par jeu, 5 premiers + sa place.
 const MEDAILLES = ["🥇", "🥈", "🥉"];
-
-/** « 1er décembre » : début du mois prochain, quand le classement du mois repart à zéro. */
-function prochainMois(maintenant = new Date()) {
-  const d = new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 1);
-  return `1er ${d.toLocaleDateString("fr-FR", { month: "long" })}`;
-}
 
 function Initiales({ nom }) {
   const t = String(nom || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
@@ -20,9 +15,7 @@ function Initiales({ nom }) {
 
 export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
   const jeux = espace === "enfant" ? JEUX_ENFANTS : JEUX_ADULTES;
-  // 1.3.28 : le classement du mois d'abord (il repart à zéro le 1er, annoncé en haut) ; « Toujours » garde
-  // tous les points, y compris ceux d'avant le Score Board.
-  const [periode, setPeriode] = useState("mois");
+  const periode = "semaine";
   const [jeu, setJeu] = useState("general");
   const [data, setData] = useState(null);
   const [erreur, setErreur] = useState(false);
@@ -40,7 +33,6 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
 
   const enfant = espace === "enfant";
   const unSeulJeu = jeux.length <= 2; // « Général » + un seul jeu : pas de choix de jeu
-  const nomPeriode = periode === "semaine" ? "cette semaine" : periode === "mois" ? "ce mois-ci" : "pour l'instant";
 
   return (
     <section className="rounded-[1.75rem] border border-border bg-card p-4 shadow-sm md:p-5" aria-label="Classement">
@@ -50,21 +42,8 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
         </span>
         <span className="min-w-0">
           <h2 className="font-display text-xl font-extrabold leading-tight">{titre || (enfant ? "Score Board" : "Classement")}</h2>
-          <p className="text-xs text-foreground/50">Remis à zéro le {prochainMois()}</p>
+          <p className="text-xs text-foreground/50">Classement de la semaine · remis à zéro {prochainLundi()}</p>
         </span>
-      </div>
-
-      <div className="mb-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
-        {PERIODES.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setPeriode(p.id)}
-            className={`rounded-full py-1.5 text-sm font-bold transition ${periode === p.id ? "bg-background shadow text-foreground" : "text-foreground/60"}`}
-          >
-            {p.label}
-          </button>
-        ))}
       </div>
 
       {!unSeulJeu && (
@@ -86,7 +65,7 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
         <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : data.top.length === 0 ? (
         <p className="py-8 text-center text-sm text-foreground/60">
-          {erreur ? "Classement indisponible pour le moment." : `Personne n'a encore marqué de points ${nomPeriode}. Sois le premier !`}
+          {erreur ? "Classement indisponible pour le moment." : "Personne n'a encore marqué de points cette semaine. Sois le premier !"}
         </p>
       ) : (
         <ol className="space-y-1.5">

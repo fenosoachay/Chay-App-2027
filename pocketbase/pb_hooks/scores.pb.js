@@ -46,7 +46,9 @@ routerAdd('POST', '/api/fn/classement', (e) => {
     const b = fn.readBody(e);
     const espace = b.espace === 'enfant' ? 'enfant' : 'adulte';
     const jeu = typeof b.jeu === 'string' && sc.JEUX[espace].indexOf(b.jeu) !== -1 ? b.jeu : 'general';
-    const periode = ['semaine', 'mois', 'toujours'].indexOf(b.periode) !== -1 ? b.periode : 'semaine';
+    // 1.4.1 : classement de la semaine seulement (remis à zéro chaque lundi 0 h, heure de Paris), même pour les
+    // anciennes versions de l'appli qui demandent encore « mois » ou « toujours ». Les points restent enregistrés.
+    const periode = 'semaine';
     const maintenant = Date.now();
     const debut = sc.debutPeriode(periode, maintenant, fz.offsetMinutes('Europe/Paris', maintenant) || 60);
 
