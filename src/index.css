@@ -561,12 +561,8 @@ html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1
 .chay-coeur-bord { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: visible; }
 .chay-coeur-bord rect { fill: none; stroke-width: 2.2; stroke-linecap: round; }
 .chay-coeur-fond { stroke: rgba(255, 255, 255, .08); }
-.chay-coeur-l1 { stroke: #FF52B4; stroke-dasharray: 16 84; animation: chay-coeur-course 5s linear infinite; filter: drop-shadow(0 0 4px #FF52B4); }
-.chay-coeur-l2 { stroke: #5B7CFF; stroke-dasharray: 16 84; stroke-dashoffset: -50; animation: chay-coeur-course-2 5s linear infinite; filter: drop-shadow(0 0 4px #5B7CFF); }
-@keyframes chay-coeur-course { to { stroke-dashoffset: -100; } }
-@keyframes chay-coeur-course-2 { from { stroke-dashoffset: -50; } to { stroke-dashoffset: -150; } }
+.chay-coeur-l1 { stroke: #FF52B4; filter: drop-shadow(0 0 4px #FF52B4); }
+.chay-coeur-l2 { stroke: #5B7CFF; filter: drop-shadow(0 0 4px #5B7CFF); }
+/* Novembre 2026 : tirets et mouvement calculés en pixels et lancés en JavaScript (CoupDeCoeurSection.jsx, BordAnime). */
 .chay-coeur-jouer { color: #fff; background: linear-gradient(135deg, #4A6CFE, #8A56E2 55%, #FF52B4); box-shadow: 0 8px 24px rgba(255, 82, 180, .35); }
 .chay-coeur-onde-lue { background: linear-gradient(180deg, #FF52B4, #8A56E2); }
-@media (prefers-reduced-motion: reduce) {
-  .chay-coeur-l1, .chay-coeur-l2 { animation: none; }
-}

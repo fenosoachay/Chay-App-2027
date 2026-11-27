@@ -4,30 +4,63 @@ import { base44 } from "@/api/base44Client";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { choisirCoupDeCoeur, minutes, onde, pisteDe, titreDuMois } from "@/lib/coupDeCoeur";
 
-// 1.4.1 : accueil › « Coup de cœur de ce mois », sous le verset du jour (version A, compacte).
+// 1.4.1 : accueil › « Coup de cœur de ce mois », avant l'Accès rapide (version A, compacte).
 // Lecture dans la carte : grand bouton, onde qui se remplit (toucher l'onde = avancer), temps écoulé / total.
+// Novembre 2026 : barres de l'onde fines (4 px au plus) et réparties sur toute la largeur, aussi sur tablette.
 // La musique passe par le lecteur global : elle continue en arrière-plan et dans la notification de lecture.
 // Bord animé : une ligne rose et une ligne bleue qui se courent après (CSS .chay-coeur-*, index.css).
 // Choix, durée, « C'est pour » : Admin › Application › Accueil › Coup de cœur (AdminCoupDeCoeur.jsx).
 
+// Novembre 2026 : animation calculée en pixels (périmètre réel du cadre) et lancée par l'API Web Animations :
+// plus de pathLength ni d'animation CSS sur le SVG, mal pris en charge par certaines WebView (tablettes Samsung).
+// Avec « Supprimer les animations » / économie d'énergie (prefers-reduced-motion), les lignes tournent plus lentement.
+const TOUR_MS = 5000;
+
+function perimetre(l, h, r) {
+  const rr = Math.max(0, Math.min(r, l / 2, h / 2));
+  return 2 * (l + h) - (8 - 2 * Math.PI) * rr;
+}
+
 function BordAnime() {
   const ref = useRef(null);
+  const l1 = useRef(null);
+  const l2 = useRef(null);
   const [taille, setTaille] = useState(null);
   useEffect(() => {
     const el = ref.current?.parentElement;
-    if (!el || typeof ResizeObserver === "undefined") return undefined;
-    const obs = new ResizeObserver(() => setTaille({ l: el.offsetWidth, h: el.offsetHeight }));
+    if (!el) return undefined;
+    const mesurer = () => setTaille((t) => (t && t.l === el.offsetWidth && t.h === el.offsetHeight ? t : { l: el.offsetWidth, h: el.offsetHeight }));
+    mesurer();
+    if (typeof window.ResizeObserver === "undefined") {
+      window.addEventListener("resize", mesurer);
+      return () => window.removeEventListener("resize", mesurer);
+    }
+    const obs = new window.ResizeObserver(mesurer);
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  const rect = taille && { x: 1.1, y: 1.1, width: Math.max(0, taille.l - 2.2), height: Math.max(0, taille.h - 2.2), rx: 23, pathLength: 100 };
+  const rect = taille && { x: 1.1, y: 1.1, width: Math.max(0, taille.l - 2.2), height: Math.max(0, taille.h - 2.2), rx: 23 };
+  const p = rect ? perimetre(rect.width, rect.height, rect.rx) : 0;
+  useEffect(() => {
+    if (!p) return undefined;
+    const lent = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const duree = lent ? TOUR_MS * 2 : TOUR_MS;
+    const anims = [[l1.current, 0], [l2.current, p / 2]].map(([el, depart]) => {
+      if (!el) return null;
+      el.style.strokeDasharray = `${(p * 0.16).toFixed(1)}px ${(p * 0.84).toFixed(1)}px`;
+      el.style.strokeDashoffset = `${-depart}px`;
+      if (typeof el.animate !== "function") return null;
+      return el.animate([{ strokeDashoffset: `${-depart}px` }, { strokeDashoffset: `${-depart - p}px` }], { duration: duree, iterations: Infinity, easing: "linear" });
+    });
+    return () => anims.forEach((a) => a?.cancel());
+  }, [p]);
   return (
     <svg ref={ref} aria-hidden="true" className="chay-coeur-bord" width={taille?.l || 0} height={taille?.h || 0}>
       {rect && (
         <>
           <rect {...rect} className="chay-coeur-fond" />
-          <rect {...rect} className="chay-coeur-l1" />
-          <rect {...rect} className="chay-coeur-l2" />
+          <rect ref={l1} {...rect} className="chay-coeur-l1" />
+          <rect ref={l2} {...rect} className="chay-coeur-l2" />
         </>
       )}
     </svg>
@@ -93,12 +126,12 @@ export default function CoupDeCoeurSection({ refreshKey = 0 }) {
             type="button"
             onClick={avancer}
             aria-label="Avancer dans le chant"
-            className="flex h-[2.375rem] w-full items-center gap-[2.5px]"
+            className="flex h-[2.375rem] w-full items-center justify-between gap-[2.5px]"
           >
             {barres.map((h, i) => (
               <i
                 key={i}
-                className={`min-w-[2px] flex-1 rounded-[2px] ${i / barres.length < progres ? "chay-coeur-onde-lue" : "bg-white/20"}`}
+                className={`min-w-[2px] max-w-[4px] flex-1 rounded-[2px] ${i / barres.length < progres ? "chay-coeur-onde-lue" : "bg-white/20"}`}
                 style={{ height: `${Math.round(h * 100)}%` }}
               />
             ))}
