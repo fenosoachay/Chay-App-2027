@@ -1,4 +1,5 @@
-import blueLogo from "../public/assets/egc-logo.png";
+// Novembre 2026 : logo plat (sans effet 3D) : bleu du logo en mode clair, blanc en mode sombre.
+import blueLogo from "../public/assets/egc-logo-plat.png";
 
 export default function BrandLogo({ className }) {
   return (
