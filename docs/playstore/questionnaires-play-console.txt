@@ -1,0 +1,96 @@
+RÉPONSES AUX QUESTIONNAIRES DE LA PLAY CONSOLE — Église Chay (io.chay.app)
+Play Console › Chay › « Contenu de l'application » (Règles et programmes › Contenu de l'appli)
+Préparé pour la version 1.4.1. À relire avant de valider : ces réponses décrivent l'appli telle qu'elle est.
+
+────────────────────────────────────────────────────────────
+1. RÈGLES DE CONFIDENTIALITÉ
+URL : https://chay.fr/confidentialite/
+→ À vérifier dans l'admin (Site chay.fr › Pages légales › Confidentialité) : la page doit dire que la position
+  est FACULTATIVE (ville seulement, arrondie à ~5 km), et mentionner les messages vocaux et les photos.
+
+────────────────────────────────────────────────────────────
+2. ACCÈS À L'APPLICATION
+« Tout ou partie de l'appli est soumis à des restrictions » → OUI
+Instructions pour les testeurs de Google :
+  Nom : Compte de démonstration
+  Identifiant : demo@chay.fr
+  Mot de passe : (celui du compte démo — à saisir UNIQUEMENT dans la Play Console, jamais ailleurs)
+  Texte : « La Bible et l'accueil sont accessibles sans compte. Pour la messagerie, la communauté et les
+  requêtes de prière, connectez-vous avec ce compte (menu › Se connecter). »
+
+────────────────────────────────────────────────────────────
+3. ANNONCES (publicité)
+« Votre appli contient-elle des annonces ? » → NON
+
+────────────────────────────────────────────────────────────
+4. CLASSIFICATION DU CONTENU (questionnaire IARC)
+Adresse e-mail : l'adresse de contact de l'association
+Catégorie : « Réseaux sociaux, communication » (l'appli permet aux membres d'échanger)
+  Violence → Non   · Peur / horreur → Non   · Sexualité / nudité → Non
+  Langage grossier → Non   · Drogues, alcool, tabac → Non   · Jeux d'argent → Non
+  Contenu choquant → Non
+  Les utilisateurs peuvent-ils interagir / échanger du contenu ? → OUI (messages, photos, publications)
+  L'appli partage-t-elle la position actuelle de l'utilisateur avec d'autres utilisateurs ? → NON
+    (seuls les administrateurs voient la ville, arrondie à ~5 km, sur une carte de statistiques)
+  Achats de biens numériques ? → NON
+Résultat attendu : PEGI 12 environ (à cause des échanges entre utilisateurs).
+
+────────────────────────────────────────────────────────────
+5. PUBLIC CIBLE ET CONTENU
+Tranches d'âge : 13-15 ans, 16-17 ans, 18 ans et plus  (PAS « moins de 13 ans »)
+« L'appli pourrait-elle attirer involontairement des enfants ? » → NON
+  Justification si demandée : « L'Espace enfants s'utilise sur le compte d'un parent, avec lui. Les enfants
+  n'ont pas de compte. L'appli s'adresse aux membres de l'église et à leurs familles. »
+
+────────────────────────────────────────────────────────────
+6. APPLI D'ACTUALITÉS → NON
+7. APPLI DE SUIVI DE CONTACTS / COVID → NON
+8. APPLI GOUVERNEMENTALE → NON
+9. FONCTIONNALITÉS FINANCIÈRES → « Mon appli ne propose aucune fonctionnalité financière »
+   (le bouton « Soutenir l'église » envoie seulement une intention de don à l'église ; aucun paiement dans l'appli)
+10. SANTÉ → aucune fonctionnalité de santé
+
+────────────────────────────────────────────────────────────
+11. SÉCURITÉ DES DONNÉES (Data safety)
+Collecte ou partage de données ? → OUI
+Toutes les données sont chiffrées en transit ? → OUI (HTTPS partout)
+Les utilisateurs peuvent demander la suppression de leurs données ? → OUI
+Données PARTAGÉES avec des tiers → AUCUNE
+  (Firebase/Google pour l'envoi des notifications et l'hébergeur sont des prestataires : ce n'est pas du « partage »)
+
+Données COLLECTÉES — pour chaque ligne : « Collectées », non partagées, traitement non éphémère,
+finalité « Fonctionnement de l'appli » (+ « Gestion du compte » quand indiqué) :
+  • Informations personnelles › Nom ............................. obligatoire  · Gestion du compte, Fonctionnement
+  • Informations personnelles › Adresse e-mail .................. obligatoire  · Gestion du compte, Communications
+  • Informations personnelles › ID utilisateur .................. obligatoire  · Gestion du compte
+  • Position › Position approximative ........................... FACULTATIVE · Statistiques (carte des membres)
+  • Messages › Autres messages dans l'appli ...................... facultatif  · Fonctionnement (messagerie)
+  • Photos et vidéos › Photos .................................... facultatif  · Fonctionnement (profil, messages, communauté)
+  • Fichiers audio › Enregistrements vocaux ou sonores ........... facultatif  · Fonctionnement (messages vocaux)
+  • Activité dans l'appli › Interactions avec l'appli ............ obligatoire  · Statistiques (temps passé, rubriques ouvertes)
+  • Activité dans l'appli › Autre contenu généré par l'utilisateur facultatif  · Fonctionnement (publications, requêtes de prière)
+  • Identifiants de l'appareil ou autres › ID de l'appareil ....... facultatif  · Fonctionnement (notifications)
+NON collectées : position précise, contacts, agenda, santé, finances, historique web, fichiers, identifiants publicitaires.
+
+────────────────────────────────────────────────────────────
+12. SUPPRESSION DU COMPTE
+Dans l'appli : Paramètres (roue dentée) › tout en bas › « Supprimer mon compte »
+URL web : https://chay.fr/supprimer-mon-compte/
+
+────────────────────────────────────────────────────────────
+13. AUTORISATIONS SENSIBLES À DÉCLARER
+• Service de premier plan « Lecture multimédia » (FOREGROUND_SERVICE_MEDIA_PLAYBACK) :
+  « Lecture de la musique, des prédications, de la Bible audio et des vidéos, lancée par l'utilisateur,
+  qui continue écran éteint ou appli en arrière-plan, avec les commandes dans la notification. »
+  → Google demande une courte VIDÉO (30 s) : lancer un chant, verrouiller l'écran, montrer la notification de lecture.
+• Position : approximative, facultative, au premier plan seulement.
+  (Avant le 27 janvier 2027 : si Google le demande, déclarer l'usage de ACCESS_FINE_LOCATION ou passer en
+  position approximative seule.)
+• Micro (RECORD_AUDIO) : messages vocaux, demandé seulement au premier enregistrement.
+• Permission « Installer des applis » : ABSENTE de la version Play (retirée).
+
+────────────────────────────────────────────────────────────
+14. FICHE DU STORE
+Textes et images : voir fiche-play-store.txt, icone-512.png, banniere-1024x500.png, capture-1 à 6.
+Catégorie : Style de vie   · Tags : Religion
+E-mail de contact : adresse de l'association   · Site : https://chay.fr
