@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { besoinPlaylists } from "@/lib/texteDefilant";
 import { dureeGroupe, groupesPour, tailleDansCase } from "@/lib/imagesDefilantes";
+import { IMAGE_ATTENTE } from "@/lib/attenteMedia";
 
 // Image qui défile (1.3.34) sur l'image du lecteur audio (Musique, Prédication, Bible en audio), réglée dans
 // Admin › Multimédia › Lecteur audio › Image qui défile. Chaque groupe (un seul format) s'anime à son tour :
@@ -103,6 +104,15 @@ function Fondu({ g, cote }) {
   ));
 }
 
+/** Image de fallback "chay chay chay" quand aucune image défilante n'est configurée. */
+function ImageFallback() {
+  return (
+    <div className="absolute inset-0 grid place-items-center bg-white dark:bg-black">
+      <img src={IMAGE_ATTENTE} alt="Chay" className="max-w-[80%] max-h-[80%] object-contain" />
+    </div>
+  );
+}
+
 function ImagesDefilantes({ piste }) {
   const [donnees, setDonnees] = useState(null);
   const [tour, setTour] = useState(0);
@@ -124,7 +134,12 @@ function ImagesDefilantes({ piste }) {
     const id = setTimeout(() => setTour((t) => t + 1), dureeGroupe(g) * 1000);
     return () => clearTimeout(id);
   }, [g, groupes.length]);
-  if (!groupes.length) return null;
+
+  // Pas de groupes configurés : afficher l'image de fallback "chay chay chay"
+  if (!groupes.length) {
+    return <ImageFallback />;
+  }
+
   return (
     <div ref={boite} className="absolute inset-0 overflow-hidden bg-white dark:bg-black" aria-hidden="true">
       <style>{CSS_IMAGES}</style>

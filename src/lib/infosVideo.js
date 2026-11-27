@@ -20,7 +20,11 @@ export function formatDuree(secondes) {
   const s = Number(secondes);
   if (!Number.isFinite(s) || s <= 0) return "";
   if (s < 60) return `${Math.round(s)}s`;
-  return `${Math.round(s / 60)}m`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  const mn = m % 60;
+  return `${h}h${String(mn).padStart(2, "0")}m`;
 }
 
 function charger() {

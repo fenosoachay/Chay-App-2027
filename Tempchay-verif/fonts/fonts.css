@@ -1,0 +1,29 @@
+/* Polices embarquées (latin + accents français) : l'application affiche ses
+   polices d'origine même sans connexion internet. Polices variables : un seul
+   fichier couvre toutes les graisses indiquées. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url(/fonts/QGYvz_MVcBeNP4NJtEtq.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2) format('woff2');
+}
+/* Gilroy : police de toute l'application (embarquée, fonctionne hors ligne). */
+@font-face { font-family: 'Gilroy'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/gilroy-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: italic; font-weight: 400; font-display: swap; src: url(/fonts/gilroy-400-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: normal; font-weight: 500 900; font-display: swap; src: url(/fonts/gilroy-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Gilroy'; font-style: italic; font-weight: 500 900; font-display: swap; src: url(/fonts/gilroy-700-italic.woff2) format('woff2'); }
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
+}

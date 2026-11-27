@@ -78,6 +78,102 @@ export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio: _onT
     );
   }
 
+  // Designs variés pour les cartes de catégorie
+  const designs = [
+    // Design 1: Dégradé classique avec icône (défaut)
+    {
+      name: "classic",
+      render: (c, Icon, isRadio, radioPlaying) => (
+        <span className={`relative aspect-square w-full rounded-[1.5rem] bg-gradient-to-br ${c.tone} grid place-items-center text-white shadow-sm group-hover:-translate-y-1 group-hover:shadow-xl transition-all duration-300`}>
+          <Icon className="h-9 w-9 md:h-10 md:w-10 drop-shadow-lg" />
+          {isRadio && radioPlaying && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
+            </span>
+          )}
+        </span>
+      )
+    },
+    // Design 2: Carte en verre (glassmorphism) avec bordure colorée
+    {
+      name: "glass",
+      render: (c, Icon, isRadio, radioPlaying) => (
+        <div className="relative aspect-square w-full rounded-[1.5rem] bg-white/10 dark:bg-black/20 backdrop-blur-xl border grid place-items-center text-white shadow-sm group-hover:-translate-y-1 group-hover:shadow-xl transition-all duration-300 overflow-hidden"
+             style={{ borderColor: c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2" }}>
+          <div className="absolute inset-0 bg-gradient-to-br" style={{ opacity: 0.15, background: c.tone }} />
+          <Icon className="relative h-9 w-9 md:h-10 md:w-10 drop-shadow-lg" />
+          {isRadio && radioPlaying && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
+            </span>
+          )}
+        </div>
+      )
+    },
+    // Design 3: Style néon avec lueur
+    {
+      name: "neon",
+      render: (c, Icon, isRadio, radioPlaying) => (
+        <span className={`relative aspect-square w-full rounded-[1.5rem] grid place-items-center text-white shadow-sm group-hover:-translate-y-1 group-hover:shadow-xl transition-all duration-300`}
+              style={{
+                background: c.tone,
+                boxShadow: `0 0 30px ${c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2"}`
+              }}>
+          <Icon className="h-9 w-9 md:h-10 md:w-10 filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+          {isRadio && radioPlaying && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
+            </span>
+          )}
+          <div className="absolute inset-0 rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: `inset 0 0 60px ${c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2"}` }} />
+        </span>
+      )
+    },
+    // Design 4: Style matériel avec profondeur
+    {
+      name: "material",
+      render: (c, Icon, isRadio, radioPlaying) => (
+        <div className="relative aspect-square w-full rounded-[1.5rem] grid place-items-center text-white shadow-lg group-hover:-translate-y-1 group-hover:shadow-2xl transition-all duration-300 transform-gpu"
+             style={{
+               background: c.tone,
+               boxShadow: `0 8px 32px -8px ${c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2"}`
+             }}>
+          <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-b from-white/20 to-transparent" />
+          <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-t from-black/20 to-transparent" />
+          <Icon className="relative h-9 w-9 md:h-10 md:w-10 drop-shadow-xl" />
+          {isRadio && radioPlaying && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
+            </span>
+          )}
+        </div>
+      )
+    },
+    // Design 5: Style minimaliste avec accent
+    {
+      name: "minimal",
+      render: (c, Icon, isRadio, radioPlaying) => (
+        <div className="relative aspect-square w-full rounded-[1.5rem] grid place-items-center text-white shadow-sm group-hover:-translate-y-1 group-hover:shadow-lg transition-all duration-300 overflow-hidden"
+             style={{ background: c.tone }}>
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(135deg, ${c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2"} 0%, transparent 50%)`,
+            opacity: 0.3
+          }} />
+          <div className="absolute bottom-0 left-0 right-0 h-2" style={{ background: `linear-gradient(90deg, transparent, ${c.tone.split(" ")[1] || c.tone.split("to-")[1]?.trim() || "#8A56E2"}, transparent)` }} />
+          <Icon className="relative h-9 w-9 md:h-10 md:w-10 drop-shadow-lg" />
+          {isRadio && radioPlaying && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
+            </span>
+          )}
+        </div>
+      )
+    }
+  ];
+
+  // Par défaut, utiliser le design "classic" (index 0)
+  const activeDesign = designs[0];
+
   return (
     <div>
     {isAdmin && (
@@ -96,16 +192,7 @@ export default function CategoryGrid({ onOpen, radioPlaying, onToggleRadio: _onT
             onClick={() => onOpen(c.id)}
             className="group flex flex-col items-center gap-2"
           >
-            <span
-              className={`relative aspect-square w-full rounded-[1.5rem] bg-gradient-to-br ${c.tone} grid place-items-center text-white shadow-sm group-hover:-translate-y-1 group-hover:shadow-lg transition-all`}
-            >
-              <Icon className="h-9 w-9 md:h-10 md:w-10" />
-              {isRadio && radioPlaying && (
-                <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur px-2 py-0.5 text-[0.6rem] font-bold uppercase">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> En direct
-                </span>
-              )}
-            </span>
+            {activeDesign.render(c, Icon, isRadio, radioPlaying)}
             {/* whitespace-nowrap : « Prédications » ne doit JAMAIS casser au
                 milieu du mot (le « s » seul sur une 2e ligne) — même avec une
                 grande taille de texte réglée dans l'app. */}

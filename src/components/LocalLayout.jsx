@@ -11,7 +11,12 @@ export default function LocalLayout() {
   const location = useLocation();
   const sombre = useSombre();
   const section = sectionDe(location.pathname, location.search);
-  const fondForce = fondPour(section, sombre)?.force;
+
+  // Pour multimédia : utiliser le design choisi par l'admin
+  const sectionKey = section === "multimedia"
+    ? (typeof window !== "undefined" ? localStorage.getItem("chay_multimedia_design") || "multimediaDesign1" : "multimediaDesign1")
+    : section;
+  const fondForce = fondPour(sectionKey, sombre)?.force;
   return <div className="min-h-screen bg-background text-foreground overflow-x-clip">
     <FondSection cle={section} sombre={sombre} />
     <header

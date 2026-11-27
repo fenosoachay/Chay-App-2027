@@ -36,6 +36,31 @@ export const FONDS = {
     nuit: "linear-gradient(180deg, #2a0612, #4a0f22 55%, #14030a)",
     jour: "linear-gradient(180deg, #fdf2f4, #f7e0e7 55%, #fbeef1)",
   },
+  multimediaDesign1: {
+    nom: "Scène Classique", decor: "scene",
+    nuit: "linear-gradient(180deg, #2a0612, #4a0f22 55%, #14030a)",
+    jour: "linear-gradient(180deg, #fdf2f4, #f7e0e7 55%, #fbeef1)",
+  },
+  multimediaDesign2: {
+    nom: "Vinyle Nuit", decor: "vinyle",
+    nuit: "radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 50%, #0f0f1a 100%)",
+    jour: "radial-gradient(ellipse at center, #f5f0e8 0%, #e8dcc8 50%, #d4c4a8 100%)",
+  },
+  multimediaDesign3: {
+    nom: "Aurore Sonore", decor: "aurore",
+    nuit: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
+    jour: "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 50%, #a8edea 100%)",
+  },
+  multimediaDesign4: {
+    nom: "Spectrum Électrique", decor: "spectrum",
+    nuit: "linear-gradient(90deg, #0d0d0d 0%, #1a0033 25%, #001a33 50%, #00331a 75%, #0d0d0d 100%)",
+    jour: "linear-gradient(90deg, #f0f0f0 0%, #ffe0f0 25%, #e0f0ff 50%, #e0ffe0 75%, #f0f0f0 100%)",
+  },
+  multimediaDesign5: {
+    nom: "Papier Vinyle", decor: "papier",
+    nuit: "linear-gradient(180deg, #141414 0%, #1e1e1e 50%, #2a1a2a 100%)",
+    jour: "linear-gradient(180deg, #faf8f5 0%, #f0ebe0 50%, #e8dfd0 100%)",
+  },
   jeux: {
     nom: "Eaux profondes", decor: "eaux", nuitToujours: true,
     nuit: "radial-gradient(60% 40% at 50% 0%, rgba(96,214,255,0.25), transparent), linear-gradient(180deg, #0b3a5c, #072540 45%, #03101f)",

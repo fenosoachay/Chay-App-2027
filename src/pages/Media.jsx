@@ -11,9 +11,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
 import { hasNavigationOrigin } from "@/lib/backNavigation";
 import { buildFavoriteAudioQueue } from "@/lib/favoriteAudioQueue";
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette } from "lucide-react";
 import { loadYoutubeListWithCache } from "@/lib/youtubeListCache";
 import { lireMemoireMedia, ecrireMemoireMedia } from "@/lib/mediaMemoire";
+import { fondPour } from "@/lib/fondsSections";
 
 export default function Media() {
   const { toast } = useToast();
@@ -205,6 +206,28 @@ export default function Media() {
   const isPinned = (id, sourcePlaylistId) =>
     playlist.some((p) => p.track_id === id && p.source_playlist_id === sourcePlaylistId);
 
+  // Designs multimédia disponibles pour l'admin
+  const DESIGNS_MULTIMEDIA = [
+    { id: "multimediaDesign1", nom: "Scène Classique" },
+    { id: "multimediaDesign2", nom: "Vinyle Nuit" },
+    { id: "multimediaDesign3", nom: "Aurore Sonore" },
+    { id: "multimediaDesign4", nom: "Spectrum Électrique" },
+    { id: "multimediaDesign5", nom: "Papier Vinyle" },
+  ];
+
+  const [designMultimedia, setDesignMultimedia] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("chay_multimedia_design") || "multimediaDesign1";
+    }
+    return "multimediaDesign1";
+  });
+
+  const changerDesignMultimedia = (designId) => {
+    setDesignMultimedia(designId);
+    localStorage.setItem("chay_multimedia_design", designId);
+    toast({ title: `Design "${DESIGNS_MULTIMEDIA.find(d => d.id === designId)?.nom}" appliqué` });
+  };
+
   const reorderFavoriteItems = async (_groupId, nextItems) => {
     const orders = new Map(nextItems.map((item, index) => [item.id, index]));
     const updates = nextItems.map((item) => ({
@@ -306,6 +329,23 @@ export default function Media() {
             <p className="mt-3 text-base md:text-lg text-foreground/60">
               Musique, prédications, films, articles et plus encore.
             </p>
+          </div>
+        )}
+        {!activeCat && user?.role === "admin" && (
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-foreground/70">
+              <Palette className="h-4 w-4" />
+              Design :
+              <select
+                value={designMultimedia}
+                onChange={(e) => changerDesignMultimedia(e.target.value)}
+                className="ml-2 rounded-lg border border-border bg-background px-2 py-1 text-sm font-medium outline-none focus:border-primary"
+              >
+                {DESIGNS_MULTIMEDIA.map((d) => (
+                  <option key={d.id} value={d.id}>{d.nom}</option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
       </header>

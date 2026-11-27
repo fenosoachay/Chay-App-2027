@@ -1,0 +1,1 @@
+var e=null;function t(t){return e=t,()=>{e===t&&(e=null)}}function n(t){let n=typeof t==`string`?{message:t}:t;return new Promise(t=>{if(!e){t(!1);return}e({...n,resolve:t})})}export{t as n,n as t};

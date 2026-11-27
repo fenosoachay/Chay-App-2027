@@ -53,10 +53,12 @@ fichiers-telecharges.csv
 migration-fichiers-rapport.md
 adresses-r2-rapport.md
 
-# Fichiers audio Sagesse (envoy�s sur R2, pas dans git)
+# Fichiers audio Sagesse (envoyés sur R2, pas dans git)
 /Proverbes/
 /Psaumes/
-
 /Ecclesiaste/
-
 /Hébreux/
+
+# Dossiers de build/verification temporaires
+Tempchay-verif/
+dist/

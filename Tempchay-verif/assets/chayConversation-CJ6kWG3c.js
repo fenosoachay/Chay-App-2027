@@ -1,0 +1,1 @@
+import{r as e,t}from"./dist-DeJOOMcQ.js";var n=e(`ChayConversation`);function r(){try{return t.isNativePlatform()}catch{return!1}}export{r as n,n as t};

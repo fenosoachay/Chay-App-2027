@@ -25,11 +25,12 @@ const commentKey = (id) => `gallery:${id}`;
 // Options (Fond d'écran) : `sansCommentaires` retire les commentaires, `sansGestion` les boutons Modifier/Supprimer
 // de la Galerie, `actionsHaut(photo)` ajoute des boutons en haut à droite (ex. Télécharger), pour la photo affichée.
 // Transition entre deux photos (1.3.43). « Réduire les animations » : framer-motion la remplace par un fondu.
+// Amélioration : fondu plus visible et plus long, avec un effet de glissement plus marqué.
 const RESSORT = { type: "spring", stiffness: 260, damping: 32, mass: 0.9 };
 const TRANSITION_PHOTO = {
-  entree: (s) => ({ x: `${s * 38}%`, opacity: 0, scale: 0.94 }),
-  centre: { x: 0, opacity: 1, scale: 1, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.28 } } },
-  sortie: (s) => ({ x: `${s * -38}%`, opacity: 0, scale: 0.94, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.22 } } }),
+  entree: (s) => ({ x: `${s * 45}%`, opacity: 0, scale: 0.92 }),
+  centre: { x: 0, opacity: 1, scale: 1, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.4, ease: "easeOut" } } },
+  sortie: (s) => ({ x: `${s * -45}%`, opacity: 0, scale: 0.92, transition: { x: RESSORT, scale: RESSORT, opacity: { duration: 0.3, ease: "easeIn" } } }),
 };
 
 export default function GalleryViewer({ items = [], index, onClose, onItemUpdated, onItemDeleted, sansCommentaires = false, sansGestion = false, actionsHaut = null }) {

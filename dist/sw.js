@@ -5,14 +5,25 @@
    Le service worker ne peut pas importer de modules : le mapping de routes
    ci-dessous complète (et doit rester aligné avec) la navigation de l'app. */
 
+// Mêmes règles que src/lib/routesNotification.js (routeValide / routeCible) : écran précis du contenu.
 function routeFor(data) {
-  if (data.target_type === "message" && data.target_id) {
-    return "/messages?c=" + encodeURIComponent(data.target_id);
+  var r = data.route;
+  if (typeof r === "string" && r.length <= 200 && /^\/[A-Za-z0-9\-._~/?=&%]*$/.test(r) && r.indexOf("//") !== 0) return r;
+  var id = data.target_id ? encodeURIComponent(data.target_id) : "";
+  switch (data.target_type) {
+    case "message": return id ? "/messages?c=" + id : "/messages";
+    case "community": return "/community";
+    case "daily_verse": return id ? "/?verset=" + id : "/";
+    case "announcement": return id ? "/?annonce=" + id : "/";
+    case "theme_request":
+    case "theme_answer": return "/requests?tab=theme";
+    case "prayer": return "/requests?tab=my-prayers";
+    // Nouvelle version de l'app : « À propos » (bouton de téléchargement). Indispensable pour les push renvoyés
+    // par la file de reprise, qui ne gardent pas `route` (avant la 1.3.9 : accueil seulement).
+    case "app_update": return "/?apropos=1";
+    case "content": return "/media";
+    default: return "/";
   }
-  if (data.target_type === "content") return "/media";
-  if (data.target_type === "community") return "/community";
-  // daily_verse, annonce, défaut → accueil
-  return "/";
 }
 
 self.addEventListener("push", (event) => {

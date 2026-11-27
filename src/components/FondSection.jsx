@@ -182,6 +182,91 @@ function Decor({ decor, nuit }) {
           <Montee n={14} graine={111} duree={[10, 18]} rendu={(t) => <span className="block rounded-full" style={{ width: 2 + t * 2, height: 2 + t * 2, background: "#FFC76A", boxShadow: "0 0 6px rgba(255,170,60,0.7)" }} />} />
         </>
       );
+    case "vinyle":
+      return (
+        <>
+          {/* Disque vinyle central qui tourne lentement */}
+          <div className="fs-a absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-4" style={{
+            width: "min(80vw, 80vh)",
+            height: "min(80vw, 80vh)",
+            borderColor: nuit ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+            animation: "fs-rotation 60s linear infinite"
+          }}>
+            <div className="absolute inset-4 rounded-full" style={{
+              background: nuit ? "radial-gradient(circle at 30% 30%, #2a2a3e 0%, #1a1a2e 100%)" : "radial-gradient(circle at 30% 30%, #e8dcc8 0%, #d4c4a8 100%)",
+              border: `2px solid ${nuit ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}`
+            }} />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{
+              width: "12%", height: "12%",
+              background: nuit ? "#1a1a2e" : "#f5f0e8",
+              boxShadow: nuit ? "inset 0 2px 4px rgba(0,0,0,0.3)" : "inset 0 2px 4px rgba(255,255,255,0.5)"
+            }} />
+          </div>
+          <style>{`
+            @keyframes fs-rotation { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+          `}</style>
+          <Montee n={18} graine={121} duree={[24, 40]} rendu={(t) => (
+            <span className="block rounded-full" style={{
+              width: 3 + t * 5, height: 3 + t * 5,
+              background: nuit ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)",
+              boxShadow: `0 0 ${4 + t * 8}px ${nuit ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"}`
+            }} />
+          )} />
+        </>
+      );
+    case "spectrum":
+      return (
+        <>
+          {/* Barres de spectrum qui bougent */}
+          <div className="absolute bottom-0 left-0 right-0 h-[60vh] flex items-end justify-center gap-1 px-4" style={{ opacity: 0.6 }}>
+            {[...Array(24)].map((_, i) => (
+              <div key={i} className="fs-a rounded-t" style={{
+                width: "2.5%",
+                height: `${15 + Math.sin(i * 0.8) * 10}%`,
+                background: nuit ? "linear-gradient(to top, #ff0066, #ffcc00, #00ffcc)" : "linear-gradient(to top, #cc0044, #cc9900, #009988)",
+                animation: `fs-spectrum-bar ${1.5 + i * 0.1}s ease-in-out ${i * 0.1}s infinite alternate`
+              }} />
+            ))}
+          </div>
+          <style>{`
+            @keyframes fs-spectrum-bar {
+              0% { transform: scaleY(0.3); opacity: 0.4; }
+              50% { transform: scaleY(1); opacity: 0.8; }
+              100% { transform: scaleY(0.5); opacity: 0.5; }
+            }
+          `}</style>
+        </>
+      );
+    case "papier":
+      return (
+        <>
+          {/* Texture papier vieilli avec lignes subtiles */}
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='${nuit ? 0.03 : 0.05}'/%3E%3C/svg%3E")`,
+            backgroundSize: "400px 400px"
+          }} />
+          {/* Lignes de partition subtiles */}
+          <div className="absolute inset-0 flex flex-col justify-between px-8 py-12" style={{ opacity: nuit ? 0.04 : 0.06 }}>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4" style={{ height: "18%" }}>
+                {[...Array(8)].map((_, j) => (
+                  <div key={j} className="fs-a h-0.5 rounded" style={{
+                    flex: 1,
+                    background: nuit ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+                    animation: `fs-papier-ligne ${20 + i * 3 + j * 2}s ease-in-out ${i * 2 + j}s infinite alternate`
+                  }} />
+                ))}
+              </div>
+            ))}
+          </div>
+          <style>{`
+            @keyframes fs-papier-ligne {
+              0% { transform: scaleX(0.95); opacity: 0.5; }
+              100% { transform: scaleX(1.02); opacity: 0.8; }
+            }
+          `}</style>
+        </>
+      );
     case "graphite":
       return (
         <>

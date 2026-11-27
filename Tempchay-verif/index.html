@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/favicon-light.png" />
+    <link rel="icon" type="image/png" href="/assets/favicon-light.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" href="/assets/favicon-dark.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/branding/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#FDFBF7" media="(prefers-color-scheme: light)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CHAY" />
+    <meta name="description" content="ÉGLISE CHAY — Communauté chrétienne : Bible, multimédia, radio, jeux, espace enfants et dons." />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <title>ÉGLISE CHAY</title>
+    <script>
+      // Anti-flash : applique le thème AVANT le premier rendu React.
+      //
+      // Règle : la préférence enregistrée ("chay-theme") est prioritaire ;
+      // sans préférence (nouvelle installation), le mode SOMBRE est le défaut.
+      // Ce script est en LECTURE SEULE — il n'écrase jamais la préférence.
+      (function () {
+        var KEY = "chay-theme"; // doit rester synchronisé avec src/lib/theme.js
+        var theme = null;
+        try {
+          theme = localStorage.getItem(KEY);
+        } catch (e) {}
+        if (theme !== "light" && theme !== "dark" && theme !== "auto") {
+          theme = "dark"; // aucune préférence / valeur invalide => défaut sombre
+        }
+        var dark =
+          theme === "dark" ||
+          (theme === "auto" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+      // Taille de police réglée sur cet appareil (src/lib/taillePolice.js), avant le premier rendu.
+      (function () {
+        try {
+          var t = Number(localStorage.getItem("chay-taille-police"));
+          if ([125, 150, 175, 200].indexOf(t) === -1) return;
+          var h = document.documentElement;
+          h.style.fontSize = t + "%";
+          h.setAttribute("data-police", String(t));
+          if (t >= 150) h.setAttribute("data-police-grande", "");
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DSsPJkEx.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-B0Z9INg1.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-B46OzTvo.css">
+  </head>
+  <body class="bg-black">
+    <!-- Fond de démarrage : même dégradé que le lancement natif Android et l'animation de départ,
+         affiché avant le chargement du code (sinon : écran noir entre les deux). Retiré par l'app. -->
+    <div id="chay-boot-splash" aria-hidden="true" style="position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg, #4A6CFE 0%, #8A56E2 50%, #FF57B2 100%)"></div>
+    <script>
+      // Animation déjà vue dans cette session (rechargement) : pas de fond de démarrage.
+      try { if (sessionStorage.getItem("chay_splash_shown") === "1") document.getElementById("chay-boot-splash").remove(); } catch (e) { /* ignore */ }
+    </script>
+    <div id="root"></div>
+  </body>
+</html>

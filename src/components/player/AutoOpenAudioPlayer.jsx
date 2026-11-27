@@ -34,8 +34,8 @@ export default function AutoOpenAudioPlayer() {
     }
     if (lastKeyRef.current !== trackKey) {
       lastKeyRef.current = trackKey;
-      // Musique lancée depuis une parole (petit lecteur discret) : pas de plein écran, seulement la notification.
-      if (!currentTrack.discret) setOpen(true);
+      // Ouvrir TOUJOURS le lecteur plein écran quand la musique démarre
+      setOpen(true);
     }
   }, [isAudio, trackKey, currentTrack]);
 

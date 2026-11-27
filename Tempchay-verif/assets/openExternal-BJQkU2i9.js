@@ -1,0 +1,1 @@
+import{r as e,t}from"./dist-DeJOOMcQ.js";var n=e(`AndroidExternalLink`);async function r(e){if(t.getPlatform()===`android`){await n.open({url:e});return}window.open(e,t.isNativePlatform()?`_system`:`_blank`,`noopener,noreferrer`)}export{r as t};

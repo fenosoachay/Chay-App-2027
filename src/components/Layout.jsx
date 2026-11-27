@@ -143,7 +143,12 @@ export default function Layout() {
   // (Sagesse en audio, Dictionnaire, Concordance, Jeux) restent de nuit même en mode clair.
   const sombre = useSombre();
   const section = sectionDe(location.pathname, location.search);
-  const fondForce = fondPour(section, sombre)?.force;
+
+  // Pour multimédia : utiliser le design choisi par l'admin
+  const sectionKey = section === "multimedia"
+    ? (typeof window !== "undefined" ? localStorage.getItem("chay_multimedia_design") || "multimediaDesign1" : "multimediaDesign1")
+    : section;
+  const fondForce = fondPour(sectionKey, sombre)?.force;
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip">

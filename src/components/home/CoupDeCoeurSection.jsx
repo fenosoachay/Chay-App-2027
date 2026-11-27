@@ -39,7 +39,16 @@ function BordAnime() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  const rect = taille && { x: 1.1, y: 1.1, width: Math.max(0, taille.l - 2.2), height: Math.max(0, taille.h - 2.2), rx: 23 };
+  // Calcul du rectangle intérieur avec marge pour le trait de 2.2px d'épaisseur
+  // et coins arrondis rx:23. On soustrait la moitié de l'épaisseur du trait des deux côtés.
+  const marge = 2.2 / 2; // 1.1px de chaque côté
+  const rect = taille && {
+    x: marge,
+    y: marge,
+    width: Math.max(0, taille.l - 2.2 * 2),
+    height: Math.max(0, taille.h - 2.2 * 2),
+    rx: 23 - marge // Ajuster le rayon pour compenser le trait d'épaisseur
+  };
   const p = rect ? perimetre(rect.width, rect.height, rect.rx) : 0;
   useEffect(() => {
     if (!p) return undefined;
@@ -58,9 +67,9 @@ function BordAnime() {
     <svg ref={ref} aria-hidden="true" className="chay-coeur-bord" width={taille?.l || 0} height={taille?.h || 0}>
       {rect && (
         <>
-          <rect {...rect} className="chay-coeur-fond" />
-          <rect ref={l1} {...rect} className="chay-coeur-l1" />
-          <rect ref={l2} {...rect} className="chay-coeur-l2" />
+          <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={rect.rx} className="chay-coeur-fond" />
+          <rect ref={l1} x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={rect.rx} className="chay-coeur-l1" />
+          <rect ref={l2} x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={rect.rx} className="chay-coeur-l2" />
         </>
       )}
     </svg>

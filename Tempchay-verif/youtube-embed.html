@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Lecteur YouTube de l'APK Église Chay : page relais servie par https://membres.chay.fr (vrai domaine,
+       référent valide pour YouTube), affichée dans l'iframe de l'application. Voir docs/YOUTUBE-APK.md. -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex">
+  <title>Lecteur vidéo Église Chay</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    #lecteur, iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    #message { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+      padding: 16px; color: #fff; font: 14px/1.4 system-ui, sans-serif; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="lecteur"></div>
+  <div id="message" role="status"></div>
+  <script src="/youtube-embed.js"></script>
+</body>
+</html>

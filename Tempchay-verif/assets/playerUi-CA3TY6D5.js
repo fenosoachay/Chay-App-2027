@@ -1,0 +1,1 @@
+import{t as e}from"./createLucideIcon-BZjmXHhX.js";var t=e(`Square`,[[`rect`,{width:`18`,height:`18`,x:`3`,y:`3`,rx:`2`,key:`afitv7`}]]),n=`chay-open-audio-player`;function r(){window.dispatchEvent(new CustomEvent(n))}export{r as n,t as r,n as t};
