@@ -15,7 +15,7 @@ import { PREFIXE_ATTENTION } from "@/lib/notificationAttention";
 // d'affichage (1 jour… 1 mois, autre, toujours), afficher / retirer à la main, cloche « Chay attire ton attention ».
 // À la publication, la notification part automatiquement (comme pour tous les contenus).
 
-const VIDE = { source: "musique", track_id: "", title: "", artist: "", audio_url: "", cover_url: "", mot: "", audience: "tous", duree_jours: 30, autre: "", actif: true };
+const VIDE = { source: "musique", track_id: "", title: "", artist: "", audio_url: "", mot: "", audience: "tous", duree_jours: 30, autre: "", actif: true };
 const cls = "w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 const Etiquette = ({ children }) => <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted-foreground">{children}</label>;
 
@@ -47,7 +47,6 @@ export default function AdminCoupDeCoeur() {
         title: m.title || f.title,
         artist: m.artist || "",
         audio_url: m.audio_url || "",
-        cover_url: m.cover_url || f.cover_url,
         audience: m.audience || "tous",
       }));
     } catch {
@@ -65,7 +64,6 @@ export default function AdminCoupDeCoeur() {
       title: c.title || "",
       artist: c.artist || "",
       audio_url: c.audio_url || "",
-      cover_url: c.cover_url || "",
       mot: c.mot || "",
       audience: c.audience || "tous",
       duree_jours: connue ? Number(c.duree_jours || 0) : "autre",
@@ -100,7 +98,7 @@ export default function AdminCoupDeCoeur() {
       title: form.title.trim(),
       artist: form.artist.trim(),
       audio_url: form.audio_url,
-      cover_url: form.cover_url || "",
+      cover_url: "", // novembre 2026 : plus de pochette (une ancienne est effacée à l'enregistrement)
       mot: form.mot.trim().slice(0, 300),
       track_id: form.source === "musique" ? form.track_id : "",
       audience: form.audience || "tous",
@@ -188,15 +186,6 @@ export default function AdminCoupDeCoeur() {
           <input value={form.artist} onChange={(e) => maj("artist", e.target.value)} className={cls} placeholder="Chorale Chay…" />
         </div>
         <div>
-          <Etiquette>Pochette</Etiquette>
-          <FieldInput
-            field={{ name: "cover_url", label: "Pochette", type: "file", accept: "image/*" }}
-            value={form.cover_url}
-            onChange={(v) => maj("cover_url", v || "")}
-            onUploadingChange={setEnvoi}
-          />
-        </div>
-        <div>
           <Etiquette>Petit mot (facultatif)</Etiquette>
           <textarea value={form.mot} maxLength={300} rows={2} onChange={(e) => maj("mot", e.target.value)} className={cls} placeholder="Un chant qui nous a portés tout ce mois." />
         </div>
@@ -241,7 +230,7 @@ export default function AdminCoupDeCoeur() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-foreground/60">Le chant mis en avant sur l'accueil, sous le verset du jour.</p>
+        <p className="text-sm text-foreground/60">Le chant mis en avant sur l'accueil, juste avant l'Accès rapide.</p>
         <Button onClick={() => ouvrir(null)} className="shrink-0 rounded-full"><Plus className="mr-1.5 h-4 w-4" /> Nouveau</Button>
       </div>
       {!liste ? (
@@ -252,11 +241,7 @@ export default function AdminCoupDeCoeur() {
         const etat = etatAdmin(c);
         return (
           <article key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3">
-            {c.cover_url ? (
-              <img src={c.cover_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-            ) : (
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl brand-gradient"><Music className="h-5 w-5 text-white" /></div>
-            )}
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl brand-gradient"><Music className="h-5 w-5 text-white" /></div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{c.title}</p>
               <p className="truncate text-xs text-foreground/55">{[c.artist, libelleAudience(c.audience)].filter(Boolean).join(" · ")}</p>

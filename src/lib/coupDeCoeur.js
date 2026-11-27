@@ -92,7 +92,7 @@ export function pisteDe(c) {
     title: c.title,
     artist: c.artist,
     audio_url: c.audio_url,
-    cover_url: c.cover_url,
+    cover_url: "", // novembre 2026 : plus de pochette
     mediaType: "music",
     discret: true, // lecture depuis la carte : pas de plein écran, la carte affiche l'avancement
     route: "/",

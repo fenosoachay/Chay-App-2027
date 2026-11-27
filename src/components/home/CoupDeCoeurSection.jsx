@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Music, Pause, Play } from "lucide-react";
+import { Heart, Pause, Play } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAudioPlayer } from "@/lib/AudioPlayerContext";
 import { choisirCoupDeCoeur, minutes, onde, pisteDe, titreDuMois } from "@/lib/coupDeCoeur";
@@ -72,14 +72,8 @@ export default function CoupDeCoeurSection({ refreshKey = 0 }) {
       <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FF52B4]/15 px-3 py-1 text-[0.6875rem] font-extrabold uppercase tracking-wide text-[#FF8FCB]">
         <Heart className="h-3.5 w-3.5" fill="currentColor" /> {titreDuMois()}
       </span>
-      <div className="mt-3.5 flex items-center gap-3.5">
-        {coeur.cover_url ? (
-          <img src={coeur.cover_url} alt="" className="h-[5.75rem] w-[5.75rem] shrink-0 rounded-[1.1rem] object-cover shadow-xl" />
-        ) : (
-          <div className="grid h-[5.75rem] w-[5.75rem] shrink-0 place-items-center rounded-[1.1rem] brand-gradient shadow-xl">
-            <Music className="h-9 w-9 text-white/90" />
-          </div>
-        )}
+      {/* Novembre 2026 : plus de pochette (supprimée définitivement) : le titre et l'artiste seuls. */}
+      <div className="mt-3.5">
         <div className="min-w-0">
           <p className="font-display text-[1.1875rem] font-extrabold leading-tight line-clamp-2">{coeur.title}</p>
           {coeur.artist && <p className="mt-1 truncate text-[0.8125rem] text-white/65">{coeur.artist}</p>}
