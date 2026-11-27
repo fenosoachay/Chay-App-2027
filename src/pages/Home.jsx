@@ -8,6 +8,7 @@ import LocalBibleAccess from "@/components/home/LocalBibleAccess";
 import AuthButtons from "@/components/home/AuthButtons";
 import ProchaineReunionSection from "@/components/home/ProchaineReunionSection";
 import VersetDuJourSection from "@/components/home/VersetDuJourSection";
+import CoupDeCoeurSection from "@/components/home/CoupDeCoeurSection";
 import HomeSocialLinks from "@/components/home/HomeSocialLinks";
 import RequestsSection from "@/components/home/RequestsSection";
 import CibleNotificationAccueil from "@/components/home/CibleNotificationAccueil";
@@ -45,6 +46,13 @@ export default function Home() {
           {!isLocalMode && isAuthenticated && (
             <div className="animate-float-in mt-6" style={{ animationDelay: "0.12s" }}>
               <VersetDuJourSection refreshKey={refreshKey} />
+            </div>
+          )}
+
+          {/* 2 bis. Coup de cœur de ce mois (1.4.1) : sous le verset du jour, s'il y en a un d'affiché. */}
+          {!isLocalMode && isAuthenticated && (
+            <div className="animate-float-in" style={{ animationDelay: "0.14s" }}>
+              <CoupDeCoeurSection refreshKey={refreshKey} />
             </div>
           )}
 

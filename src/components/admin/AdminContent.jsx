@@ -12,6 +12,7 @@ import AdminMissions from "@/components/admin/AdminMissions";
 import AnnoncerVersion from "@/components/admin/AnnoncerVersion";
 import SiteVisites from "@/components/admin/SiteVisites";
 import MessagesSite from "@/components/admin/MessagesSite";
+import AdminCoupDeCoeur from "@/components/admin/AdminCoupDeCoeur";
 import AdminPetiteHistoire from "@/components/admin/AdminPetiteHistoire";
 import AdminRequetes from "@/components/admin/AdminRequetes";
 import QuestionLogiqueSection from "@/components/home/QuestionLogiqueSection";
@@ -56,7 +57,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
   if (active === "jeux_carte") return <AdminJeuxCarte />;
   if (active === "app_update") return <AnnoncerVersion />;
   if (active === "site_visites") return <SiteVisites />;
-  if (active === "petite_histoire" || active === "requetes" || active === "question_logique") {
+  if (active === "petite_histoire" || active === "requetes" || active === "question_logique" || active === "coup_de_coeur") {
     const { item } = findNav(active);
     const Icon = item.icon;
     return (
@@ -66,6 +67,7 @@ export default function AdminContent({ active, onNavigate, onDonationsChange }) 
           <h2 className="font-display font-extrabold text-xl">{item.label}</h2>
         </div>
         {active === "petite_histoire" && <AdminPetiteHistoire />}
+        {active === "coup_de_coeur" && <AdminCoupDeCoeur />}
         {active === "requetes" && <AdminRequetes />}
         {active === "question_logique" && (
           <>

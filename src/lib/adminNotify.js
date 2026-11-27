@@ -93,6 +93,13 @@ export async function notifyAdminUpload({
       contentType = "autre";
       resourceType = "Verset";
       break;
+    case "coup_de_coeur":
+      // 1.4.1 : accueil › Coup de cœur de ce mois.
+      message = `Coup de cœur du mois : « ${title} »${artist ? ` de ${artist}` : ""}. Écoutez-le sur l'accueil.`;
+      linkPath = "/";
+      contentType = "audio";
+      resourceType = "CoupDeCoeur";
+      break;
     case "gallery":
       message = `Une photo a été postée. Visionnez.`;
       linkPath = `/media?cat=gallery`;

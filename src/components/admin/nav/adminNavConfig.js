@@ -26,6 +26,7 @@ export const ADMIN_NAV = [
             id: "app_accueil", label: "Accueil", icon: Home,
             items: [
               { key: "Devotional", mots: "verset du jour devotion meditation", label: "Verset du jour", icon: Sun, path: "/admin/devotionals" },
+              { key: "coup_de_coeur", mots: "coup de coeur mois chant musique", label: "Coup de cœur", icon: Heart, path: "/admin/coup-de-coeur" },
               { key: "Announcement", mots: "reunion annonce evenement", label: "Prochaine réunion", icon: Megaphone, path: "/admin/announcements" },
               { key: "requetes", mots: "requete priere sujet", label: "Requêtes", icon: HandHeart, path: "/admin/requetes" },
               { key: "question_logique", mots: "question logique enigme", label: "Question logique", icon: Lightbulb, path: "/admin/question-logique" },

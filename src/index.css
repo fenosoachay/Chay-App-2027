@@ -554,3 +554,19 @@ html[data-police-grande] .flex:not(.flex-col):not([data-barre-icones]) > .flex-1
 @media (prefers-reduced-motion: reduce) {
   .chay-tuile, .chay-tuile .chay-tuile-img { opacity: 1; transform: none; transition: none; }
 }
+
+/* 1.4.1 : accueil › Coup de cœur de ce mois (CoupDeCoeurSection.jsx) : fond nuit, bord animé (une ligne rose
+   et une ligne bleue qui se courent après autour de la carte), bouton Lecture et onde aux couleurs de l'appli. */
+.chay-coeur { background: linear-gradient(160deg, rgba(30, 22, 64, .94), rgba(14, 12, 34, .96)); }
+.chay-coeur-bord { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: visible; }
+.chay-coeur-bord rect { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.chay-coeur-fond { stroke: rgba(255, 255, 255, .08); }
+.chay-coeur-l1 { stroke: #FF52B4; stroke-dasharray: 16 84; animation: chay-coeur-course 5s linear infinite; filter: drop-shadow(0 0 4px #FF52B4); }
+.chay-coeur-l2 { stroke: #5B7CFF; stroke-dasharray: 16 84; stroke-dashoffset: -50; animation: chay-coeur-course-2 5s linear infinite; filter: drop-shadow(0 0 4px #5B7CFF); }
+@keyframes chay-coeur-course { to { stroke-dashoffset: -100; } }
+@keyframes chay-coeur-course-2 { from { stroke-dashoffset: -50; } to { stroke-dashoffset: -150; } }
+.chay-coeur-jouer { color: #fff; background: linear-gradient(135deg, #4A6CFE, #8A56E2 55%, #FF52B4); box-shadow: 0 8px 24px rgba(255, 82, 180, .35); }
+.chay-coeur-onde-lue { background: linear-gradient(180deg, #FF52B4, #8A56E2); }
+@media (prefers-reduced-motion: reduce) {
+  .chay-coeur-l1, .chay-coeur-l2 { animation: none; }
+}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import AffichesFilms from "@/components/media/AffichesFilms";
 import PlaylistCover from "@/components/media/PlaylistCover";
+import ClassementMusique, { EntreeClassement } from "@/components/media/ClassementMusique";
+import { classerMusiques } from "@/lib/classementMusique";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { formatVues } from "@/lib/vues";
@@ -88,6 +90,12 @@ export default function PlaylistCategoryView({
   /* Cadenas réorganisation admin */
   const [playlistsLocked, setPlaylistsLocked] = useState(true);
   const [tracksLocked, setTracksLocked] = useState(true);
+  // 1.4.1 : Musique › Classement (les plus écoutées parmi les titres que ce membre peut écouter).
+  const [classementOuvert, setClassementOuvert] = useState(false);
+  const classement = useMemo(
+    () => (category === "music" ? classerMusiques(playlists, playlistTracks) : []),
+    [category, playlists, playlistTracks]
+  );
 
   /* États locaux ordonnables */
   const [orderedPlaylists, setOrderedPlaylists] = useState([]);
@@ -279,6 +287,19 @@ export default function PlaylistCategoryView({
     source_playlist_name: open?.name,
   });
 
+  if (classementOuvert && !open && !parent) {
+    return (
+      <ClassementMusique
+        pistes={classement}
+        onRetour={() => setClassementOuvert(false)}
+        currentTrack={currentTrack}
+        isPlaying={isPlaying}
+        playQueue={playQueue}
+        toggle={toggle}
+      />
+    );
+  }
+
   // Playlist ouverte : ses sous-playlists (même style que la grille), et ses titres non classés s'il en reste.
   if (parent && !open) {
     const sous = orderedPlaylists.find((p) => p.id === parent.id)?.sous || [];
@@ -464,6 +485,7 @@ export default function PlaylistCategoryView({
         </p>
       )}
 
+      {category === "music" && <EntreeClassement pistes={classement} onOuvrir={() => setClassementOuvert(true)} />}
     </div>
   );
 }
