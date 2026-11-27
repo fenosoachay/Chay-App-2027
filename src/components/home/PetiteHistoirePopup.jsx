@@ -78,7 +78,7 @@ export default function PetiteHistoirePopup({ user }) {
             )}
           </div>
 
-          <div className="border-t border-border p-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          <div className="border-t border-border p-4" style={{ paddingBottom: "max(1rem, var(--sa-bottom))" }}>
             <button type="button" onClick={ok} className="w-full rounded-full brand-gradient px-6 py-3 text-base font-bold text-white">
               Ok
             </button>

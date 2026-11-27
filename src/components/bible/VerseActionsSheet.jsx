@@ -104,7 +104,7 @@ export default function VerseActionsSheet({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] flex flex-col gap-2">
+        <div className="shrink-0 border-t border-border bg-background p-4 pb-[calc(var(--sa-bottom)+1rem)] flex flex-col gap-2">
           <button
             onClick={() => onNote(note)}
             className="w-full rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-bold"

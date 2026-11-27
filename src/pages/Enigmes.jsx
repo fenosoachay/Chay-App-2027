@@ -405,7 +405,7 @@ export default function Enigmes() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className={`fixed inset-x-0 bottom-0 z-[70] rounded-t-[1.75rem] px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5 shadow-2xl ${
+            className={`fixed inset-x-0 bottom-0 z-[70] rounded-t-[1.75rem] px-5 pb-[calc(1.25rem+var(--sa-bottom))] pt-5 shadow-2xl ${
               retour === "juste" ? "bg-[#d7ffb8] text-[#2b6a12]" : "bg-[#ffdfe0] text-[#a8323a]"
             }`}
           >

@@ -457,7 +457,7 @@ function Partie({ n, photos, onFin, onQuitter }) {
         className="absolute inset-0 block h-full w-full touch-none select-none"
         aria-label="Terrain de jeu : tire la fronde vers l'arrière puis lâche"
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-3" style={{ paddingLeft: "max(0.75rem, env(safe-area-inset-left))", paddingRight: "max(0.75rem, env(safe-area-inset-right))" }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-3" style={{ paddingLeft: "max(0.75rem, var(--sa-left))", paddingRight: "max(0.75rem, var(--sa-right))" }}>
         <button type="button" onClick={() => onQuitter()} aria-label="Niveaux" className={`pointer-events-auto ${bouton}`}>
           <ArrowLeft className="h-5 w-5" />
         </button>

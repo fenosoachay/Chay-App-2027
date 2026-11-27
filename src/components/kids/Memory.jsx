@@ -218,7 +218,7 @@ function Partie({ theme, niveau, onQuitter, profil }) {
   return (
     <div
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden bg-background"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingTop: "var(--sa-top)", paddingBottom: "var(--sa-bottom)" }}
     >
       {/* En-tête */}
       <div className="flex items-center gap-2 px-3 pt-2">

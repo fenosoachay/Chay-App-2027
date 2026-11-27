@@ -87,7 +87,7 @@ export default function MiseAJourObligatoire() {
       aria-modal="true"
       aria-labelledby="maj-obligatoire-titre"
       className="fixed inset-0 z-[100000] flex flex-col items-center justify-center overflow-y-auto bg-background px-6 text-foreground"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
+      style={{ paddingTop: "calc(var(--sa-top) + 1.5rem)", paddingBottom: "calc(var(--sa-bottom) + 1.5rem)" }}
     >
       <div className="w-full max-w-sm text-center">
         <img src="/branding/logo-connexion.png" alt="" className="mx-auto mb-5 h-20 w-20 rounded-2xl shadow-lg" />

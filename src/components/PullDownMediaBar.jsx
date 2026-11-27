@@ -139,7 +139,7 @@ export default function PullDownMediaBar() {
           exit={{ y: -400, opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed top-0 left-0 right-0 z-[60] pointer-events-none"
-          style={{ paddingTop: "env(safe-area-inset-top)" }}
+          style={{ paddingTop: "var(--sa-top)" }}
         >
           <motion.section
             aria-label="Barre de commandes multimédias"

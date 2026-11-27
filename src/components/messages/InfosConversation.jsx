@@ -52,7 +52,7 @@ export default function InfosConversation({ titre, avatar, autreId, messages, no
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-background" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-background" style={{ paddingTop: "var(--sa-top)", paddingBottom: "var(--sa-bottom)" }}>
       <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
         <button type="button" onClick={onFermer} aria-label="Retour" className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted">
           <ChevronLeft className="h-5 w-5" />

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebView;
 import androidx.activity.EdgeToEdge;
 import androidx.core.graphics.Insets;
@@ -14,9 +15,13 @@ import com.getcapacitor.WebViewListener;
 import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
-    // Hauteur réelle (en px CSS) de la barre d'état au-dessus de la WebView : 0 si Android place déjà
-    // la WebView sous la barre d'état, sa hauteur si l'appli s'affiche bord à bord (Android 15 et plus).
-    private int hautBarreEtat = 0;
+    // Place réelle (en px CSS) cachée sous les barres système de chaque côté de la WebView : 0 si Android place
+    // déjà la WebView à côté de la barre, sa taille si l'appli s'affiche bord à bord. Ordre : haut (barre d'état),
+    // bas (barre de navigation), gauche, droite. Novembre 2026 : les quatre côtés, car sur les anciens Android
+    // (Galaxy Note 9, Android 10) la WebView renvoie 0 pour env(safe-area-inset-*) alors que la barre de
+    // navigation recouvre le bas de la page (src/index.css, variables --sa-*).
+    private final int[] barres = new int[4];
+    private static final String[] NOMS_BARRES = { "--chay-barre-etat", "--chay-barre-bas", "--chay-barre-gauche", "--chay-barre-droite" };
 
     // L'application est exclusivement en français : on force la locale française
     // sur le contexte de l'activité pour que TOUS les textes fournis par Android
@@ -87,25 +92,56 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void mesurerBarreEtat(WebView view) {
+        if (view == null) return;
         WindowInsetsCompat encarts = ViewCompat.getRootWindowInsets(view);
-        int haut = 0;
+        int[] nouvelles = new int[4];
         if (encarts != null) {
-            Insets barres = encarts.getInsets(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets b = encarts.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             int[] position = new int[2];
             view.getLocationInWindow(position);
-            int cache = Math.max(0, barres.top - position[1] - view.getPaddingTop());
-            haut = Math.round(cache / getResources().getDisplayMetrics().density);
+            View racine = view.getRootView();
+            int largeur = racine.getWidth(), hauteur = racine.getHeight();
+            float densite = getResources().getDisplayMetrics().density;
+            int[] cache = {
+                b.top - position[1] - view.getPaddingTop(),
+                (position[1] + view.getHeight()) - (hauteur - b.bottom) - view.getPaddingBottom(),
+                b.left - position[0] - view.getPaddingLeft(),
+                (position[0] + view.getWidth()) - (largeur - b.right) - view.getPaddingRight(),
+            };
+            for (int i = 0; i < 4; i++) nouvelles[i] = Math.round(Math.max(0, cache[i]) / densite);
         }
-        if (haut != hautBarreEtat) {
-            hautBarreEtat = haut;
+        if (!java.util.Arrays.equals(nouvelles, barres)) {
+            System.arraycopy(nouvelles, 0, barres, 0, 4);
             transmettreBarreEtat(view);
         }
     }
 
     private void transmettreBarreEtat(WebView view) {
         if (view == null) return;
-        view.post(() -> view.evaluateJavascript(
-            "document.documentElement.style.setProperty('--chay-barre-etat','" + hautBarreEtat + "px')", null));
+        StringBuilder js = new StringBuilder("(function(s){");
+        for (int i = 0; i < 4; i++) js.append("s.setProperty('").append(NOMS_BARRES[i]).append("','").append(barres[i]).append("px');");
+        js.append("})(document.documentElement.style)");
+        view.post(() -> view.evaluateJavascript(js.toString(), null));
+    }
+
+    // Rotation, clavier, barre de navigation affichée ou masquée (Samsung) : on remesure.
+    @Override
+    public void onConfigurationChanged(Configuration nouvelle) {
+        super.onConfigurationChanged(nouvelle);
+        remesurerPlusTard();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean focus) {
+        super.onWindowFocusChanged(focus);
+        if (focus) remesurerPlusTard();
+    }
+
+    private void remesurerPlusTard() {
+        if (getBridge() == null) return;
+        WebView webView = getBridge().getWebView();
+        if (webView == null) return;
+        webView.postDelayed(() -> mesurerBarreEtat(webView), 300);
     }
 
     /** Fond de l'application (--background de src/index.css) : clair #FDFBF7, sombre noir. */

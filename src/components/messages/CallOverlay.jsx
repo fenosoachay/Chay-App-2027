@@ -9,7 +9,7 @@ export default function CallOverlay({ room, mode, label, onClose }) {
     "CHAY"
   )}&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`;
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[var(--sa-top)]">
       <div className="flex items-center justify-between p-3 text-white bg-black/60">
         <div className="flex items-center gap-2">
           {audioOnly ? <Phone className="h-4 w-4" /> : <Video className="h-4 w-4" />}

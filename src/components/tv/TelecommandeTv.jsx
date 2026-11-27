@@ -75,7 +75,7 @@ export default function TelecommandeTv() {
   return (
     <div
       className="fixed inset-x-3 z-[205] mx-auto max-w-lg rounded-[1.5rem] border border-white/10 bg-[#141418]/95 p-3 text-white shadow-2xl backdrop-blur"
-      style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}
+      style={{ bottom: "calc(5.5rem + var(--sa-bottom))" }}
       role="region"
       aria-label="Télécommande de la TV"
     >

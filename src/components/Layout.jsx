@@ -155,14 +155,14 @@ export default function Layout() {
         <div
           aria-hidden="true"
           className="pointer-events-none fixed inset-x-0 top-0 z-[45] bg-background"
-          style={{ height: "max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px))" }}
+          style={{ height: "max(var(--chay-barre-etat, 0px), var(--sa-top))" }}
         />
       )}
       {/* Desktop floating glass rail (aussi sur tablette) */}
       <header
         className="hidden md:flex sticky top-0 z-40 px-6 pt-5"
         // 1.4.1 : sur tablette Android, l'en-tête commence sous la barre d'état (heure, batterie).
-        style={isNativeAndroid ? { paddingTop: "calc(max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px)) + 1.25rem)" } : undefined}
+        style={isNativeAndroid ? { paddingTop: "calc(max(var(--chay-barre-etat, 0px), var(--sa-top)) + 1.25rem)" } : undefined}
       >
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between gap-2 rounded-full border border-border bg-background/70 backdrop-blur-xl px-3 lg:px-6 py-3 glow-soft">
           <Link to="/" className="flex items-center">
@@ -222,8 +222,8 @@ export default function Layout() {
           // APK : --chay-barre-etat = hauteur réelle de la barre d'état au-dessus de la page (MainActivity.java),
           // 0 quand Android place déjà la page sous la barre d'état.
           paddingTop: isNativeAndroid
-            ? "calc(max(var(--chay-barre-etat, 0px), env(safe-area-inset-top, 0px)) + 7.53px)"
-            : "calc(env(safe-area-inset-top, 0px) + 7.53px)",
+            ? "calc(max(var(--chay-barre-etat, 0px), var(--sa-top)) + 7.53px)"
+            : "calc(var(--sa-top) + 7.53px)",
           paddingBottom: "7.53px", // 3,78 + 3,75 px
         }}
       >
@@ -285,7 +285,7 @@ export default function Layout() {
       {/* 1.3.43 : plus de z-index sur <main> : il enfermait les fenêtres plein écran des pages (visionneuse de photos,
           lecteur, profil…) SOUS la barre du haut et la barre du bas (boutons du haut inactifs). Le contenu reste
           au-dessus du fond animé (même plan, et placé après lui). */}
-      <main className={`relative pb-[calc(5rem_+_env(safe-area-inset-bottom))] md:pb-[calc(3rem_+_env(safe-area-inset-bottom))] ${fondForce ? "dark text-foreground" : ""}`}>
+      <main className={`relative pb-[calc(5rem_+_var(--sa-bottom))] md:pb-[calc(3rem_+_var(--sa-bottom))] ${fondForce ? "dark text-foreground" : ""}`}>
         <AnimatedOutlet />
         {/* Notification « Nouvelle version » : « À propos », hors des pages (jamais remonté). */}
         <AProposDepuisNotification />
@@ -293,7 +293,7 @@ export default function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background px-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav aria-label="Navigation principale" className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background px-3" style={{ paddingBottom: "var(--sa-bottom)" }}>
         <div data-barre-icones className="mx-auto max-w-md flex items-center justify-around rounded-full border border-border bg-background/90 backdrop-blur-xl px-1.5 py-1.5 glow-soft">
           {NAV.map((item) => {
             const Icon = item.icon;

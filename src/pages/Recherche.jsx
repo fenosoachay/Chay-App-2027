@@ -98,7 +98,7 @@ export default function Recherche() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-10 pt-4 md:pt-8">
-      <div className="sticky top-[calc(env(safe-area-inset-top)+4.25rem)] z-10 -mx-4 bg-background/90 px-4 pb-3 backdrop-blur-xl md:top-28">
+      <div className="sticky top-[calc(var(--sa-top)+4.25rem)] z-10 -mx-4 bg-background/90 px-4 pb-3 backdrop-blur-xl md:top-28">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/40" />
           <input

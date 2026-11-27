@@ -259,7 +259,7 @@ export default function AtelierColoriage({ source, reprise, onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-background" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="fixed inset-0 z-[70] flex flex-col bg-background" style={{ paddingTop: "var(--sa-top)", paddingBottom: "var(--sa-bottom)" }}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"

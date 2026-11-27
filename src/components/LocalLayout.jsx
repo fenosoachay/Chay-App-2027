@@ -16,7 +16,7 @@ export default function LocalLayout() {
     <FondSection cle={section} sombre={sombre} />
     <header
       className="sticky top-0 z-30 border-b border-border bg-background px-3 pb-3 sm:px-4 sm:pb-4"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      style={{ paddingTop: "calc(var(--sa-top) + 0.75rem)" }}
     >
       <div className="mx-auto max-w-6xl flex flex-nowrap items-center gap-2 sm:gap-4">
         <Link to="/" className="flex items-center gap-2 font-heading font-bold">

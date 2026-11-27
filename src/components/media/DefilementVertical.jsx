@@ -143,12 +143,12 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
         type="button"
         onClick={() => onClose?.()}
         aria-label="Retour"
-        className="absolute left-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur"
+        className="absolute left-3 top-[calc(var(--sa-top)+0.75rem)] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur"
       >
         <ChevronLeft className="h-6 w-6" />
       </button>
       {titre && (
-        <span className="pointer-events-none absolute left-1/2 top-[calc(env(safe-area-inset-top,0px)+1.25rem)] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold drop-shadow">
+        <span className="pointer-events-none absolute left-1/2 top-[calc(var(--sa-top)+1.25rem)] z-20 max-w-[60%] -translate-x-1/2 truncate font-display text-lg font-extrabold drop-shadow">
           {titre}
         </span>
       )}
@@ -200,7 +200,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
             )}
 
             {/* Colonne de droite, comme TikTok (sans bouton Partager, retiré à la demande). */}
-            <div className="absolute right-3 bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] z-10 flex flex-col items-center gap-5">
+            <div className="absolute right-3 bottom-[max(6rem,calc(var(--sa-bottom)+5rem))] z-10 flex flex-col items-center gap-5">
               <div className="relative">
                 <Action
                   label={jaimes.maReaction(r.track_id) ? "Changer ou retirer ma réaction" : "Réagir"}
@@ -236,7 +236,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
             </div>
 
             {(r.title || r.description) && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 max-h-[50%] overflow-y-auto bg-gradient-to-t from-black/85 to-transparent pl-4 pr-20 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-16">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 max-h-[50%] overflow-y-auto bg-gradient-to-t from-black/85 to-transparent pl-4 pr-20 pb-[max(2rem,calc(var(--sa-bottom)+1.25rem))] pt-16">
                 {r.title && <p className="font-display text-base font-bold leading-snug drop-shadow">{r.title}</p>}
                 <div className="pointer-events-auto">
                   <Description texte={r.description} clair className="mt-1" />
@@ -251,7 +251,7 @@ export default function DefilementVertical({ items, depart = 0, titre, onClose }
                 aria-valuemax={100}
                 aria-valuenow={Math.round(progression * 100)}
                 onClick={allerA}
-                className="absolute inset-x-0 bottom-[env(safe-area-inset-bottom)] z-10 flex h-6 cursor-pointer items-end"
+                className="absolute inset-x-0 bottom-[var(--sa-bottom)] z-10 flex h-6 cursor-pointer items-end"
               >
                 <div className="h-1 w-full bg-white/25">
                   <div className="h-full bg-white" style={{ width: `${progression * 100}%` }} />

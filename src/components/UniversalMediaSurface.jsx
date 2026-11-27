@@ -618,7 +618,7 @@ const playVideo = (source) => {
       style={{
         pointerEvents: isFullPlayer ? "auto" : "none",
         cursor: pleinEcranFilm && !commandesVisibles ? "none" : undefined,
-        ...(pleinEcranFilm ? {} : { paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }),
+        ...(pleinEcranFilm ? {} : { paddingTop: "calc(var(--sa-top) + 1rem)", paddingBottom: "calc(var(--sa-bottom) + 1rem)" }),
       }}
       className={`fixed inset-0 z-[65] flex flex-col text-white ${pleinEcranFilm ? "bg-black p-0" : "bg-black/95 p-4"}`}
     >
@@ -904,7 +904,7 @@ const playVideo = (source) => {
               ? "absolute right-3 top-3 z-30 flex items-center gap-2 rounded-full bg-black/50 px-2 py-1 backdrop-blur"
               : pleinEcranFilm
               ? `absolute inset-x-0 bottom-16 z-30 flex items-center justify-center gap-5 transition-opacity duration-300 ${commandesVisibles ? "opacity-100" : "pointer-events-none opacity-0"}`
-              : "flex items-center justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"}
+              : "flex items-center justify-center gap-5 pb-[max(0.5rem,var(--sa-bottom))]"}
           >
             {isVideo && showEmbeddedPlayer && (
               <button type="button" onClick={() => deplacerVideo(-10)} aria-label="Reculer de 10 secondes" className="grid h-12 w-12 place-items-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><RotateCcw /></button>

@@ -99,7 +99,7 @@ export default function SplashScreen({ onSkip, instantane = false }) {
 
       {/* Indication discrète */}
       <motion.p
-        className="absolute bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-0 right-0 text-center text-xs text-white/70"
+        className="absolute bottom-[calc(var(--sa-bottom)+1.5rem)] left-0 right-0 text-center text-xs text-white/70"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2, duration: 0.8 }}

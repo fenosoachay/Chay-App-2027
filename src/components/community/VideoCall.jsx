@@ -5,7 +5,7 @@ import { useBackHandler } from "@/hooks/useBackHandler";
 export default function VideoCall({ room, onClose }) {
   useBackHandler(true, onClose);
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[env(safe-area-inset-top)]">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col pt-[var(--sa-top)]">
       <div className="flex items-center justify-between p-3 text-white bg-black/60">
         <span className="font-bold text-sm">Appel vidéo — Communauté CHAY</span>
         <button

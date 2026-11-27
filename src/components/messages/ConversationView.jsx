@@ -479,7 +479,7 @@ image_url: uploadedUrl,
       {/* Header */}
       <div
         className="relative z-[2] flex items-center gap-2.5 bg-background/85 backdrop-blur-xl border-b border-border px-3 py-2.5"
-        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.625rem)" }}
+        style={{ paddingTop: "calc(var(--sa-top) + 0.625rem)" }}
       >
         <button
           onClick={onBack}
@@ -744,7 +744,7 @@ image_url: uploadedUrl,
       {automatique ? (
         <div
           className="relative z-10 border-t border-border bg-background/95 px-4 py-3 text-center text-xs text-foreground/60"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          style={{ paddingBottom: "max(0.75rem, var(--sa-bottom))" }}
         >
           Message automatique de Chay : on ne peut pas y répondre.
         </div>
@@ -753,7 +753,7 @@ image_url: uploadedUrl,
       {/* Composer */}
       <div
         className="relative z-10 bg-background/95 backdrop-blur-md border-t border-border px-3 py-2 safe-area-pb"
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "max(0.5rem, var(--sa-bottom))" }}
       >
         <AnimatePresence>
           {showEmoji && (
@@ -958,7 +958,7 @@ image_url: uploadedUrl,
         {voirReactions && (
           <motion.div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setVoirReactions(null)}>
             <motion.div
-              className="w-full max-w-md rounded-t-3xl border border-border bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl"
+              className="w-full max-w-md rounded-t-3xl border border-border bg-popover p-4 pb-[max(1rem,var(--sa-bottom))] shadow-2xl"
               initial={{ y: 60 }} animate={{ y: 0 }} exit={{ y: 60 }} transition={{ type: "spring", stiffness: 420, damping: 34 }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"

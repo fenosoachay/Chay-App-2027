@@ -58,7 +58,7 @@ export default function PhotoEditeur({ fichier, onAnnuler, onEnvoyer }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[85] flex flex-col bg-black text-white" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div className="fixed inset-0 z-[85] flex flex-col bg-black text-white" style={{ paddingTop: "var(--sa-top)", paddingBottom: "var(--sa-bottom)" }}>
       <div className="flex items-center justify-between px-3 py-2">
         <button type="button" onClick={onAnnuler} aria-label="Annuler" className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
           <X className="h-6 w-6" />

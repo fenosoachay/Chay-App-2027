@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Novembre 2026 : marges des barres système (barre d'état, encoche, barre de navigation Android). Toujours
+ * utiliser ces variables, jamais env(safe-area-inset-*) seul : sur les anciens Android (ex. Galaxy Note 9, Android 10)
+ * la WebView renvoie 0 pour env() alors que l'app s'affiche sous la barre de navigation. MainActivity.java mesure
+ * alors la place réellement cachée et la donne en --chay-barre-* ; on prend la plus grande des deux valeurs (jamais
+ * comptée deux fois). Contrôlé par src/lib/margesSysteme.test.js. */
+:root {
+  --sa-top: max(env(safe-area-inset-top, 0px), var(--chay-barre-etat, 0px));
+  --sa-bottom: max(env(safe-area-inset-bottom, 0px), var(--chay-barre-bas, 0px));
+  --sa-left: max(env(safe-area-inset-left, 0px), var(--chay-barre-gauche, 0px));
+  --sa-right: max(env(safe-area-inset-right, 0px), var(--chay-barre-droite, 0px));
+}
+
 /* Taille de base de toute l'app (tailles en rem). Téléphones : réduite (14 px au lieu de 16) et encore un peu
    plus sur les écrans étroits (3.7333vw = 14 px à 375 px de large), pour que les textes tiennent partout.
    Tablettes et ordinateurs : inchangé. La taille choisie dans Paramètres > Affichage multiplie cette base

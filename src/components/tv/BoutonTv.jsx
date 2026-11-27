@@ -41,7 +41,7 @@ function ChoixTv({ onFermer, onChoisir }) {
     <div className="fixed inset-0 z-[210] flex items-end justify-center bg-black/60 sm:items-center" onClick={onFermer}>
       <div
         className="w-full max-w-md rounded-t-[1.75rem] bg-background p-5 text-foreground shadow-2xl sm:rounded-[1.75rem]"
-        style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "max(1.25rem, var(--sa-bottom))" }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Diffuser sur une TV"
