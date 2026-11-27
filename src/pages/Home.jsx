@@ -49,13 +49,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* 2 bis. Coup de cœur de ce mois (1.4.1) : sous le verset du jour, s'il y en a un d'affiché. */}
-          {!isLocalMode && isAuthenticated && (
-            <div className="animate-float-in" style={{ animationDelay: "0.14s" }}>
-              <CoupDeCoeurSection refreshKey={refreshKey} />
-            </div>
-          )}
-
           {/* 3. Prochaine réunion */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.15s" }}>
             {!isLocalMode && <ProchaineReunionSection refreshKey={refreshKey} />}
@@ -75,6 +68,13 @@ export default function Home() {
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.26s" }}>
             {!isLocalMode && <NouveauteWidget />}
           </div>
+
+          {/* 6 bis. Coup de cœur de ce mois (1.4.1) : entre Nouveautés et Accès rapide, s'il y en a un d'affiché. */}
+          {!isLocalMode && isAuthenticated && (
+            <div className="animate-float-in" style={{ animationDelay: "0.28s" }}>
+              <CoupDeCoeurSection refreshKey={refreshKey} />
+            </div>
+          )}
 
           {/* 7. Accès rapide */}
           <div className="animate-float-in mt-6" style={{ animationDelay: "0.30s" }}>
