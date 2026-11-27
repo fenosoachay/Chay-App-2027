@@ -148,7 +148,7 @@ export default function Brique({ profil = null }) {
     p.envoyee = true;
     const profil = profilRef.current;
     if (scoreFinal > 0 && profil) {
-      enregistrerScore("brique", { score: scoreFinal, pseudo: profil.pseudo, avatar: profil.avatar });
+      enregistrerScore("brique", { score: scoreFinal, pseudo: profil.pseudo, avatar: profil.avatar, enfant_id: profil.id });
       const anciens = { facile: 0, normal: 0, ...(profil.progres?.brique || {}) };
       if (scoreFinal > (anciens[modeJoue] || 0)) enregistrerProgres(profil, "brique", { ...anciens, [modeJoue]: scoreFinal });
     }

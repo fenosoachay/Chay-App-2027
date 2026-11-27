@@ -3,7 +3,9 @@
 //  - POST /api/fn/enregistrerScore { jeu, score | pieces | etoiles + niveau, pseudo?, avatar? } : Émojis, Brique,
 //    Puzzle (adultes) et Jeux Carte (« memory », enfants : pseudo et avatar obligatoires) ; 120 scores / heure au plus ;
 //  - POST /api/fn/classement { espace: adulte | enfant, jeu: general | <jeu>, periode: semaine | mois | toujours,
-//    pseudo? } -> { top: [5 premiers], moi: { rang, points } | null }.
+//    pseudo?, enfant_id? } -> { top: [5 premiers], moi: { rang, points } | null }.
+//  - 1.4.1 : enfant_id (profil « Qui joue ? ») : un enfant partagé par code famille compte pour le compte du parent ;
+//    chaque enfant du classement porte la marque de son foyer (famille : « famille R. »).
 
 routerAdd('POST', '/api/fn/enregistrerScore', (e) => {
   const fn = require(`${__hooks}/lib/fn.js`);
@@ -14,20 +16,33 @@ routerAdd('POST', '/api/fn/enregistrerScore', (e) => {
     const jeu = typeof b.jeu === 'string' ? b.jeu : '';
     if (sc.JEUX_CLIENT.indexOf(jeu) === -1) throw new fn.HttpError(400, 'Jeu inconnu');
     const enfant = sc.espaceDe(jeu, b.pseudo) === 'enfant';
-    const pseudo = enfant ? sc.pseudoValide(b.pseudo) : '';
+    let pseudo = enfant ? sc.pseudoValide(b.pseudo) : '';
     if (enfant && !pseudo) throw new fn.HttpError(400, 'Pseudo invalide');
     const points = sc.pointsClient(jeu, b);
     if (!points) return { points: 0 };
+    // 1.4.1 : enfant partagé (code famille) : la partie jouée chez la grand-mère compte pour le profil du parent.
+    let uid = caller.id;
+    let avatar = enfant ? sc.avatarValide(b.avatar) : '';
+    let partage = false;
+    if (enfant && typeof b.enfant_id === 'string' && b.enfant_id) {
+      const fam = require(`${__hooks}/lib/famille.js`);
+      const profil = fn.findById('ProfilEnfant', b.enfant_id.slice(0, 40));
+      if (profil && fam.aAcces(profil.getString('user_id'), profil.getString('invites'), caller.id)) {
+        uid = profil.getString('user_id');
+        pseudo = profil.getString('pseudo');
+        avatar = sc.avatarValide(profil.getString('avatar'));
+        partage = true;
+      }
+    }
     const uneHeure = sc.datePb(Date.now() - 3600 * 1000);
-    const recents = $app.findRecordsByFilter('ScoreJeu', 'user_id = {:u} && created >= {:d}', '', 121, 0, { u: caller.id, d: uneHeure });
+    const recents = $app.findRecordsByFilter('ScoreJeu', 'user_id = {:u} && created >= {:d}', '', 121, 0, { u: uid, d: uneHeure });
     if (recents.length >= 120) throw new fn.HttpError(429, 'Trop de parties en une heure.');
     const rec = fn.newRecord($app, 'ScoreJeu', {
-      user_id: caller.id, espace: enfant ? 'enfant' : 'adulte', jeu, points,
-      pseudo, avatar: enfant ? sc.avatarValide(b.avatar) : '',
+      user_id: uid, espace: enfant ? 'enfant' : 'adulte', jeu, points, pseudo, avatar,
     });
     $app.save(rec);
     // 1.3.26 : l'enfant est gardé dans les profils du compte (« Qui joue ? »), même s'il a été créé ailleurs.
-    if (enfant) {
+    if (enfant && !partage) {
       try {
         const deja = $app.findRecordsByFilter('ProfilEnfant', 'user_id = {:u} && pseudo = {:p}', '', 1, 0, { u: caller.id, p: pseudo });
         if (!deja.length) $app.save(fn.newRecord($app, 'ProfilEnfant', { user_id: caller.id, pseudo, avatar: sc.avatarValide(b.avatar), progres: {} }));
@@ -73,13 +88,32 @@ routerAdd('POST', '/api/fn/classement', (e) => {
     });
     const liste = sc.classer(lignes);
 
-    const moiCle = espace === 'enfant' ? `${caller.id}|${sc.pseudoValide(b.pseudo)}` : caller.id;
+    const fam = require(`${__hooks}/lib/famille.js`);
+    let moiCle = espace === 'enfant' ? `${caller.id}|${sc.pseudoValide(b.pseudo)}` : caller.id;
+    // 1.4.1 : enfant partagé (code famille) : sa ligne est celle du compte du parent.
+    if (espace === 'enfant' && typeof b.enfant_id === 'string' && b.enfant_id) {
+      const profil = fn.findById('ProfilEnfant', b.enfant_id.slice(0, 40));
+      if (profil && fam.aAcces(profil.getString('user_id'), profil.getString('invites'), caller.id)) {
+        moiCle = `${profil.getString('user_id')}|${profil.getString('pseudo')}`;
+      }
+    }
+    // 1.4.1 : marque du foyer (« famille R. ») : deux enfants du même prénom se distinguent au classement.
+    const familles = {};
+    const familleDe = (uid) => {
+      if (!(uid in familles)) {
+        const u = fn.findById('users', uid);
+        familles[uid] = u ? fam.initialeFamille(u.getString('first_name'), u.getString('last_name'), u.getString('name')) : '';
+      }
+      return familles[uid];
+    };
     const decrire = (x) => {
       const out = { rang: x.rang, points: x.points, moi: x.cle === moiCle };
       if (espace === 'enfant') {
         const i = infos[x.cle] || {};
         out.nom = i.nom || 'Enfant';
         out.avatar = i.avatar || sc.AVATARS[0];
+        const lettre = i.uid ? familleDe(i.uid) : '';
+        out.famille = lettre ? `famille ${lettre}.` : '';
         return out;
       }
       const u = fn.findById('users', x.cle);
@@ -123,6 +157,10 @@ routerAdd('POST', '/api/fn/supprimerEnfant', (e) => {
         txApp.delete(r);
         scores += 1;
       }
+      // 1.4.1 : son code famille éventuel disparaît aussi (les comptes invités ne le voient plus).
+      try {
+        for (const c of txApp.findRecordsByFilter('CodeFamille', 'profil_id = {:p}', '', 0, 0, { p: profil.id })) txApp.delete(c);
+      } catch (_) { /* collection absente (migration 1.4.1 pas encore faite) */ }
       txApp.delete(profil);
     });
     return { ok: true, scores };

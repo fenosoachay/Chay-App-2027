@@ -244,7 +244,7 @@ export default function Puzzle({ profil = null, integre = false }) {
     if (!game.solved) return;
     jouerSon("victoire");
     // Score Board des enfants (1.3.26) : 5 points par pièce du puzzle réussi, au nom de l'enfant qui joue.
-    if (profil) enregistrerScore("puzzle", { pieces: game.pieces.length, pseudo: profil.pseudo, avatar: profil.avatar });
+    if (profil) enregistrerScore("puzzle", { pieces: game.pieces.length, pseudo: profil.pseudo, avatar: profil.avatar, enfant_id: profil.id });
     confetti({
       particleCount: 85,
       spread: 72,

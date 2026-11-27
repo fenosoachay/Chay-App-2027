@@ -168,7 +168,7 @@ function Partie({ theme, niveau, onQuitter, profil }) {
     setRecord(noterRecord(theme.id, niveau.id, essais, secondes));
     // Score Board : étoiles de la partie, au nom de l'enfant qui joue (« Qui joue ? », Chay Enfants › Jeux).
     if (profil) {
-      enregistrerScore("memory", { etoiles: etoiles(essais, niveau.paires), niveau: niveau.id, pseudo: profil.pseudo, avatar: profil.avatar });
+      enregistrerScore("memory", { etoiles: etoiles(essais, niveau.paires), niveau: niveau.id, pseudo: profil.pseudo, avatar: profil.avatar, enfant_id: profil.id });
     }
   }, [fini]); // eslint-disable-line react-hooks/exhaustive-deps
 

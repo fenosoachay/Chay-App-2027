@@ -16,7 +16,8 @@ import QuiJoue from "@/components/kids/QuiJoue";
 import VideosEnfants from "@/components/kids/VideosEnfants";
 import { brancherRecords } from "@/lib/memory";
 import {
-  ajouterProfil, chargerProfils, choisirEnfantActif, enregistrerProgres, lireEnfantActif, supprimerProfil,
+  ajouterProfil, chargerProfils, choisirEnfantActif, enregistrerProgres, lireEnfantActif, rejoindreEnfant, retirerAcces,
+  supprimerProfil,
 } from "@/lib/profilsEnfants";
 
 // Chay Enfants (1.3.26) : deux grandes cases, Vidéos et Jeux.
@@ -110,7 +111,28 @@ function useEnfants(userId) {
     setVersion((v) => v + 1);
     toast({ title: `${p.pseudo} a été effacé`, description: "Son prénom et ses points ne sont plus au Score Board." });
   };
-  return { profils, actif, chargement, erreur, charger, choisir, ajouter, supprimer, version };
+  // 1.4.1 : code famille. L'enfant partagé arrive avec ses points et sa progression (même profil que chez le parent).
+  const rejoindre = async (code) => {
+    const { profil, famille } = await rejoindreEnfant(code);
+    const rows = await chargerProfils(userId);
+    setProfils(rows);
+    const p = rows.find((x) => x.id === profil?.id);
+    if (p) choisir(p);
+    setVersion((v) => v + 1);
+    toast({ title: `${profil?.pseudo || "L'enfant"}${famille ? ` · ${famille}` : ""} est maintenant ici`, description: "Ses points comptent pour le même enfant." });
+  };
+  const quitter = async (p) => {
+    try {
+      await retirerAcces(p, userId);
+    } catch (e) {
+      toast({ title: "Impossible de retirer", description: e?.message || "Vérifie la connexion.", variant: "destructive" });
+      return;
+    }
+    setProfils((l) => l.filter((x) => x.id !== p.id));
+    if (actifId === p.id) setActifId(null);
+    setVersion((v) => v + 1);
+  };
+  return { profils, actif, chargement, erreur, charger, choisir, ajouter, supprimer, rejoindre, quitter, version };
 }
 
 export default function Kids() {
@@ -189,7 +211,7 @@ export default function Kids() {
         <>
           {/* 1.3.34 : le Score Board d'abord, puis « Qui joue ? » ; les jeux arrivent ensuite, un à un. */}
           <div className="mb-4">
-            <ScoreBoard key={enfants.version} espace="enfant" pseudo={choisiIci ? enfants.actif?.pseudo || "" : ""} />
+            <ScoreBoard key={enfants.version} espace="enfant" pseudo={choisiIci ? enfants.actif?.pseudo || "" : ""} enfantId={choisiIci ? enfants.actif?.id || "" : ""} />
           </div>
           <div className="mb-6">
             <QuiJoue
@@ -202,6 +224,9 @@ export default function Kids() {
               onAjouter={async (pseudo, avatar) => { await enfants.ajouter(pseudo, avatar); setChoisiIci(true); }}
               onSupprimer={enfants.supprimer}
               onReessayer={enfants.charger}
+              userId={user?.id}
+              onRejoindre={async (code) => { await enfants.rejoindre(code); setChoisiIci(true); }}
+              onQuitter={enfants.quitter}
             />
           </div>
           {choisiIci && enfants.actif && (

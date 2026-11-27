@@ -5,7 +5,7 @@ import { memePseudo } from "@/lib/profilsEnfants";
 
 // Nouvel enfant pour le Score Board : un pseudo (jamais le nom du compte du parent) et un avatar dessiné.
 // 1.3.26 : enregistré sur le compte (onEnregistrer -> src/lib/profilsEnfants.js), plus seulement sur le téléphone.
-export default function ProfilEnfant({ titre = "Choisis ton pseudo et ton animal", existants = [], onEnregistrer, onAnnuler }) {
+export default function ProfilEnfant({ titre = "Choisis ton pseudo et ton animal", existants = [], onEnregistrer, onAnnuler, onCodeFamille }) {
   const [pseudo, setPseudo] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [envoi, setEnvoi] = useState(false);
@@ -29,7 +29,7 @@ export default function ProfilEnfant({ titre = "Choisis ton pseudo et ton animal
   return (
     <div className="rounded-[1.75rem] border border-border bg-card p-4 md:p-5">
       <p className="font-display text-lg font-extrabold">{titre}</p>
-      <p className="mb-3 text-sm text-foreground/60">C'est ce que les autres verront au classement.</p>
+      <p className="mb-3 text-sm text-foreground/60">C'est ce que les autres verront au classement : un prénom ou un pseudo, jamais le nom de famille.</p>
       <input
         value={pseudo}
         onChange={(e) => setPseudo(e.target.value.slice(0, 20))}
@@ -68,6 +68,12 @@ export default function ProfilEnfant({ titre = "Choisis ton pseudo et ton animal
       {pseudo && !valide && <p className="mt-2 text-xs text-destructive">2 à 20 lettres ou chiffres.</p>}
       {doublon && <p className="mt-2 text-xs text-destructive">Ce prénom est déjà dans la liste : touche-le dans « Qui joue ? ».</p>}
       {erreur && <p className="mt-2 text-xs text-destructive">{erreur}</p>}
+      {/* 1.4.1 : l'enfant joue déjà chez ses parents ? On rejoint son profil avec leur code famille. */}
+      {onCodeFamille && (
+        <button type="button" onClick={onCodeFamille} className="mt-3 w-full text-center text-sm font-bold text-primary underline-offset-2 hover:underline">
+          L'enfant joue déjà sur le compte de ses parents ? J'ai un code famille
+        </button>
+      )}
     </div>
   );
 }

@@ -129,7 +129,7 @@ export default function Voiture({ profil = null }) {
       confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 }, colors: ["#FF5A5F", "#FFB400", "#3EC28F", "#4A90E2"] });
     }, 550);
     if (profil) {
-      enregistrerScore("voiture", { niveau, etoiles: nb, pseudo: profil.pseudo, avatar: profil.avatar });
+      enregistrerScore("voiture", { niveau, etoiles: nb, pseudo: profil.pseudo, avatar: profil.avatar, enfant_id: profil.id });
       enregistrerProgres(profil, "voiture", progresApres(profil.progres?.voiture, niveau, nb, NIVEAUX.length)).then(() => setVersion((x) => x + 1));
     }
   };

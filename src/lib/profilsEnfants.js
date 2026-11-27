@@ -106,4 +106,47 @@ export async function enregistrerProgres(profil, jeu, valeur) {
   return profil;
 }
 
+// 1.4.1 : code famille (pb_hooks/famille.pb.js). Un enfant partagé reste celui du parent : l'invité le voit, joue
+// et fait progresser, mais ne peut ni l'effacer ni le partager (il peut seulement « Quitter »).
+export const estPartage = (profil, userId) => Boolean(profil?.user_id && userId && profil.user_id !== userId);
+
+const messageErreur = (e, defaut) => e?.response?.data?.message || e?.data?.message || e?.message || defaut;
+
+/** Code à 6 chiffres pour faire jouer l'enfant sur un autre compte (24 h, une seule fois). */
+export async function creerCodeFamille(profil) {
+  try {
+    const r = await base44.functions.invoke("codeFamille", { id: profil.id });
+    return { code: String(r?.data?.code || ""), expire: r?.data?.expire || "" };
+  } catch (e) {
+    throw new Error(messageErreur(e, "Code non créé. Vérifie la connexion."));
+  }
+}
+
+/** « 482913 » -> « 482 913 ». */
+export const codeLisible = (c) => String(c || "").replace(/^(\d{3})(\d{3})$/, "$1 $2");
+
+export async function rejoindreEnfant(code) {
+  try {
+    const r = await base44.functions.invoke("rejoindreEnfant", { code: String(code || "").replace(/\s+/g, "") });
+    return { profil: r?.data?.profil || null, famille: r?.data?.famille || "" };
+  } catch (e) {
+    throw new Error(messageErreur(e, "Code non accepté. Vérifie la connexion."));
+  }
+}
+
+export async function comptesInvites(profil) {
+  const r = await base44.functions.invoke("accesEnfant", { id: profil.id });
+  return Array.isArray(r?.data?.comptes) ? r.data.comptes : [];
+}
+
+/** Le parent retire un compte ; l'invité se retire lui-même (« Quitter »). */
+export async function retirerAcces(profil, userId) {
+  try {
+    await base44.functions.invoke("retirerAccesEnfant", { id: profil.id, user_id: userId });
+  } catch (e) {
+    throw new Error(messageErreur(e, "Accès non retiré. Vérifie la connexion."));
+  }
+  if (lireEnfantActif() === profil.id) choisirEnfantActif(null);
+}
+
 export const ANCIEN_PROFIL = CLE_ANCIEN;

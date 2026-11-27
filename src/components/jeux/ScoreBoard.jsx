@@ -6,6 +6,7 @@ import { prochainLundi } from "@/lib/semaineJeux";
 
 // Score Board (1.3.22) : en haut de Chay Enfants (espace « enfant », par pseudo) et des Jeux (espace « adulte »).
 // 1.4.1 : classement de la SEMAINE seulement (remis à zéro chaque lundi) ; général et par jeu, 5 premiers + sa place.
+// 1.4.1 : enfants : « famille R. » sous le prénom ; enfantId : un enfant partagé (code famille) se retrouve « (toi) ».
 const MEDAILLES = ["🥇", "🥈", "🥉"];
 
 function Initiales({ nom }) {
@@ -13,7 +14,7 @@ function Initiales({ nom }) {
   return <span className="grid h-full w-full place-items-center bg-primary/15 text-xs font-bold text-primary">{t || "?"}</span>;
 }
 
-export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
+export default function ScoreBoard({ espace = "adulte", pseudo = "", enfantId = "", titre }) {
   const jeux = espace === "enfant" ? JEUX_ENFANTS : JEUX_ADULTES;
   const periode = "semaine";
   const [jeu, setJeu] = useState("general");
@@ -25,11 +26,11 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
     setData(null);
     setErreur(false);
     base44.functions
-      .invoke("classement", { espace, jeu, periode, pseudo })
+      .invoke("classement", { espace, jeu, periode, pseudo, enfant_id: enfantId || undefined })
       .then((r) => { if (actif) setData(Array.isArray(r?.data?.top) ? r.data : { top: [], moi: null }); })
       .catch(() => { if (actif) { setErreur(true); setData({ top: [], moi: null }); } });
     return () => { actif = false; };
-  }, [espace, jeu, periode, pseudo]);
+  }, [espace, jeu, periode, pseudo, enfantId]);
 
   const enfant = espace === "enfant";
   const unSeulJeu = jeux.length <= 2; // « Général » + un seul jeu : pas de choix de jeu
@@ -71,7 +72,7 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
         <ol className="space-y-1.5">
           {data.top.map((l) => (
             <li
-              key={`${l.rang}-${l.nom}-${l.user_id || l.avatar}`}
+              key={`${l.rang}-${l.nom}-${l.user_id || l.avatar}-${l.famille || ""}`}
               className={`flex items-center gap-3 rounded-2xl px-3 py-2 ${l.moi ? "bg-primary/15 ring-1 ring-primary/40" : "bg-muted/50"}`}
             >
               <span className="w-7 shrink-0 text-center text-lg font-black tabular-nums">
@@ -86,7 +87,13 @@ export default function ScoreBoard({ espace = "adulte", pseudo = "", titre }) {
                   <Initiales nom={l.nom} />
                 )}
               </span>
-              <span className="min-w-0 flex-1 truncate font-bold">{l.nom}{l.moi ? " (toi)" : ""}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-bold">{l.nom}{l.moi ? " (toi)" : ""}</span>
+                {/* 1.4.1 : marque du foyer, pour distinguer deux enfants du même prénom. */}
+                {enfant && l.famille && (
+                  <span className="mt-0.5 inline-block rounded-md bg-primary/10 px-1.5 text-[11px] font-semibold text-foreground/60">{l.famille}</span>
+                )}
+              </span>
               <span className="shrink-0 font-black tabular-nums text-primary">{l.points} pts</span>
             </li>
           ))}
